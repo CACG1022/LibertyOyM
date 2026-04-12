@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visor OTDR - Red Villavicencio</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f4f6f8; color: #1f2937; }
+    .app { display: grid; grid-template-columns: 380px 1fr; height: 100vh; }
+    .sidebar {
+      background: #ffffff; border-right: 1px solid #d1d5db; padding: 16px; overflow-y: auto;
+    }
+    .sidebar h1 { font-size: 22px; margin: 0 0 8px; }
+    .sidebar p { margin: 0 0 16px; line-height: 1.4; color: #4b5563; }
+    .block {
+      border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; margin-bottom: 14px; background: #fff;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; }
+    input, select, button {
+      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 14px;
+    }
+    input, select { margin-bottom: 10px; }
+    button {
+      background: #111827; color: white; cursor: pointer; border: none; font-weight: bold;
+    }
+    button:hover { opacity: 0.95; }
+    .secondary { background: #374151; }
+    .map-wrap { position: relative; }
+    #map { height: 100vh; width: 100%; }
+    .status {
+      font-size: 13px; padding: 10px 12px; border-radius: 10px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;
+    }
+    .result {
+      font-size: 14px; line-height: 1.5; background: #f8fafc; padding: 10px 12px; border-radius: 10px; border: 1px solid #e2e8f0;
+    }
+    .small { font-size: 12px; color: #6b7280; }
+    .tag {
+      display: inline-block; background: #e5e7eb; color: #111827; border-radius: 999px; padding: 4px 8px; margin: 2px 4px 2px 0; font-size: 12px;
+    }
+    .legend {
+      position: absolute; right: 12px; bottom: 12px; z-index: 1000; background: rgba(255,255,255,0.95); padding: 10px 12px;
+      border-radius: 10px; border: 1px solid #d1d5db; font-size: 12px;
+    }
+    .line-demo, .point-demo {
+      display: inline-block; vertical-align: middle; margin-right: 8px;
+    }
+    .line-demo { width: 22px; height: 0; border-top: 4px solid #2563eb; }
+    .point-demo { width: 10px; height: 10px; background: #dc2626; border-radius: 50%; }
+    ul { margin: 8px 0 0 16px; padding: 0; }
+    .warn { color: #92400e; background: #fffbeb; border-color: #fde68a; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <h1>Visor OTDR - Villavicencio</h1>
+      <p>Filtra la red de un cliente, ingresa una distancia OTDR y ubica el punto estimado de falla sobre el mapa.</p>
+
+      <div class="block">
+        <label for="fileInput">Cargar archivo</label>
+        <input type="file" id="fileInput" accept=".geojson,.json,.kml,.kmz" />
+        <div class="small">Soporta GeoJSON, KML y KMZ. Para mejores resultados, se recomienda usar GeoJSON.</div>
+      </div>
+
+      <div class="block">
+        <label for="nameField">Campo del nombre del cliente</label>
+        <select id="nameField"></select>
+        <label for="clientSearch">Buscar cliente</label>
+        <input type="text" id="clientSearch" placeholder="Ej: CLARO / BANCO / CLIENTE XYZ" />
+        <button id="filterBtn">Filtrar cliente</button>
+        <div id="matchInfo" class="small" style="margin-top:10px;"></div>
+      </div>
+
+      <div class="block">
+        <label for="distanceInput">Distancia OTDR desde el ODF</label>
+        <input type="number" id="distanceInput" min="0" step="0.1" placeholder="Ej: 1250" />
+        <select id="distanceUnit">
+          <option value="meters">Metros</option>
+          <option value="kilometers">Kilómetros</option>
+        </select>
+        <button id="locateBtn">Ubicar punto de falla</button>
+        <div class="small">La distancia se traza sobre la geometría filtrada del cliente.</div>
+      </div>
+
+      <div class="block">
+        <div id="status" class="status">Cargue una red para comenzar.</div>
+      </div>
+
+      <div class="block">
+        <strong>Resultado</strong>
+        <div id="result" class="result" style="margin-top:10px;">
+          Aún no se ha calculado un punto de falla.
+        </div>
+      </div>
+
+      <div class="block warn">
+        <strong>Importante</strong>
+        <ul>
+          <li>El punto depende del orden real de la línea en el archivo.</li>
+          <li>Si el trazado no inicia exactamente en el ODF, el resultado puede correrse.</li>
+          <li>Lo ideal es que cada cliente tenga una línea continua desde el ODF hasta su destino.</li>
+          <li>Si el cliente está dividido en varios segmentos, se puede ajustar luego para concatenarlos.</li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="map-wrap">
+      <div id="map"></div>
+      <div class="legend">
+        <div><span class="line-demo"></span> Red filtrada</div>
+        <div style="margin-top:6px;"><span class="point-demo"></span> Punto estimado de falla</div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
+  <script>
+    const map = L.map('map').setView([4.142, -73.6266], 12);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 20,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let rawGeoJSON = null;
+    let filteredGeoJSON = null;
+    let allLayer = null;
+    let filteredLayer = null;
+    let pointLayer = null;
+    let candidateNameFields = [];
+
+    const fileInput = document.getElementById('fileInput');
+    const nameField = document.getElementById('nameField');
+    const clientSearch = document.getElementById('clientSearch');
+    const filterBtn = document.getElementById('filterBtn');
+    const locateBtn = document.getElementById('locateBtn');
+    const distanceInput = document.getElementById('distanceInput');
+    const distanceUnit = document.getElementById('distanceUnit');
+    const statusBox = document.getElementById('status');
+    const resultBox = document.getElementById('result');
+    const matchInfo = document.getElementById('matchInfo');
+
+    function setStatus(msg, isError = false) {
+      statusBox.textContent = msg;
+      statusBox.className = isError ? 'status warn' : 'status';
+    }
+
+    function clearMapLayers() {
+      if (allLayer) map.removeLayer(allLayer);
+      if (filteredLayer) map.removeLayer(filteredLayer);
+      if (pointLayer) map.removeLayer(pointLayer);
+      allLayer = null;
+      filteredLayer = null;
+      pointLayer = null;
+    }
+
+    function normalizeText(value) {
+      return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim();
+    }
+
+    function detectNameFields(geojson) {
+      const fields = new Map();
+      for (const feature of geojson.features || []) {
+        const props = feature.properties || {};
+        for (const key of Object.keys(props)) {
+          fields.set(key, (fields.get(key) || 0) + 1);
+        }
+      }
+
+      const preferred = ['name', 'nombre', 'cliente', 'customer', 'id_cliente', 'razon_social', 'empresa'];
+      const keys = Array.from(fields.keys());
+      keys.sort((a, b) => {
+        const ai = preferred.indexOf(a.toLowerCase());
+        const bi = preferred.indexOf(b.toLowerCase());
+        if (ai !== -1 && bi !== -1) return ai - bi;
+        if (ai !== -1) return -1;
+        if (bi !== -1) return 1;
+        return a.localeCompare(b);
+      });
+      return keys;
+    }
+
+    function renderNameFieldOptions(fields) {
+      nameField.innerHTML = '';
+      fields.forEach(field => {
+        const option = document.createElement('option');
+        option.value = field;
+        option.textContent = field;
+        nameField.appendChild(option);
+      });
+    }
+
+    function drawAllNetwork() {
+      if (!rawGeoJSON) return;
+      if (allLayer) map.removeLayer(allLayer);
+      allLayer = L.geoJSON(rawGeoJSON, {
+        style: {
+          color: '#94a3b8',
+          weight: 2,
+          opacity: 0.6
+        }
+      }).addTo(map);
+      try { map.fitBounds(allLayer.getBounds(), { padding: [20, 20] }); } catch (e) {}
+    }
+
+    function extractLineFeatures(featureCollection) {
+      const lines = [];
+      for (const feature of featureCollection.features || []) {
+        if (!feature.geometry) continue;
+        const type = feature.geometry.type;
+        if (type === 'LineString' || type === 'MultiLineString') {
+          lines.push(feature);
+        }
+      }
+      return { type: 'FeatureCollection', features: lines };
+    }
+
+    function filterClient() {
+      if (!rawGeoJSON) {
+        setStatus('Primero debes cargar un archivo.', true);
+        return;
+      }
+
+      const field = nameField.value;
+      const term = normalizeText(clientSearch.value);
+
+      if (!field) {
+        setStatus('No se encontró un campo para el nombre del cliente.', true);
+        return;
+      }
+
+      const matched = rawGeoJSON.features.filter(f => {
+        const value = normalizeText((f.properties || {})[field]);
+        return term ? value.includes(term) : true;
+      });
+
+      filteredGeoJSON = extractLineFeatures({ type: 'FeatureCollection', features: matched });
+
+      if (filteredLayer) map.removeLayer(filteredLayer);
+      if (pointLayer) map.removeLayer(pointLayer);
+      pointLayer = null;
+
+      if (!filteredGeoJSON.features.length) {
+        matchInfo.textContent = 'No se encontraron líneas para ese criterio.';
+        resultBox.innerHTML = 'No hay resultados para el cliente buscado.';
+        setStatus('Sin coincidencias. Revisa el campo o el texto de búsqueda.', true);
+        return;
+      }
+
+      filteredLayer = L.geoJSON(filteredGeoJSON, {
+        style: {
+          color: '#2563eb',
+          weight: 4,
+          opacity: 0.95
+        },
+        onEachFeature: (feature, layer) => {
+          const props = feature.properties || {};
+          const rows = Object.entries(props)
+            .slice(0, 10)
+            .map(([k, v]) => `<strong>${k}</strong>: ${v}`)
+            .join('<br>');
+          layer.bindPopup(rows || 'Sin atributos');
+        }
+      }).addTo(map);
+
+      try { map.fitBounds(filteredLayer.getBounds(), { padding: [30, 30] }); } catch (e) {}
+
+      const names = [...new Set(matched.map(f => (f.properties || {})[field]).filter(Boolean))];
+      matchInfo.innerHTML = `Coincidencias: <strong>${matched.length}</strong><br>${names.slice(0, 10).map(n => `<span class="tag">${n}</span>`).join('')}`;
+      resultBox.innerHTML = 'Cliente filtrado correctamente. Ahora ingresa la distancia OTDR.';
+      setStatus('Cliente filtrado correctamente.');
+    }
+
+    function getLongestLine(featureCollection) {
+      let selected = null;
+      let maxLen = -1;
+      for (const feature of featureCollection.features) {
+        try {
+          const len = turf.length(feature, { units: 'kilometers' });
+          if (len > maxLen) {
+            maxLen = len;
+            selected = feature;
+          }
+        } catch (e) {}
+      }
+      return selected;
+    }
+
+    function locateFault() {
+      if (!filteredGeoJSON || !filteredGeoJSON.features.length) {
+        setStatus('Primero filtra un cliente.', true);
+        return;
+      }
+
+      const distanceValue = Number(distanceInput.value);
+      const unit = distanceUnit.value;
+      if (Number.isNaN(distanceValue) || distanceValue < 0) {
+        setStatus('Ingresa una distancia válida.', true);
+        return;
+      }
+
+      const mainLine = getLongestLine(filteredGeoJSON);
+      if (!mainLine) {
+        setStatus('No fue posible obtener una línea válida.', true);
+        return;
+      }
+
+      let totalLenKm;
+      try {
+        totalLenKm = turf.length(mainLine, { units: 'kilometers' });
+      } catch (e) {
+        setStatus('No fue posible medir la línea.', true);
+        return;
+      }
+
+      const distanceKm = unit === 'meters' ? distanceValue / 1000 : distanceValue;
+      if (distanceKm > totalLenKm) {
+        setStatus(`La distancia excede la longitud de la línea (${totalLenKm.toFixed(3)} km).`, true);
+        resultBox.innerHTML = `La distancia ingresada es mayor que la longitud disponible de la línea seleccionada.<br><br><strong>Longitud línea:</strong> ${totalLenKm.toFixed(3)} km`;
+        return;
+      }
+
+      let point;
+      try {
+        point = turf.along(mainLine, distanceKm, { units: 'kilometers' });
+      } catch (e) {
+        setStatus('No fue posible calcular el punto.', true);
+        return;
+      }
+
+      const [lng, lat] = point.geometry.coordinates;
+
+      if (pointLayer) map.removeLayer(pointLayer);
+      pointLayer = L.geoJSON(point, {
+        pointToLayer: (_, latlng) => L.circleMarker(latlng, {
+          radius: 8,
+          color: '#991b1b',
+          weight: 2,
+          fillColor: '#dc2626',
+          fillOpacity: 1
+        })
+      }).addTo(map);
+
+      pointLayer.bindPopup(`
+        <strong>Punto estimado de falla</strong><br>
+        Lat: ${lat.toFixed(6)}<br>
+        Lon: ${lng.toFixed(6)}<br>
+        Distancia: ${distanceValue} ${unit === 'meters' ? 'm' : 'km'}
+      `).openPopup();
+
+      map.setView([lat, lng], 18);
+
+      const clientField = nameField.value;
+      const names = [...new Set(filteredGeoJSON.features.map(f => (f.properties || {})[clientField]).filter(Boolean))];
+      resultBox.innerHTML = `
+        <strong>Cliente filtrado:</strong> ${names.join(', ') || 'No identificado'}<br>
+        <strong>Distancia OTDR:</strong> ${distanceValue} ${unit === 'meters' ? 'm' : 'km'}<br>
+        <strong>Latitud:</strong> ${lat.toFixed(6)}<br>
+        <strong>Longitud:</strong> ${lng.toFixed(6)}<br>
+        <strong>Longitud de línea analizada:</strong> ${totalLenKm.toFixed(3)} km
+      `;
+
+      setStatus('Punto de falla calculado correctamente.');
+    }
+
+    async function parseKMLText(kmlText) {
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(kmlText, 'text/xml');
+      return toGeoJSON.kml(xml);
+    }
+
+    async function parseKMZ(file) {
+      const zip = await JSZip.loadAsync(file);
+      const kmlFileName = Object.keys(zip.files).find(name => name.toLowerCase().endsWith('.kml'));
+      if (!kmlFileName) throw new Error('El KMZ no contiene un archivo KML.');
+      const kmlText = await zip.files[kmlFileName].async('string');
+      return await parseKMLText(kmlText);
+    }
+
+    async function loadFile(file) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      setStatus(`Cargando archivo ${file.name}...`);
+
+      try {
+        let data;
+        if (ext === 'geojson' || ext === 'json') {
+          const text = await file.text();
+          data = JSON.parse(text);
+        } else if (ext === 'kml') {
+          const text = await file.text();
+          data = await parseKMLText(text);
+        } else if (ext === 'kmz') {
+          data = await parseKMZ(file);
+        } else {
+          throw new Error('Formato no soportado.');
+        }
+
+        if (!data || !data.features) throw new Error('No se pudo leer la geometría del archivo.');
+
+        rawGeoJSON = extractLineFeatures(data);
+        if (!rawGeoJSON.features.length) {
+          throw new Error('El archivo no contiene líneas de red.');
+        }
+
+        candidateNameFields = detectNameFields(rawGeoJSON);
+        renderNameFieldOptions(candidateNameFields);
+
+        clearMapLayers();
+        filteredGeoJSON = null;
+        drawAllNetwork();
+
+        setStatus(`Archivo cargado correctamente. Líneas detectadas: ${rawGeoJSON.features.length}`);
+        matchInfo.textContent = '';
+        resultBox.innerHTML = 'Ahora puedes buscar un cliente y luego calcular la falla.';
+      } catch (error) {
+        console.error(error);
+        setStatus(`Error al cargar archivo: ${error.message}`, true);
+      }
+    }
+
+    fileInput.addEventListener('change', event => {
+      const file = event.target.files[0];
+      if (file) loadFile(file);
+    });
+
+    filterBtn.addEventListener('click', filterClient);
+    locateBtn.addEventListener('click', locateFault);
+    clientSearch.addEventListener('keydown', e => {
+      if (e.key === 'Enter') filterClient();
+    });
+    distanceInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') locateFault();
+    });
+  </script>
+</body>
+</html>
