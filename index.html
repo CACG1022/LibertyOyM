@@ -83,6 +83,14 @@
       background: #374151;
     }
 
+    .danger {
+      background: #991b1b;
+    }
+
+    .active-tool {
+      background: #0f766e;
+    }
+
     .map-wrap {
       position: relative;
     }
@@ -141,7 +149,8 @@
     .point-demo,
     .node-demo,
     .network-demo,
-    .selected-demo {
+    .selected-demo,
+    .measure-demo {
       display: inline-block;
       vertical-align: middle;
       margin-right: 8px;
@@ -169,6 +178,12 @@
       width: 22px;
       height: 0;
       border-top: 4px solid #dc2626;
+    }
+
+    .measure-demo {
+      width: 22px;
+      height: 0;
+      border-top: 4px dashed #7c3aed;
     }
 
     .point-demo {
@@ -269,6 +284,21 @@
     .leaflet-tooltip.node-label:before {
       border-top-color: #111827;
     }
+
+    .leaflet-tooltip.measure-label {
+      background: rgba(124, 58, 237, 0.95);
+      color: #fff;
+      border: 1px solid #6d28d9;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .leaflet-tooltip.measure-label:before {
+      border-top-color: #6d28d9;
+    }
   </style>
 </head>
 <body>
@@ -308,6 +338,18 @@
       </div>
 
       <div class="block">
+        <label>Herramienta de medición</label>
+        <button id="measureToggleBtn" class="secondary">Activar medición</button>
+        <button id="measureUndoBtn" class="secondary" style="margin-top:8px;">Deshacer último punto</button>
+        <button id="measureClearBtn" class="danger" style="margin-top:8px;">Limpiar medición</button>
+        <div id="measureInfo" class="result" style="margin-top:10px;">
+          <strong>Estado:</strong> Inactiva<br>
+          <strong>Longitud acumulada:</strong> 0 m<br>
+          <strong>Puntos:</strong> 0
+        </div>
+      </div>
+
+      <div class="block">
         <div id="status" class="status">Cargando capa Nodo...</div>
       </div>
 
@@ -323,6 +365,7 @@
         <ul>
           <li>1 clic sobre un tramo: lo resalta en rojo.</li>
           <li>Doble clic sobre un tramo: muestra la tabla de atributos.</li>
+          <li>Activa la medición para marcar una ruta con clics sobre el mapa o sobre la red.</li>
           <li>La capa <b>NODO_VVC.geojson</b> se carga automáticamente.</li>
           <li>La red cargada manualmente se dibuja en amarillo.</li>
           <li>La red filtrada se muestra en azul.</li>
@@ -339,6 +382,7 @@
         <div style="margin-top:6px;"><span class="network-demo"></span> Red cargada</div>
         <div style="margin-top:6px;"><span class="line-demo"></span> Red filtrada</div>
         <div style="margin-top:6px;"><span class="selected-demo"></span> Tramo seleccionado</div>
+        <div style="margin-top:6px;"><span class="measure-demo"></span> Medición</div>
         <div style="margin-top:6px;"><span class="point-demo"></span> Punto estimado de falla</div>
       </div>
     </main>
@@ -383,6 +427,12 @@
     let layerControl = null;
     let highlightedLayer = null;
 
+    let measureMode = false;
+    let measurePoints = [];
+    let measureLine = null;
+    let measureMarkers = [];
+    let measureTooltipMarker = null;
+
     const fileInput = document.getElementById('fileInput');
     const nameField = document.getElementById('nameField');
     const clientSearch = document.getElementById('clientSearch');
@@ -394,6 +444,11 @@
     const statusBox = document.getElementById('status');
     const resultBox = document.getElementById('result');
     const matchInfo = document.getElementById('matchInfo');
+
+    const measureToggleBtn = document.getElementById('measureToggleBtn');
+    const measureUndoBtn = document.getElementById('measureUndoBtn');
+    const measureClearBtn = document.getElementById('measureClearBtn');
+    const measureInfo = document.getElementById('measureInfo');
 
     function setStatus(msg, isError = false) {
       statusBox.textContent = msg;
@@ -501,6 +556,7 @@
       if (allLayer) overlays["Red cargada"] = allLayer;
       if (filteredLayer) overlays["Red filtrada"] = filteredLayer;
       if (pointLayer) overlays["Punto de falla"] = pointLayer;
+      if (measureLine) overlays["Medición"] = measureLine;
 
       layerControl = L.control.layers(baseMaps, overlays, {
         collapsed: false,
@@ -541,10 +597,136 @@
       }
     }
 
+    function formatMeters(meters) {
+      if (meters >= 1000) {
+        return `${meters.toFixed(2)} m (${(meters / 1000).toFixed(3)} km)`;
+      }
+      return `${meters.toFixed(2)} m`;
+    }
+
+    function updateMeasureInfo() {
+      const total = getMeasureTotalMeters();
+      measureInfo.innerHTML = `
+        <strong>Estado:</strong> ${measureMode ? 'Activa' : 'Inactiva'}<br>
+        <strong>Longitud acumulada:</strong> ${formatMeters(total)}<br>
+        <strong>Puntos:</strong> ${measurePoints.length}
+      `;
+
+      if (measureMode) {
+        measureToggleBtn.textContent = 'Desactivar medición';
+        measureToggleBtn.className = 'active-tool';
+      } else {
+        measureToggleBtn.textContent = 'Activar medición';
+        measureToggleBtn.className = 'secondary';
+      }
+    }
+
+    function getMeasureTotalMeters() {
+      if (measurePoints.length < 2) return 0;
+
+      let total = 0;
+      for (let i = 1; i < measurePoints.length; i++) {
+        const from = turf.point([measurePoints[i - 1].lng, measurePoints[i - 1].lat]);
+        const to = turf.point([measurePoints[i].lng, measurePoints[i].lat]);
+        total += turf.distance(from, to, { units: 'kilometers' }) * 1000;
+      }
+      return total;
+    }
+
+    function redrawMeasure() {
+      if (measureLine) {
+        map.removeLayer(measureLine);
+        measureLine = null;
+      }
+
+      measureMarkers.forEach(marker => map.removeLayer(marker));
+      measureMarkers = [];
+
+      if (measureTooltipMarker) {
+        map.removeLayer(measureTooltipMarker);
+        measureTooltipMarker = null;
+      }
+
+      if (measurePoints.length > 0) {
+        measurePoints.forEach((pt, index) => {
+          const marker = L.circleMarker(pt, {
+            radius: 5,
+            color: '#6d28d9',
+            weight: 2,
+            fillColor: '#a78bfa',
+            fillOpacity: 1
+          }).addTo(map);
+
+          marker.bindTooltip(`${index + 1}`, {
+            permanent: true,
+            direction: 'top',
+            offset: [0, -6],
+            className: 'measure-label'
+          });
+
+          measureMarkers.push(marker);
+        });
+      }
+
+      if (measurePoints.length >= 2) {
+        measureLine = L.polyline(measurePoints, {
+          color: '#7c3aed',
+          weight: 4,
+          opacity: 1,
+          dashArray: '10, 8'
+        }).addTo(map);
+
+        const totalMeters = getMeasureTotalMeters();
+        const lastPoint = measurePoints[measurePoints.length - 1];
+
+        measureTooltipMarker = L.marker(lastPoint, {
+          icon: L.divIcon({
+            html: `<div style="background:rgba(124,58,237,0.95);color:#fff;border:1px solid #6d28d9;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:bold;white-space:nowrap;">${formatMeters(totalMeters)}</div>`,
+            className: '',
+            iconSize: [140, 24],
+            iconAnchor: [0, 30]
+          }),
+          interactive: false
+        }).addTo(map);
+      }
+
+      updateMeasureInfo();
+      refreshLayerControl();
+    }
+
+    function addMeasurePoint(latlng) {
+      measurePoints.push(L.latLng(latlng.lat, latlng.lng));
+      redrawMeasure();
+    }
+
+    function clearMeasure() {
+      measurePoints = [];
+      redrawMeasure();
+    }
+
+    function undoMeasurePoint() {
+      if (measurePoints.length > 0) {
+        measurePoints.pop();
+        redrawMeasure();
+      }
+    }
+
+    function toggleMeasureMode() {
+      measureMode = !measureMode;
+      updateMeasureInfo();
+      setStatus(measureMode ? 'Modo de medición activado.' : 'Modo de medición desactivado.');
+    }
+
     function bindInteractiveFeature(feature, layer) {
       const popupContent = buildAttributesPopup(feature);
 
       layer.on('click', function (e) {
+        if (measureMode) {
+          addMeasurePoint(e.latlng);
+          L.DomEvent.stopPropagation(e);
+          return;
+        }
+
         if (typeof layer.setStyle === 'function') {
           highlightFeature(layer);
         }
@@ -552,6 +734,11 @@
       });
 
       layer.on('dblclick', function (e) {
+        if (measureMode) {
+          L.DomEvent.stopPropagation(e);
+          return;
+        }
+
         if (typeof layer.setStyle === 'function') {
           highlightFeature(layer);
         }
@@ -900,8 +1087,19 @@
           onEachFeature: (feature, layer) => {
             const popupContent = buildAttributesPopup(feature);
             layer.on('dblclick', function (e) {
+              if (measureMode) {
+                L.DomEvent.stopPropagation(e);
+                return;
+              }
               layer.bindPopup(popupContent).openPopup();
               L.DomEvent.stopPropagation(e);
+            });
+
+            layer.on('click', function(e) {
+              if (measureMode) {
+                addMeasurePoint(e.latlng);
+                L.DomEvent.stopPropagation(e);
+              }
             });
           }
         }).addTo(map);
@@ -919,7 +1117,11 @@
       }
     }
 
-    map.on('click', function () {
+    map.on('click', function (e) {
+      if (measureMode) {
+        addMeasurePoint(e.latlng);
+        return;
+      }
       clearHighlight();
     });
 
@@ -932,6 +1134,10 @@
     clearBtn.addEventListener('click', showAllNetwork);
     locateBtn.addEventListener('click', locateFault);
 
+    measureToggleBtn.addEventListener('click', toggleMeasureMode);
+    measureUndoBtn.addEventListener('click', undoMeasurePoint);
+    measureClearBtn.addEventListener('click', clearMeasure);
+
     clientSearch.addEventListener('keydown', e => {
       if (e.key === 'Enter') filterClient();
     });
@@ -940,6 +1146,7 @@
       if (e.key === 'Enter') locateFault();
     });
 
+    updateMeasureInfo();
     refreshLayerControl();
     cargarNodo();
   </script>
