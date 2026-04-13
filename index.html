@@ -129,7 +129,7 @@
       position: absolute;
       right: 12px;
       bottom: 12px;
-      z-index: 1000;
+      z-index: 900;
       background: rgba(255,255,255,0.95);
       padding: 10px 12px;
       border-radius: 10px;
@@ -140,7 +140,8 @@
     .line-demo,
     .point-demo,
     .node-demo,
-    .network-demo {
+    .network-demo,
+    .selected-demo {
       display: inline-block;
       vertical-align: middle;
       margin-right: 8px;
@@ -162,6 +163,12 @@
       width: 22px;
       height: 0;
       border-top: 4px solid #2563eb;
+    }
+
+    .selected-demo {
+      width: 22px;
+      height: 0;
+      border-top: 4px solid #dc2626;
     }
 
     .point-demo {
@@ -217,6 +224,21 @@
       background: #ffffff;
       width: 58%;
     }
+
+    .leaflet-top.leaflet-right .leaflet-control-layers {
+      margin-top: 12px;
+      margin-right: 12px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #d1d5db;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+
+    .leaflet-control-layers-expanded {
+      padding: 10px 12px;
+      font-size: 13px;
+      min-width: 170px;
+    }
   </style>
 </head>
 <body>
@@ -269,10 +291,12 @@
       <div class="block warn">
         <strong>Importante</strong>
         <ul>
+          <li>1 clic sobre un tramo: lo resalta en rojo.</li>
+          <li>Doble clic sobre un tramo: muestra la tabla de atributos.</li>
           <li>La capa <b>NODO_VVC.geojson</b> se carga automáticamente.</li>
-          <li>La red cargada manualmente se dibuja en color amarillo.</li>
-          <li>Al hacer clic sobre una línea, se muestra la tabla de atributos.</li>
-          <li>El cálculo OTDR toma la línea más larga del filtro actual.</li>
+          <li>La red cargada manualmente se dibuja en amarillo.</li>
+          <li>La red filtrada se muestra en azul.</li>
+          <li>En la esquina superior derecha puedes cambiar el mapa base.</li>
         </ul>
       </div>
     </aside>
@@ -283,6 +307,7 @@
         <div><span class="node-demo"></span> Capa Nodo</div>
         <div style="margin-top:6px;"><span class="network-demo"></span> Red cargada</div>
         <div style="margin-top:6px;"><span class="line-demo"></span> Red filtrada</div>
+        <div style="margin-top:6px;"><span class="selected-demo"></span> Tramo seleccionado</div>
         <div style="margin-top:6px;"><span class="point-demo"></span> Punto estimado de falla</div>
       </div>
     </main>
@@ -294,7 +319,7 @@
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
-    const map = L.map('map').setView([4.142, -73.6266], 12);
+    const map = L.map('map', { doubleClickZoom: false }).setView([4.142, -73.6266], 12);
 
     const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 20,
@@ -322,6 +347,7 @@
     let nodoLayer = null;
     let candidateNameFields = [];
     let layerControl = null;
+    let highlightedLayer = null;
 
     const fileInput = document.getElementById('fileInput');
     const nameField = document.getElementById('nameField');
@@ -347,6 +373,7 @@
       allLayer = null;
       filteredLayer = null;
       pointLayer = null;
+      clearHighlight();
     }
 
     function normalizeText(value) {
@@ -441,7 +468,58 @@
       if (filteredLayer) overlays["Red filtrada"] = filteredLayer;
       if (pointLayer) overlays["Punto de falla"] = pointLayer;
 
-      layerControl = L.control.layers(baseMaps, overlays).addTo(map);
+      layerControl = L.control.layers(baseMaps, overlays, {
+        collapsed: false,
+        position: 'topright'
+      }).addTo(map);
+    }
+
+    function clearHighlight() {
+      if (highlightedLayer) {
+        if (highlightedLayer._originalStyle) {
+          highlightedLayer.setStyle(highlightedLayer._originalStyle);
+        }
+        highlightedLayer = null;
+      }
+    }
+
+    function highlightFeature(layer) {
+      if (highlightedLayer === layer) return;
+
+      clearHighlight();
+
+      if (typeof layer.setStyle === 'function') {
+        layer._originalStyle = {
+          color: layer.options.color,
+          weight: layer.options.weight,
+          opacity: layer.options.opacity,
+          fillColor: layer.options.fillColor,
+          fillOpacity: layer.options.fillOpacity
+        };
+
+        layer.setStyle({
+          color: '#dc2626',
+          weight: Math.max((layer.options.weight || 4) + 2, 6),
+          opacity: 1
+        });
+
+        highlightedLayer = layer;
+      }
+    }
+
+    function bindInteractiveFeature(feature, layer) {
+      const popupContent = buildAttributesPopup(feature);
+
+      layer.on('click', function (e) {
+        highlightFeature(layer);
+        L.DomEvent.stopPropagation(e);
+      });
+
+      layer.on('dblclick', function (e) {
+        highlightFeature(layer);
+        layer.bindPopup(popupContent).openPopup();
+        L.DomEvent.stopPropagation(e);
+      });
     }
 
     function drawAllNetwork() {
@@ -455,9 +533,7 @@
           weight: 4,
           opacity: 0.95
         },
-        onEachFeature: (feature, layer) => {
-          layer.bindPopup(buildAttributesPopup(feature));
-        }
+        onEachFeature: bindInteractiveFeature
       }).addTo(map);
 
       refreshLayerControl();
@@ -493,6 +569,7 @@
       filteredLayer = null;
       pointLayer = null;
       filteredGeoJSON = null;
+      clearHighlight();
 
       drawAllNetwork();
       matchInfo.textContent = '';
@@ -524,6 +601,7 @@
       if (filteredLayer) map.removeLayer(filteredLayer);
       if (pointLayer) map.removeLayer(pointLayer);
       pointLayer = null;
+      clearHighlight();
 
       if (!filteredGeoJSON.features.length) {
         matchInfo.textContent = 'No se encontraron líneas para ese criterio.';
@@ -539,9 +617,7 @@
           weight: 5,
           opacity: 1
         },
-        onEachFeature: (feature, layer) => {
-          layer.bindPopup(buildAttributesPopup(feature));
-        }
+        onEachFeature: bindInteractiveFeature
       }).addTo(map);
 
       refreshLayerControl();
@@ -744,9 +820,7 @@
               fillOpacity: 1
             });
           },
-          onEachFeature: (feature, layer) => {
-            layer.bindPopup(buildAttributesPopup(feature));
-          }
+          onEachFeature: bindInteractiveFeature
         }).addTo(map);
 
         refreshLayerControl();
@@ -761,6 +835,10 @@
         setStatus(`Error cargando NODO_VVC.geojson: ${error.message}`, true);
       }
     }
+
+    map.on('click', function () {
+      clearHighlight();
+    });
 
     fileInput.addEventListener('change', event => {
       const file = event.target.files[0];
