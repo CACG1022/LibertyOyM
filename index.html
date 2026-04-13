@@ -7,16 +7,38 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; background: #f4f6f8; color: #1f2937; }
-    .app { display: grid; grid-template-columns: 380px 1fr; height: 100vh; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      color: #1f2937;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      height: 100vh;
+    }
+
     .sidebar {
       background: #ffffff;
       border-right: 1px solid #d1d5db;
       padding: 16px;
       overflow-y: auto;
     }
-    .sidebar h1 { font-size: 22px; margin: 0 0 8px; }
-    .sidebar p { margin: 0 0 16px; line-height: 1.4; color: #4b5563; }
+
+    .sidebar h1 {
+      font-size: 22px;
+      margin: 0 0 8px;
+    }
+
+    .sidebar p {
+      margin: 0 0 16px;
+      line-height: 1.4;
+      color: #4b5563;
+    }
+
     .block {
       border: 1px solid #e5e7eb;
       border-radius: 12px;
@@ -25,7 +47,14 @@
       background: #fff;
       box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     }
-    label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
     input, select, button {
       width: 100%;
       padding: 10px 12px;
@@ -33,7 +62,11 @@
       border: 1px solid #cbd5e1;
       font-size: 14px;
     }
-    input, select { margin-bottom: 10px; }
+
+    input, select {
+      margin-bottom: 10px;
+    }
+
     button {
       background: #111827;
       color: white;
@@ -41,10 +74,24 @@
       border: none;
       font-weight: bold;
     }
-    button:hover { opacity: 0.95; }
-    .secondary { background: #374151; }
-    .map-wrap { position: relative; }
-    #map { height: 100vh; width: 100%; }
+
+    button:hover {
+      opacity: 0.95;
+    }
+
+    .secondary {
+      background: #374151;
+    }
+
+    .map-wrap {
+      position: relative;
+    }
+
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
+
     .status {
       font-size: 13px;
       padding: 10px 12px;
@@ -53,6 +100,7 @@
       color: #1d4ed8;
       border: 1px solid #bfdbfe;
     }
+
     .result {
       font-size: 14px;
       line-height: 1.5;
@@ -61,7 +109,12 @@
       border-radius: 10px;
       border: 1px solid #e2e8f0;
     }
-    .small { font-size: 12px; color: #6b7280; }
+
+    .small {
+      font-size: 12px;
+      color: #6b7280;
+    }
+
     .tag {
       display: inline-block;
       background: #e5e7eb;
@@ -71,6 +124,7 @@
       margin: 2px 4px 2px 0;
       font-size: 12px;
     }
+
     .legend {
       position: absolute;
       right: 12px;
@@ -82,16 +136,87 @@
       border: 1px solid #d1d5db;
       font-size: 12px;
     }
-    .line-demo, .point-demo, .node-demo {
+
+    .line-demo,
+    .point-demo,
+    .node-demo,
+    .network-demo {
       display: inline-block;
       vertical-align: middle;
       margin-right: 8px;
     }
-    .line-demo { width: 22px; height: 0; border-top: 4px solid #2563eb; }
-    .point-demo { width: 10px; height: 10px; background: #dc2626; border-radius: 50%; }
-    .node-demo { width: 22px; height: 0; border-top: 4px solid #16a34a; }
-    ul { margin: 8px 0 0 16px; padding: 0; }
-    .warn { color: #92400e; background: #fffbeb; border-color: #fde68a; }
+
+    .node-demo {
+      width: 22px;
+      height: 0;
+      border-top: 4px solid #16a34a;
+    }
+
+    .network-demo {
+      width: 22px;
+      height: 0;
+      border-top: 4px solid #facc15;
+    }
+
+    .line-demo {
+      width: 22px;
+      height: 0;
+      border-top: 4px solid #2563eb;
+    }
+
+    .point-demo {
+      width: 10px;
+      height: 10px;
+      background: #dc2626;
+      border-radius: 50%;
+    }
+
+    ul {
+      margin: 8px 0 0 16px;
+      padding: 0;
+    }
+
+    .warn {
+      color: #92400e;
+      background: #fffbeb;
+      border-color: #fde68a;
+    }
+
+    .popup-attrs {
+      max-height: 320px;
+      overflow: auto;
+      min-width: 320px;
+    }
+
+    .popup-title {
+      font-weight: bold;
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+
+    .attr-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .attr-table td {
+      border: 1px solid #9ca3af;
+      padding: 4px 6px;
+      vertical-align: top;
+      word-break: break-word;
+    }
+
+    .attr-key {
+      font-weight: bold;
+      background: #f3f4f6;
+      width: 42%;
+    }
+
+    .attr-value {
+      background: #ffffff;
+      width: 58%;
+    }
   </style>
 </head>
 <body>
@@ -144,10 +269,10 @@
       <div class="block warn">
         <strong>Importante</strong>
         <ul>
-          <li>La capa <b>NODO_VVC.geojson</b> se carga automáticamente al abrir la página.</li>
-          <li>La red del cliente se sigue cargando manualmente con el botón.</li>
-          <li>El punto depende del orden real de la línea en el archivo cargado.</li>
-          <li>Si el cliente está dividido en varios segmentos, esta versión toma la línea más larga del filtro.</li>
+          <li>La capa <b>NODO_VVC.geojson</b> se carga automáticamente.</li>
+          <li>La red cargada manualmente se dibuja en color amarillo.</li>
+          <li>Al hacer clic sobre una línea, se muestra la tabla de atributos.</li>
+          <li>El cálculo OTDR toma la línea más larga del filtro actual.</li>
         </ul>
       </div>
     </aside>
@@ -156,6 +281,7 @@
       <div id="map"></div>
       <div class="legend">
         <div><span class="node-demo"></span> Capa Nodo</div>
+        <div style="margin-top:6px;"><span class="network-demo"></span> Red cargada</div>
         <div style="margin-top:6px;"><span class="line-demo"></span> Red filtrada</div>
         <div style="margin-top:6px;"><span class="point-demo"></span> Punto estimado de falla</div>
       </div>
@@ -195,6 +321,7 @@
     let pointLayer = null;
     let nodoLayer = null;
     let candidateNameFields = [];
+    let layerControl = null;
 
     const fileInput = document.getElementById('fileInput');
     const nameField = document.getElementById('nameField');
@@ -228,6 +355,43 @@
         .replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
         .trim();
+    }
+
+    function safeValue(value) {
+      if (value === null || value === undefined || value === '') return '';
+      if (typeof value === 'object') return JSON.stringify(value);
+      return String(value);
+    }
+
+    function buildAttributesPopup(feature) {
+      const props = feature.properties || {};
+      const title =
+        props.name ||
+        props.Name ||
+        props.nombre ||
+        props.cliente ||
+        props.id ||
+        'Elemento de red';
+
+      const rows = Object.entries(props).map(([key, value]) => {
+        return `
+          <tr>
+            <td class="attr-key">${key}</td>
+            <td class="attr-value">${safeValue(value)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      return `
+        <div class="popup-attrs">
+          <div class="popup-title">${title}</div>
+          <table class="attr-table">
+            <tbody>
+              ${rows || '<tr><td class="attr-key">Info</td><td class="attr-value">Sin atributos</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      `;
     }
 
     function detectNameFields(geojson) {
@@ -266,6 +430,20 @@
       });
     }
 
+    function refreshLayerControl() {
+      if (layerControl) {
+        map.removeControl(layerControl);
+      }
+
+      const overlays = {};
+      if (nodoLayer) overlays["Nodo"] = nodoLayer;
+      if (allLayer) overlays["Red cargada"] = allLayer;
+      if (filteredLayer) overlays["Red filtrada"] = filteredLayer;
+      if (pointLayer) overlays["Punto de falla"] = pointLayer;
+
+      layerControl = L.control.layers(baseMaps, overlays).addTo(map);
+    }
+
     function drawAllNetwork() {
       if (!rawGeoJSON) return;
 
@@ -273,19 +451,16 @@
 
       allLayer = L.geoJSON(rawGeoJSON, {
         style: {
-          color: '#94a3b8',
-          weight: 2,
-          opacity: 0.6
+          color: '#facc15',
+          weight: 4,
+          opacity: 0.95
         },
         onEachFeature: (feature, layer) => {
-          const props = feature.properties || {};
-          const rows = Object.entries(props)
-            .slice(0, 10)
-            .map(([k, v]) => `<strong>${k}</strong>: ${v}`)
-            .join('<br>');
-          layer.bindPopup(rows || 'Sin atributos');
+          layer.bindPopup(buildAttributesPopup(feature));
         }
       }).addTo(map);
+
+      refreshLayerControl();
 
       try {
         const group = L.featureGroup([allLayer, nodoLayer].filter(Boolean));
@@ -354,24 +529,22 @@
         matchInfo.textContent = 'No se encontraron líneas para ese criterio.';
         resultBox.innerHTML = 'No hay resultados para el cliente buscado.';
         setStatus('Sin coincidencias. Revisa el campo o el texto de búsqueda.', true);
+        refreshLayerControl();
         return;
       }
 
       filteredLayer = L.geoJSON(filteredGeoJSON, {
         style: {
           color: '#2563eb',
-          weight: 4,
-          opacity: 0.95
+          weight: 5,
+          opacity: 1
         },
         onEachFeature: (feature, layer) => {
-          const props = feature.properties || {};
-          const rows = Object.entries(props)
-            .slice(0, 10)
-            .map(([k, v]) => `<strong>${k}</strong>: ${v}`)
-            .join('<br>');
-          layer.bindPopup(rows || 'Sin atributos');
+          layer.bindPopup(buildAttributesPopup(feature));
         }
       }).addTo(map);
+
+      refreshLayerControl();
 
       try {
         const group = L.featureGroup([filteredLayer, nodoLayer].filter(Boolean));
@@ -466,6 +639,7 @@
         Distancia: ${distanceValue} ${unit === 'meters' ? 'm' : 'km'}
       `).openPopup();
 
+      refreshLayerControl();
       map.setView([lat, lng], 18);
 
       const clientField = nameField.value;
@@ -571,20 +745,11 @@
             });
           },
           onEachFeature: (feature, layer) => {
-            const props = feature.properties || {};
-            const html = Object.entries(props)
-              .map(([k, v]) => `<strong>${k}</strong>: ${v}`)
-              .join('<br>');
-
-            layer.bindPopup(html || 'Nodo');
+            layer.bindPopup(buildAttributesPopup(feature));
           }
         }).addTo(map);
 
-        const overlays = {
-          "Nodo": nodoLayer
-        };
-
-        L.control.layers(baseMaps, overlays).addTo(map);
+        refreshLayerControl();
 
         try {
           map.fitBounds(nodoLayer.getBounds(), { padding: [20, 20] });
@@ -614,6 +779,7 @@
       if (e.key === 'Enter') locateFault();
     });
 
+    refreshLayerControl();
     cargarNodo();
   </script>
 </body>
