@@ -10,45 +10,86 @@
     body { margin: 0; font-family: Arial, sans-serif; background: #f4f6f8; color: #1f2937; }
     .app { display: grid; grid-template-columns: 380px 1fr; height: 100vh; }
     .sidebar {
-      background: #ffffff; border-right: 1px solid #d1d5db; padding: 16px; overflow-y: auto;
+      background: #ffffff;
+      border-right: 1px solid #d1d5db;
+      padding: 16px;
+      overflow-y: auto;
     }
     .sidebar h1 { font-size: 22px; margin: 0 0 8px; }
     .sidebar p { margin: 0 0 16px; line-height: 1.4; color: #4b5563; }
     .block {
-      border: 1px solid #e5e7eb; border-radius: 12px; padding: 14px; margin-bottom: 14px; background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+      background: #fff;
       box-shadow: 0 1px 2px rgba(0,0,0,0.04);
     }
     label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 6px; }
     input, select, button {
-      width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 14px;
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e1;
+      font-size: 14px;
     }
     input, select { margin-bottom: 10px; }
     button {
-      background: #111827; color: white; cursor: pointer; border: none; font-weight: bold;
+      background: #111827;
+      color: white;
+      cursor: pointer;
+      border: none;
+      font-weight: bold;
     }
     button:hover { opacity: 0.95; }
     .secondary { background: #374151; }
     .map-wrap { position: relative; }
     #map { height: 100vh; width: 100%; }
     .status {
-      font-size: 13px; padding: 10px 12px; border-radius: 10px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;
+      font-size: 13px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
     }
     .result {
-      font-size: 14px; line-height: 1.5; background: #f8fafc; padding: 10px 12px; border-radius: 10px; border: 1px solid #e2e8f0;
+      font-size: 14px;
+      line-height: 1.5;
+      background: #f8fafc;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
     }
     .small { font-size: 12px; color: #6b7280; }
     .tag {
-      display: inline-block; background: #e5e7eb; color: #111827; border-radius: 999px; padding: 4px 8px; margin: 2px 4px 2px 0; font-size: 12px;
+      display: inline-block;
+      background: #e5e7eb;
+      color: #111827;
+      border-radius: 999px;
+      padding: 4px 8px;
+      margin: 2px 4px 2px 0;
+      font-size: 12px;
     }
     .legend {
-      position: absolute; right: 12px; bottom: 12px; z-index: 1000; background: rgba(255,255,255,0.95); padding: 10px 12px;
-      border-radius: 10px; border: 1px solid #d1d5db; font-size: 12px;
+      position: absolute;
+      right: 12px;
+      bottom: 12px;
+      z-index: 1000;
+      background: rgba(255,255,255,0.95);
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      font-size: 12px;
     }
-    .line-demo, .point-demo {
-      display: inline-block; vertical-align: middle; margin-right: 8px;
+    .line-demo, .point-demo, .node-demo {
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
     }
     .line-demo { width: 22px; height: 0; border-top: 4px solid #2563eb; }
     .point-demo { width: 10px; height: 10px; background: #dc2626; border-radius: 50%; }
+    .node-demo { width: 22px; height: 0; border-top: 4px solid #16a34a; }
     ul { margin: 8px 0 0 16px; padding: 0; }
     .warn { color: #92400e; background: #fffbeb; border-color: #fde68a; }
   </style>
@@ -68,9 +109,13 @@
       <div class="block">
         <label for="nameField">Campo del nombre del cliente</label>
         <select id="nameField"></select>
+
         <label for="clientSearch">Buscar cliente</label>
         <input type="text" id="clientSearch" placeholder="Ej: CLARO / BANCO / CLIENTE XYZ" />
+
         <button id="filterBtn">Filtrar cliente</button>
+        <button id="clearBtn" class="secondary" style="margin-top:8px;">Mostrar toda la red</button>
+
         <div id="matchInfo" class="small" style="margin-top:10px;"></div>
       </div>
 
@@ -86,7 +131,7 @@
       </div>
 
       <div class="block">
-        <div id="status" class="status">Cargue una red para comenzar.</div>
+        <div id="status" class="status">Cargando capa Nodo...</div>
       </div>
 
       <div class="block">
@@ -99,10 +144,10 @@
       <div class="block warn">
         <strong>Importante</strong>
         <ul>
-          <li>El punto depende del orden real de la línea en el archivo.</li>
-          <li>Si el trazado no inicia exactamente en el ODF, el resultado puede correrse.</li>
-          <li>Lo ideal es que cada cliente tenga una línea continua desde el ODF hasta su destino.</li>
-          <li>Si el cliente está dividido en varios segmentos, se puede ajustar luego para concatenarlos.</li>
+          <li>La capa <b>NODO_VVC.geojson</b> se carga automáticamente al abrir la página.</li>
+          <li>La red del cliente se sigue cargando manualmente con el botón.</li>
+          <li>El punto depende del orden real de la línea en el archivo cargado.</li>
+          <li>Si el cliente está dividido en varios segmentos, esta versión toma la línea más larga del filtro.</li>
         </ul>
       </div>
     </aside>
@@ -110,7 +155,8 @@
     <main class="map-wrap">
       <div id="map"></div>
       <div class="legend">
-        <div><span class="line-demo"></span> Red filtrada</div>
+        <div><span class="node-demo"></span> Capa Nodo</div>
+        <div style="margin-top:6px;"><span class="line-demo"></span> Red filtrada</div>
         <div style="margin-top:6px;"><span class="point-demo"></span> Punto estimado de falla</div>
       </div>
     </main>
@@ -120,24 +166,41 @@
   <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
+
   <script>
     const map = L.map('map').setView([4.142, -73.6266], 12);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+
+    const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 20,
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
+
+    const baseEsri = L.tileLayer(
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      {
+        maxZoom: 20,
+        attribution: '&copy; Esri'
+      }
+    );
+
+    const baseMaps = {
+      "OpenStreetMap": baseOSM,
+      "Satélite Esri": baseEsri
+    };
 
     let rawGeoJSON = null;
     let filteredGeoJSON = null;
     let allLayer = null;
     let filteredLayer = null;
     let pointLayer = null;
+    let nodoLayer = null;
     let candidateNameFields = [];
 
     const fileInput = document.getElementById('fileInput');
     const nameField = document.getElementById('nameField');
     const clientSearch = document.getElementById('clientSearch');
     const filterBtn = document.getElementById('filterBtn');
+    const clearBtn = document.getElementById('clearBtn');
     const locateBtn = document.getElementById('locateBtn');
     const distanceInput = document.getElementById('distanceInput');
     const distanceUnit = document.getElementById('distanceUnit');
@@ -150,7 +213,7 @@
       statusBox.className = isError ? 'status warn' : 'status';
     }
 
-    function clearMapLayers() {
+    function clearNetworkLayers() {
       if (allLayer) map.removeLayer(allLayer);
       if (filteredLayer) map.removeLayer(filteredLayer);
       if (pointLayer) map.removeLayer(pointLayer);
@@ -169,6 +232,7 @@
 
     function detectNameFields(geojson) {
       const fields = new Map();
+
       for (const feature of geojson.features || []) {
         const props = feature.properties || {};
         for (const key of Object.keys(props)) {
@@ -178,6 +242,7 @@
 
       const preferred = ['name', 'nombre', 'cliente', 'customer', 'id_cliente', 'razon_social', 'empresa'];
       const keys = Array.from(fields.keys());
+
       keys.sort((a, b) => {
         const ai = preferred.indexOf(a.toLowerCase());
         const bi = preferred.indexOf(b.toLowerCase());
@@ -186,11 +251,13 @@
         if (bi !== -1) return 1;
         return a.localeCompare(b);
       });
+
       return keys;
     }
 
     function renderNameFieldOptions(fields) {
       nameField.innerHTML = '';
+
       fields.forEach(field => {
         const option = document.createElement('option');
         option.value = field;
@@ -201,19 +268,34 @@
 
     function drawAllNetwork() {
       if (!rawGeoJSON) return;
+
       if (allLayer) map.removeLayer(allLayer);
+
       allLayer = L.geoJSON(rawGeoJSON, {
         style: {
           color: '#94a3b8',
           weight: 2,
           opacity: 0.6
+        },
+        onEachFeature: (feature, layer) => {
+          const props = feature.properties || {};
+          const rows = Object.entries(props)
+            .slice(0, 10)
+            .map(([k, v]) => `<strong>${k}</strong>: ${v}`)
+            .join('<br>');
+          layer.bindPopup(rows || 'Sin atributos');
         }
       }).addTo(map);
-      try { map.fitBounds(allLayer.getBounds(), { padding: [20, 20] }); } catch (e) {}
+
+      try {
+        const group = L.featureGroup([allLayer, nodoLayer].filter(Boolean));
+        map.fitBounds(group.getBounds(), { padding: [20, 20] });
+      } catch (e) {}
     }
 
     function extractLineFeatures(featureCollection) {
       const lines = [];
+
       for (const feature of featureCollection.features || []) {
         if (!feature.geometry) continue;
         const type = feature.geometry.type;
@@ -221,7 +303,26 @@
           lines.push(feature);
         }
       }
+
       return { type: 'FeatureCollection', features: lines };
+    }
+
+    function showAllNetwork() {
+      if (!rawGeoJSON) {
+        setStatus('Primero debes cargar una red.', true);
+        return;
+      }
+
+      if (filteredLayer) map.removeLayer(filteredLayer);
+      if (pointLayer) map.removeLayer(pointLayer);
+      filteredLayer = null;
+      pointLayer = null;
+      filteredGeoJSON = null;
+
+      drawAllNetwork();
+      matchInfo.textContent = '';
+      resultBox.innerHTML = 'Mostrando toda la red cargada.';
+      setStatus('Mostrando toda la red.');
     }
 
     function filterClient() {
@@ -272,7 +373,10 @@
         }
       }).addTo(map);
 
-      try { map.fitBounds(filteredLayer.getBounds(), { padding: [30, 30] }); } catch (e) {}
+      try {
+        const group = L.featureGroup([filteredLayer, nodoLayer].filter(Boolean));
+        map.fitBounds(group.getBounds(), { padding: [30, 30] });
+      } catch (e) {}
 
       const names = [...new Set(matched.map(f => (f.properties || {})[field]).filter(Boolean))];
       matchInfo.innerHTML = `Coincidencias: <strong>${matched.length}</strong><br>${names.slice(0, 10).map(n => `<span class="tag">${n}</span>`).join('')}`;
@@ -283,6 +387,7 @@
     function getLongestLine(featureCollection) {
       let selected = null;
       let maxLen = -1;
+
       for (const feature of featureCollection.features) {
         try {
           const len = turf.length(feature, { units: 'kilometers' });
@@ -292,6 +397,7 @@
           }
         } catch (e) {}
       }
+
       return selected;
     }
 
@@ -303,6 +409,7 @@
 
       const distanceValue = Number(distanceInput.value);
       const unit = distanceUnit.value;
+
       if (Number.isNaN(distanceValue) || distanceValue < 0) {
         setStatus('Ingresa una distancia válida.', true);
         return;
@@ -323,6 +430,7 @@
       }
 
       const distanceKm = unit === 'meters' ? distanceValue / 1000 : distanceValue;
+
       if (distanceKm > totalLenKm) {
         setStatus(`La distancia excede la longitud de la línea (${totalLenKm.toFixed(3)} km).`, true);
         resultBox.innerHTML = `La distancia ingresada es mayor que la longitud disponible de la línea seleccionada.<br><br><strong>Longitud línea:</strong> ${totalLenKm.toFixed(3)} km`;
@@ -340,6 +448,7 @@
       const [lng, lat] = point.geometry.coordinates;
 
       if (pointLayer) map.removeLayer(pointLayer);
+
       pointLayer = L.geoJSON(point, {
         pointToLayer: (_, latlng) => L.circleMarker(latlng, {
           radius: 8,
@@ -361,6 +470,7 @@
 
       const clientField = nameField.value;
       const names = [...new Set(filteredGeoJSON.features.map(f => (f.properties || {})[clientField]).filter(Boolean))];
+
       resultBox.innerHTML = `
         <strong>Cliente filtrado:</strong> ${names.join(', ') || 'No identificado'}<br>
         <strong>Distancia OTDR:</strong> ${distanceValue} ${unit === 'meters' ? 'm' : 'km'}<br>
@@ -381,7 +491,11 @@
     async function parseKMZ(file) {
       const zip = await JSZip.loadAsync(file);
       const kmlFileName = Object.keys(zip.files).find(name => name.toLowerCase().endsWith('.kml'));
-      if (!kmlFileName) throw new Error('El KMZ no contiene un archivo KML.');
+
+      if (!kmlFileName) {
+        throw new Error('El KMZ no contiene un archivo KML.');
+      }
+
       const kmlText = await zip.files[kmlFileName].async('string');
       return await parseKMLText(kmlText);
     }
@@ -392,6 +506,7 @@
 
       try {
         let data;
+
         if (ext === 'geojson' || ext === 'json') {
           const text = await file.text();
           data = JSON.parse(text);
@@ -404,9 +519,12 @@
           throw new Error('Formato no soportado.');
         }
 
-        if (!data || !data.features) throw new Error('No se pudo leer la geometría del archivo.');
+        if (!data || !data.features) {
+          throw new Error('No se pudo leer la geometría del archivo.');
+        }
 
         rawGeoJSON = extractLineFeatures(data);
+
         if (!rawGeoJSON.features.length) {
           throw new Error('El archivo no contiene líneas de red.');
         }
@@ -414,7 +532,7 @@
         candidateNameFields = detectNameFields(rawGeoJSON);
         renderNameFieldOptions(candidateNameFields);
 
-        clearMapLayers();
+        clearNetworkLayers();
         filteredGeoJSON = null;
         drawAllNetwork();
 
@@ -427,19 +545,76 @@
       }
     }
 
+    async function cargarNodo() {
+      try {
+        const response = await fetch('./NODO_VVC.geojson');
+
+        if (!response.ok) {
+          throw new Error('No se pudo cargar la capa NODO_VVC.geojson');
+        }
+
+        const data = await response.json();
+
+        nodoLayer = L.geoJSON(data, {
+          style: {
+            color: '#16a34a',
+            weight: 3,
+            opacity: 1
+          },
+          pointToLayer: (feature, latlng) => {
+            return L.circleMarker(latlng, {
+              radius: 8,
+              color: '#166534',
+              weight: 2,
+              fillColor: '#22c55e',
+              fillOpacity: 1
+            });
+          },
+          onEachFeature: (feature, layer) => {
+            const props = feature.properties || {};
+            const html = Object.entries(props)
+              .map(([k, v]) => `<strong>${k}</strong>: ${v}`)
+              .join('<br>');
+
+            layer.bindPopup(html || 'Nodo');
+          }
+        }).addTo(map);
+
+        const overlays = {
+          "Nodo": nodoLayer
+        };
+
+        L.control.layers(baseMaps, overlays).addTo(map);
+
+        try {
+          map.fitBounds(nodoLayer.getBounds(), { padding: [20, 20] });
+        } catch (e) {}
+
+        setStatus('Capa Nodo cargada correctamente. Ahora puedes cargar la red.');
+      } catch (error) {
+        console.error(error);
+        setStatus(`Error cargando NODO_VVC.geojson: ${error.message}`, true);
+      }
+    }
+
     fileInput.addEventListener('change', event => {
       const file = event.target.files[0];
       if (file) loadFile(file);
     });
 
     filterBtn.addEventListener('click', filterClient);
+    clearBtn.addEventListener('click', showAllNetwork);
     locateBtn.addEventListener('click', locateFault);
+
     clientSearch.addEventListener('keydown', e => {
       if (e.key === 'Enter') filterClient();
     });
+
     distanceInput.addEventListener('keydown', e => {
       if (e.key === 'Enter') locateFault();
     });
+
+    cargarNodo();
   </script>
 </body>
 </html>
