@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventario Visual de Red de Fibra</title>
+  <style>
+    :root{
+      --bg:#07111f; --panel:#0f172a; --line:#223248; --text:#e5eefc; --muted:#8ea3bf;
+      --primary:#26c6ff; --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444; --free:#334155;
+      --shadow:0 18px 40px rgba(0,0,0,.35); --u-height:14px; --rack-units:45;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--text);overflow:hidden;
+      background:
+        radial-gradient(circle at 20% 10%, rgba(38,198,255,.10), transparent 25%),
+        radial-gradient(circle at 80% 20%, rgba(34,197,94,.08), transparent 20%),
+        linear-gradient(180deg, #020817 0%, #08111f 100%);
+    }
+    .app{height:100vh;display:grid;grid-template-rows:auto 1fr}
+    .topbar{
+      padding:14px 16px;display:grid;grid-template-columns:230px 1fr 180px 170px 150px 150px 150px 120px;gap:10px;
+      border-bottom:1px solid rgba(38,50,69,.5);background:rgba(7,17,31,.68);backdrop-filter:blur(8px);align-items:center;
+    }
+    .brand{font-size:20px;font-weight:700;white-space:nowrap}
+    input,select,textarea,button{
+      width:100%;border-radius:12px;border:1px solid var(--line);background:#09111f;color:var(--text);
+      padding:10px 12px;font-size:14px;outline:none;
+    }
+    input:focus,select:focus,textarea:focus{border-color:#3dbffc;box-shadow:0 0 0 3px rgba(38,198,255,.10)}
+    textarea{min-height:80px;resize:vertical}
+    button{background:linear-gradient(135deg,#0ea5e9,#2563eb);border:none;font-weight:700;cursor:pointer}
+    button.secondary{background:#162033;border:1px solid var(--line)}
+    .workspace-wrap{position:relative;min-width:0;min-height:0;padding:14px 16px 16px}
+    .workspace{
+      position:relative;width:100%;height:100%;min-height:500px;border:1px solid var(--line);border-radius:22px;
+      background:
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(9,17,31,.95), rgba(11,19,36,.98));
+      background-size:32px 32px,32px 32px,auto;overflow:auto;box-shadow:inset 0 0 40px rgba(0,0,0,.25);
+    }
+    .workspace-title{position:absolute;top:24px;left:32px;font-size:13px;color:var(--muted);z-index:3;pointer-events:none}
+    .mini-legend{
+      position:absolute;right:30px;top:20px;display:flex;gap:10px;z-index:3;background:rgba(6,16,29,.7);
+      border:1px solid #273549;border-radius:999px;padding:8px 10px;backdrop-filter:blur(8px)
+    }
+    .legend-item{display:flex;align-items:center;gap:6px;color:#d7e3f3;font-size:12px}
+    .dot{width:11px;height:11px;border-radius:4px;border:1px solid rgba(255,255,255,.2)}
+    .dot.free{background:var(--free)} .dot.occupied{background:var(--ok)} .dot.reserved{background:var(--warn)} .dot.danado{background:var(--danger)}
+    .empty-state{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:18px;text-align:center;padding:20px}
+    #linkOverlay{
+      position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:50; overflow:visible;
+    }
+    .rack-node{
+      position:absolute;border:1px solid #304056;border-radius:22px;
+      background:linear-gradient(180deg, rgba(15,23,42,.96), rgba(11,19,36,.98));
+      box-shadow:0 20px 45px rgba(0,0,0,.38);overflow:hidden;user-select:none; z-index:10;
+    }
+    .rack-node.dragging{opacity:.92;box-shadow:0 28px 60px rgba(0,0,0,.5);border-color:#58d2ff}
+
+    .rack-resizer{
+      position:absolute;
+      top:0;
+      right:0;
+      width:16px;
+      height:100%;
+      cursor:ew-resize;
+      z-index:60;
+      background:linear-gradient(90deg, rgba(255,255,255,0), rgba(38,198,255,.25));
+      border-left:1px dashed rgba(125,223,255,.6);
+    }
+    .rack-resizer:hover{
+      background:linear-gradient(90deg, rgba(255,255,255,0), rgba(38,198,255,.4));
+    }
+
+    .rack-header{
+      display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 12px;
+      background:linear-gradient(90deg, rgba(14,165,233,.18), rgba(37,99,235,.08));
+      border-bottom:1px solid var(--line);cursor:grab
+    }
+    .rack-header:active{cursor:grabbing}
+    .rack-title{font-weight:700;font-size:14px}
+    .rack-sub{color:var(--muted);font-size:11px;margin-top:3px}
+    .rack-badge{padding:4px 8px;border-radius:999px;border:1px solid #35506e;font-size:10px;color:#d9efff;background:rgba(22,34,51,.8);white-space:nowrap}
+
+    .rack-node.compact{width:310px;min-height:120px}
+    .rack-body-compact{padding:10px;display:grid;gap:8px}
+    .eq-box{
+      border:1px solid #2d3c50;border-radius:14px;background:linear-gradient(180deg, rgba(16,25,39,.95), rgba(21,34,53,.96));padding:8px;
+    }
+    .eq-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
+    .eq-name{font-weight:700;font-size:12px;line-height:1.2}
+    .eq-meta{color:var(--muted);font-size:10px;margin-top:2px;line-height:1.2}
+    .eq-type{font-size:10px;padding:3px 7px;border-radius:999px;border:1px solid #314255;color:#d5e8fb;background:#102033;white-space:nowrap}
+    .eq-u{font-size:10px;color:#c2d7ee}
+    .ports{display:grid;grid-template-columns:repeat(auto-fill,minmax(14px,1fr));gap:3px}
+    .port{
+      height:14px;border-radius:8px;border:1px solid rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center;
+      font-size:7px;font-weight:700;cursor:pointer;position:relative;transition:transform .12s ease, border-color .12s ease, box-shadow .12s ease;
+    }
+    .port:hover{transform:translateY(-1px) scale(1.04);border-color:#7ddfff;box-shadow:0 0 0 3px rgba(38,198,255,.12);z-index:5}
+    .port.free{background:var(--free)} .port.occupied{background:var(--ok)} .port.reserved{background:var(--warn)} .port.danado{background:var(--danger)}
+    .port.connecting{box-shadow:0 0 0 3px rgba(255,215,0,.35); border-color:#ffd84d}
+    .port::after{
+      content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);
+      background:#06101d;color:#d8e6f8;font-size:11px;padding:6px 8px;border-radius:8px;border:1px solid #2b3a4d;
+      white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s ease;z-index:20
+    }
+    .port:hover::after{opacity:1}
+
+    .rack-node.racku{width:420px}
+    .rack-visual{display:grid;grid-template-columns:44px 1fr;padding:10px;gap:10px}
+    .u-ruler{
+      position:relative;height:calc(var(--rack-units) * var(--u-height));border:1px solid #2d3c50;border-radius:14px;
+      background:linear-gradient(180deg, rgba(8,14,27,.95), rgba(13,23,38,.96));overflow:hidden
+    }
+    .u-label{
+      position:absolute;left:0;width:100%;height:var(--u-height);font-size:9px;color:#b7c8df;
+      display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(255,255,255,.04)
+    }
+    .rack-slots{
+      position:relative;height:calc(var(--rack-units) * var(--u-height));border:1px solid #2d3c50;border-radius:14px;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          rgba(255,255,255,.03) 0,
+          rgba(255,255,255,.03) calc(var(--u-height) - 1px),
+          rgba(255,255,255,.08) calc(var(--u-height) - 1px),
+          rgba(255,255,255,.08) var(--u-height)
+        ),
+        linear-gradient(180deg, rgba(16,25,39,.95), rgba(21,34,53,.96));
+      overflow:hidden;
+    }
+    .equipment-unit{
+      position:absolute;left:6px;right:6px;height:calc(var(--u-height) - 2px);border-radius:7px;display:flex;
+      align-items:center;justify-content:space-between;gap:8px;padding:0 8px;border:1px solid #36506a;
+      background:linear-gradient(90deg, rgba(20,48,78,.96), rgba(14,29,48,.95));cursor:pointer;overflow:hidden;
+    }
+    .equipment-unit:hover{border-color:#6edcff;box-shadow:0 0 0 2px rgba(38,198,255,.12)}
+    .equipment-unit .eq-left{min-width:0;display:flex;align-items:center;gap:8px;overflow:hidden}
+    .equipment-unit .eq-name{font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .equipment-unit .eq-type{font-size:8px;padding:1px 5px;border-radius:999px;border:1px solid #3d5976;background:#0e2136;color:#d9eeff;white-space:nowrap}
+    .equipment-unit .eq-right{font-size:8px;color:#c0d1e8;white-space:nowrap}
+
+    .toast{
+      position:fixed;right:18px;bottom:18px;background:#07111f;border:1px solid #2f4258;color:#e4eef8;padding:12px 14px;border-radius:12px;box-shadow:var(--shadow);z-index:9999
+    }
+    .hidden{display:none}
+    .modal-backdrop{
+      position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:9998;padding:20px
+    }
+    .modal-backdrop.show{display:flex}
+    .modal{width:min(520px,100%);background:linear-gradient(180deg, rgba(15,23,42,.98), rgba(11,19,36,.99));border:1px solid #304056;border-radius:20px;box-shadow:0 24px 60px rgba(0,0,0,.45);padding:16px}
+    .modal.large{width:min(980px,100%);max-height:92vh;overflow:auto}
+    .modal.medium{width:min(760px,100%);max-height:92vh;overflow:auto}
+    .modal h3{margin:0 0 12px;font-size:18px}
+    .modal-subtitle{color:var(--muted);font-size:12px;margin:-4px 0 14px 0}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .section-card{border:1px solid #2d3c50;border-radius:16px;background:rgba(10,18,31,.72);padding:14px}
+    .section-card h4{margin:0 0 12px 0;font-size:15px;color:#dff3ff}
+    .field{margin-bottom:10px}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+    .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}.actions button{width:auto;min-width:130px}
+    .ports-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(28px,1fr));gap:6px}
+    .port-box{height:28px;border-radius:8px;border:1px solid rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;cursor:pointer;position:relative}
+    .port-box.free{background:var(--free)} .port-box.occupied{background:var(--ok)} .port-box.reserved{background:var(--warn)} .port-box.danado{background:var(--danger)}
+    .port-box:hover{transform:translateY(-1px);border-color:#7ddfff;box-shadow:0 0 0 3px rgba(38,198,255,.12)}
+
+    @media (max-width:1400px){
+      .topbar{grid-template-columns:1fr 1fr 1fr}
+      .brand{grid-column:1/-1}
+    }
+    @media (max-width:900px){
+      .form-grid{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="brand">Inventario Visual Fibra</div>
+      <input id="searchClient" placeholder="Buscar cliente por nombre o ID de servicio" onkeydown="if(event.key==='Enter'){searchClients()}">
+      <select id="rackFilter" onchange="loadDashboard()"><option value="">Todos los racks</option></select>
+      <select id="viewMode" onchange="changeViewMode()">
+        <option value="compact">Vista compacta</option>
+        <option value="racku">Vista rack U</option>
+      </select>
+      <button class="secondary" onclick="searchClients()">Buscar cliente</button>
+      <button class="secondary" onclick="openRackModal()">Agregar rack</button>
+      <button class="secondary" onclick="openEquipmentModal()">Agregar equipo</button>
+      <select id="toggleConnections" onchange="changeConnectionsVisibility()">
+        <option value="show">Mostrar conexiones</option>
+        <option value="hide">Ocultar conexiones</option>
+      </select>
+      <button class="secondary" onclick="resetLayout()">Reset plano</button>
+    </div>
+
+    <div class="workspace-wrap">
+      <div class="workspace-title" id="workspaceTitle">Plano visual del nodo · vista compacta ordenada por posición del rack</div>
+      <div class="mini-legend">
+        <div class="legend-item"><span class="dot free"></span> Libre</div>
+        <div class="legend-item"><span class="dot occupied"></span> Ocupado</div>
+        <div class="legend-item"><span class="dot reserved"></span> Reservado</div>
+        <div class="legend-item"><span class="dot danado"></span> Dañado</div>
+      </div>
+      <div id="workspace" class="workspace">
+        <svg id="linkOverlay"></svg>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <div id="rackModal" class="modal-backdrop">
+    <div class="modal">
+      <h3>Agregar rack</h3>
+      <input id="rackNombre" placeholder="Nombre del rack">
+      <input id="rackUbicacion" placeholder="Ubicación">
+      <textarea id="rackDescripcion" placeholder="Descripción"></textarea>
+      <div class="actions">
+        <button class="secondary" onclick="closeRackModal()">Cancelar</button>
+        <button onclick="createRack()">Guardar rack</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="equipmentModal" class="modal-backdrop">
+    <div class="modal">
+      <h3>Agregar equipo</h3>
+      <div class="modal-subtitle">La posición del rack usa numeración U desde abajo hacia arriba. Ejemplo: 1 está abajo, 45 arriba.</div>
+      <select id="equipmentRack"></select>
+      <select id="equipmentTipo">
+        <option value="switch">Switch</option>
+        <option value="odf">ODF</option>
+        <option value="router">Router</option>
+      </select>
+      <input id="equipmentNombre" placeholder="Nombre del equipo">
+      <input id="equipmentDemonico" placeholder="Demónico">
+      <input id="equipmentMarca" placeholder="Marca">
+      <input id="equipmentModelo" placeholder="Modelo">
+      <input id="equipmentSerial" placeholder="Serial (opcional)">
+      <input id="equipmentPuertos" type="number" min="1" placeholder="Cantidad de puertos">
+      <input id="equipmentUnits" type="number" min="1" max="45" placeholder="Unidades en rack (U)">
+      <input id="equipmentPosicion" type="number" min="1" max="45" placeholder="Posición inferior en rack (1 a 45)">
+      <textarea id="equipmentObs" placeholder="Observaciones"></textarea>
+      <div class="actions">
+        <button class="secondary" onclick="closeEquipmentModal()">Cancelar</button>
+        <button onclick="createEquipment()">Guardar equipo</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="equipmentViewModal" class="modal-backdrop">
+    <div class="modal medium">
+      <h3 id="evTitle">Puertos del equipo</h3>
+      <div class="modal-subtitle" id="evSubtitle">Haz clic sobre un puerto para editar cliente y enlaces.</div>
+      <div class="section-card">
+        <div id="equipmentPortsGrid" class="ports-grid"></div>
+      </div>
+      <div class="actions">
+        <button class="secondary" onclick="closeEquipmentViewModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="portModal" class="modal-backdrop">
+    <div class="modal large">
+      <h3>Asignación de cliente y enlace</h3>
+      <div class="modal-subtitle" id="portModalSubtitle">Configura cliente, origen y destino.</div>
+
+      <div class="section-card" style="margin-bottom:16px;">
+        <h4>Datos del cliente</h4>
+        <div class="form-grid">
+          <div class="field"><label>Nombre del cliente</label><input id="pmClientName" placeholder="Ej. MOVISTAR"></div>
+          <div class="field"><label>ID del servicio / cliente</label><input id="pmServiceId" placeholder="Ej. CI123456"></div>
+          <div class="field">
+            <label>Estado del puerto</label>
+            <select id="pmStatus">
+              <option value="libre">Libre</option>
+              <option value="ocupado">Ocupado</option>
+              <option value="reservado">Reservado</option>
+              <option value="danado">Dañado</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="section-card">
+          <h4>Origen</h4>
+          <div class="field"><label>Rack Origen</label><select id="pmOriginRack"></select></div>
+          <div class="field"><label>Equipo Origen</label><select id="pmOriginEquipment"></select></div>
+          <div class="field"><label>Puerto Origen</label><select id="pmOriginPort"></select></div>
+        </div>
+
+        <div class="section-card">
+          <h4>Destino</h4>
+          <div class="field"><label>Rack Destino</label><select id="pmDestRack"></select></div>
+          <div class="field"><label>Equipo / ODF Destino</label><select id="pmDestEquipment"></select></div>
+          <div class="field"><label>Puerto Destino</label><select id="pmDestPort"></select></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="secondary" onclick="clearPortFields()">Limpiar puerto</button>
+        <button class="secondary" onclick="closePortModal()">Cancelar</button>
+        <button onclick="savePortModal()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    let supabase = null;
+    let racks = [], equipments = [], ports = [], clients = [], assignments = [], links = [];
+    let currentPortContext = null;
+    let pendingDragPrefill = null;
+    let filteredClientPortIds = null;
+    let filteredClientLinkKeys = null;
+    let dragConnection = {
+      sourcePortId: null,
+      sourceEl: null,
+      active: false,
+      line: null,
+      moved: false
+    };
+
+    const TOTAL_U = 45;
+    const POS_KEY = 'rack_visual_positions_v4';
+    const VIEW_KEY = 'rack_visual_view_mode';
+    const CONNECTIONS_KEY = 'rack_visual_show_connections';
+    const DEFAULT_URL = 'https://lvwmpwnzavqdspdfvceb.supabase.co';
+    const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2d21wd256YXZxZHNwZGZ2Y2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxOTg3MzYsImV4cCI6MjA5MTc3NDczNn0.u6g4OCm4kl-LEmyIf9VWwf43cdqYbik7Y60rdKQ8npI';
+
+    function getViewMode() {
+      return localStorage.getItem(VIEW_KEY) || 'compact';
+    }
+
+    function setViewMode(mode) {
+      localStorage.setItem(VIEW_KEY, mode);
+      document.getElementById('viewMode').value = mode;
+      document.getElementById('workspaceTitle').textContent =
+        mode === 'compact'
+          ? 'Plano visual del nodo · vista compacta ordenada por posición del rack'
+          : 'Plano visual del nodo · posiciones U del rack de abajo hacia arriba';
+    }
+
+    window.changeViewMode = function() {
+      setViewMode(document.getElementById('viewMode').value);
+      renderWorkspace();
+    };
+
+    function getConnectionsVisible() {
+      return (localStorage.getItem(CONNECTIONS_KEY) || 'show') === 'show';
+    }
+
+    function setConnectionsVisible(value) {
+      localStorage.setItem(CONNECTIONS_KEY, value ? 'show' : 'hide');
+      const sel = document.getElementById('toggleConnections');
+      if (sel) sel.value = value ? 'show' : 'hide';
+    }
+
+    window.changeConnectionsVisibility = function() {
+      setConnectionsVisible(document.getElementById('toggleConnections').value === 'show');
+      drawPersistentLinks();
+    };
+
+    function initSupabase() {
+      let url = localStorage.getItem('sb_url');
+      let key = localStorage.getItem('sb_key');
+      if (!url) url = DEFAULT_URL;
+      if (!key) key = DEFAULT_KEY;
+      localStorage.setItem('sb_url', url);
+      localStorage.setItem('sb_key', key);
+      supabase = createClient(url, key);
+      setViewMode(getViewMode());
+      setConnectionsVisible(getConnectionsVisible());
+    }
+
+    
+    const WIDTH_KEY = 'rack_widths_v1';
+    function getWidths(){ try{return JSON.parse(localStorage.getItem(WIDTH_KEY)||'{}')}catch{return{}}}
+    function saveWidth(id,w){ const d=getWidths(); d[id]=w; localStorage.setItem(WIDTH_KEY,JSON.stringify(d));}
+    function getWidth(id,def){ const d=getWidths(); return d[id]||def;}
+    function attachResizer(node,rackId){
+      if(node.querySelector('.rack-resizer')) return;
+      const grip=document.createElement('div');
+      grip.className='rack-resizer';
+      node.appendChild(grip);
+      let active=false,startX=0,startW=0;
+      grip.addEventListener('mousedown',e=>{
+        e.stopPropagation(); e.preventDefault();
+        active=true; startX=e.clientX; startW=node.offsetWidth;
+        document.body.style.cursor='ew-resize';
+      });
+      window.addEventListener('mousemove',e=>{
+        if(!active) return;
+        const w=Math.max(260,Math.min(900,startW+(e.clientX-startX)));
+        node.style.width=w+'px';
+        requestAnimationFrame(drawPersistentLinks);
+      });
+      window.addEventListener('mouseup',()=>{
+        if(!active) return;
+        active=false;
+        document.body.style.cursor='default';
+        saveWidth(rackId,node.offsetWidth);
+      });
+    }
+
+    function getSavedPositions() {
+      try { return JSON.parse(localStorage.getItem(POS_KEY) || '{}'); }
+      catch { return {}; }
+    }
+
+    function saveRackPosition(rackId, x, y) {
+      const data = getSavedPositions();
+      data[rackId] = { x, y };
+      localStorage.setItem(POS_KEY, JSON.stringify(data));
+    }
+
+    window.resetLayout = function() {
+      localStorage.removeItem(POS_KEY);
+      clearClientFilter();
+      document.getElementById('searchClient').value = '';
+      renderWorkspace();
+      toast('Plano reiniciado');
+    };
+
+    window.openRackModal = () => document.getElementById('rackModal').classList.add('show');
+    window.closeRackModal = () => document.getElementById('rackModal').classList.remove('show');
+    window.openEquipmentModal = () => document.getElementById('equipmentModal').classList.add('show');
+    window.closeEquipmentModal = () => document.getElementById('equipmentModal').classList.remove('show');
+    window.closePortModal = () => document.getElementById('portModal').classList.remove('show');
+    window.closeEquipmentViewModal = () => document.getElementById('equipmentViewModal').classList.remove('show');
+
+    ['rackModal','equipmentModal','portModal','equipmentViewModal'].forEach(id => {
+      document.addEventListener('click', (e) => {
+        if (e.target && e.target.id === id) document.getElementById(id).classList.remove('show');
+      });
+    });
+
+    async function fetchAll() {
+      if (!supabase) return;
+      const rackFilter = document.getElementById('rackFilter').value;
+
+      const [racksRes, eqRes, portsRes, clientsRes, assignmentsRes, linksRes] = await Promise.all([
+        supabase.from('racks').select('*').order('nombre'),
+        supabase.from('equipment').select('*').order('posicion_rack').order('nombre'),
+        supabase.from('ports').select('*').order('numero_puerto'),
+        supabase.from('clients').select('*').order('nombre_cliente'),
+        supabase.from('port_assignments').select('*'),
+        supabase.from('port_links').select('*')
+      ]);
+
+      if (racksRes.error || eqRes.error || portsRes.error || clientsRes.error || assignmentsRes.error || linksRes.error) {
+        console.error(racksRes.error, eqRes.error, portsRes.error, clientsRes.error, assignmentsRes.error, linksRes.error);
+        toast('Error cargando datos');
+        return;
+      }
+
+      racks = racksRes.data || [];
+      equipments = eqRes.data || [];
+      ports = portsRes.data || [];
+      clients = clientsRes.data || [];
+      assignments = assignmentsRes.data || [];
+      links = linksRes.data || [];
+
+      if (rackFilter) {
+        equipments = equipments.filter(e => e.rack_id === rackFilter);
+        const equipmentIds = equipments.map(e => e.id);
+        ports = ports.filter(p => equipmentIds.includes(p.equipment_id));
+        const portIds = ports.map(p => p.id);
+        assignments = assignments.filter(a => portIds.includes(a.port_id));
+        links = links.filter(l => portIds.includes(l.port_id_origen) || portIds.includes(l.port_id_destino));
+        racks = racks.filter(r => r.id === rackFilter);
+      }
+    }
+
+    function renderFilters() {
+      const rackSelects = [document.getElementById('equipmentRack'), document.getElementById('rackFilter')];
+      rackSelects.forEach((select, idx) => {
+        const current = select.value;
+        select.innerHTML = idx === 1 ? '<option value="">Todos los racks</option>' : '<option value="">Selecciona rack</option>';
+        racks.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r.id;
+          opt.textContent = r.nombre;
+          select.appendChild(opt);
+        });
+        select.value = current;
+      });
+    }
+
+    const getRackById = id => racks.find(r => r.id === id) || null;
+    const getEquipmentById = id => equipments.find(e => e.id === id) || null;
+    const getPortById = id => ports.find(p => p.id === id) || null;
+    const getAssignmentByPort = portId => assignments.find(a => a.port_id === portId) || null;
+
+    function isOdfEquipment(eq) {
+      if (!eq) return false;
+      const tipo = String(eq.tipo || '').toLowerCase();
+      const nombre = String(eq.nombre || '').toLowerCase();
+      const demonico = String(eq.demonico || '').toLowerCase();
+      return tipo === 'odf' || nombre.includes('odf') || demonico.includes('odf');
+    }
+
+    function sectionForEquipment(eq) {
+      return isOdfEquipment(eq) ? 'destino' : 'origen';
+    }
+
+    async function syncRemotePortMetadata(remotePortId, sourcePortId) {
+      const sourceClient = getClientByPort(sourcePortId);
+      const remoteAssignment = assignments.find(a => a.port_id === remotePortId);
+
+      const updPort = await supabase.from('ports').update({ estado: 'ocupado' }).eq('id', remotePortId);
+      if (updPort.error) throw updPort.error;
+
+      if (!sourceClient) return;
+
+      const clientId = sourceClient.id;
+      if (remoteAssignment) {
+        const updAssign = await supabase.from('port_assignments')
+          .update({ client_id: clientId })
+          .eq('id', remoteAssignment.id);
+        if (updAssign.error) throw updAssign.error;
+      } else {
+        const insAssign = await supabase.from('port_assignments')
+          .insert({ port_id: remotePortId, client_id: clientId });
+        if (insAssign.error) throw insAssign.error;
+      }
+    }
+
+    function getClientByPort(portId) {
+      const assignment = getAssignmentByPort(portId);
+      if (!assignment) return null;
+      return clients.find(c => c.id === assignment.client_id) || null;
+    }
+    function isPortInClientFilter(portId) {
+      return !filteredClientPortIds || filteredClientPortIds.has(portId);
+    }
+
+    function isLinkInClientFilter(link) {
+      if (!filteredClientLinkKeys) return true;
+      const k1 = `${link.port_id_origen}|${link.port_id_destino}`;
+      const k2 = `${link.port_id_destino}|${link.port_id_origen}`;
+      return filteredClientLinkKeys.has(k1) || filteredClientLinkKeys.has(k2);
+    }
+
+    function buildClientFilterFromResults(results) {
+      const portIds = new Set();
+      const linkKeys = new Set();
+
+      results.forEach(r => {
+        if (r.port_id) portIds.add(r.port_id);
+      });
+
+      // Expand through all connections reachable from matched ports
+      let changed = true;
+      while (changed) {
+        changed = false;
+        links.forEach(link => {
+          if (portIds.has(link.port_id_origen) || portIds.has(link.port_id_destino)) {
+            const before = portIds.size;
+            portIds.add(link.port_id_origen);
+            portIds.add(link.port_id_destino);
+            linkKeys.add(`${link.port_id_origen}|${link.port_id_destino}`);
+            if (portIds.size !== before) changed = true;
+          }
+        });
+      }
+
+      filteredClientPortIds = portIds;
+      filteredClientLinkKeys = linkKeys;
+    }
+
+    function clearClientFilter() {
+      filteredClientPortIds = null;
+      filteredClientLinkKeys = null;
+    }
+
+    function getLinkSummary(portId) {
+      const portLinks = links.filter(l => l.port_id_origen === portId || l.port_id_destino === portId);
+      if (!portLinks.length) return 'Sin enlace';
+      return portLinks.map(link => {
+        const otherPortId = link.port_id_origen === portId ? link.port_id_destino : link.port_id_origen;
+        const otherPort = ports.find(p => p.id === otherPortId);
+        const otherEq = equipments.find(e => e.id === otherPort?.equipment_id);
+        return `${otherEq?.nombre || 'Equipo'} / P${otherPort?.numero_puerto || '-'}`;
+      }).join(' | ');
+    }
+
+    function portClass(status) {
+      if (status === 'ocupado') return 'occupied';
+      if (status === 'reservado') return 'reserved';
+      if (status === 'danado') return 'danado';
+      return 'free';
+    }
+
+    function sortByRackPositionForDisplay(list) {
+      return [...list].sort((a, b) => {
+        const pa = Number(a.posicion_rack || 0);
+        const pb = Number(b.posicion_rack || 0);
+        return pb - pa;
+      });
+    }
+
+    function makeDraggable(node, rackId) {
+      const header = node.querySelector('.rack-header');
+      const workspace = document.getElementById('workspace');
+      let isDragging = false, startX = 0, startY = 0, initialLeft = 0, initialTop = 0;
+
+      header.addEventListener('mousedown', (e) => {
+        if (dragConnection.active) return;
+        isDragging = true;
+        node.classList.add('dragging');
+        startX = e.clientX;
+        startY = e.clientY;
+        initialLeft = parseInt(node.style.left || '0', 10);
+        initialTop = parseInt(node.style.top || '0', 10);
+        document.body.style.cursor = 'grabbing';
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        let newLeft = initialLeft + dx;
+        let newTop = initialTop + dy;
+        const maxLeft = Math.max(0, workspace.scrollWidth - node.offsetWidth);
+        const maxTop = Math.max(0, workspace.scrollHeight - node.offsetHeight);
+        newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+        newTop = Math.max(0, Math.min(newTop, maxTop));
+        node.style.left = newLeft + 'px';
+        node.style.top = newTop + 'px';
+        requestAnimationFrame(drawPersistentLinks);
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (!isDragging) return;
+        isDragging = false;
+        node.classList.remove('dragging');
+        document.body.style.cursor = 'default';
+        saveRackPosition(rackId, parseInt(node.style.left || '0', 10), parseInt(node.style.top || '0', 10));
+        requestAnimationFrame(drawPersistentLinks);
+      });
+    }
+
+    function buildRuler(container) {
+      container.innerHTML = '';
+      for (let u = TOTAL_U; u >= 1; u--) {
+        const label = document.createElement('div');
+        label.className = 'u-label';
+        label.style.top = ((TOTAL_U - u) * 14) + 'px';
+        label.textContent = u;
+        container.appendChild(label);
+      }
+    }
+
+    function getOverlay() {
+      return document.getElementById('linkOverlay');
+    }
+
+    function ensureOverlaySize() {
+      const workspace = document.getElementById('workspace');
+      const overlay = getOverlay();
+      overlay.setAttribute('width', workspace.scrollWidth);
+      overlay.setAttribute('height', workspace.scrollHeight);
+      overlay.style.width = workspace.scrollWidth + 'px';
+      overlay.style.height = workspace.scrollHeight + 'px';
+    }
+
+    function getPortCenter(el) {
+      const workspace = document.getElementById('workspace');
+      const wr = workspace.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      return {
+        x: (r.left - wr.left) + workspace.scrollLeft + (r.width / 2),
+        y: (r.top - wr.top) + workspace.scrollTop + (r.height / 2)
+      };
+    }
+
+    function clearOverlay() {
+      const overlay = getOverlay();
+      overlay.innerHTML = '';
+    }
+
+    function drawLine(x1, y1, x2, y2, color = '#ffd84d', width = 2.5, dashed = false) {
+      const overlay = getOverlay();
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', x1);
+      line.setAttribute('y1', y1);
+      line.setAttribute('x2', x2);
+      line.setAttribute('y2', y2);
+      line.setAttribute('stroke', color);
+      line.setAttribute('stroke-width', width);
+      line.setAttribute('stroke-linecap', 'round');
+      if (dashed) line.setAttribute('stroke-dasharray', '6 6');
+      overlay.appendChild(line);
+
+      const c1 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c1.setAttribute('cx', x1); c1.setAttribute('cy', y1); c1.setAttribute('r', 3.5);
+      c1.setAttribute('fill', color);
+      overlay.appendChild(c1);
+
+      const c2 = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      c2.setAttribute('cx', x2); c2.setAttribute('cy', y2); c2.setAttribute('r', 3.5);
+      c2.setAttribute('fill', color);
+      overlay.appendChild(c2);
+
+      return line;
+    }
+
+    function drawPersistentLinks() {
+      const mode = getViewMode();
+      ensureOverlaySize();
+      clearOverlay();
+      if (mode !== 'compact') return;
+
+      if (getConnectionsVisible()) {
+        links.forEach(link => {
+          if (!isLinkInClientFilter(link)) return;
+          const p1 = document.querySelector(`.port[data-port-id="${link.port_id_origen}"]`);
+          const p2 = document.querySelector(`.port[data-port-id="${link.port_id_destino}"]`);
+          if (!p1 || !p2) return;
+          const c1 = getPortCenter(p1);
+          const c2 = getPortCenter(p2);
+          drawLine(c1.x, c1.y, c2.x, c2.y, '#ffd84d', 2.5, false);
+        });
+      }
+
+      if (dragConnection.active && dragConnection.sourceEl && dragConnection.lineMouse) {
+        const c1 = getPortCenter(dragConnection.sourceEl);
+        drawLine(c1.x, c1.y, dragConnection.lineMouse.x, dragConnection.lineMouse.y, '#ffe16b', 2, true);
+      }
+    }
+
+    function setupPortInteraction(portEl, eq, port, client) {
+      let startX = 0, startY = 0, pointerDown = false;
+
+      portEl.addEventListener('mousedown', (e) => {
+        if (getViewMode() !== 'compact') return;
+        pointerDown = true;
+        dragConnection.sourcePortId = port.id;
+        dragConnection.sourceEl = portEl;
+        dragConnection.active = false;
+        dragConnection.moved = false;
+        startX = e.clientX;
+        startY = e.clientY;
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (!pointerDown || dragConnection.sourcePortId !== port.id || getViewMode() !== 'compact') return;
+
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        const distance = Math.sqrt(dx*dx + dy*dy);
+
+        if (distance > 4) {
+          dragConnection.active = true;
+          dragConnection.moved = true;
+          dragConnection.lineMouse = {
+            x: e.clientX - document.getElementById('workspace').getBoundingClientRect().left + document.getElementById('workspace').scrollLeft,
+            y: e.clientY - document.getElementById('workspace').getBoundingClientRect().top + document.getElementById('workspace').scrollTop
+          };
+          dragConnection.sourceEl.classList.add('connecting');
+          requestAnimationFrame(drawPersistentLinks);
+        }
+      });
+
+      portEl.addEventListener('mouseup', (e) => {
+        if (getViewMode() !== 'compact') return;
+
+        if (dragConnection.active && dragConnection.sourcePortId && dragConnection.sourcePortId !== port.id) {
+          e.stopPropagation();
+          const sourcePortId = dragConnection.sourcePortId;
+          endConnectionDrag();
+          handlePortConnection(sourcePortId, port.id);
+          return;
+        }
+
+        if (!dragConnection.moved) {
+          openPortModal(eq, port, client);
+        }
+        endConnectionDrag();
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (pointerDown) {
+          if (dragConnection.active && dragConnection.sourcePortId === port.id) {
+            endConnectionDrag();
+          }
+          pointerDown = false;
+        }
+      });
+    }
+
+    function endConnectionDrag() {
+      if (dragConnection.sourceEl) dragConnection.sourceEl.classList.remove('connecting');
+      dragConnection.sourcePortId = null;
+      dragConnection.sourceEl = null;
+      dragConnection.active = false;
+      dragConnection.moved = false;
+      dragConnection.lineMouse = null;
+      requestAnimationFrame(drawPersistentLinks);
+    }
+
+    function handlePortConnection(sourcePortId, targetPortId) {
+      const sourcePort = getPortById(sourcePortId);
+      const targetPort = getPortById(targetPortId);
+      const sourceEq = getEquipmentById(sourcePort?.equipment_id);
+      const targetEq = getEquipmentById(targetPort?.equipment_id);
+      if (!sourcePort || !targetPort || !sourceEq || !targetEq) return;
+
+      const duplicate = links.find(l =>
+        (l.port_id_origen === sourcePortId && l.port_id_destino === targetPortId) ||
+        (l.port_id_origen === targetPortId && l.port_id_destino === sourcePortId)
+      );
+      if (duplicate) {
+        toast('Esos puertos ya están conectados');
+        return;
+      }
+
+      // Restricción solicitada también para arrastre:
+      // no permitir conectar hacia un punto B que ya tenga información en ORIGEN
+      const targetIncoming = links.find(l => l.port_id_destino === targetPortId);
+      if (targetIncoming) {
+        toast('No puedes arrastrar hacia ese puerto porque ya tiene información en la sección ORIGEN');
+        return;
+      }
+
+      pendingDragPrefill = { sourcePortId, targetPortId };
+      const currentClient = getClientByPort(targetPortId);
+      openPortModal(targetEq, targetPort, currentClient, pendingDragPrefill);
+      toast('Conexión detectada. Revisa y guarda el formulario.');
+    }
+
+    function renderCompactRack(node, rack, rackEquipments) {
+      node.classList.add('compact');
+      node.innerHTML = `
+        <div class="rack-header">
+          <div>
+            <div class="rack-title">${rack.nombre}</div>
+            <div class="rack-sub">${rack.ubicacion || 'Sin ubicación'} · equipos ordenados por U</div>
+          </div>
+          <div class="rack-badge">${rackEquipments.length} equipos</div>
+        </div>
+        <div class="rack-body-compact"></div>
+      `;
+
+      const body = node.querySelector('.rack-body-compact');
+      const ordered = sortByRackPositionForDisplay(rackEquipments);
+
+      if (!ordered.length) {
+        const empty = document.createElement('div');
+        empty.className = 'eq-box';
+        empty.innerHTML = '<div class="eq-meta">Este rack aún no tiene equipos</div>';
+        body.appendChild(empty);
+        return;
+      }
+
+      ordered.forEach(eq => {
+        const eqPorts = ports.filter(p => p.equipment_id === eq.id).sort((a,b) => a.numero_puerto - b.numero_puerto);
+        const eqBox = document.createElement('div');
+        eqBox.className = 'eq-box';
+
+        eqBox.innerHTML = `
+          <div class="eq-top">
+            <div>
+              <div class="eq-name">${eq.nombre}</div>
+              <div class="eq-meta">${eq.demonico || '-'} · ${eq.marca || '-'} ${eq.modelo || ''}${eq.serial ? ' · S/N ' + eq.serial : ''}</div>
+            </div>
+            <div style="text-align:right">
+              <div class="eq-type">${eq.tipo.toUpperCase()}</div>
+              <div class="eq-u">U${eq.posicion_rack || '-'}</div>
+            </div>
+          </div>
+          <div class="ports"></div>
+        `;
+
+        const portsDiv = eqBox.querySelector('.ports');
+        eqPorts.forEach(port => {
+          const client = getClientByPort(port.id);
+          const portEl = document.createElement('div');
+          const matchesFilter = isPortInClientFilter(port.id);
+          const visualClass = filteredClientPortIds
+            ? (matchesFilter ? 'occupied' : 'free')
+            : portClass(port.estado);
+
+          portEl.className = `port ${visualClass}`;
+          portEl.textContent = port.numero_puerto;
+          portEl.dataset.tip = client
+            ? `${client.nombre_cliente}${client.identificador_servicio ? ' · ' + client.identificador_servicio : ''}`
+            : `${port.estado} · ${getLinkSummary(port.id)}`;
+          portEl.dataset.portId = port.id;
+          portEl.dataset.equipmentId = eq.id;
+
+          if (filteredClientPortIds && !matchesFilter) {
+            portEl.style.opacity = '0.22';
+          } else {
+            portEl.style.opacity = '1';
+          }
+
+          setupPortInteraction(portEl, eq, port, client);
+          portsDiv.appendChild(portEl);
+        });
+
+        body.appendChild(eqBox);
+      });
+    }
+
+    function renderRackU(node, rack, rackEquipments) {
+      node.classList.add('racku');
+      const visualHeight = TOTAL_U * 14;
+
+      node.innerHTML = `
+        <div class="rack-header">
+          <div>
+            <div class="rack-title">${rack.nombre}</div>
+            <div class="rack-sub">${rack.ubicacion || 'Sin ubicación'} · numeración U de abajo hacia arriba</div>
+          </div>
+          <div class="rack-badge">${rackEquipments.length} equipos</div>
+        </div>
+        <div class="rack-visual">
+          <div class="u-ruler"></div>
+          <div class="rack-slots" style="height:${visualHeight}px"></div>
+        </div>
+      `;
+
+      const ruler = node.querySelector('.u-ruler');
+      buildRuler(ruler);
+
+      const slots = node.querySelector('.rack-slots');
+      const ordered = sortByRackPositionForDisplay(rackEquipments);
+
+      ordered.forEach((eq, index) => {
+        let position = Number(eq.posicion_rack);
+        const units = getEquipmentUnits(eq);
+        if (!position || position < 1 || position > TOTAL_U) position = 1 + (index % TOTAL_U);
+
+        const bar = document.createElement('div');
+        bar.className = 'equipment-unit';
+        bar.style.top = ((TOTAL_U - (position + units - 1)) * 14 + 1) + 'px';
+        bar.style.height = Math.max(12, (units * 14) - 2) + 'px';
+        bar.title = `${eq.nombre} · U${position}${units > 1 ? ' a U' + (position + units - 1) : ''}`;
+        bar.innerHTML = `
+          <div class="eq-left">
+            <div class="eq-name">${eq.nombre}</div>
+            <div class="eq-type">${eq.tipo.toUpperCase()}</div>
+          </div>
+          <div class="eq-right">U${position}${units > 1 ? '-' + (position + units - 1) : ''} · ${eq.cantidad_puertos} P</div>
+        `;
+        bar.addEventListener('click', () => openEquipmentPortsModal(eq));
+        slots.appendChild(bar);
+      });
+    }
+
+    function renderWorkspace() {
+      const workspace = document.getElementById('workspace');
+      workspace.innerHTML = '<svg id="linkOverlay"></svg>';
+
+      if (!racks.length) {
+        workspace.innerHTML += '<div class="empty-state">No hay racks creados todavía.<br>Usa el botón “Agregar rack”.</div>';
+        return;
+      }
+
+      const saved = getSavedPositions();
+      const mode = getViewMode();
+
+      racks.forEach((rack, idx) => {
+        const node = document.createElement('div');
+        node.className = 'rack-node';
+
+        const pos = saved[rack.id] || {
+          x: 30 + ((idx % 4) * (mode === 'compact' ? 340 : 450)),
+          y: 70 + (Math.floor(idx / 4) * (mode === 'compact' ? 280 : 760))
+        };
+
+        node.style.left = pos.x + 'px';
+        node.style.top = pos.y + 'px';
+
+        const rackEquipments = equipments.filter(e => e.rack_id === rack.id);
+
+        if (mode === 'compact') {
+          renderCompactRack(node, rack, rackEquipments);
+          node.style.width = getWidth(rack.id,310)+'px';
+        } else {
+          renderRackU(node, rack, rackEquipments);
+          node.style.width = getWidth(rack.id,420)+'px';
+        }
+
+        workspace.appendChild(node);
+        attachResizer(node, rack.id);
+        makeDraggable(node, rack.id);
+      });
+
+      requestAnimationFrame(drawPersistentLinks);
+    }
+
+    function openEquipmentPortsModal(equipment) {
+      const grid = document.getElementById('equipmentPortsGrid');
+      const eqPorts = ports.filter(p => p.equipment_id === equipment.id).sort((a,b) => a.numero_puerto - b.numero_puerto);
+      document.getElementById('evTitle').textContent = `Puertos de ${equipment.nombre}`;
+      document.getElementById('evSubtitle').textContent = `Equipo ${equipment.tipo.toUpperCase()} · U${equipment.posicion_rack || '-'} · Haz clic sobre un puerto para editar.`;
+      grid.innerHTML = '';
+
+      eqPorts.forEach(port => {
+        const client = getClientByPort(port.id);
+        const item = document.createElement('div');
+        item.className = `port-box ${portClass(port.estado)}`;
+        item.textContent = port.numero_puerto;
+        item.title = client
+          ? `${client.nombre_cliente}${client.identificador_servicio ? ' · ' + client.identificador_servicio : ''}`
+          : getLinkSummary(port.id);
+        item.addEventListener('click', () => {
+          closeEquipmentViewModal();
+          openPortModal(equipment, port, client);
+        });
+        grid.appendChild(item);
+      });
+
+      document.getElementById('equipmentViewModal').classList.add('show');
+    }
+
+    function fillRackSelect(selectId, includeNA = true) {
+      const sel = document.getElementById(selectId);
+      const current = sel.value;
+      sel.innerHTML = includeNA ? '<option value="na">N/A</option>' : '';
+      racks.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r.id;
+        opt.textContent = r.nombre;
+        sel.appendChild(opt);
+      });
+      if ([...sel.options].some(o => o.value === current)) sel.value = current;
+    }
+
+    function fillEquipmentSelect(rackSelectId, equipmentSelectId, includeNA = true) {
+      const rackId = document.getElementById(rackSelectId).value;
+      const sel = document.getElementById(equipmentSelectId);
+      const current = sel.value;
+      sel.innerHTML = includeNA ? '<option value="na">N/A</option>' : '';
+      let eqs = [];
+      if (rackId && rackId !== 'na') eqs = equipments.filter(e => e.rack_id === rackId);
+      eqs.forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = e.id;
+        opt.textContent = `${e.nombre} (${e.tipo.toUpperCase()})`;
+        sel.appendChild(opt);
+      });
+      if ([...sel.options].some(o => o.value === current)) sel.value = current;
+    }
+
+    function fillPortSelect(equipmentSelectId, portSelectId, includeNA = true) {
+      const equipmentId = document.getElementById(equipmentSelectId).value;
+      const sel = document.getElementById(portSelectId);
+      const current = sel.value;
+      sel.innerHTML = includeNA ? '<option value="na">N/A</option>' : '';
+      let prts = [];
+      if (equipmentId && equipmentId !== 'na') prts = ports.filter(p => p.equipment_id === equipmentId);
+      prts.sort((a,b) => a.numero_puerto - b.numero_puerto).forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = `Puerto ${p.numero_puerto}`;
+        sel.appendChild(opt);
+      });
+      if ([...sel.options].some(o => o.value === current)) sel.value = current;
+    }
+
+    function setSelectorsToPort(rackSelId, equipSelId, portSelId, portId) {
+      const port = getPortById(portId);
+      const eq = getEquipmentById(port?.equipment_id);
+      if (!port || !eq) return;
+      document.getElementById(rackSelId).value = eq.rack_id || 'na';
+      fillEquipmentSelect(rackSelId, equipSelId, true);
+      document.getElementById(equipSelId).value = eq.id;
+      fillPortSelect(equipSelId, portSelId, true);
+      document.getElementById(portSelId).value = port.id;
+    }
+
+    function wireLocationSelectors() {
+      document.getElementById('pmOriginRack').onchange = () => {
+        fillEquipmentSelect('pmOriginRack', 'pmOriginEquipment', true);
+        fillPortSelect('pmOriginEquipment', 'pmOriginPort', true);
+      };
+      document.getElementById('pmOriginEquipment').onchange = () => {
+        fillPortSelect('pmOriginEquipment', 'pmOriginPort', true);
+      };
+      document.getElementById('pmDestRack').onchange = () => {
+        fillEquipmentSelect('pmDestRack', 'pmDestEquipment', true);
+        fillPortSelect('pmDestEquipment', 'pmDestPort', true);
+      };
+      document.getElementById('pmDestEquipment').onchange = () => {
+        fillPortSelect('pmDestEquipment', 'pmDestPort', true);
+      };
+    }
+
+    function applyReciprocalLinkView(clickedEquipment, clickedPortId, remotePortId) {
+      const clickedPort = getPortById(clickedPortId);
+      const remotePort = getPortById(remotePortId);
+      const remoteEq = getEquipmentById(remotePort?.equipment_id);
+      if (!clickedPort || !remotePort || !remoteEq) return;
+
+      if (clickedEquipment.tipo === 'switch' && remoteEq.tipo === 'odf') {
+        setSelectorsToPort('pmOriginRack', 'pmOriginEquipment', 'pmOriginPort', remotePortId);
+        setSelectorsToPort('pmDestRack', 'pmDestEquipment', 'pmDestPort', clickedPortId);
+      } else if (clickedEquipment.tipo === 'odf' && remoteEq.tipo === 'switch') {
+        setSelectorsToPort('pmOriginRack', 'pmOriginEquipment', 'pmOriginPort', clickedPortId);
+        setSelectorsToPort('pmDestRack', 'pmDestEquipment', 'pmDestPort', remotePortId);
+      } else {
+        setSelectorsToPort('pmOriginRack', 'pmOriginEquipment', 'pmOriginPort', remotePortId);
+        setSelectorsToPort('pmDestRack', 'pmDestEquipment', 'pmDestPort', clickedPortId);
+      }
+    }
+
+    function openPortModal(equipment, port, currentClient, prefillLink = null) {
+      currentPortContext = { clickedEquipment: equipment, clickedPort: port, currentClient };
+      document.getElementById('portModalSubtitle').textContent = `Puerto seleccionado: ${equipment.nombre} - P${port.numero_puerto} · U${equipment.posicion_rack || '-'}`;
+
+      document.getElementById('pmClientName').value = currentClient?.nombre_cliente || '';
+      document.getElementById('pmServiceId').value = currentClient?.identificador_servicio || '';
+      document.getElementById('pmStatus').value = port.estado || 'libre';
+
+      fillRackSelect('pmOriginRack', true);
+      fillRackSelect('pmDestRack', true);
+      fillEquipmentSelect('pmOriginRack', 'pmOriginEquipment', true);
+      fillEquipmentSelect('pmDestRack', 'pmDestEquipment', true);
+      fillPortSelect('pmOriginEquipment', 'pmOriginPort', true);
+      fillPortSelect('pmDestEquipment', 'pmDestPort', true);
+      wireLocationSelectors();
+
+      // Limpiar ambas secciones
+      document.getElementById('pmOriginRack').value = 'na';
+      fillEquipmentSelect('pmOriginRack', 'pmOriginEquipment', true);
+      fillPortSelect('pmOriginEquipment', 'pmOriginPort', true);
+      document.getElementById('pmDestRack').value = 'na';
+      fillEquipmentSelect('pmDestRack', 'pmDestEquipment', true);
+      fillPortSelect('pmDestEquipment', 'pmDestPort', true);
+
+      // Cargar conexiones existentes por separado
+      const incomingLink = links.find(l => l.port_id_destino === port.id); // remoto -> actual
+      const outgoingLink = links.find(l => l.port_id_origen === port.id);  // actual -> remoto
+
+      if (incomingLink) {
+        setSelectorsToPort('pmOriginRack', 'pmOriginEquipment', 'pmOriginPort', incomingLink.port_id_origen);
+      }
+
+      if (outgoingLink) {
+        setSelectorsToPort('pmDestRack', 'pmDestEquipment', 'pmDestPort', outgoingLink.port_id_destino);
+      }
+
+      // Si viene por arrastre A -> B, solo actualizar ORIGEN del punto B
+      if (prefillLink && prefillLink.targetPortId === port.id) {
+        setSelectorsToPort('pmOriginRack', 'pmOriginEquipment', 'pmOriginPort', prefillLink.sourcePortId);
+
+        const sourceClient = getClientByPort(prefillLink.sourcePortId);
+        if (sourceClient) {
+          document.getElementById('pmClientName').value = sourceClient.nombre_cliente || '';
+          document.getElementById('pmServiceId').value = sourceClient.identificador_servicio || '';
+        }
+        document.getElementById('pmStatus').value = 'ocupado';
+      }
+
+      pendingDragPrefill = null;
+      document.getElementById('portModal').classList.add('show');
+    }
+
+    window.clearPortFields = async function() {
+      if (!currentPortContext) return;
+
+      const clickedPortId = currentPortContext.clickedPort.id;
+
+      try {
+        const delAssign = await supabase.from('port_assignments').delete().eq('port_id', clickedPortId);
+        if (delAssign.error) throw delAssign.error;
+
+        const delLinks = await supabase.from('port_links')
+          .delete()
+          .or(`port_id_origen.eq.${clickedPortId},port_id_destino.eq.${clickedPortId}`);
+        if (delLinks.error) throw delLinks.error;
+
+        const updPort = await supabase.from('ports').update({ estado: 'libre' }).eq('id', clickedPortId);
+        if (updPort.error) throw updPort.error;
+
+        document.getElementById('pmClientName').value = '';
+        document.getElementById('pmServiceId').value = '';
+        document.getElementById('pmStatus').value = 'libre';
+
+        document.getElementById('pmOriginRack').value = 'na';
+        fillEquipmentSelect('pmOriginRack', 'pmOriginEquipment', true);
+        fillPortSelect('pmOriginEquipment', 'pmOriginPort', true);
+
+        document.getElementById('pmDestRack').value = 'na';
+        fillEquipmentSelect('pmDestRack', 'pmDestEquipment', true);
+        fillPortSelect('pmDestEquipment', 'pmDestPort', true);
+
+        await loadDashboard();
+        closePortModal();
+        toast('Puerto limpiado');
+      } catch (error) {
+        console.error(error);
+        toast('Error limpiando el puerto');
+      }
+    };
+
+    window.savePortModal = async function() {
+      if (!currentPortContext) return;
+
+      const clickedPortId = currentPortContext.clickedPort.id;
+      const clientName = document.getElementById('pmClientName').value.trim();
+      const serviceId = document.getElementById('pmServiceId').value.trim();
+      const status = document.getElementById('pmStatus').value;
+
+      const originSectionPortId = document.getElementById('pmOriginPort').value;
+      const destSectionPortId = document.getElementById('pmDestPort').value;
+
+
+      const currentIncoming = links.find(l => l.port_id_destino === clickedPortId);
+      const currentOutgoing = links.find(l => l.port_id_origen === clickedPortId);
+
+      // Bloqueo solicitado:
+      // solo impedir nueva conexión cuando el puerto de DESTINO ya tenga información en su sección ORIGEN
+      // es decir, cuando ya exista un enlace entrante hacia ese puerto destino.
+      if (destSectionPortId && destSectionPortId !== 'na' && destSectionPortId !== clickedPortId) {
+        const targetIncoming = links.find(l => l.port_id_destino === destSectionPortId);
+        const alreadySame = currentOutgoing && currentOutgoing.port_id_destino === destSectionPortId;
+        if (targetIncoming && !alreadySame) {
+          toast('No puedes usar ese puerto de destino porque ya tiene información en la sección ORIGEN');
+          return;
+        }
+      }
+
+      try {
+        // 1) Guardar metadatos del puerto actual
+        const updPort = await supabase.from('ports').update({ estado: status }).eq('id', clickedPortId);
+        if (updPort.error) throw updPort.error;
+
+        let currentClientId = null;
+        const existingAssignment = assignments.find(a => a.port_id === clickedPortId);
+
+        if (clientName) {
+          const existingClient =
+            clients.find(c => serviceId && (c.identificador_servicio || '') === serviceId) ||
+            clients.find(c => c.nombre_cliente.toLowerCase() === clientName.toLowerCase());
+
+          if (existingClient) {
+            currentClientId = existingClient.id;
+            const updClient = await supabase.from('clients').update({
+              nombre_cliente: clientName,
+              identificador_servicio: serviceId || null
+            }).eq('id', currentClientId);
+            if (updClient.error) throw updClient.error;
+          } else {
+            const insClient = await supabase.from('clients').insert({
+              nombre_cliente: clientName,
+              identificador_servicio: serviceId || null
+            }).select().single();
+            if (insClient.error) throw insClient.error;
+            currentClientId = insClient.data.id;
+          }
+
+          if (existingAssignment) {
+            const updAssign = await supabase.from('port_assignments')
+              .update({ client_id: currentClientId })
+              .eq('id', existingAssignment.id);
+            if (updAssign.error) throw updAssign.error;
+          } else {
+            const insAssign = await supabase.from('port_assignments')
+              .insert({ port_id: clickedPortId, client_id: currentClientId });
+            if (insAssign.error) throw insAssign.error;
+          }
+        } else if (existingAssignment) {
+          const delAssign = await supabase.from('port_assignments').delete().eq('id', existingAssignment.id);
+          if (delAssign.error) throw delAssign.error;
+        }
+
+        // 2) Gestionar ORIGEN de forma independiente (remoto -> actual)
+        const existingIncoming = links.find(l => l.port_id_destino === clickedPortId);
+        if (existingIncoming) {
+          if (originSectionPortId && originSectionPortId !== 'na' && originSectionPortId !== clickedPortId) {
+            if (existingIncoming.port_id_origen !== originSectionPortId) {
+              const delIncoming = await supabase.from('port_links').delete().eq('id', existingIncoming.id);
+              if (delIncoming.error) throw delIncoming.error;
+
+              const originEq = getEquipmentById(getPortById(originSectionPortId)?.equipment_id);
+              const destEq = getEquipmentById(getPortById(clickedPortId)?.equipment_id);
+
+              let tipoEnlace = 'switch_odf';
+              if (isOdfEquipment(originEq) && isOdfEquipment(destEq)) tipoEnlace = 'odf_odf';
+              if (!isOdfEquipment(originEq) && !isOdfEquipment(destEq)) tipoEnlace = 'switch_switch';
+
+              const insIncoming = await supabase.from('port_links').insert({
+                port_id_origen: originSectionPortId,
+                port_id_destino: clickedPortId,
+                tipo_enlace: tipoEnlace
+              });
+              if (insIncoming.error) throw insIncoming.error;
+            }
+          } else {
+            const delIncoming = await supabase.from('port_links').delete().eq('id', existingIncoming.id);
+            if (delIncoming.error) throw delIncoming.error;
+          }
+        } else if (originSectionPortId && originSectionPortId !== 'na' && originSectionPortId !== clickedPortId) {
+          const originEq = getEquipmentById(getPortById(originSectionPortId)?.equipment_id);
+          const destEq = getEquipmentById(getPortById(clickedPortId)?.equipment_id);
+
+          let tipoEnlace = 'switch_odf';
+          if (isOdfEquipment(originEq) && isOdfEquipment(destEq)) tipoEnlace = 'odf_odf';
+          if (!isOdfEquipment(originEq) && !isOdfEquipment(destEq)) tipoEnlace = 'switch_switch';
+
+          const insIncoming = await supabase.from('port_links').insert({
+            port_id_origen: originSectionPortId,
+            port_id_destino: clickedPortId,
+            tipo_enlace: tipoEnlace
+          });
+          if (insIncoming.error) throw insIncoming.error;
+        }
+
+        // 3) Gestionar DESTINO de forma independiente (actual -> remoto)
+        const existingOutgoing = links.find(l => l.port_id_origen === clickedPortId);
+        if (existingOutgoing) {
+          if (destSectionPortId && destSectionPortId !== 'na' && destSectionPortId !== clickedPortId) {
+            if (existingOutgoing.port_id_destino !== destSectionPortId) {
+              const delOutgoing = await supabase.from('port_links').delete().eq('id', existingOutgoing.id);
+              if (delOutgoing.error) throw delOutgoing.error;
+
+              const originEq = getEquipmentById(getPortById(clickedPortId)?.equipment_id);
+              const destEq = getEquipmentById(getPortById(destSectionPortId)?.equipment_id);
+
+              let tipoEnlace = 'switch_odf';
+              if (isOdfEquipment(originEq) && isOdfEquipment(destEq)) tipoEnlace = 'odf_odf';
+              if (!isOdfEquipment(originEq) && !isOdfEquipment(destEq)) tipoEnlace = 'switch_switch';
+
+              const insOutgoing = await supabase.from('port_links').insert({
+                port_id_origen: clickedPortId,
+                port_id_destino: destSectionPortId,
+                tipo_enlace: tipoEnlace
+              });
+              if (insOutgoing.error) throw insOutgoing.error;
+            }
+          } else {
+            const delOutgoing = await supabase.from('port_links').delete().eq('id', existingOutgoing.id);
+            if (delOutgoing.error) throw delOutgoing.error;
+          }
+        } else if (destSectionPortId && destSectionPortId !== 'na' && destSectionPortId !== clickedPortId) {
+          const originEq = getEquipmentById(getPortById(clickedPortId)?.equipment_id);
+          const destEq = getEquipmentById(getPortById(destSectionPortId)?.equipment_id);
+
+          let tipoEnlace = 'switch_odf';
+          if (isOdfEquipment(originEq) && isOdfEquipment(destEq)) tipoEnlace = 'odf_odf';
+          if (!isOdfEquipment(originEq) && !isOdfEquipment(destEq)) tipoEnlace = 'switch_switch';
+
+          const insOutgoing = await supabase.from('port_links').insert({
+            port_id_origen: clickedPortId,
+            port_id_destino: destSectionPortId,
+            tipo_enlace: tipoEnlace
+          });
+          if (insOutgoing.error) throw insOutgoing.error;
+        }
+
+        // 4) Autollenado de metadata al remoto de ORIGEN y DESTINO, sin borrar la otra relación
+        const finalIncoming = (originSectionPortId && originSectionPortId !== 'na' && originSectionPortId !== clickedPortId) ? originSectionPortId : null;
+        const finalOutgoing = (destSectionPortId && destSectionPortId !== 'na' && destSectionPortId !== clickedPortId) ? destSectionPortId : null;
+
+        const updClickedOccupied = await supabase.from('ports').update({ estado: status }).eq('id', clickedPortId);
+        if (updClickedOccupied.error) throw updClickedOccupied.error;
+
+        if (finalIncoming) {
+          await syncRemotePortMetadata(finalIncoming, clickedPortId);
+        }
+        if (finalOutgoing) {
+          await syncRemotePortMetadata(finalOutgoing, clickedPortId);
+        }
+
+        await loadDashboard();
+        closePortModal();
+        toast('Información guardada');
+      } catch (error) {
+        console.error(error);
+        toast('Error guardando la información');
+      }
+    };
+
+
+    function getEquipmentUnits(eq) {
+      return Number(eq.unidades_rack || 1);
+    }
+
+    function rackRangeOverlaps(posA, unitsA, posB, unitsB) {
+      const aStart = Number(posA);
+      const aEnd = aStart + Number(unitsA) - 1;
+      const bStart = Number(posB);
+      const bEnd = bStart + Number(unitsB) - 1;
+      return !(aEnd < bStart || bEnd < aStart);
+    }
+
+    window.createRack = async function() {
+      if (!supabase) return toast('Sin conexión a Supabase');
+      const nombre = document.getElementById('rackNombre').value.trim();
+      const ubicacion = document.getElementById('rackUbicacion').value.trim();
+      const descripcion = document.getElementById('rackDescripcion').value.trim();
+      if (!nombre) return toast('El nombre del rack es obligatorio');
+
+      const { error } = await supabase.from('racks').insert({ nombre, ubicacion, descripcion });
+      if (error) {
+        console.error(error);
+        toast('Error creando rack');
+        return;
+      }
+
+      document.getElementById('rackNombre').value = '';
+      document.getElementById('rackUbicacion').value = '';
+      document.getElementById('rackDescripcion').value = '';
+      closeRackModal();
+      await loadDashboard();
+      toast('Rack creado');
+    };
+
+    window.createEquipment = async function() {
+      if (!supabase) return toast('Sin conexión a Supabase');
+
+      const rack_id = document.getElementById('equipmentRack').value || null;
+      const tipo = document.getElementById('equipmentTipo').value;
+      const nombre = document.getElementById('equipmentNombre').value.trim();
+      const demonico = document.getElementById('equipmentDemonico').value.trim();
+      const marca = document.getElementById('equipmentMarca').value.trim();
+      const modelo = document.getElementById('equipmentModelo').value.trim();
+      const serial = document.getElementById('equipmentSerial').value.trim();
+      const cantidad_puertos = Number(document.getElementById('equipmentPuertos').value);
+      const unidades_rack = Number(document.getElementById('equipmentUnits').value) || 1;
+      const posicion_rack = Number(document.getElementById('equipmentPosicion').value) || null;
+      const observaciones = document.getElementById('equipmentObs').value.trim();
+
+      if (!rack_id) return toast('Selecciona un rack');
+      if (!nombre || !cantidad_puertos) return toast('Nombre y cantidad de puertos son obligatorios');
+      if (!posicion_rack || posicion_rack < 1 || posicion_rack > 45) return toast('La posición del rack debe estar entre 1 y 45');
+      if (!unidades_rack || unidades_rack < 1 || unidades_rack > 45) return toast('Las unidades en rack deben estar entre 1 y 45');
+      if ((posicion_rack + unidades_rack - 1) > 45) return toast('El equipo se sale del rack con esas unidades');
+
+      const sameRackEquipments = equipments.filter(e => e.rack_id === rack_id);
+      const overlap = sameRackEquipments.some(e =>
+        rackRangeOverlaps(posicion_rack, unidades_rack, e.posicion_rack || 1, getEquipmentUnits(e))
+      );
+      if (overlap) return toast('Ese espacio del rack ya está ocupado por otro equipo');
+
+      const { error } = await supabase.from('equipment').insert({
+        rack_id, tipo, nombre, demonico, marca, modelo, serial, cantidad_puertos, posicion_rack, unidades_rack, observaciones
+      });
+
+      if (error) {
+        console.error(error);
+        toast('Error agregando equipo');
+        return;
+      }
+
+      document.getElementById('equipmentNombre').value = '';
+      document.getElementById('equipmentDemonico').value = '';
+      document.getElementById('equipmentMarca').value = '';
+      document.getElementById('equipmentModelo').value = '';
+      document.getElementById('equipmentSerial').value = '';
+      document.getElementById('equipmentPuertos').value = '';
+      document.getElementById('equipmentUnits').value = '';
+      document.getElementById('equipmentPosicion').value = '';
+      document.getElementById('equipmentObs').value = '';
+
+      closeEquipmentModal();
+      await loadDashboard();
+      toast('Equipo agregado');
+    };
+
+    window.searchClients = async function() {
+      if (!supabase) return toast('Sin conexión a Supabase');
+      const text = document.getElementById('searchClient').value.trim();
+
+      if (!text) {
+        clearClientFilter();
+        renderWorkspace();
+        toast('Filtro limpiado');
+        return;
+      }
+
+      const { data, error } = await supabase.rpc('search_client_ports', { search_text: text });
+      if (error) {
+        console.error(error);
+        toast('Error en la búsqueda');
+        return;
+      }
+      if (!data || !data.length) {
+        clearClientFilter();
+        renderWorkspace();
+        toast('No se encontraron resultados');
+        return;
+      }
+
+      buildClientFilterFromResults(data);
+      renderWorkspace();
+
+      const uniqueClients = [...new Set(data.map(x => `${x.nombre_cliente}${x.identificador_servicio ? ' · ' + x.identificador_servicio : ''}`))];
+      toast(`Filtro aplicado: ${uniqueClients[0]}`);
+    };
+
+    async function loadDashboard() {
+      if (!supabase) return;
+      await fetchAll();
+      renderFilters();
+      renderWorkspace();
+    }
+
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      setTimeout(() => el.classList.add('hidden'), 2400);
+    }
+
+    document.getElementById('workspace').addEventListener('scroll', () => {
+      requestAnimationFrame(drawPersistentLinks);
+    });
+
+    initSupabase();
+    loadDashboard();
+  </script>
+</body>
+</html>
