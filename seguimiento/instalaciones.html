@@ -86,6 +86,15 @@
     .check-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px}.check-item{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.03)}.section-title{margin:18px 0 10px;font-size:16px;font-weight:800;color:#dbeafe;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.03)}.materials-section{margin-top:16px;padding:16px;border:1px solid rgba(59,130,246,.22);border-radius:18px;background:linear-gradient(180deg,rgba(20,40,80,.38),rgba(10,22,48,.55));box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}.materials-section.hidden{display:none}.materials-header{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;user-select:none}.materials-title{margin:0;font-size:16px;font-weight:800;color:#dbeafe}.materials-sub{font-size:12px;color:#9fb6d9}.materials-toggle-btn{border:1px solid rgba(96,165,250,.35);border-radius:12px;padding:8px 12px;background:rgba(37,99,235,.18);color:#dbeafe;font-weight:800;cursor:pointer}.materials-toggle-btn:hover{background:rgba(37,99,235,.28)}
     .detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.detail-card{border:1px solid var(--border);border-radius:16px;padding:14px;background:rgba(255,255,255,.03)}
     .detail-title{font-size:12px;color:var(--muted);margin-bottom:6px}.detail-value{font-size:14px;font-weight:700;white-space:pre-wrap}
+
+    .audit-btn{display:block;width:100%;margin-top:7px;padding:7px 10px;line-height:1.05;font-size:11px;min-height:26px;border-radius:9px;border:1px solid rgba(251,191,36,.35);background:linear-gradient(135deg,rgba(245,158,11,.24),rgba(37,99,235,.18));color:#fff;font-weight:800;cursor:pointer;white-space:nowrap}
+    .audit-table-wrap{max-height:62vh;overflow:auto;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02)}
+    .audit-table{width:100%;border-collapse:separate;border-spacing:0}
+    .audit-table th,.audit-table td{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.07);font-size:12px;text-align:left;vertical-align:top}
+    .audit-table th{position:sticky;top:0;background:#0a1730;color:#9fd0ff;z-index:1}
+    .audit-value{max-width:320px;white-space:pre-wrap;word-break:break-word;color:#dbeafe}
+    .audit-old{color:#fecaca}.audit-new{color:#bbf7d0}.audit-meta{font-size:12px;color:var(--muted);margin-bottom:12px}.audit-empty{padding:22px;text-align:center;color:var(--muted)}
+
     @media (max-width:1400px){.summary{grid-template-columns:repeat(3,minmax(150px,1fr))}}
     @media (max-width:1100px){.grid,.detail-grid{grid-template-columns:repeat(2,1fr)}}
     @media (max-width:900px){.page{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.grid,.summary,.detail-grid{grid-template-columns:1fr}}
@@ -293,6 +302,25 @@
     <div id="detailContent"></div>
   </div>
 </div>
+
+
+
+<div id="auditModal" class="modal-backdrop">
+  <div class="modal large">
+    <div class="modal-header">
+      <div>
+        <h3 id="auditTitle" style="margin:0 0 6px 0;">Historial de cambios</h3>
+        <div id="auditSubtitle" class="muted-note">Auditoría de campos modificados, usuario, fecha y hora.</div>
+      </div>
+      <button class="close-btn" type="button" onclick="closeAuditModal()">✕</button>
+    </div>
+    <div class="audit-meta" id="auditMeta"></div>
+    <div id="auditContent" class="audit-table-wrap">
+      <div class="audit-empty">Selecciona un registro para consultar su historial.</div>
+    </div>
+  </div>
+</div>
+
 
 <script>
 function safeRenderError(message){
@@ -995,7 +1023,7 @@ function getColumnValue(r, field){
     case 'duracion_total': return calcularDuracionTotalInstRow(r);
     case 'tiempo_muerto': return calcularTiempoMuertoInstRow(r);
     case 'duracion_efectiva': return calcularDuracionEfectivaInstRow(r);
-    case 'acciones': return 'Editar | Sol Contratista';
+    case 'acciones': return 'Editar | Sol Contratista | Historial';
     default: return '';
   }
 }
@@ -1121,6 +1149,7 @@ function renderTable(){
       <td onclick="event.stopPropagation()">
         <button class="small-btn" onclick="editRow('${r.id}')">Editar</button>
         <button class="sol-btn" onclick="solicitarContratistaInstalacion('${r.id}')">Sol Contratista</button>
+        <button class="audit-btn" onclick="verAuditoria('instalaciones', '${r.id}', '${esc(r.cliente || r.id_cambio || r.id)}')">Historial</button>
       </td>
     </tr>
   `).join('');
@@ -1457,6 +1486,101 @@ window.closeDetailModal = function(){
 document.getElementById('detailModal').addEventListener('click', function(e){
   if(e.target.id === 'detailModal'){ /* no cerrar por click fuera */ }
 });
+
+function fmtDateTimeAudit(value){
+  if(!value) return '';
+  try{
+    return new Date(value).toLocaleString('es-CO', {
+      year:'numeric', month:'2-digit', day:'2-digit',
+      hour:'2-digit', minute:'2-digit', second:'2-digit'
+    });
+  }catch(e){ return value; }
+}
+function limpiarValorAuditoria(value){
+  if(value === null || value === undefined) return '';
+  let txt = String(value);
+  if(txt === 'null') return '';
+  try{
+    const parsed = JSON.parse(txt);
+    if(parsed === null || parsed === undefined) return '';
+    if(typeof parsed === 'object') return JSON.stringify(parsed, null, 2);
+    return String(parsed);
+  }catch(e){
+    return txt.replace(/^"|"$/g, '');
+  }
+}
+function closeAuditModal(){
+  document.getElementById('auditModal')?.classList.remove('show');
+}
+async function verAuditoria(tabla, registroId, tituloRegistro=''){
+  const modal = document.getElementById('auditModal');
+  const title = document.getElementById('auditTitle');
+  const subtitle = document.getElementById('auditSubtitle');
+  const meta = document.getElementById('auditMeta');
+  const content = document.getElementById('auditContent');
+
+  if(title) title.textContent = `Historial de cambios - ${tituloRegistro || registroId}`;
+  if(subtitle) subtitle.textContent = `Tabla auditada: ${tabla}`;
+  if(meta) meta.textContent = 'Consultando auditoría...';
+  if(content) content.innerHTML = '<div class="audit-empty">Cargando historial...</div>';
+  modal?.classList.add('show');
+
+  try{
+    const client = await resolveClient();
+    const { data, error } = await client
+      .from('om_auditoria_cambios')
+      .select('id,modulo,tabla_origen,registro_id,campo_modificado,valor_anterior,valor_nuevo,accion,usuario_email,usuario_id,fecha_hora')
+      .eq('tabla_origen', tabla)
+      .eq('registro_id', registroId)
+      .order('fecha_hora', { ascending: false });
+
+    if(error) throw error;
+
+    const rows = data || [];
+    if(meta) meta.textContent = `${rows.length} movimiento(s) encontrado(s).`;
+
+    if(!rows.length){
+      content.innerHTML = '<div class="audit-empty">Este registro todavía no tiene historial.</div>';
+      return;
+    }
+
+    content.innerHTML = `
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>Fecha / hora</th>
+            <th>Usuario</th>
+            <th>Acción</th>
+            <th>Campo modificado</th>
+            <th>Valor anterior</th>
+            <th>Valor nuevo</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td>${esc(fmtDateTimeAudit(r.fecha_hora))}</td>
+              <td>${esc(r.usuario_email || r.usuario_id || 'Sin usuario')}</td>
+              <td>${esc(r.accion || '')}</td>
+              <td>${esc(r.campo_modificado || 'Registro completo')}</td>
+              <td class="audit-value audit-old">${esc(limpiarValorAuditoria(r.valor_anterior))}</td>
+              <td class="audit-value audit-new">${esc(limpiarValorAuditoria(r.valor_nuevo))}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  }catch(err){
+    console.error(err);
+    if(meta) meta.textContent = '';
+    if(content){
+      content.innerHTML = `<div class="audit-empty" style="color:#fecaca">Error consultando auditoría: ${esc(err.message || err)}<br><br>Verifica que exista la tabla <b>om_auditoria_cambios</b>, que tenga políticas RLS de lectura y que los triggers estén creados.</div>`;
+    }
+  }
+}
+document.getElementById('auditModal')?.addEventListener('click', function(e){
+  if(e.target && e.target.id === 'auditModal'){ /* no cerrar por click afuera */ }
+});
+
 
 window.editRow = function(id){
   const row = instalacionesRows.find(x => x.id === id);
