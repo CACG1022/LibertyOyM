@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Materiales O&M</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+  <style>
+    :root{--border:rgba(255,255,255,.10);--text:#eef4ff;--muted:#9ab0d0;--shadow:0 18px 40px rgba(0,0,0,.28)}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#04101f,#07152a);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+    .page{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+    .sidebar{background:linear-gradient(180deg,#08142a,#081126);border-right:1px solid var(--border);padding:18px 16px;position:sticky;top:0;height:100vh;overflow:auto}
+    .brand{font-size:18px;font-weight:800;margin-bottom:4px}.subbrand{font-size:12px;color:var(--muted);margin-bottom:24px}
+    .nav a{display:block;padding:12px;border-radius:12px;color:#fff;text-decoration:none;margin-bottom:8px;border:1px solid transparent}
+    .nav a:hover,.nav a.active{background:rgba(255,255,255,.05);border-color:var(--border)}
+    .session-box{margin-top:24px;padding:14px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.03)}
+    .session-box small{display:block;color:var(--muted);margin-bottom:8px;word-break:break-all}
+    .btn{border:none;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#2563eb,#22c55e);color:#fff}
+    .btn.secondary{background:#1f3d79}.btn.ghost{background:rgba(255,255,255,.04);border:1px solid var(--border)}.btn.red{background:#ef4444}
+    .small-btn{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:#fff;cursor:pointer;font-weight:700}
+    .main{padding:26px 28px}
+    .header h1{margin:0 0 6px;font-size:28px}.header p{margin:0 0 20px;color:var(--muted)}
+    .toolbar{display:grid;grid-template-columns:minmax(260px,1fr) minmax(180px,240px) minmax(180px,240px) auto auto auto;gap:12px;margin-bottom:18px;align-items:center}
+    .control{min-width:0;width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}
+    .summary{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+    .stat{border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));padding:16px;box-shadow:var(--shadow);min-height:110px;cursor:pointer;transition:.15s}
+    .stat:hover{transform:translateY(-2px);border-color:rgba(96,165,250,.45)}
+    .stat.active{border-color:rgba(34,197,94,.60);background:linear-gradient(180deg,rgba(34,197,94,.12),rgba(255,255,255,.02))}
+    .stat .label{font-size:12px;color:var(--muted);margin-bottom:8px}.stat .value{font-size:30px;font-weight:800}.stat .sub{font-size:12px;color:#b9d6ff;margin-top:6px}
+    .card{border:1px solid var(--border);border-radius:20px;background:linear-gradient(180deg,#08152c,#0a1730);box-shadow:var(--shadow)}
+    .table-wrap{overflow:auto}
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    thead th{position:sticky;top:0;background:#0a1730;color:#9fd0ff;padding:14px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}.sortable{cursor:pointer;user-select:none}.sortable:hover{color:#dbeafe}.sort-indicator{font-size:11px;margin-left:6px;color:#60a5fa}.th-filter{display:flex;flex-direction:column;gap:6px;min-width:150px}.th-filter span{font-weight:800;color:#9fd0ff}.th-filter select{width:100%;padding:7px 8px;border-radius:9px;border:1px solid rgba(255,255,255,.10);background:#0c1830;color:#fff;font-size:12px}
+    tbody td{padding:14px 12px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
+    tbody tr:hover{background:rgba(255,255,255,.04)}
+    .title{font-weight:700;margin-bottom:4px}.desc{font-size:12px;color:var(--muted);white-space:pre-wrap}
+    .badge{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--border)}
+    .tipo-ENTRADA{background:rgba(34,197,94,.16);color:#bbf7d0}.tipo-SALIDA{background:rgba(239,68,68,.16);color:#fecaca}.tipo-TRANSFERENCIA{background:rgba(59,130,246,.16);color:#bfdbfe}.tipo-CONSUMO_INSTALACION{background:rgba(245,158,11,.16);color:#fde68a}.tipo-AJUSTE_POSITIVO{background:rgba(34,197,94,.16);color:#bbf7d0}.tipo-AJUSTE_NEGATIVO{background:rgba(239,68,68,.16);color:#fecaca}
+    .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}.tab{padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:#fff;cursor:pointer;font-weight:800}.tab.active{background:rgba(37,99,235,.28);border-color:rgba(96,165,250,.45)}
+    .floating-add{position:fixed;right:28px;bottom:28px;width:62px;height:62px;border-radius:50%;border:none;font-size:34px;font-weight:700;cursor:pointer;color:#fff;background:linear-gradient(135deg,#2563eb,#22c55e);box-shadow:var(--shadow);z-index:40}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+    .modal-backdrop.show{display:flex}
+    .modal{width:min(1180px,100%);max-height:94vh;overflow:auto;background:linear-gradient(180deg,#08152c,#0a1730);border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow);padding:22px}
+    .modal-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}.close-btn{width:40px;height:40px;border:none;border-radius:12px;background:rgba(255,255,255,.05);color:#fff;cursor:pointer}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.field label{display:block;margin-bottom:6px;font-size:13px;color:#cfe0ff}
+    .field input,.field select,.field textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}.field textarea{min-height:90px;resize:vertical}
+    .span-2{grid-column:span 2}.span-4{grid-column:1/-1}.muted-note{font-size:12px;color:var(--muted)}
+    .section-title{margin:18px 0 10px;font-size:16px;font-weight:800;color:#dbeafe;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.03)}
+    .empty{padding:26px;text-align:center;color:var(--muted);display:none}
+    @media (max-width:1300px){.summary{grid-template-columns:repeat(3,1fr)}.toolbar{grid-template-columns:1fr 1fr}.grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:900px){.page{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.summary,.toolbar,.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<div id="movModal" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h3 id="movTitle" style="margin:0 0 6px 0;">Nuevo movimiento de material</h3>
+        <div class="muted-note">Entradas, salidas, transferencias y consumo de materiales por instalación.</div>
+      </div>
+      <button class="close-btn" onclick="closeMovModal()">✕</button>
+    </div>
+
+    <form id="movForm" action="javascript:void(0)">
+      <div class="grid">
+        <div class="field"><label>Tipo movimiento</label>
+          <select name="tipo_movimiento" required onchange="toggleMovementFields()">
+            <option>ENTRADA</option>
+            <option>SALIDA</option>
+            <option>TRANSFERENCIA</option>
+            <option>CONSUMO_INSTALACION</option>
+            <option>AJUSTE_POSITIVO</option>
+            <option>AJUSTE_NEGATIVO</option>
+          </select>
+        </div>
+        <div class="field"><label>Fecha</label><input type="date" name="fecha" required></div>
+        <div class="field"><label>Hora</label><input type="time" name="hora"></div>
+        <div class="field"><label>Estado</label>
+          <select name="estado"><option>RECIBIDO</option><option>PENDIENTE</option><option>ENTREGADO</option><option>CONSUMIDO</option><option>ANULADO</option></select>
+        </div>
+
+        <div class="field"><label>Código SAP</label><input name="codigo_sap" id="codigoSapInput" list="sapList" onchange="syncMaterialBySap()"></div>
+        <div class="field span-2"><label>Material</label><input name="material_nombre" id="materialInput" list="materialList" required onchange="syncMaterialByName()"></div>
+        <div class="field"><label>Unidad</label>
+          <select name="unidad" required><option>Metros</option><option>Unidades</option><option>Rollos</option><option>Cajas</option><option>Patchcord</option><option>SFP</option><option>Otros</option></select>
+        </div>
+
+        <div class="field"><label>Cantidad</label><input type="number" step="0.01" min="0.01" name="cantidad" required></div>
+        <div class="field"><label>Bodega origen</label><select name="bodega_origen_id" id="bodegaOrigen"></select></div>
+        <div class="field"><label>Bodega destino</label><select name="bodega_destino_id" id="bodegaDestino"></select></div>
+        <div class="field"><label>Transportadora</label><input name="transportadora"></div>
+
+        <div class="field"><label>Guía</label><input name="guia"></div>
+        <div class="field"><label>Proveedor</label><input name="proveedor"></div>
+        <div class="field"><label>Contratista</label><input name="contratista"></div>
+        <div class="field"><label>Responsable</label><input name="responsable"></div>
+
+        <div class="field"><label>Recibido por</label><input name="recibido_por"></div>
+        <div class="field"><label>Entregado a</label><input name="entregado_a"></div>
+        <div class="field"><label>ID cambio instalación</label><input name="id_cambio" id="idCambioInput" placeholder="Opcional"></div>
+        <div class="field"><label>ID cliente</label><input name="id_cliente" id="idClienteInput"></div>
+
+        <div class="field span-2"><label>Cliente</label><input name="cliente" id="clienteInput"></div>
+        <div class="field span-2"><label>Observaciones</label><textarea name="observaciones"></textarea></div>
+      </div>
+
+      <datalist id="sapList"></datalist>
+      <datalist id="materialList"></datalist>
+
+      <div id="movMsg" style="margin-top:12px;color:#86efac"></div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
+        <button type="button" class="small-btn" onclick="closeMovModal()">Cancelar</button>
+        <button type="submit" class="btn">Guardar movimiento</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="matModal" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h3 style="margin:0 0 6px 0;">Crear material</h3>
+        <div class="muted-note">Registra el material en el catálogo para usarlo en entradas, salidas y consumos.</div>
+      </div>
+      <button class="close-btn" onclick="closeMatModal()">✕</button>
+    </div>
+    <form id="matForm" action="javascript:void(0)">
+      <div class="grid">
+        <div class="field"><label>Código SAP</label><input name="codigo_sap"></div>
+        <div class="field span-2"><label>Material</label><input name="material" required></div>
+        <div class="field"><label>Unidad</label><select name="unidad"><option>Metros</option><option>Unidades</option><option>Rollos</option><option>Cajas</option><option>Patchcord</option><option>SFP</option><option>Otros</option></select></div>
+        <div class="field"><label>Categoría</label><input name="categoria"></div>
+        <div class="field"><label>Stock mínimo</label><input type="number" step="0.01" min="0" name="stock_minimo" value="0"></div>
+        <div class="field span-2"><label>Descripción</label><input name="descripcion"></div>
+      </div>
+      <div id="matMsg" style="margin-top:12px;color:#86efac"></div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
+        <button type="button" class="small-btn" onclick="closeMatModal()">Cancelar</button>
+        <button class="btn" type="submit">Guardar material</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function renderShell(){
+  const email = localStorage.getItem('user_email') || '';
+  document.getElementById('root').innerHTML = `
+  <div class="page">
+    <aside class="sidebar">
+      <div class="brand">Nodo O&M</div>
+      <div class="subbrand">Control y seguimiento</div>
+      <nav class="nav">
+        <a href="index.html">Inicio</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="fallas.html">Tickets / Fallas</a>
+        <a href="mantenimientos.html">Mantenimientos</a>
+        <a href="instalaciones.html">Instalaciones</a>
+        <a href="factibilidades.html">Factibilidades</a>
+        <a href="traslados.html">Traslados</a>
+        <a href="materiales.html" class="active">Materiales</a>
+        <a href="liquidaciones.html">Liquidaciones</a>
+        <a href="gastos.html">Gastos</a>
+        <a href="tareas.html">Tareas y Alertas</a>
+        <a href="reportes.html">Reportes</a>
+      </nav>
+      <div class="session-box">
+        <small>Sesión<br>${email || 'Sin iniciar'}</small>
+        <button class="btn secondary" style="width:100%" onclick="safeLogout()">Cerrar sesión</button>
+      </div>
+    </aside>
+    <main class="main">
+      <div class="header">
+        <h1>Materiales</h1>
+        <p>Inventario por bodegas, entradas, salidas, transferencias y consumo de materiales por instalaciones.</p>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="inventario" onclick="setTab('inventario')">Inventario</button>
+        <button class="tab" data-tab="movimientos" onclick="setTab('movimientos')">Movimientos</button>
+        <button class="tab" data-tab="consumos" onclick="setTab('consumos')">Consumo instalaciones</button>
+      </div>
+
+      <div class="toolbar">
+        <input id="searchBox" class="control" placeholder="Buscar por SAP, material, cliente, guía o bodega">
+        <select id="filterBodega" class="control"><option value="">Todas las bodegas</option></select>
+        <select id="filterTipo" class="control">
+          <option value="">Todos los movimientos</option>
+          <option>ENTRADA</option><option>SALIDA</option><option>TRANSFERENCIA</option><option>CONSUMO_INSTALACION</option><option>AJUSTE_POSITIVO</option><option>AJUSTE_NEGATIVO</option>
+        </select>
+        <button class="btn ghost" onclick="openMatModal()">Crear material</button>
+        <button class="btn ghost" onclick="loadAll()">Actualizar</button>
+        <button class="btn" onclick="openMovModal()">Nuevo movimiento</button>
+      </div>
+
+      <div id="summary" class="summary"></div>
+
+      <section id="inventarioView" class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Código SAP</th><th>Material</th><th>Unidad</th><th>Almagrario</th><th>Nodo</th><th>Contratista</th><th>WOM</th><th>Total</th>
+              </tr>
+            </thead>
+            <tbody id="inventarioBody"></tbody>
+          </table>
+        </div>
+        <div id="inventarioEmpty" class="empty">No hay inventario para mostrar.</div>
+      </section>
+
+      <section id="movimientosView" class="card" style="display:none">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="sortable" onclick="sortMovimientosBy('fecha')">Fecha <span id="sortFechaIcon" class="sort-indicator">▼</span></th>
+                <th><div class="th-filter"><span>Tipo</span><select id="filterMovTipo" onchange="setMovimientoColumnFilter('tipo', this.value)"><option value="">Todos</option></select></div></th>
+                <th><div class="th-filter"><span>SAP / Material</span><select id="filterMovMaterial" onchange="setMovimientoColumnFilter('material', this.value)"><option value="">Todos</option></select></div></th>
+                <th><div class="th-filter"><span>Cantidad</span><select id="filterMovCantidad" onchange="setMovimientoColumnFilter('cantidad', this.value)"><option value="">Todas</option></select></div></th>
+                <th><div class="th-filter"><span>Origen</span><select id="filterMovOrigen" onchange="setMovimientoColumnFilter('origen', this.value)"><option value="">Todos</option></select></div></th>
+                <th><div class="th-filter"><span>Destino</span><select id="filterMovDestino" onchange="setMovimientoColumnFilter('destino', this.value)"><option value="">Todos</option></select></div></th>
+                <th><div class="th-filter"><span>Guía</span><select id="filterMovGuia" onchange="setMovimientoColumnFilter('guia', this.value)"><option value="">Todas</option></select></div></th>
+                <th><div class="th-filter"><span>Cliente / Instalación</span><select id="filterMovCliente" onchange="setMovimientoColumnFilter('cliente', this.value)"><option value="">Todos</option></select></div></th>
+                <th><div class="th-filter"><span>Responsable</span><select id="filterMovResponsable" onchange="setMovimientoColumnFilter('responsable', this.value)"><option value="">Todos</option></select></div></th>
+              </tr>
+            </thead>
+            <tbody id="movimientosBody"></tbody>
+          </table>
+        </div>
+        <div id="movimientosEmpty" class="empty">No hay movimientos para mostrar.</div>
+      </section>
+
+      <section id="consumosView" class="card" style="display:none">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th><th>ID Cambio</th><th>ID Cliente</th><th>Cliente</th><th>SAP / Material</th><th>Cantidad</th><th>Bodega</th><th>Responsable</th>
+              </tr>
+            </thead>
+            <tbody id="consumosBody"></tbody>
+          </table>
+        </div>
+        <div id="consumosEmpty" class="empty">No hay consumos de instalaciones para mostrar.</div>
+      </section>
+
+      <button class="floating-add" onclick="openMovModal()">+</button>
+    </main>
+  </div>`;
+}
+
+function safeLogout(){ try{ if(typeof logout==='function'){ logout(); return; } }catch(e){} localStorage.removeItem('user_email'); location.href='index.html'; }
+renderShell();
+
+let clientRef = null;
+let bodegas = [];
+let materiales = [];
+let resumen = [];
+let movimientos = [];
+let consumos = [];
+let activeTab = 'inventario';
+let activeKpi = null;
+let currentMovimientoId = null;
+let movimientosSortField = 'fecha';
+let movimientosSortDir = 'desc';
+let movimientoColumnFilters = { tipo:'', material:'', cantidad:'', origen:'', destino:'', guia:'', cliente:'', responsable:'' };
+
+function esc(v){ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;"); }
+function fmtDate(v){ if(!v) return ''; try{return new Date(String(v)+'T00:00:00').toLocaleDateString('es-CO')}catch(e){return v} }
+function fmtNum(v){ const n = Number(v || 0); return n.toFixed(2).replace(/\.00$/,'').replace(/(\.\d)0$/,'$1'); }
+function badge(v){ return `<span class="badge tipo-${esc(v)}">${esc(v || '')}</span>`; }
+
+async function resolveClient(){
+  if(clientRef) return clientRef;
+  if(typeof getClient === 'function'){ clientRef = await getClient(); return clientRef; }
+  const url = localStorage.getItem('sb_url');
+  const key = localStorage.getItem('sb_key');
+  if(!url || !key) throw new Error('No se encontró configuración de Supabase');
+  clientRef = window.supabase.createClient(url, key);
+  return clientRef;
+}
+
+function setTab(tab){
+  activeTab = tab;
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.dataset.tab === tab));
+  document.getElementById('inventarioView').style.display = tab === 'inventario' ? '' : 'none';
+  document.getElementById('movimientosView').style.display = tab === 'movimientos' ? '' : 'none';
+  document.getElementById('consumosView').style.display = tab === 'consumos' ? '' : 'none';
+  renderAll();
+}
+
+function getSearch(){ return (document.getElementById('searchBox')?.value || '').trim().toLowerCase(); }
+function getBodega(){ return document.getElementById('filterBodega')?.value || ''; }
+function getTipo(){ return document.getElementById('filterTipo')?.value || ''; }
+
+function materialMatches(row, terms){
+  const nombre = String(row.material || row.om_materiales_catalogo?.material || '').toUpperCase();
+  return terms.every(t => nombre.includes(String(t).toUpperCase()));
+}
+
+function applyKpi(rows, mode){
+  if(!activeKpi) return rows;
+  if(mode === 'inventario'){
+    if(activeKpi === 'FIBRA_12H') return rows.filter(r => materialMatches(r, ['FIBRA', '12 H']));
+    if(activeKpi === 'FIBRA_4H') return rows.filter(r => materialMatches(r, ['FIBRA', '4']));
+    if(activeKpi === 'HERRAJE_RET_117_128') return rows.filter(r => materialMatches(r, ['HERRAJE RETENCION', '117-128']));
+    if(activeKpi === 'HERRAJE_S_12_48') return rows.filter(r => materialMatches(r, ['HERRAJE S 12-48']));
+    if(activeKpi === 'BAJO_STOCK') return rows.filter(r => Number(r.total || 0) <= 0);
+    if(['ALMAGRARIO','NODO','CONTRATISTA','WOM'].includes(activeKpi)) return rows.filter(r => Number(r[activeKpi.toLowerCase()] || 0) > 0);
+  }
+  if(mode === 'movimientos'){
+    if(activeKpi === 'SALIDAS') return rows.filter(r => ['SALIDA','CONSUMO_INSTALACION'].includes(r.tipo_movimiento));
+  }
+  return rows;
+}
+
+function totalPorMaterialNombre(terminos){
+  const terms = Array.isArray(terminos) ? terminos : [terminos];
+  return resumen
+    .filter(r => {
+      const nombre = String(r.material || '').toUpperCase();
+      return terms.every(t => nombre.includes(String(t).toUpperCase()));
+    })
+    .reduce((sum, r) => sum + Number(r.total || 0), 0);
+}
+
+function renderSummary(){
+  const fibra12h = totalPorMaterialNombre(['FIBRA', '12 H']);
+  const fibra4h = totalPorMaterialNombre(['FIBRA', '4']);
+  const herrajeRet117128 = totalPorMaterialNombre(['HERRAJE RETENCION', '117-128']);
+  const herrajeS1248 = totalPorMaterialNombre(['HERRAJE S 12-48']);
+  const consumido = movimientos.filter(x => x.tipo_movimiento === 'CONSUMO_INSTALACION').reduce((a,b)=>a+Number(b.cantidad||0),0);
+
+  document.getElementById('summary').innerHTML = `
+    <div class="stat ${activeKpi==='FIBRA_12H'?'active':''}" onclick="toggleKpi('FIBRA_12H')"><div class="label">Fibra 12 hilos</div><div class="value">${fmtNum(fibra12h)}</div><div class="sub">Total en todas las bodegas</div></div>
+    <div class="stat ${activeKpi==='FIBRA_4H'?'active':''}" onclick="toggleKpi('FIBRA_4H')"><div class="label">Fibra 4 hilos</div><div class="value">${fmtNum(fibra4h)}</div><div class="sub">Total en todas las bodegas</div></div>
+    <div class="stat ${activeKpi==='HERRAJE_RET_117_128'?'active':''}" onclick="toggleKpi('HERRAJE_RET_117_128')"><div class="label">Herraje retención 117-128</div><div class="value">${fmtNum(herrajeRet117128)}</div><div class="sub">Total en todas las bodegas</div></div>
+    <div class="stat ${activeKpi==='HERRAJE_S_12_48'?'active':''}" onclick="toggleKpi('HERRAJE_S_12_48')"><div class="label">Herraje S 12-48 ADSS</div><div class="value">${fmtNum(herrajeS1248)}</div><div class="sub">Total en todas las bodegas</div></div>
+    <div class="stat ${activeKpi==='SALIDAS'?'active':''}" onclick="toggleKpi('SALIDAS')"><div class="label">Consumido / salidas</div><div class="value">${fmtNum(consumido)}</div><div class="sub">Instalaciones y salidas</div></div>
+  `;
+}
+function toggleKpi(kpi){
+  activeKpi = activeKpi === kpi ? null : kpi;
+  renderAll();
+}
+
+function renderInventario(){
+  const txt = getSearch();
+  const bodega = getBodega();
+
+  let rows = resumen.filter(r => {
+    const matchText = !txt || [r.codigo_sap,r.material,r.unidad,r.categoria].map(x=>String(x||'').toLowerCase()).some(x=>x.includes(txt));
+    const matchBodega = !bodega || Number(r[bodega.toLowerCase()] || 0) > 0;
+    return matchText && matchBodega;
+  });
+
+  rows = applyKpi(rows, 'inventario');
+
+  const body = document.getElementById('inventarioBody');
+  const empty = document.getElementById('inventarioEmpty');
+
+  if(!rows.length){ body.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  body.innerHTML = rows.map(r => `
+    <tr>
+      <td><div class="title">${esc(r.codigo_sap || '')}</div></td>
+      <td><div class="title">${esc(r.material)}</div><div class="desc">${esc(r.categoria || '')}</div></td>
+      <td>${esc(r.unidad)}</td>
+      <td>${fmtNum(r.almagrario)}</td>
+      <td>${fmtNum(r.nodo)}</td>
+      <td>${fmtNum(r.contratista)}</td>
+      <td>${fmtNum(r.wom)}</td>
+      <td><b>${fmtNum(r.total)}</b></td>
+    </tr>
+  `).join('');
+}
+
+function sortMovimientosBy(field){
+  // Solo se ordena por fecha. Las demás columnas usan filtros seleccionables.
+  if(field !== 'fecha') return;
+  movimientosSortDir = movimientosSortDir === 'asc' ? 'desc' : 'asc';
+  renderMovimientos();
+}
+function getMovimientoDateTime(row){
+  const fecha = row.fecha || '';
+  const hora = row.hora ? String(row.hora).slice(0,8) : '00:00:00';
+  const d = new Date(`${fecha}T${hora}`);
+  return isNaN(d) ? 0 : d.getTime();
+}
+function getMovimientoSortValue(row, field){
+  if(field === 'fecha') return getMovimientoDateTime(row);
+  return '';
+}
+function updateMovimientoSortIcons(){
+  const icon = document.getElementById('sortFechaIcon');
+  if(icon) icon.textContent = movimientosSortDir === 'asc' ? '▲' : '▼';
+}
+function getMovFilterValue(row, field){
+  switch(field){
+    case 'tipo':
+      return row.tipo_movimiento || '';
+    case 'material':
+      return `${row.codigo_sap || ''} - ${row.om_materiales_catalogo?.material || ''}`.trim();
+    case 'cantidad':
+      return `${fmtNum(row.cantidad)} ${row.unidad || ''}`.trim();
+    case 'origen':
+      return row.origen_nombre || '';
+    case 'destino':
+      return row.destino_nombre || '';
+    case 'guia':
+      return `${row.guia || ''}${row.transportadora ? ' - ' + row.transportadora : ''}`.trim();
+    case 'cliente':
+      return `${row.cliente || ''}${row.id_cambio ? ' - ' + row.id_cambio : ''}${row.id_cliente ? ' - ' + row.id_cliente : ''}`.trim();
+    case 'responsable':
+      return row.responsable || row.created_by_email || '';
+    default:
+      return '';
+  }
+}
+function setMovimientoColumnFilter(field, value){
+  movimientoColumnFilters[field] = value || '';
+  renderMovimientos(false);
+}
+function uniqueSorted(values){
+  return Array.from(new Set(values.filter(v => String(v || '').trim() !== '')))
+    .sort((a,b) => String(a).localeCompare(String(b), 'es', {numeric:true}));
+}
+function hydrateMovimientoColumnFilters(baseRows){
+  const configs = [
+    {field:'tipo', id:'filterMovTipo', label:'Todos'},
+    {field:'material', id:'filterMovMaterial', label:'Todos'},
+    {field:'cantidad', id:'filterMovCantidad', label:'Todas'},
+    {field:'origen', id:'filterMovOrigen', label:'Todos'},
+    {field:'destino', id:'filterMovDestino', label:'Todos'},
+    {field:'guia', id:'filterMovGuia', label:'Todas'},
+    {field:'cliente', id:'filterMovCliente', label:'Todos'},
+    {field:'responsable', id:'filterMovResponsable', label:'Todos'}
+  ];
+
+  configs.forEach(cfg => {
+    const el = document.getElementById(cfg.id);
+    if(!el) return;
+    const current = movimientoColumnFilters[cfg.field] || '';
+    const options = uniqueSorted(baseRows.map(r => getMovFilterValue(r, cfg.field)));
+    el.innerHTML = `<option value="">${cfg.label}</option>` + options.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    el.value = options.includes(current) ? current : '';
+    movimientoColumnFilters[cfg.field] = el.value;
+  });
+}
+function applyMovimientoColumnFilters(rows){
+  return rows.filter(r => {
+    return Object.entries(movimientoColumnFilters).every(([field, value]) => {
+      if(!value) return true;
+      return getMovFilterValue(r, field) === value;
+    });
+  });
+}
+
+function renderMovimientos(){
+  const txt = getSearch();
+  const bodega = getBodega();
+  const tipo = getTipo();
+
+  let rows = movimientos.filter(r => {
+    const matchText = !txt || [
+      r.codigo_sap, r.om_materiales_catalogo?.material, r.guia, r.transportadora,
+      r.cliente, r.id_cambio, r.id_cliente, r.responsable,
+      r.origen_nombre, r.destino_nombre
+    ].map(x=>String(x||'').toLowerCase()).some(x=>x.includes(txt));
+    const matchTipo = !tipo || r.tipo_movimiento === tipo;
+    const matchBodega = !bodega || r.origen_nombre === bodega || r.destino_nombre === bodega;
+    return matchText && matchTipo && matchBodega;
+  });
+
+  rows = applyKpi(rows, 'movimientos');
+
+  hydrateMovimientoColumnFilters(rows);
+  rows = applyMovimientoColumnFilters(rows);
+
+  rows.sort((a,b) => {
+    const va = getMovimientoSortValue(a, movimientosSortField);
+    const vb = getMovimientoSortValue(b, movimientosSortField);
+
+    if(typeof va === 'number' && typeof vb === 'number'){
+      return movimientosSortDir === 'asc' ? va - vb : vb - va;
+    }
+
+    return movimientosSortDir === 'asc'
+      ? String(va).localeCompare(String(vb), 'es', {numeric:true})
+      : String(vb).localeCompare(String(va), 'es', {numeric:true});
+  });
+
+  updateMovimientoSortIcons();
+
+  const body = document.getElementById('movimientosBody');
+  const empty = document.getElementById('movimientosEmpty');
+
+  if(!rows.length){ body.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  body.innerHTML = rows.map(r => `
+    <tr onclick="openMovModalById('${esc(r.id)}')" style="cursor:pointer" title="Clic para ver o editar el movimiento">
+      <td>${fmtDate(r.fecha)}<div class="desc">${esc(r.hora || '')}</div></td>
+      <td>${badge(r.tipo_movimiento)}</td>
+      <td><div class="title">${esc(r.codigo_sap || '')}</div><div class="desc">${esc(r.om_materiales_catalogo?.material || '')}</div></td>
+      <td><b>${fmtNum(r.cantidad)}</b><div class="desc">${esc(r.unidad)}</div></td>
+      <td>${esc(r.origen_nombre || '')}</td>
+      <td>${esc(r.destino_nombre || '')}</td>
+      <td>${esc(r.guia || '')}<div class="desc">${esc(r.transportadora || '')}</div></td>
+      <td><div class="title">${esc(r.cliente || '')}</div><div class="desc">${esc(r.id_cambio || '')} ${esc(r.id_cliente || '')}</div></td>
+      <td>${esc(r.responsable || r.created_by_email || '')}</td>
+    </tr>
+  `).join('');
+}
+
+function renderConsumos(){
+  const txt = getSearch();
+  let rows = consumos.filter(r => {
+    return !txt || [r.codigo_sap,r.material,r.cliente,r.id_cambio,r.id_cliente,r.bodega_origen,r.responsable].map(x=>String(x||'').toLowerCase()).some(x=>x.includes(txt));
+  });
+
+  const body = document.getElementById('consumosBody');
+  const empty = document.getElementById('consumosEmpty');
+
+  if(!rows.length){ body.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  body.innerHTML = rows.map(r => `
+    <tr>
+      <td>${fmtDate(r.fecha)}</td>
+      <td>${esc(r.id_cambio || '')}</td>
+      <td>${esc(r.id_cliente || '')}</td>
+      <td>${esc(r.cliente || '')}</td>
+      <td><div class="title">${esc(r.codigo_sap || '')}</div><div class="desc">${esc(r.material || '')}</div></td>
+      <td><b>${fmtNum(r.cantidad)}</b><div class="desc">${esc(r.unidad)}</div></td>
+      <td>${esc(r.bodega_origen || '')}</td>
+      <td>${esc(r.responsable || r.created_by_email || '')}</td>
+    </tr>
+  `).join('');
+}
+
+function renderAll(){
+  renderSummary();
+  renderInventario();
+  renderMovimientos();
+  renderConsumos();
+}
+
+async function loadAll(){
+  try{
+    const client = await resolveClient();
+
+    const [bodegasRes, materialesRes, resumenRes, movRes, consRes] = await Promise.all([
+      client.from('om_bodegas').select('*').order('nombre'),
+      client.from('om_materiales_catalogo').select('*').order('material'),
+      client.from('om_v_materiales_resumen').select('*').order('material'),
+      client.from('om_materiales_movimientos').select('*, om_materiales_catalogo(material)').order('created_at',{ascending:false}),
+      client.from('om_v_consumo_instalaciones').select('*').order('fecha',{ascending:false})
+    ]);
+
+    if(bodegasRes.error) throw bodegasRes.error;
+    if(materialesRes.error) throw materialesRes.error;
+    if(resumenRes.error) throw resumenRes.error;
+    if(movRes.error) throw movRes.error;
+    if(consRes.error) throw consRes.error;
+
+    bodegas = bodegasRes.data || [];
+    materiales = materialesRes.data || [];
+    resumen = resumenRes.data || [];
+    consumos = consRes.data || [];
+
+    const bodegaMap = new Map(bodegas.map(b => [b.id, b.nombre]));
+    movimientos = (movRes.data || []).map(m => ({
+      ...m,
+      origen_nombre: bodegaMap.get(m.bodega_origen_id) || '',
+      destino_nombre: bodegaMap.get(m.bodega_destino_id) || ''
+    }));
+
+    hydrateSelects();
+    renderAll();
+  }catch(err){
+    console.error(err);
+    alert('Error cargando materiales: ' + (err.message || err));
+  }
+}
+
+function hydrateSelects(){
+  const filterBodega = document.getElementById('filterBodega');
+  const origen = document.getElementById('bodegaOrigen');
+  const destino = document.getElementById('bodegaDestino');
+
+  const opts = bodegas.map(b => `<option value="${esc(b.nombre)}">${esc(b.nombre)}</option>`).join('');
+  if(filterBodega) filterBodega.innerHTML = `<option value="">Todas las bodegas</option>${opts}`;
+
+  const optsId = bodegas.map(b => `<option value="${esc(b.id)}">${esc(b.nombre)}</option>`).join('');
+  if(origen) origen.innerHTML = `<option value="">No aplica</option>${optsId}`;
+  if(destino) destino.innerHTML = `<option value="">No aplica</option>${optsId}`;
+
+  document.getElementById('sapList').innerHTML = materiales.map(m => `<option value="${esc(m.codigo_sap || '')}">${esc(m.material)}</option>`).join('');
+  document.getElementById('materialList').innerHTML = materiales.map(m => `<option value="${esc(m.material)}">${esc(m.codigo_sap || '')}</option>`).join('');
+}
+
+function openMovModalById(id){
+  const row = movimientos.find(x => String(x.id) === String(id));
+  if(row) openMovModal(row);
+}
+
+function openMovModal(row = null){
+  const form = document.getElementById('movForm');
+  form.reset();
+  currentMovimientoId = row?.id || null;
+
+  document.getElementById('movTitle').textContent = currentMovimientoId ? 'Editar movimiento de material' : 'Nuevo movimiento de material';
+  const submitBtn = form.querySelector('button[type="submit"]');
+  if(submitBtn) submitBtn.textContent = currentMovimientoId ? 'Actualizar movimiento' : 'Guardar movimiento';
+
+  if(row){
+    form.elements['tipo_movimiento'].value = row.tipo_movimiento || 'ENTRADA';
+    form.elements['fecha'].value = row.fecha || new Date().toISOString().slice(0,10);
+    form.elements['hora'].value = row.hora ? String(row.hora).slice(0,5) : '';
+    form.elements['estado'].value = row.estado || 'RECIBIDO';
+    form.elements['codigo_sap'].value = row.codigo_sap || '';
+    form.elements['material_nombre'].value = row.om_materiales_catalogo?.material || '';
+    form.elements['unidad'].value = row.unidad || 'Unidades';
+    form.elements['cantidad'].value = row.cantidad ?? '';
+    form.elements['bodega_origen_id'].value = row.bodega_origen_id || '';
+    form.elements['bodega_destino_id'].value = row.bodega_destino_id || '';
+    form.elements['transportadora'].value = row.transportadora || '';
+    form.elements['guia'].value = row.guia || '';
+    form.elements['proveedor'].value = row.proveedor || '';
+    form.elements['contratista'].value = row.contratista || '';
+    form.elements['responsable'].value = row.responsable || '';
+    form.elements['recibido_por'].value = row.recibido_por || '';
+    form.elements['entregado_a'].value = row.entregado_a || '';
+    form.elements['id_cambio'].value = row.id_cambio || '';
+    form.elements['id_cliente'].value = row.id_cliente || '';
+    form.elements['cliente'].value = row.cliente || '';
+    form.elements['observaciones'].value = row.observaciones || '';
+  }else{
+    form.elements['fecha'].value = new Date().toISOString().slice(0,10);
+    form.elements['hora'].value = new Date().toTimeString().slice(0,5);
+  }
+
+  document.getElementById('movMsg').textContent = '';
+  toggleMovementFields();
+  document.getElementById('movModal').classList.add('show');
+}
+function closeMovModal(){
+  document.getElementById('movModal').classList.remove('show');
+  currentMovimientoId = null;
+}
+
+function openMatModal(){
+  document.getElementById('matForm').reset();
+  document.getElementById('matMsg').textContent = '';
+  document.getElementById('matModal').classList.add('show');
+}
+function closeMatModal(){ document.getElementById('matModal').classList.remove('show'); }
+
+function toggleMovementFields(){
+  const form = document.getElementById('movForm');
+  const tipo = form.elements['tipo_movimiento'].value;
+  const origen = form.elements['bodega_origen_id'];
+  const destino = form.elements['bodega_destino_id'];
+  origen.required = ['SALIDA','TRANSFERENCIA','CONSUMO_INSTALACION','AJUSTE_NEGATIVO'].includes(tipo);
+  destino.required = ['ENTRADA','TRANSFERENCIA','AJUSTE_POSITIVO'].includes(tipo);
+
+  if(tipo === 'ENTRADA' || tipo === 'AJUSTE_POSITIVO') origen.value = '';
+  if(['SALIDA','CONSUMO_INSTALACION','AJUSTE_NEGATIVO'].includes(tipo)) destino.value = '';
+  if(tipo === 'CONSUMO_INSTALACION') form.elements['estado'].value = 'CONSUMIDO';
+}
+
+function syncMaterialBySap(){
+  const form = document.getElementById('movForm');
+  const sap = form.elements['codigo_sap'].value.trim();
+  const mat = materiales.find(m => String(m.codigo_sap || '').trim() === sap);
+  if(mat){
+    form.elements['material_nombre'].value = mat.material;
+    form.elements['unidad'].value = mat.unidad;
+  }
+}
+function syncMaterialByName(){
+  const form = document.getElementById('movForm');
+  const name = form.elements['material_nombre'].value.trim();
+  const mat = materiales.find(m => String(m.material || '').trim() === name);
+  if(mat){
+    form.elements['codigo_sap'].value = mat.codigo_sap || '';
+    form.elements['unidad'].value = mat.unidad;
+  }
+}
+
+async function getOrCreateMaterial(payload){
+  const client = await resolveClient();
+  const codigo = (payload.codigo_sap || '').trim();
+  const nombre = (payload.material || '').trim();
+
+  let found = null;
+  if(codigo){
+    const res = await client.from('om_materiales_catalogo').select('*').eq('codigo_sap', codigo).maybeSingle();
+    if(res.error) throw res.error;
+    found = res.data;
+  }
+  if(!found && nombre){
+    const res = await client.from('om_materiales_catalogo').select('*').eq('material', nombre).maybeSingle();
+    if(res.error) throw res.error;
+    found = res.data;
+  }
+  if(found) return found;
+
+  const ins = await client.from('om_materiales_catalogo').insert({
+    codigo_sap: codigo || null,
+    material: nombre,
+    unidad: payload.unidad || 'Unidades',
+    categoria: payload.categoria || null
+  }).select('*').single();
+  if(ins.error) throw ins.error;
+  return ins.data;
+}
+
+document.getElementById('movForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const form = e.target;
+  const msg = document.getElementById('movMsg');
+  msg.textContent = '';
+  msg.style.color = '#86efac';
+
+  try{
+    const client = await resolveClient();
+    const userEmail = localStorage.getItem('user_email') || null;
+
+    const mat = await getOrCreateMaterial({
+      codigo_sap: form.elements['codigo_sap'].value,
+      material: form.elements['material_nombre'].value,
+      unidad: form.elements['unidad'].value
+    });
+
+    const payload = {
+      fecha: form.elements['fecha'].value,
+      hora: form.elements['hora'].value || null,
+      tipo_movimiento: form.elements['tipo_movimiento'].value,
+      material_id: mat.id,
+      bodega_origen_id: form.elements['bodega_origen_id'].value || null,
+      bodega_destino_id: form.elements['bodega_destino_id'].value || null,
+      cantidad: Number(form.elements['cantidad'].value),
+      unidad: form.elements['unidad'].value,
+      estado: form.elements['estado'].value,
+      codigo_sap: form.elements['codigo_sap'].value.trim() || mat.codigo_sap || null,
+      guia: form.elements['guia'].value.trim() || null,
+      transportadora: form.elements['transportadora'].value.trim() || null,
+      proveedor: form.elements['proveedor'].value.trim() || null,
+      contratista: form.elements['contratista'].value.trim() || null,
+      responsable: form.elements['responsable'].value.trim() || null,
+      recibido_por: form.elements['recibido_por'].value.trim() || null,
+      entregado_a: form.elements['entregado_a'].value.trim() || null,
+      id_cambio: form.elements['id_cambio'].value.trim() || null,
+      id_cliente: form.elements['id_cliente'].value.trim() || null,
+      cliente: form.elements['cliente'].value.trim() || null,
+      observaciones: form.elements['observaciones'].value.trim() || null,
+      created_by_email: userEmail
+    };
+
+    let result;
+    if(currentMovimientoId){
+      result = await client.from('om_materiales_movimientos').update(payload).eq('id', currentMovimientoId);
+    }else{
+      result = await client.from('om_materiales_movimientos').insert(payload);
+    }
+
+    if(result.error) throw result.error;
+
+    msg.textContent = currentMovimientoId ? 'Movimiento actualizado correctamente' : 'Movimiento guardado correctamente';
+    closeMovModal();
+    await loadAll();
+  }catch(err){
+    console.error(err);
+    msg.style.color = '#fecaca';
+    msg.textContent = 'Error guardando movimiento: ' + (err.message || err);
+  }
+});
+
+document.getElementById('matForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const form = e.target;
+  const msg = document.getElementById('matMsg');
+  msg.textContent = '';
+  msg.style.color = '#86efac';
+
+  try{
+    const client = await resolveClient();
+    const payload = {
+      codigo_sap: form.elements['codigo_sap'].value.trim() || null,
+      material: form.elements['material'].value.trim(),
+      unidad: form.elements['unidad'].value,
+      categoria: form.elements['categoria'].value.trim() || null,
+      stock_minimo: Number(form.elements['stock_minimo'].value || 0),
+      descripcion: form.elements['descripcion'].value.trim() || null
+    };
+
+    const { error } = await client.from('om_materiales_catalogo').insert(payload);
+    if(error) throw error;
+
+    msg.textContent = 'Material creado correctamente';
+    closeMatModal();
+    await loadAll();
+  }catch(err){
+    console.error(err);
+    msg.style.color = '#fecaca';
+    msg.textContent = 'Error creando material: ' + (err.message || err);
+  }
+});
+
+['searchBox','filterBodega','filterTipo'].forEach(id => {
+  document.getElementById(id)?.addEventListener('input', renderAll);
+  document.getElementById(id)?.addEventListener('change', renderAll);
+});
+
+document.getElementById('movModal').addEventListener('click', e => { if(e.target.id === 'movModal'){} });
+document.getElementById('matModal').addEventListener('click', e => { if(e.target.id === 'matModal'){} });
+
+loadAll();
+</script>
+</body>
+</html>

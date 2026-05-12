@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Instalaciones FO</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+  <style>
+    :root{--border:rgba(255,255,255,.10);--text:#eef4ff;--muted:#9ab0d0;--shadow:0 18px 40px rgba(0,0,0,.28)}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#04101f,#07152a);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+    .page{display:grid;grid-template-columns:240px 1fr;min-height:100vh;transition:grid-template-columns .25s ease}.page.sidebar-hidden{grid-template-columns:0 1fr}
+    .sidebar{background:linear-gradient(180deg,#08142a,#081126);border-right:1px solid var(--border);padding:18px 16px;position:sticky;top:0;height:100vh;overflow:auto;transition:transform .25s ease,opacity .25s ease;z-index:30}.page.sidebar-hidden .sidebar{transform:translateX(-100%);opacity:0;pointer-events:none;padding-left:0;padding-right:0;border-right:0}.sidebar-toggle-tab{position:fixed;left:240px;top:50%;transform:translateY(-50%);width:28px;height:72px;border:1px solid var(--border);border-left:0;border-radius:0 14px 14px 0;background:linear-gradient(135deg,#1d4ed8,#0f766e);color:#fff;font-weight:900;cursor:pointer;z-index:80;box-shadow:var(--shadow);transition:left .25s ease}.page.sidebar-hidden .sidebar-toggle-tab{left:0}
+    .brand{font-size:18px;font-weight:800;margin-bottom:4px}.subbrand{font-size:12px;color:var(--muted);margin-bottom:24px}
+    .nav a{display:block;padding:12px;border-radius:12px;color:#fff;text-decoration:none;margin-bottom:8px;border:1px solid transparent}
+    .nav a:hover,.nav a.active{background:rgba(255,255,255,.05);border-color:var(--border)}
+    .session-box{margin-top:24px;padding:14px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.03)}
+    .session-box small{display:block;color:var(--muted);margin-bottom:8px;word-break:break-all}
+    .btn{border:none;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#2563eb,#22c55e);color:#fff}
+    .btn.secondary{background:#1f3d79}.btn.ghost{background:rgba(255,255,255,.04);border:1px solid var(--border)}
+    .small-btn{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:#fff;cursor:pointer}.sol-btn{margin-top:7px;width:100%;padding:7px 10px;min-height:28px;font-size:12px;border-radius:9px;background:linear-gradient(135deg,#2563eb,#06b6d4);border:1px solid rgba(255,255,255,.12);color:#fff;font-weight:800;cursor:pointer}.copy-msg{font-size:12px;color:#86efac;margin-left:10px;align-self:center}
+    .main{padding:26px 28px}
+    .header h1{margin:0 0 6px;font-size:28px}.header p{margin:0 0 20px;color:var(--muted)}
+    .toolbar-row{display:grid;grid-template-columns:1fr;gap:12px;align-items:center;margin-bottom:0}
+    .toolbar-left{display:grid;grid-template-columns:minmax(260px,1.2fr) minmax(260px,1.4fr) minmax(170px,.7fr);gap:12px;align-items:center}.toolbar-right{display:block}
+    .control{min-width:0;width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}
+    .multi-select-wrap{position:relative;width:100%}
+    .multi-select-btn{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center}
+    .multi-select-menu{position:absolute;top:calc(100% + 8px);left:0;right:0;background:#0c1830;border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:10px;display:none;z-index:45;max-height:260px;overflow:auto}
+    .multi-select-menu.show{display:block}
+    .multi-select-menu label{display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:13px;color:#dbeafe}
+    .filter-actions{display:grid;grid-template-columns:minmax(180px,220px) minmax(160px,200px) minmax(180px,220px) minmax(120px,160px);gap:12px;align-items:center}
+    @media (max-width:1200px){.toolbar-left{grid-template-columns:1fr}.filter-actions{grid-template-columns:1fr}.top-layout{grid-template-columns:1fr}}.import-btn{white-space:nowrap}.preview-table{width:100%;border-collapse:separate;border-spacing:0}.preview-table th,.preview-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px;text-align:left}.preview-table th{color:#9fd0ff;background:#0a1730;position:sticky;top:0}.preview-wrap{max-height:380px;overflow:auto;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02)}.summary-row{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:12px;margin:10px 0 16px}.summary-mini{padding:12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.03)}.summary-mini .n{font-size:24px;font-weight:800}.summary-mini .l{font-size:12px;color:#9ab0d0}.top-layout{display:grid;grid-template-columns:minmax(620px,1fr) minmax(560px,720px);gap:16px;align-items:start;margin-bottom:18px}.weekly-kpis{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px}.weekly-card{border:1px solid rgba(96,165,250,.25);border-radius:16px;padding:12px;background:linear-gradient(180deg,rgba(37,99,235,.12),rgba(15,23,42,.55));box-shadow:var(--shadow);min-height:82px;cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease}.weekly-card:hover{transform:translateY(-2px);border-color:rgba(96,165,250,.55)}.weekly-card.active{border-color:rgba(34,197,94,.65);background:linear-gradient(180deg,rgba(34,197,94,.12),rgba(15,23,42,.55))}.weekly-card .label{font-size:11px;color:#b9d6ff;line-height:1.25}.weekly-card .value{font-size:24px;font-weight:900;margin-top:8px;color:#fff}.weekly-card .unit{font-size:11px;color:#9ab0d0;margin-top:2px}@media (max-width:1450px){.top-layout{grid-template-columns:1fr}.weekly-kpis{grid-template-columns:repeat(4,1fr)}}@media (max-width:900px){.weekly-kpis{grid-template-columns:repeat(2,1fr)}}
+    .summary{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+    .stat{border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));padding:16px;box-shadow:var(--shadow);min-height:110px;cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease}
+    .stat .label{font-size:12px;color:var(--muted);margin-bottom:8px}.stat .value{font-size:30px;font-weight:800}.stat .sub{font-size:12px;color:#b9d6ff;margin-top:6px}.stat:hover{transform:translateY(-2px);border-color:rgba(96,165,250,.4)}.stat.active{border-color:rgba(34,197,94,.55);background:linear-gradient(180deg,rgba(34,197,94,.10),rgba(255,255,255,.02))}
+    .card{border:1px solid var(--border);border-radius:20px;background:linear-gradient(180deg,#08152c,#0a1730);box-shadow:var(--shadow)}
+    .table-wrap{overflow:auto}
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    thead th{position:sticky;top:0;background:#0a1730;color:#9fd0ff;padding:14px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}.th-tools{display:flex;flex-direction:column;gap:6px;min-width:115px}.th-sort{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;font-weight:800}.th-sort:hover{color:#dbeafe}.sort-icon{font-size:11px;color:#60a5fa}.th-tools select{width:100%;padding:7px 8px;border-radius:9px;border:1px solid rgba(255,255,255,.10);background:#0c1830;color:#fff;font-size:12px}
+    tbody td{padding:14px 12px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
+    tbody tr{cursor:pointer}
+    tbody tr:hover{background:rgba(255,255,255,.04)}
+    tbody tr.row-entregada{background:rgba(34,197,94,.14)}
+    tbody tr.row-entregada:hover{background:rgba(34,197,94,.22)}
+    tbody tr.row-entregada td{border-bottom-color:rgba(34,197,94,.25)}
+    .title{font-weight:700;margin-bottom:4px}.desc{font-size:12px;color:var(--muted);white-space:pre-wrap}
+    .badge{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--border)}
+    .estado-INGRESADA{background:rgba(59,130,246,.16);color:#bfdbfe}
+    .estado-EN_VALIDACION{background:rgba(59,130,246,.16);color:#bfdbfe}
+    .estado-PENDIENTE_PERMISOS{background:rgba(245,158,11,.16);color:#fde68a}
+    .estado-PERMISOS_APROBADOS{background:rgba(34,197,94,.16);color:#bbf7d0}
+    .estado-PENDIENTE_ENRUTAMIENTO{background:rgba(245,158,11,.16);color:#fde68a}
+    .estado-EN_GESTION\ EMSA{background:rgba(168,85,247,.16);color:#ddd6fe}
+    .estado-LISTA_PARA_AGENDAR{background:rgba(34,197,94,.16);color:#bbf7d0}
+    .estado-AGENDADA{background:rgba(59,130,246,.16);color:#bfdbfe}
+    .estado-SOLIC\ AGENDA\ CONTRATISTA{background:rgba(14,165,233,.16);color:#bae6fd}
+    .estado-EN_EJECUCION{background:rgba(168,85,247,.16);color:#ddd6fe}
+    .estado-ENTREGADA{background:rgba(34,197,94,.16);color:#bbf7d0}
+    .estado-CANCELADA{background:rgba(239,68,68,.16);color:#fecaca}
+    .empty{padding:26px;text-align:center;color:var(--muted);display:none}
+    .floating-add{position:fixed;right:28px;bottom:28px;width:62px;height:62px;border-radius:50%;border:none;font-size:34px;font-weight:700;cursor:pointer;color:#fff;background:linear-gradient(135deg,#2563eb,#22c55e);box-shadow:var(--shadow);z-index:40}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+    .modal-backdrop.show{display:flex}
+    .modal{width:min(1200px,100%);max-height:94vh;overflow:auto;background:linear-gradient(180deg,#08152c,#0a1730);border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow);padding:22px}
+    .modal.large{width:min(1320px,100%)} .modal-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
+    .close-btn{width:40px;height:40px;border:none;border-radius:12px;background:rgba(255,255,255,.05);color:#fff;cursor:pointer}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.field{margin-bottom:8px}.field label{display:block;margin-bottom:6px;font-size:13px;color:#cfe0ff}
+    .field input,.field select,.field textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}.field textarea{min-height:90px;resize:vertical}
+    .span-2{grid-column:span 2}.span-4{grid-column:1/-1}.muted-note{font-size:12px;color:var(--muted)}
+    .modal-kpis{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:12px;margin:16px 0 14px}
+    .modal-kpi{border:1px solid rgba(147,197,253,.22);border-radius:16px;padding:14px;background:linear-gradient(180deg,rgba(37,99,235,.12),rgba(255,255,255,.025));box-shadow:0 12px 28px rgba(0,0,0,.18)}
+    .modal-kpi .k-label{font-size:12px;color:#bfdbfe;margin-bottom:8px}
+    .modal-kpi .k-value{font-size:26px;font-weight:900;color:#fff;line-height:1}
+    .modal-kpi .k-sub{font-size:11px;color:#9ab0d0;margin-top:8px}
+    .modal-kpi.dead{border-color:rgba(245,158,11,.35);background:linear-gradient(180deg,rgba(245,158,11,.12),rgba(255,255,255,.025))}
+    .modal-kpi.effective{border-color:rgba(34,197,94,.35);background:linear-gradient(180deg,rgba(34,197,94,.12),rgba(255,255,255,.025))}
+    .row-kpi{display:inline-flex;flex-direction:column;gap:2px;min-width:92px;padding:8px 10px;border-radius:12px;border:1px solid rgba(147,197,253,.22);background:linear-gradient(180deg,rgba(37,99,235,.12),rgba(255,255,255,.025))}
+    .row-kpi .rk-label{font-size:10px;color:#bfdbfe;line-height:1.05}
+    .row-kpi .rk-value{font-size:16px;font-weight:900;color:#fff;line-height:1.1}
+    .row-kpi.dead{border-color:rgba(245,158,11,.35);background:linear-gradient(180deg,rgba(245,158,11,.12),rgba(255,255,255,.025))}
+    .row-kpi.effective{border-color:rgba(34,197,94,.35);background:linear-gradient(180deg,rgba(34,197,94,.12),rgba(255,255,255,.025))}
+    
+    .check-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px}.check-item{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.03)}.section-title{margin:18px 0 10px;font-size:16px;font-weight:800;color:#dbeafe;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.03)}.materials-section{margin-top:16px;padding:16px;border:1px solid rgba(59,130,246,.22);border-radius:18px;background:linear-gradient(180deg,rgba(20,40,80,.38),rgba(10,22,48,.55));box-shadow:inset 0 1px 0 rgba(255,255,255,.03)}.materials-section.hidden{display:none}.materials-header{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;user-select:none}.materials-title{margin:0;font-size:16px;font-weight:800;color:#dbeafe}.materials-sub{font-size:12px;color:#9fb6d9}.materials-toggle-btn{border:1px solid rgba(96,165,250,.35);border-radius:12px;padding:8px 12px;background:rgba(37,99,235,.18);color:#dbeafe;font-weight:800;cursor:pointer}.materials-toggle-btn:hover{background:rgba(37,99,235,.28)}
+    .detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.detail-card{border:1px solid var(--border);border-radius:16px;padding:14px;background:rgba(255,255,255,.03)}
+    .detail-title{font-size:12px;color:var(--muted);margin-bottom:6px}.detail-value{font-size:14px;font-weight:700;white-space:pre-wrap}
+    @media (max-width:1400px){.summary{grid-template-columns:repeat(3,minmax(150px,1fr))}}
+    @media (max-width:1100px){.grid,.detail-grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:900px){.page{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.grid,.summary,.detail-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<div id="formModal" class="modal-backdrop">
+  <div class="modal large">
+    <div class="modal-header">
+      <div>
+        <h3 id="formModalTitle" style="margin:0 0 6px 0;">Nueva solicitud de instalación</h3>
+        <div class="muted-note">Control integral de permisos, material, enrutamiento, aprovisionamiento y agendamiento.</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="small-btn" type="button" onclick="copiarInfoInstalacion()">Copiar info</button>
+        <span id="copyInfoMsg" class="copy-msg"></span>
+        <button class="close-btn" type="button" onclick="closeFormModal()">✕</button>
+      </div>
+    </div>
+    <form id="instalacionForm" action="javascript:void(0);" method="post">
+      <input type="hidden" name="id">
+      <div class="grid">
+        <div class="field"><label>Fecha ingreso</label><input type="date" name="fecha_ingreso" required onchange="calcularTiemposMuertosInstalacion()"></div>
+        <div class="field"><label>ID Cambio</label><input name="id_cambio" required></div>
+        <div class="field"><label>ID Tarea</label><input name="id_tarea" required></div>
+        <div class="field"><label>ID Cliente</label><input name="id_cliente" required></div>
+        <div class="field"><label>Operador</label><input name="operador"></div>
+        <div class="field span-2"><label>Cliente</label><input name="cliente" required></div>
+        <div class="field"><label>Contratista</label><input name="contratista"></div>
+        <div class="field span-2"><label>Dirección</label><input name="direccion"></div>
+        <div class="field"><label>Responsable</label><input name="responsable"></div>
+        <div class="field"><label>Estado general</label>
+          <select name="estado_general">
+            <option>INGRESADA</option><option>EN_VALIDACION</option><option>PENDIENTE_PERMISOS</option><option>PERMISOS_APROBADOS</option>
+            <option>PENDIENTE_ENRUTAMIENTO</option><option>EN_GESTION EMSA</option><option>LISTA_PARA_AGENDAR</option><option>SOLIC AGENDA CONTRATISTA</option><option>AGENDADA</option><option>EN_EJECUCION</option>
+            <option>ENTREGADA</option><option>CANCELADA</option>
+          </select>
+        </div>
+        <div class="field"><label>Capacidad en (Megas)</label><input name="capacidad"></div>
+        <div class="field"><label>Estado planta externa</label>
+          <select name="estado_planta_externa"><option>PENDIENTE</option><option>VIABLE</option><option>EN_GESTION</option><option>COMPLETA</option><option>NO_VIABLE</option><option>N/A</option></select>
+        </div>
+        <div class="field"><label>Estado planta interna</label>
+          <select name="estado_planta_interna"><option>PENDIENTE</option><option>VIABLE</option><option>EN_GESTION</option><option>COMPLETA</option><option>NO_VIABLE</option><option>N/A</option></select>
+        </div>
+        <div class="field"><label>Fecha solicitud permisos</label><input type="date" name="fecha_solicitud_permisos" onchange="calcularTiemposMuertosInstalacion()"></div>
+        <div class="field"><label>Fecha respuesta permisos</label><input type="date" name="fecha_respuesta_permisos" onchange="calcularTiemposMuertosInstalacion()"></div>
+        <div class="field"><label>Fecha aprobación permisos</label><input type="date" name="fecha_aprobacion_permisos" onchange="calcularTiemposMuertosInstalacion()"></div>
+        <div class="field"><label>Tiempo muerto permisos</label><input name="tiempo_muerto_permisos" readonly></div>
+        <div class="field"><label>Estado permisos</label>
+          <select name="estado_permisos"><option>PENDIENTE</option><option>SOLICITADOS</option><option>EN_GESTION</option><option>APROBADOS</option><option>RECHAZADOS</option><option>NO_REQUIERE</option></select>
+        </div>
+        <div class="field"><label>Fecha agendamiento PE</label><input type="date" name="fecha_agendamiento_pe"></div>
+        <div class="field"><label>Fecha agendamiento PI</label><input type="date" name="fecha_agendamiento_pi"></div>
+        <div class="field"><label>Hora agendamiento</label><input type="time" name="hora_agendamiento"></div>
+        <div class="field"><label>Fecha de entrega</label><input type="date" name="fecha_entrega" onchange="calcularTiemposMuertosInstalacion()"></div>
+        <div class="field"><label>Tiempo total instalación</label><input name="tiempo_total_instalacion" readonly></div>
+        <div class="field"><label>Tiempo efectivo instalación</label><input name="tiempo_efectivo_instalacion" readonly></div>
+
+        <div class="field span-4">
+          <div class="modal-kpis" id="instalacionDurationKpis">
+            <div class="modal-kpi">
+              <div class="k-label">Duración total instalación</div>
+              <div class="k-value" id="kpiDuracionTotalInst">0 días</div>
+              <div class="k-sub">Fecha entrega o fecha actual - Fecha ingreso</div>
+            </div>
+            <div class="modal-kpi dead">
+              <div class="k-label">Tiempo muerto</div>
+              <div class="k-value" id="kpiTiempoMuertoInst">0 días</div>
+              <div class="k-sub">Permisos + radicación EMSA</div>
+            </div>
+            <div class="modal-kpi effective">
+              <div class="k-label">Duración efectiva</div>
+              <div class="k-value" id="kpiDuracionEfectivaInst">0 días</div>
+              <div class="k-sub">Duración total - tiempos muertos</div>
+            </div>
+          </div>
+        </div>
+        <div class="field span-4"><label>Observaciones</label><textarea name="observaciones"></textarea></div>
+      </div>
+
+      <div class="check-row">
+        <label class="check-item"><input type="checkbox" name="alistamiento_material"> Alistamiento de material</label>
+        <label class="check-item"><input type="checkbox" name="enrutamiento_solicitado"> Enrutamiento solicitado</label>
+        <label class="check-item"><input type="checkbox" name="enrutamiento_aprobado"> Enrutamiento aprobado</label>
+        <label class="check-item"><input type="checkbox" name="agenda_aprovisionamiento"> Agenda de aprovisionamiento</label>
+        <label class="check-item"><input type="checkbox" name="checklist_radicacion_emsa" onchange="toggleRadicacionEmsaSection()"> Radicación EMSA</label>
+      </div>
+
+      <div id="radicacionEmsaSection" class="materials-section hidden" style="margin-top:16px">
+        <div class="materials-header" onclick="toggleRadicacionEmsaSection(true)">
+          <div>
+            <div class="materials-title">Radicación EMSA</div>
+            <div class="materials-sub">Control de tiempos muertos por radicación, respuesta y aprobación ante EMSA.</div>
+          </div>
+          <div id="radicacionEmsaToggleIcon" class="materials-sub">▼</div>
+        </div>
+        <div id="radicacionEmsaContent" style="margin-top:14px;">
+          <div class="grid">
+            <div class="field"><label>Fecha de radicación</label><input type="date" name="fecha_radicacion_emsa" onchange="actualizarIndicadoresRadicacionEmsa(); calcularTiemposMuertosInstalacion()"></div>
+            <div class="field"><label>Número de radicado</label><input name="numero_radicado_emsa" placeholder="Ej. 20267410060482"></div>
+            <div class="field"><label>Fecha respuesta radicación</label><input type="date" name="fecha_respuesta_emsa" onchange="calcularTiemposMuertosInstalacion()"></div>
+            <div class="field"><label>Estado de radicación</label>
+              <select name="estado_radicacion_emsa">
+                <option>PENDIENTE</option>
+                <option>RADICADO</option>
+                <option>EN_GESTION</option>
+                <option>APROBADO</option>
+                <option>RECHAZADO</option>
+                <option>NO_REQUIERE</option>
+              </select>
+            </div>
+            <div class="field"><label>Días transcurridos</label><input name="dias_transcurridos_radicacion_emsa" readonly></div>
+            <div class="field"><label>Días hábiles transcurridos</label><input name="dias_habiles_radicacion_emsa" readonly></div>
+            <div class="field"><label>Tiempo muerto radicación</label><input name="tiempo_muerto_radicacion_emsa" readonly></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;margin-top:12px">
+        <button type="button" id="btnToggleMateriales" class="materials-toggle-btn" onclick="toggleMaterialsSection()">Mostrar materiales</button>
+      </div>
+
+      <div id="materialsSection" class="materials-section hidden">
+        <div class="materials-header" onclick="toggleMaterialsSection()">
+          <div>
+            <div class="materials-title">Materiales usados en la instalación</div>
+            <div class="materials-sub">Se muestra automáticamente cuando el estado es ENTREGADA o puedes desplegarla manualmente.</div>
+          </div>
+          <div id="materialsToggleIcon" class="materials-sub">▼</div>
+        </div>
+        <div id="materialsContent" style="margin-top:14px;">
+<div class="grid">
+        <div class="field"><label>FO Externa</label><input type="number" step="0.01" min="0" name="fo_externa"></div>
+        <div class="field"><label>FO Interna</label><input type="number" step="0.01" min="0" name="fo_interna"></div>
+        <div class="field"><label>FO Total</label><input type="number" step="0.01" min="0" name="fo_total" readonly></div>
+        <div class="field"><label>Cant. Herrajes retención</label><input type="number" min="0" name="cant_herrajes_retencion"></div>
+
+        <div class="field"><label>Cant. Herrajes suspensión</label><input type="number" min="0" name="cant_herrajes_suspension"></div>
+        <div class="field"><label>Cant. Argolla poste</label><input type="number" min="0" name="cant_argolla_poste"></div>
+        <div class="field"><label>Cant. Caja OB</label><input type="number" min="0" name="cant_caja_ob"></div>
+        <div class="field"><label>Cant. Patchcord</label><input type="number" min="0" name="cant_patchcord"></div>
+        <div class="field"><label>Cinta Bandi-it (Metros)</label><input type="number" step="0.01" min="0" name="cinta_bandi_it_metros"></div>
+        <div class="field"><label>Cant Marquilla amarilla</label><input type="number" min="0" name="cant_marquilla_amarilla"></div>
+        <div class="field"><label>Cant. Marquillas</label><input type="number" min="0" name="cant_marquillas"></div>
+
+        <div class="field"><label>Tipo fibra</label>
+<select name="tipo_fibra">
+<option>N/A</option>
+<option>4H AEREA</option>
+<option>4H ARMADA</option>
+<option>12H AEREA</option>
+<option>12H ARMADA</option>
+<option>24H AEREA</option>
+<option>24H ARMADA</option>
+<option>48H AEREA</option>
+<option>48H ARMADA</option>
+<option>96H AEREA</option>
+<option>96H ARMADA</option>
+</select>
+</div>
+
+        <div class="field"><label>Tipo patchcord</label>
+          <select name="tipo_patchcord">
+            <option value="">Seleccionar</option>
+            <option>LC-LC</option>
+            <option>SC-LC</option>
+            <option>N/A</option>
+          </select>
+        </div>
+        <div class="field"><label>Longitud patchcord</label><input name="longitud_patchcord" placeholder="Ej. 2M, 3M, 5M"></div>
+        <div class="field"><label>SFP cliente</label><input name="sfp_cliente_descripcion" placeholder="Descripción"></div>
+        <div class="field"><label>Serial SFP cliente</label><input name="serial_sfp_cliente"></div>
+
+        <div class="field"><label>Marca SFP cliente</label><input name="marca_sfp_cliente"></div>
+        <div class="field"><label>SFP nodo</label><input name="sfp_nodo_descripcion" placeholder="Descripción"></div>
+        <div class="field"><label>Serial SFP nodo</label><input name="serial_sfp_nodo"></div>
+        <div class="field"><label>Marca SFP nodo</label><input name="marca_sfp_nodo"></div>
+      </div>
+
+      
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
+        <button type="button" class="small-btn" onclick="closeFormModal()">Cancelar</button>
+        <button type="submit" class="btn" id="saveBtn">Guardar solicitud</button>
+      </div>
+      <div id="formMsg" style="margin-top:10px;color:#86efac"></div>
+    </form>
+  </div>
+</div>
+
+<div id="detailModal" class="modal-backdrop">
+  <div class="modal large">
+    <div class="modal-header">
+      <div>
+        <h3 id="detailTitle" style="margin:0 0 6px 0;">Detalle de la solicitud</h3>
+        <div class="muted-note">Vista integral del proceso de instalación y sus dependencias.</div>
+      </div>
+      <button class="close-btn" type="button" onclick="closeDetailModal()">✕</button>
+    </div>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<script>
+function safeRenderError(message){
+  document.body.innerHTML = `
+    <div style="min-height:100vh;background:linear-gradient(180deg,#04101f,#07152a);color:#fff;font-family:Arial,Helvetica,sans-serif;display:flex;align-items:center;justify-content:center;padding:24px">
+      <div style="max-width:900px;width:100%;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:24px;background:rgba(255,255,255,.04)">
+        <h2 style="margin-top:0">Error cargando el módulo de instalaciones</h2>
+        <p style="color:#cbd5e1">Revisa app.js, la configuración de Supabase y la consola del navegador.</p>
+        <pre style="white-space:pre-wrap;color:#fecaca">${String(message || '')}</pre>
+      </div>
+    </div>`;
+}
+
+function renderShell(){
+  const email = localStorage.getItem('user_email') || '';
+  document.getElementById('root').innerHTML = `
+    <div class="page">
+      <aside class="sidebar" ondblclick="toggleSidebar()">
+        <div class="brand">Nodo O&M</div>
+        <div class="subbrand">Control y seguimiento</div>
+        <nav class="nav">
+          <a href="index.html">Inicio</a>
+          <a href="dashboard.html">Dashboard</a>
+          <a href="fallas.html">Tickets / Fallas</a>
+          <a href="mantenimientos.html">Mantenimientos</a>
+          <a href="instalaciones.html" class="active">Instalaciones</a>
+          <a href="factibilidades.html">Factibilidades</a>
+          <a href="traslados.html">Traslados</a>
+          <a href="materiales.html">Materiales</a>
+          <a href="liquidaciones.html">Liquidaciones</a>
+          <a href="gastos.html">Gastos</a>
+          <a href="tareas.html">Tareas y Alertas</a>
+          <a href="reportes.html">Reportes</a>
+        </nav>
+        <div class="session-box"><small>Sesión<br>${email || 'Sin iniciar'}</small><button class="btn secondary" style="width:100%" onclick="safeLogout()">Cerrar sesión</button></div>
+      </aside>
+      <button id="sidebarToggleTab" class="sidebar-toggle-tab" title="Ocultar / mostrar barra lateral" onclick="toggleSidebar()">‹</button>
+      <main class="main">
+        <div class="header">
+          <h1>Instalaciones FO</h1>
+          <p>Seguimiento profesional de solicitudes, permisos, enrutamiento, material, aprovisionamiento y agendamiento con contratista.</p>
+        </div>
+
+        <div class="top-layout">
+          <div class="toolbar-row">
+            <div class="toolbar-left">
+              <input id="searchInst" class="control" placeholder="Buscar por cliente, ID cliente, ID cambio o tarea">
+              <div class="multi-select-wrap">
+                <button type="button" id="estadoMultiBtn" class="multi-select-btn" onclick="toggleEstadoMenu()">
+                  <span id="estadoMultiLabel">Todos los estados</span>
+                  <span>▾</span>
+                </button>
+                <div id="estadoMultiMenu" class="multi-select-menu">
+                  <label><input type="checkbox" value="INGRESADA"> INGRESADA</label>
+                  <label><input type="checkbox" value="EN_VALIDACION"> EN_VALIDACION</label>
+                  <label><input type="checkbox" value="PENDIENTE_PERMISOS"> PENDIENTE_PERMISOS</label>
+                  <label><input type="checkbox" value="PERMISOS_APROBADOS"> PERMISOS_APROBADOS</label>
+                  <label><input type="checkbox" value="PENDIENTE_ENRUTAMIENTO"> PENDIENTE_ENRUTAMIENTO</label>
+                  <label><input type="checkbox" value="EN_GESTION EMSA"> EN_GESTION EMSA</label>
+                  <label><input type="checkbox" value="LISTA_PARA_AGENDAR"> LISTA_PARA_AGENDAR</label>
+                  <label><input type="checkbox" value="SOLIC AGENDA CONTRATISTA"> SOLIC AGENDA CONTRATISTA</label>
+                  <label><input type="checkbox" value="AGENDADA"> AGENDADA</label>
+                  <label><input type="checkbox" value="EN_EJECUCION"> EN_EJECUCION</label>
+                  <label><input type="checkbox" value="ENTREGADA"> ENTREGADA</label>
+                  <label><input type="checkbox" value="CANCELADA"> CANCELADA</label>
+                </div>
+              </div>
+              <input id="filterFecha" class="control" type="date" title="Filtrar por fecha de ingreso">
+            </div>
+            <div class="toolbar-right">
+              <div class="filter-actions">
+                <select id="sortBy" class="control">
+                  <option value="fecha_ingreso_desc">Más recientes</option>
+                  <option value="fecha_ingreso_asc">Más antiguas</option>
+                  <option value="cliente_asc">Cliente A-Z</option>
+                  <option value="estado_asc">Estado</option>
+                </select>
+                <button class="btn ghost import-btn" type="button" onclick="openImportPicker()">Cargar plantilla</button>
+                <button class="btn ghost" type="button" onclick="openCorreoTemplateConfig()">Config. plantilla correo</button>
+                <button class="btn ghost" onclick="loadInstalaciones()">Actualizar</button>
+                <input id="plantillaInput" type="file" accept=".txt,.csv,.tsv,text/plain" style="display:none">
+              </div>
+            </div>
+          </div>
+
+          <div id="weeklyKpis" class="weekly-kpis">
+            <div class="weekly-card"><div class="label">Clientes entregados<br>semana actual</div><div class="value">0</div><div class="unit">registros</div></div>
+            <div class="weekly-card"><div class="label">FO Externa<br>semana actual</div><div class="value">0</div><div class="unit">metros</div></div>
+            <div class="weekly-card"><div class="label">FO Interna<br>semana actual</div><div class="value">0</div><div class="unit">metros</div></div>
+            <div class="weekly-card"><div class="label">Total fibra instalada<br>semana actual</div><div class="value">0</div><div class="unit">metros</div></div>
+          </div>
+        </div>
+
+        <div id="summary" class="summary"></div>
+
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('fecha_ingreso')">Fecha ingreso <span id="sort_fecha_ingreso" class="sort-icon"></span></div><select id="filter_col_fecha_ingreso" onchange="setColumnFilter('fecha_ingreso', this.value)"><option value="">Todas</option></select></div></th>
+                  <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('id_cambio')">ID Cambio <span id="sort_id_cambio" class="sort-icon"></span></div><select id="filter_col_id_cambio" onchange="setColumnFilter('id_cambio', this.value)"><option value="">Todos</option></select></div></th>
+                  <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('id_tarea')">ID Tarea <span id="sort_id_tarea" class="sort-icon"></span></div><select id="filter_col_id_tarea" onchange="setColumnFilter('id_tarea', this.value)"><option value="">Todos</option></select></div></th>
+                  <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('id_cliente')">ID Cliente <span id="sort_id_cliente" class="sort-icon"></span></div><select id="filter_col_id_cliente" onchange="setColumnFilter('id_cliente', this.value)"><option value="">Todos</option></select></div></th>
+                  <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('cliente')">Cliente <span id="sort_cliente" class="sort-icon"></span></div><select id="filter_col_cliente" onchange="setColumnFilter('cliente', this.value)"><option value="">Todos</option></select></div></th>
+                  <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('operador')">Operador <span id="sort_operador" class="sort-icon"></span></div><select id="filter_col_operador" onchange="setColumnFilter('operador', this.value)"><option value="">Todos</option></select></div></th>
+                  <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('estado_general')">Estado general <span id="sort_estado_general" class="sort-icon"></span></div><select id="filter_col_estado_general" onchange="setColumnFilter('estado_general', this.value)"><option value="">Todos</option></select></div></th>
+                  <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('estado_permisos')">Permisos <span id="sort_estado_permisos" class="sort-icon"></span></div><select id="filter_col_estado_permisos" onchange="setColumnFilter('estado_permisos', this.value)"><option value="">Todos</option></select></div></th>
+                  <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('fecha_agendamiento')">Fecha agendamiento <span id="sort_fecha_agendamiento" class="sort-icon"></span></div><select id="filter_col_fecha_agendamiento" onchange="setColumnFilter('fecha_agendamiento', this.value)"><option value="">Todas</option></select></div></th>
+                  <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('fecha_entrega')">Fecha entrega <span id="sort_fecha_entrega" class="sort-icon"></span></div><select id="filter_col_fecha_entrega" onchange="setColumnFilter('fecha_entrega', this.value)"><option value="">Todas</option></select></div></th>
+                  <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('duracion_total')">Duración total <span id="sort_duracion_total" class="sort-icon"></span></div><select id="filter_col_duracion_total" onchange="setColumnFilter('duracion_total', this.value)"><option value="">Todos</option></select></div></th>
+                  <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('tiempo_muerto')">Tiempo muerto <span id="sort_tiempo_muerto" class="sort-icon"></span></div><select id="filter_col_tiempo_muerto" onchange="setColumnFilter('tiempo_muerto', this.value)"><option value="">Todos</option></select></div></th>
+                  <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('duracion_efectiva')">Duración efectiva <span id="sort_duracion_efectiva" class="sort-icon"></span></div><select id="filter_col_duracion_efectiva" onchange="setColumnFilter('duracion_efectiva', this.value)"><option value="">Todos</option></select></div></th>
+                  <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('acciones')">Acciones <span id="sort_acciones" class="sort-icon"></span></div><select id="filter_col_acciones" onchange="setColumnFilter('acciones', this.value)"><option value="">Todas</option></select></div></th>
+                </tr>
+              </thead>
+              <tbody id="tableBody"></tbody>
+            </table>
+          </div>
+          <div id="emptyState" class="empty">No hay solicitudes para mostrar.</div>
+        </div>
+
+        <button class="floating-add" title="Nueva instalación" onclick="openFormModal()">+</button>
+      </main>
+    </div>
+  `;
+}
+function safeLogout(){ try{ if(typeof logout==='function'){ logout(); return; } }catch(e){} localStorage.removeItem('user_email'); location.href='index.html'; }
+function toggleSidebar(){
+  const page = document.querySelector('.page');
+  const tab = document.getElementById('sidebarToggleTab');
+  if(!page) return;
+  page.classList.toggle('sidebar-hidden');
+  const hidden = page.classList.contains('sidebar-hidden');
+  localStorage.setItem('om_sidebar_hidden', hidden ? '1' : '0');
+  if(tab) tab.textContent = hidden ? '›' : '‹';
+}
+function restoreSidebarState(){
+  const page = document.querySelector('.page');
+  const tab = document.getElementById('sidebarToggleTab');
+  if(!page) return;
+  const hidden = localStorage.getItem('om_sidebar_hidden') === '1';
+  page.classList.toggle('sidebar-hidden', hidden);
+  if(tab) tab.textContent = hidden ? '›' : '‹';
+}
+try{ renderShell(); restoreSidebarState(); }catch(err){ console.error(err); safeRenderError(err.message || err); throw err; }
+
+let clientRef = null;
+let instalacionesRows = [];
+let activeKpi = null;
+let activeWeeklyKpi = null;
+let importRowsPending = [];
+let columnFilters = {fecha_ingreso:'', id_cambio:'', id_tarea:'', id_cliente:'', cliente:'', operador:'', estado_general:'', estado_permisos:'', fecha_agendamiento:'', fecha_entrega:'', duracion_total:'', tiempo_muerto:'', duracion_efectiva:'', acciones:''};
+let sortField = 'fecha_ingreso';
+let sortDir = 'desc';
+
+function openImportPicker(){
+  const input = document.getElementById('plantillaInput');
+  if(!input) return;
+  input.value = '';
+  input.click();
+}
+function closeImportModal(){
+  document.getElementById('importModal')?.classList.remove('show');
+  importRowsPending = [];
+}
+function normalizeHeader(s){
+  return String(s || '').replace(/^"+|"+$/g,'').trim();
+}
+function cleanCell(s){
+  return String(s ?? '').replace(/^"+|"+$/g,'').trim();
+}
+function parseTemplateDate(value){
+  const v = cleanCell(value);
+  if(!v) return null;
+  const m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(!m) return null;
+  const dd = m[1].padStart(2,'0');
+  const mm = m[2].padStart(2,'0');
+  const yyyy = m[3];
+  return `${yyyy}-${mm}-${dd}`;
+}
+function parseDelimitedLine(line, delimiter){
+  const cols = [];
+  let current = '';
+  let inQuotes = false;
+  const txt = String(line || '');
+  for(let i = 0; i < txt.length; i++){
+    const ch = txt[i];
+    const next = txt[i + 1];
+    if(ch === '"'){
+      if(inQuotes && next === '"'){
+        current += '"';
+        i++;
+      }else{
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if(ch === delimiter && !inQuotes){
+      cols.push(current);
+      current = '';
+      continue;
+    }
+    current += ch;
+  }
+  cols.push(current);
+  return cols;
+}
+function detectDelimiter(line){
+  const candidates = ['\t',';',','];
+  let best = '\t';
+  let max = -1;
+  candidates.forEach(d => {
+    const count = parseDelimitedLine(line, d).length;
+    if(count > max){ max = count; best = d; }
+  });
+  return best;
+}
+function parseDelimitedText(text){
+  const lines = String(text || '').split(/\r?\n/).filter(x => x.trim() !== '');
+  if(!lines.length) return [];
+  const delimiter = detectDelimiter(lines[0]);
+  const headers = parseDelimitedLine(lines[0], delimiter).map(normalizeHeader);
+  return lines.slice(1).map(line => {
+    const cols = parseDelimitedLine(line, delimiter);
+    const row = {};
+    headers.forEach((h, i) => row[h] = cleanCell(cols[i] || ''));
+    return row;
+  });
+}
+function mapTemplateRow(row){
+  return {
+    id_cliente: cleanCell(row['Servicio']) || null,
+    id_cambio: cleanCell(row['Cambio principal']) || null,
+    id_tarea: cleanCell(row['ID de tarea']) || null,
+    cliente: cleanCell(row['Ubicacion A']) || null,
+    direccion: cleanCell(row['Direccion A']) || null,
+    operador: cleanCell(row['Operador']) || null,
+    fecha_ingreso: parseTemplateDate(row['Fecha Real Solic']),
+    estado_general: 'INGRESADA'
+  };
+}
+function renderImportPreview(rows, meta){
+  const body = document.getElementById('importPreviewBody');
+  const summary = document.getElementById('importSummary');
+  const msg = document.getElementById('importMsg');
+  summary.innerHTML = `
+    <div class="summary-mini"><div class="n">${meta.total}</div><div class="l">Filas plantilla</div></div>
+    <div class="summary-mini"><div class="n">${meta.filtered}</div><div class="l">Cumplen filtro</div></div>
+    <div class="summary-mini"><div class="n">${meta.existing}</div><div class="l">Ya existentes</div></div>
+    <div class="summary-mini"><div class="n">${meta.newRows}</div><div class="l">Nuevos a importar</div></div>
+  `;
+  body.innerHTML = rows.map(r => `
+    <tr>
+      <td>${esc(fmtDate(r.fecha_ingreso))}</td>
+      <td>${esc(r.id_cambio || '')}</td>
+      <td>${esc(r.id_tarea || '')}</td>
+      <td>${esc(r.id_cliente || '')}</td>
+      <td>${esc(r.cliente || '')}</td>
+      <td>${esc(r.direccion || '')}</td>
+      <td>${esc(r.operador || '')}</td>
+      <td>${esc(r.estado_general || '')}</td>
+    </tr>
+  `).join('');
+  msg.style.color = '#cbd5e1';
+  msg.textContent = rows.length ? 'Revisa los registros nuevos. Si aceptas, se agregarán a la tabla instalaciones.' : 'No se encontraron registros nuevos para importar.';
+  const btn = document.getElementById('confirmImportBtn');
+  if(btn) btn.disabled = !rows.length;
+  document.getElementById('importModal')?.classList.add('show');
+}
+async function processTemplateFile(file){
+  const text = await file.text();
+  const rawRows = parseDelimitedText(text);
+  const currentYear = new Date().getFullYear();
+  const filteredTemplate = rawRows.filter(r => {
+    const finalidad = cleanCell(r['Finalidad']);
+    const categoria = cleanCell(r['Categoría']);
+    const fecha = cleanCell(r['Fecha Real Solic']);
+    const match = fecha.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    const year = match ? parseInt(match[3], 10) : null;
+    return (finalidad === 'Instalación' || finalidad === 'Instalación por Cobertura')
+      && categoria === 'Obras Civiles Ext. A'
+      && year === currentYear;
+  });
+  const mapped = filteredTemplate.map(mapTemplateRow).filter(r => r.id_cambio);
+  const uniqueMap = new Map();
+  mapped.forEach(r => { if(!uniqueMap.has(r.id_cambio)) uniqueMap.set(r.id_cambio, r); });
+  const uniqueRows = Array.from(uniqueMap.values());
+
+  const client = await resolveClient();
+  const { data: existingData, error } = await client.from('instalaciones').select('id_cambio');
+  if(error) throw error;
+  const existing = new Set((existingData || []).map(x => String(x.id_cambio || '').trim()).filter(Boolean));
+
+  const newRows = uniqueRows.filter(r => !existing.has(String(r.id_cambio || '').trim()));
+  importRowsPending = newRows;
+
+  renderImportPreview(newRows, {
+    total: rawRows.length,
+    filtered: filteredTemplate.length,
+    existing: uniqueRows.length - newRows.length,
+    newRows: newRows.length
+  });
+}
+async function confirmImportRows(){
+  if(!importRowsPending.length) return;
+  const client = await resolveClient();
+  const btn = document.getElementById('confirmImportBtn');
+  const msg = document.getElementById('importMsg');
+  try{
+    if(btn) btn.disabled = true;
+    if(msg){ msg.style.color = '#cbd5e1'; msg.textContent = 'Importando registros...'; }
+    const { error } = await client.from('instalaciones').insert(importRowsPending);
+    if(error) throw error;
+    closeImportModal();
+    await loadInstalaciones();
+    alert(`Se importaron ${importRowsPending.length} registros correctamente.`);
+  }catch(err){
+    console.error(err);
+    if(msg){ msg.style.color = '#fecaca'; msg.textContent = 'Error importando registros: ' + (err.message || err); }
+  }finally{
+    if(btn) btn.disabled = false;
+  }
+}
+
+
+function esc(v){ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
+function fmtDate(v){ if(!v) return ''; try{return new Date(v+'T00:00:00').toLocaleDateString('es-CO')}catch(e){return v} }
+function fmtTime(v){ if(!v) return ''; try{const [h,m] = String(v).split(':'); const d = new Date(); d.setHours(Number(h), Number(m), 0, 0); return d.toLocaleTimeString('es-CO',{hour:'numeric', minute:'2-digit'});}catch(e){return v} }
+function toNumber(v){
+  const n = parseFloat(String(v ?? '').replace(',', '.'));
+  return Number.isFinite(n) ? n : 0;
+}
+function formatNumber(v){
+  const n = Number(v) || 0;
+  return n.toFixed(2).replace(/\.00$/,'').replace(/(\.\d)0$/,'$1');
+}
+function getCurrentWeekRange(){
+  const now = new Date();
+  now.setHours(0,0,0,0);
+  const day = now.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const start = new Date(now);
+  start.setDate(now.getDate() + diffToMonday);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23,59,59,999);
+  return { start, end };
+}
+function dateInCurrentWeek(dateValue){
+  if(!dateValue) return false;
+  const d = new Date(String(dateValue) + 'T00:00:00');
+  if(isNaN(d)) return false;
+  const range = getCurrentWeekRange();
+  return d >= range.start && d <= range.end;
+}
+function getWeeklyDeliveredRows(rows){
+  return (rows || []).filter(r => r.estado_general === 'ENTREGADA' && dateInCurrentWeek(r.fecha_entrega));
+}
+function applyWeeklyKpiFilter(rows){
+  if(!activeWeeklyKpi) return rows;
+  const delivered = getWeeklyDeliveredRows(rows);
+  switch(activeWeeklyKpi){
+    case 'CLIENTES_SEMANA':
+      return delivered;
+    case 'FO_EXTERNA_SEMANA':
+      return delivered.filter(r => toNumber(r.fo_externa) > 0);
+    case 'FO_INTERNA_SEMANA':
+      return delivered.filter(r => toNumber(r.fo_interna) > 0);
+    case 'FO_TOTAL_SEMANA':
+      return delivered.filter(r => (toNumber(r.fo_externa) + toNumber(r.fo_interna)) > 0);
+    default:
+      return rows;
+  }
+}
+function bindWeeklyKpiClicks(){
+  document.querySelectorAll('#weeklyKpis .weekly-card[data-weekly-kpi]').forEach(card => {
+    card.onclick = () => {
+      const k = card.getAttribute('data-weekly-kpi');
+      activeWeeklyKpi = activeWeeklyKpi === k ? null : k;
+      renderWeeklyKpis(instalacionesRows);
+      renderTable();
+    };
+  });
+}
+function renderWeeklyKpis(rows){
+  const delivered = (rows || []).filter(r => r.estado_general === 'ENTREGADA' && dateInCurrentWeek(r.fecha_entrega));
+  const foExt = delivered.reduce((sum, r) => sum + toNumber(r.fo_externa), 0);
+  const foInt = delivered.reduce((sum, r) => sum + toNumber(r.fo_interna), 0);
+  const foTotal = foExt + foInt;
+  const el = document.getElementById('weeklyKpis');
+  if(!el) return;
+  el.innerHTML = `
+    <div class="weekly-card ${activeWeeklyKpi==='CLIENTES_SEMANA'?'active':''}" data-weekly-kpi="CLIENTES_SEMANA"><div class="label">Clientes entregados<br>semana actual</div><div class="value">${delivered.length}</div><div class="unit">clic para ver registros</div></div>
+    <div class="weekly-card ${activeWeeklyKpi==='FO_EXTERNA_SEMANA'?'active':''}" data-weekly-kpi="FO_EXTERNA_SEMANA"><div class="label">FO Externa<br>semana actual</div><div class="value">${formatNumber(foExt)}</div><div class="unit">metros · clic para ver</div></div>
+    <div class="weekly-card ${activeWeeklyKpi==='FO_INTERNA_SEMANA'?'active':''}" data-weekly-kpi="FO_INTERNA_SEMANA"><div class="label">FO Interna<br>semana actual</div><div class="value">${formatNumber(foInt)}</div><div class="unit">metros · clic para ver</div></div>
+    <div class="weekly-card ${activeWeeklyKpi==='FO_TOTAL_SEMANA'?'active':''}" data-weekly-kpi="FO_TOTAL_SEMANA"><div class="label">Total fibra instalada<br>semana actual</div><div class="value">${formatNumber(foTotal)}</div><div class="unit">metros · clic para ver</div></div>
+  `;
+  bindWeeklyKpiClicks();
+}
+
+function badgeEstado(v){ return `<span class="badge estado-${esc(v)}">${esc(v || '')}</span>`; }
+
+async function resolveClient(){
+  if(clientRef) return clientRef;
+  if(typeof getClient === 'function'){
+    clientRef = await getClient();
+    return clientRef;
+  }
+  const url = localStorage.getItem('sb_url');
+  const key = localStorage.getItem('sb_key');
+  if(!url || !key) throw new Error('No se encontró configuración de Supabase');
+  clientRef = window.supabase.createClient(url, key);
+  return clientRef;
+}
+
+function calcularListaParaAgendar(row){
+  return !!row.alistamiento_material
+    && (row.estado_permisos === 'APROBADOS' || row.estado_permisos === 'NO_REQUIERE')
+    && !!row.enrutamiento_aprobado
+    && !!row.agenda_aprovisionamiento;
+}
+
+function getSelectedEstados(){
+  return Array.from(document.querySelectorAll('#estadoMultiMenu input[type="checkbox"]:checked')).map(x => x.value);
+}
+function updateEstadoMultiLabel(){
+  const estados = getSelectedEstados();
+  const label = document.getElementById('estadoMultiLabel');
+  if(!label) return;
+  if(!estados.length) label.textContent = 'Todos los estados';
+  else if(estados.length <= 2) label.textContent = estados.join(', ');
+  else label.textContent = `${estados.length} estados seleccionados`;
+}
+function toggleEstadoMenu(){
+  document.getElementById('estadoMultiMenu')?.classList.toggle('show');
+}
+document.addEventListener('click', function(e){
+  const wrap = document.querySelector('.multi-select-wrap');
+  const menu = document.getElementById('estadoMultiMenu');
+  if(wrap && menu && !wrap.contains(e.target)) menu.classList.remove('show');
+});
+function applyKpiFilter(rows){
+  switch(activeKpi){
+    case 'PENDIENTES':
+      return rows.filter(r => r.estado_general !== 'ENTREGADA' && r.estado_general !== 'CANCELADA');
+    case 'PERMISOS_APROBADOS':
+      return rows.filter(r => r.estado_permisos === 'APROBADOS');
+    case 'LISTAS_AGENDAR':
+      return rows.filter(r => calcularListaParaAgendar(r));
+    case 'AGENDADAS':
+      return rows.filter(r => r.estado_general === 'AGENDADA');
+    case 'ENTREGADAS_EJECUCION':
+      return rows.filter(r => r.estado_general === 'ENTREGADA' || r.estado_general === 'EN_EJECUCION');
+    case 'TOTAL':
+    default:
+      return rows;
+  }
+}
+function bindKpiClicks(){
+  document.querySelectorAll('#summary .stat[data-kpi]').forEach(card => {
+    card.onclick = () => {
+      const k = card.getAttribute('data-kpi');
+      activeKpi = activeKpi === k ? null : k;
+      activeWeeklyKpi = null;
+      renderWeeklyKpis(instalacionesRows);
+      renderTable();
+    };
+  });
+}
+
+function actualizarFoTotal(){
+  const form = document.getElementById('instalacionForm');
+  if(!form) return;
+  const ext = parseFloat(form.elements['fo_externa']?.value || 0) || 0;
+  const inte = parseFloat(form.elements['fo_interna']?.value || 0) || 0;
+  const total = ext + inte;
+  if(form.elements['fo_total']) form.elements['fo_total'].value = total.toFixed(2).replace(/\.00$/,'');
+}
+function setMaterialsVisibility(){
+  const form = document.getElementById('instalacionForm');
+  const section = document.getElementById('materialsSection');
+  const content = document.getElementById('materialsContent');
+  const icon = document.getElementById('materialsToggleIcon');
+  const btn = document.getElementById('btnToggleMateriales');
+  if(!form || !section || !content || !icon) return;
+  const estado = form.elements['estado_general']?.value || '';
+  const manual = section.dataset.manualOpen === '1';
+  const shouldShow = manual || estado === 'ENTREGADA';
+  section.classList.toggle('hidden', !shouldShow);
+  content.style.display = shouldShow ? '' : 'none';
+  icon.textContent = shouldShow ? '▲' : '▼';
+  if(btn) btn.textContent = shouldShow ? 'Ocultar materiales' : 'Mostrar materiales';
+}
+function toggleMaterialsSection(forceOpen){
+  const section = document.getElementById('materialsSection');
+  if(!section) return;
+  if(forceOpen === true){
+    section.dataset.manualOpen = '1';
+  }else{
+    section.dataset.manualOpen = section.dataset.manualOpen === '1' ? '0' : '1';
+  }
+  setMaterialsVisibility();
+}
+function validarFechaEntregaSiEntregada(){
+  const form = document.getElementById('instalacionForm');
+  if(!form) return true;
+  const estado = form.elements['estado_general']?.value || '';
+  const fechaEntrega = form.elements['fecha_entrega']?.value || '';
+  if(estado === 'ENTREGADA' && !fechaEntrega){
+    return false;
+  }
+  return true;
+}
+
+function diasHabilesEntreFechasInstalacion(fecha){
+  if(!fecha) return '';
+  const inicio = new Date(fecha + 'T00:00:00');
+  const hoy = new Date();
+  hoy.setHours(0,0,0,0);
+  let contador = 0;
+  const actual = new Date(inicio);
+  while(actual <= hoy){
+    const dia = actual.getDay();
+    if(dia !== 0 && dia !== 6) contador++;
+    actual.setDate(actual.getDate() + 1);
+  }
+  return contador > 0 ? contador - 1 : 0;
+}
+function diasCalendarioEntre(fechaInicio, fechaFin){
+  if(!fechaInicio || !fechaFin) return '';
+  const inicio = new Date(fechaInicio + 'T00:00:00');
+  const fin = new Date(fechaFin + 'T00:00:00');
+  const diff = Math.floor((fin - inicio) / 86400000);
+  return diff < 0 ? 0 : diff;
+}
+
+function toggleRadicacionEmsaSection(fromHeader=false){
+  const form = document.getElementById('instalacionForm');
+  const section = document.getElementById('radicacionEmsaSection');
+  const content = document.getElementById('radicacionEmsaContent');
+  const icon = document.getElementById('radicacionEmsaToggleIcon');
+  if(!form || !section || !content) return;
+
+  const chk = form.elements['checklist_radicacion_emsa'];
+  if(fromHeader && chk) chk.checked = !chk.checked;
+
+  const show = !!chk?.checked;
+  section.classList.toggle('hidden', !show);
+  content.style.display = show ? '' : 'none';
+  if(icon) icon.textContent = show ? '▲' : '▼';
+
+  if(!show){
+    ['fecha_radicacion_emsa','numero_radicado_emsa','fecha_respuesta_emsa','dias_transcurridos_radicacion_emsa','dias_habiles_radicacion_emsa','tiempo_muerto_radicacion_emsa'].forEach(n => {
+      if(form.elements[n]) form.elements[n].value = '';
+    });
+  }
+}
+function diasDesdeFechaInstalacion(fecha){
+  if(!fecha) return '';
+  const inicio = new Date(fecha + 'T00:00:00');
+  const hoy = new Date();
+  hoy.setHours(0,0,0,0);
+  const diff = Math.floor((hoy - inicio) / 86400000);
+  return diff < 0 ? 0 : diff;
+}
+function actualizarIndicadoresRadicacionEmsa(){
+  const form = document.getElementById('instalacionForm');
+  if(!form) return;
+  const fecha = form.elements['fecha_radicacion_emsa']?.value || '';
+  if(form.elements['dias_transcurridos_radicacion_emsa']) form.elements['dias_transcurridos_radicacion_emsa'].value = fecha ? diasDesdeFechaInstalacion(fecha) : '';
+  if(form.elements['dias_habiles_radicacion_emsa']) form.elements['dias_habiles_radicacion_emsa'].value = fecha ? diasHabilesEntreFechasInstalacion(fecha) : '';
+}
+function calcularTiemposMuertosInstalacion(){
+  const form = document.getElementById('instalacionForm');
+  if(!form) return;
+  const el = form.elements;
+
+  const fechaSolicitudPermisos = el['fecha_solicitud_permisos']?.value || '';
+  const fechaRespuestaPermisos = el['fecha_respuesta_permisos']?.value || '';
+  const fechaAprobacionPermisos = el['fecha_aprobacion_permisos']?.value || '';
+  const finPermisos = fechaAprobacionPermisos || fechaRespuestaPermisos;
+
+  const radicacionActiva = !!el['checklist_radicacion_emsa']?.checked;
+  const fechaRadicacionEmsa = radicacionActiva ? (el['fecha_radicacion_emsa']?.value || '') : '';
+  const fechaRespuestaEmsa = radicacionActiva ? (el['fecha_respuesta_emsa']?.value || '') : '';
+
+  const muertoPermisos = diasCalendarioEntre(fechaSolicitudPermisos, finPermisos);
+  const muertoRadicacion = diasCalendarioEntre(fechaRadicacionEmsa, fechaRespuestaEmsa);
+  const totalInstalacion = diasCalendarioEntre(el['fecha_ingreso']?.value, fechaFinCalculoInstalacion(el['fecha_entrega']?.value));
+
+  let efectivo = '';
+  if(totalInstalacion !== ''){
+    const mp = muertoPermisos === '' ? 0 : Number(muertoPermisos);
+    const mr = muertoRadicacion === '' ? 0 : Number(muertoRadicacion);
+    efectivo = Math.max(0, Number(totalInstalacion) - mp - mr);
+  }
+
+  if(el['tiempo_muerto_permisos']) el['tiempo_muerto_permisos'].value = muertoPermisos === '' ? '' : `${muertoPermisos} días`;
+  actualizarIndicadoresRadicacionEmsa();
+  if(el['tiempo_muerto_radicacion_emsa']) el['tiempo_muerto_radicacion_emsa'].value = muertoRadicacion === '' ? '' : `${muertoRadicacion} días`;
+  if(el['tiempo_total_instalacion']) el['tiempo_total_instalacion'].value = totalInstalacion === '' ? '' : `${totalInstalacion} días`;
+  if(el['tiempo_efectivo_instalacion']) el['tiempo_efectivo_instalacion'].value = efectivo === '' ? '' : `${efectivo} días`;
+
+  const totalKpi = document.getElementById('kpiDuracionTotalInst');
+  const muertoKpi = document.getElementById('kpiTiempoMuertoInst');
+  const efectivaKpi = document.getElementById('kpiDuracionEfectivaInst');
+  const tiempoMuertoTotal = (muertoPermisos === '' ? 0 : Number(muertoPermisos)) + (muertoRadicacion === '' ? 0 : Number(muertoRadicacion));
+
+  if(totalKpi) totalKpi.textContent = totalInstalacion === '' ? '0 días' : `${totalInstalacion} días`;
+  if(muertoKpi) muertoKpi.textContent = `${tiempoMuertoTotal} días`;
+  if(efectivaKpi) efectivaKpi.textContent = efectivo === '' ? '0 días' : `${efectivo} días`;
+}
+function actualizarRequeridoFechaEntrega(){
+  const form = document.getElementById('instalacionForm');
+  if(!form) return;
+  const estado = form.elements['estado_general']?.value || '';
+  const fechaEntregaInput = form.elements['fecha_entrega'];
+  if(fechaEntregaInput) fechaEntregaInput.required = estado === 'ENTREGADA';
+}
+
+
+
+function fechaHoyISOInstalacion(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+function fechaFinCalculoInstalacion(fechaEntrega){
+  return fechaEntrega || fechaHoyISOInstalacion();
+}
+
+function parseDiasTexto(v){
+  if(v === null || v === undefined || v === '') return 0;
+  const n = parseInt(String(v).replace(/[^\d-]/g,''), 10);
+  return Number.isFinite(n) ? Math.max(0, n) : 0;
+}
+function calcularTiempoMuertoPermisosRow(row){
+  const finPermisos = row?.fecha_aprobacion_permisos || row?.fecha_respuesta_permisos || '';
+  const dias = diasCalendarioEntre(row?.fecha_solicitud_permisos, finPermisos);
+  return dias === '' ? parseDiasTexto(row?.tiempo_muerto_permisos) : Number(dias);
+}
+function calcularTiempoMuertoRadicacionRow(row){
+  if(!row?.checklist_radicacion_emsa) return 0;
+  const dias = diasCalendarioEntre(row?.fecha_radicacion_emsa, row?.fecha_respuesta_emsa);
+  return dias === '' ? parseDiasTexto(row?.tiempo_muerto_radicacion_emsa) : Number(dias);
+}
+function calcularDuracionTotalInstRow(row){
+  const total = diasCalendarioEntre(row?.fecha_ingreso, fechaFinCalculoInstalacion(row?.fecha_entrega));
+  return total === '' ? '0 días' : `${total} días`;
+}
+function calcularTiempoMuertoInstRow(row){
+  const total = calcularTiempoMuertoPermisosRow(row) + calcularTiempoMuertoRadicacionRow(row);
+  return `${total} días`;
+}
+function calcularDuracionEfectivaInstRow(row){
+  const total = diasCalendarioEntre(row?.fecha_ingreso, fechaFinCalculoInstalacion(row?.fecha_entrega));
+  if(total === '') return '0 días';
+  const muerto = parseDiasTexto(calcularTiempoMuertoInstRow(row));
+  return `${Math.max(0, Number(total) - muerto)} días`;
+}
+
+
+function renderSummary(rows){
+  const total = rows.length;
+  const agendadas = rows.filter(r => r.estado_general === 'AGENDADA').length;
+  const entregadas = rows.filter(r => r.estado_general === 'ENTREGADA').length;
+  const permisos = rows.filter(r => r.estado_permisos === 'APROBADOS').length;
+  const listas = rows.filter(r => calcularListaParaAgendar(r)).length;
+  const pendientes = rows.filter(r => r.estado_general !== 'ENTREGADA' && r.estado_general !== 'CANCELADA').length;
+  const ejecucion = rows.filter(r => r.estado_general === 'EN_EJECUCION').length;
+
+  document.getElementById('summary').innerHTML = `
+    <div class="stat ${activeKpi==='TOTAL'?'active':''}" data-kpi="TOTAL"><div class="label">Total solicitudes</div><div class="value">${total}</div><div class="sub">Base visible</div></div>
+    <div class="stat ${activeKpi==='PENDIENTES'?'active':''}" data-kpi="PENDIENTES"><div class="label">Pendientes</div><div class="value">${pendientes}</div><div class="sub">Aún activas</div></div>
+    <div class="stat ${activeKpi==='PERMISOS_APROBADOS'?'active':''}" data-kpi="PERMISOS_APROBADOS"><div class="label">Permisos aprobados</div><div class="value">${permisos}</div><div class="sub">Listas para avanzar</div></div>
+    <div class="stat ${activeKpi==='LISTAS_AGENDAR'?'active':''}" data-kpi="LISTAS_AGENDAR"><div class="label">Listas para agendar</div><div class="value">${listas}</div><div class="sub">Checklist completo</div></div>
+    <div class="stat ${activeKpi==='AGENDADAS'?'active':''}" data-kpi="AGENDADAS"><div class="label">Agendadas</div><div class="value">${agendadas}</div><div class="sub">Con contratista</div></div>
+    <div class="stat ${activeKpi==='ENTREGADAS_EJECUCION'?'active':''}" data-kpi="ENTREGADAS_EJECUCION"><div class="label">Entregadas / Ejecución</div><div class="value">${entregadas} / ${ejecucion}</div><div class="sub">Cierre y avance</div></div>
+  `;
+  bindKpiClicks();
+}
+
+
+function getColumnValue(r, field){
+  switch(field){
+    case 'fecha_ingreso': return fmtDate(r.fecha_ingreso);
+    case 'id_cambio': return r.id_cambio || '';
+    case 'id_tarea': return r.id_tarea || '';
+    case 'id_cliente': return r.id_cliente || '';
+    case 'cliente': return `${r.cliente || ''}${r.direccion ? ' - ' + r.direccion : ''}`.trim();
+    case 'operador': return r.operador || '';
+    case 'estado_general': return r.estado_general || '';
+    case 'estado_permisos': return r.estado_permisos || '';
+    case 'fecha_agendamiento': return `${fmtDate(r.fecha_agendamiento_pe)} ${fmtTime(r.hora_agendamiento)}`.trim();
+    case 'fecha_entrega': return fmtDate(r.fecha_entrega);
+    case 'duracion_total': return calcularDuracionTotalInstRow(r);
+    case 'tiempo_muerto': return calcularTiempoMuertoInstRow(r);
+    case 'duracion_efectiva': return calcularDuracionEfectivaInstRow(r);
+    case 'acciones': return 'Editar | Sol Contratista';
+    default: return '';
+  }
+}
+function getSortValue(r, field){
+  if(['fecha_ingreso','fecha_agendamiento','fecha_entrega'].includes(field)){
+    const raw = field === 'fecha_agendamiento' ? r.fecha_agendamiento_pe : field === 'fecha_entrega' ? r.fecha_entrega : r.fecha_ingreso;
+    const d = new Date(String(raw || '') + 'T00:00:00');
+    return isNaN(d) ? 0 : d.getTime();
+  }
+  if(['duracion_total','tiempo_muerto','duracion_efectiva'].includes(field)) return parseDiasTexto(getColumnValue(r, field));
+  return String(getColumnValue(r, field) || '').toLowerCase();
+}
+function uniqueSorted(values){
+  return Array.from(new Set(values.filter(v => String(v || '').trim() !== '')))
+    .sort((a,b) => String(a).localeCompare(String(b), 'es', {numeric:true}));
+}
+function hydrateColumnFilters(baseRows){
+  const configs = [
+    ['fecha_ingreso','filter_col_fecha_ingreso','Todas'],
+    ['id_cambio','filter_col_id_cambio','Todos'],
+    ['id_tarea','filter_col_id_tarea','Todos'],
+    ['id_cliente','filter_col_id_cliente','Todos'],
+    ['cliente','filter_col_cliente','Todos'],
+    ['operador','filter_col_operador','Todos'],
+    ['estado_general','filter_col_estado_general','Todos'],
+    ['estado_permisos','filter_col_estado_permisos','Todos'],
+    ['fecha_agendamiento','filter_col_fecha_agendamiento','Todas'],
+    ['fecha_entrega','filter_col_fecha_entrega','Todas'],
+    ['duracion_total','filter_col_duracion_total','Todos'],
+    ['tiempo_muerto','filter_col_tiempo_muerto','Todos'],
+    ['duracion_efectiva','filter_col_duracion_efectiva','Todos'],
+    ['acciones','filter_col_acciones','Todas']
+  ];
+  configs.forEach(([field, id, label]) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const current = columnFilters[field] || '';
+    const values = uniqueSorted(baseRows.map(r => getColumnValue(r, field)));
+    el.innerHTML = `<option value="">${label}</option>` + values.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    el.value = values.includes(current) ? current : '';
+    columnFilters[field] = el.value;
+  });
+}
+function applyColumnFilters(data){
+  return data.filter(r => Object.entries(columnFilters).every(([field, value]) => {
+    if(!value) return true;
+    return getColumnValue(r, field) === value;
+  }));
+}
+function setColumnFilter(field, value){ columnFilters[field] = value || ''; renderTable(); }
+function sortColumn(field){
+  if(sortField === field){ sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
+  else{ sortField = field; sortDir = ['fecha_ingreso','fecha_agendamiento','fecha_entrega','duracion_total','tiempo_muerto','duracion_efectiva'].includes(field) ? 'desc' : 'asc'; }
+  renderTable();
+}
+function updateSortIcons(){
+  Object.keys(columnFilters).forEach(field => {
+    const el = document.getElementById('sort_' + field);
+    if(el) el.textContent = sortField === field ? (sortDir === 'asc' ? '▲' : '▼') : '';
+  });
+}
+
+function getFilteredRows(){
+  const txt = (document.getElementById('searchInst')?.value || '').trim().toLowerCase();
+  const estados = getSelectedEstados();
+  const fecha = document.getElementById('filterFecha')?.value || '';
+  let rows = instalacionesRows.filter(r => {
+    const hayTexto = !txt || [
+      r.cliente, r.id_cliente, r.id_cambio, r.id_tarea, r.operador, r.direccion,
+      r.estado_general, r.estado_permisos, r.fecha_solicitud_permisos, r.fecha_respuesta_permisos, r.fecha_aprobacion_permisos
+    ].map(x => String(x || '').toLowerCase()).some(v => v.includes(txt));
+    const hayEstado = !estados.length || estados.includes(r.estado_general);
+    const hayFecha = !fecha || r.fecha_ingreso === fecha;
+    return hayTexto && hayEstado && hayFecha;
+  });
+  rows = applyKpiFilter(rows);
+  rows = applyWeeklyKpiFilter(rows);
+  hydrateColumnFilters(rows);
+  rows = applyColumnFilters(rows);
+  rows.sort((a,b) => {
+    const va = getSortValue(a, sortField);
+    const vb = getSortValue(b, sortField);
+    if(typeof va === 'number' && typeof vb === 'number'){
+      return sortDir === 'asc' ? va - vb : vb - va;
+    }
+    return sortDir === 'asc'
+      ? String(va).localeCompare(String(vb), 'es', {numeric:true})
+      : String(vb).localeCompare(String(va), 'es', {numeric:true});
+  });
+  updateSortIcons();
+  return rows;
+}
+
+function renderTable(){
+  const rows = getFilteredRows();
+  renderSummary(rows);
+
+  const body = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+
+  if(!rows.length){
+    body.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  body.innerHTML = rows.map(r => `
+    <tr class="${r.estado_general === 'ENTREGADA' ? 'row-entregada' : ''}" onclick="showDetail('${r.id}')">
+      <td>${esc(fmtDate(r.fecha_ingreso))}</td>
+      <td><div class="title">${esc(r.id_cambio)}</div></td>
+      <td>${esc(r.id_tarea)}</td>
+      <td>${esc(r.id_cliente)}</td>
+      <td><div class="title">${esc(r.cliente)}</div><div class="desc">${esc(r.direccion || '')}</div></td>
+      <td>${esc(r.operador || '')}</td>
+      <td>${badgeEstado(r.estado_general)}</td>
+      <td>${esc(r.estado_permisos || '')}</td>
+      <td>${esc(fmtDate(r.fecha_agendamiento_pe))} ${esc(fmtTime(r.hora_agendamiento))}</td>
+      <td>${esc(fmtDate(r.fecha_entrega))}</td>
+      <td><div class="row-kpi"><span class="rk-label">Total</span><span class="rk-value">${esc(calcularDuracionTotalInstRow(r))}</span></div></td>
+      <td><div class="row-kpi dead"><span class="rk-label">Muerto</span><span class="rk-value">${esc(calcularTiempoMuertoInstRow(r))}</span></div></td>
+      <td><div class="row-kpi effective"><span class="rk-label">Efectiva</span><span class="rk-value">${esc(calcularDuracionEfectivaInstRow(r))}</span></div></td>
+      <td onclick="event.stopPropagation()">
+        <button class="small-btn" onclick="editRow('${r.id}')">Editar</button>
+        <button class="sol-btn" onclick="solicitarContratistaInstalacion('${r.id}')">Sol Contratista</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function loadInstalaciones(){
+  try{
+    const client = await resolveClient();
+    const { data, error } = await client.from('instalaciones').select('*').order('fecha_ingreso', { ascending:false });
+    if(error) throw error;
+    instalacionesRows = data || [];
+    renderWeeklyKpis(instalacionesRows);
+    renderTable();
+  }catch(err){
+    console.error(err);
+    document.getElementById('tableBody').innerHTML = `<tr><td colspan="14" style="padding:18px;color:#fecaca">Error cargando instalaciones: ${esc(err.message || err)}</td></tr>`;
+  }
+}
+
+
+async function copiarInfoInstalacion(){
+  const form = document.getElementById('instalacionForm');
+  const msg = document.getElementById('copyInfoMsg');
+  if(!form) return;
+
+  const el = form.elements;
+  const texto = [
+    `Nombre cliente: ${(el['cliente']?.value || '').trim()}`,
+    `Dirección: ${(el['direccion']?.value || '').trim()}`,
+    `ID Cliente: ${(el['id_cliente']?.value || '').trim()}`,
+    `ID Cambio: ${(el['id_cambio']?.value || '').trim()}`,
+    `ID Tarea: ${(el['id_tarea']?.value || '').trim()}`
+  ].join('\n');
+
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(texto);
+    }else{
+      const ta = document.createElement('textarea');
+      ta.value = texto;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      ta.style.top = '-9999px';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+
+    if(msg){
+      msg.style.color = '#86efac';
+      msg.textContent = 'Copiado';
+      setTimeout(() => msg.textContent = '', 2200);
+    }
+  }catch(err){
+    console.error(err);
+    if(msg){
+      msg.style.color = '#fecaca';
+      msg.textContent = 'No se pudo copiar';
+      setTimeout(() => msg.textContent = '', 2600);
+    }
+  }
+}
+
+
+const INSTALL_TEMPLATE_PASSWORD = '1022956631';
+const INSTALL_TEMPLATE_NAME = 'instalaciones_sol_contratista';
+const INSTALL_DEFAULT_TEMPLATE = {
+  nombre: INSTALL_TEMPLATE_NAME,
+  modulo: 'instalaciones',
+  descripcion: 'Solicitud de agendamiento de instalación al contratista desde módulo instalaciones.',
+  para: '',
+  cc: '',
+  asunto_template: 'Solicitud Fecha Agendamiento Instalación {{cliente}} - {{id_cliente}} - {{id_cambio}} - {{id_tarea}}',
+  cuerpo_template: `Buenos días,
+
+Cordial saludo.
+
+Solicito por favor su apoyo con la programación de visita/agendamiento para la siguiente instalación:
+
+Cliente: {{cliente}}
+ID Cliente: {{id_cliente}}
+ID Cambio: {{id_cambio}}
+ID Tarea: {{id_tarea}}
+Dirección: {{direccion}}
+Operador: {{operador}}
+Contratista: {{contratista}}
+
+Agradezco nos confirmen la fecha de agendamiento en la cual podamos ejecutar esta instalación lo más pronto posible.
+
+Quedo atento.
+
+Cordialmente`
+};
+let installCorreoTemplate = {...INSTALL_DEFAULT_TEMPLATE};
+let installTemplateRowId = null;
+let installTemplateUnlocked = false;
+let installTemplatePreviewRow = null;
+function normalizeTemplatePayload(data){
+  return { ...INSTALL_DEFAULT_TEMPLATE, ...(data || {}), para: data?.para || '', cc: data?.cc || '', asunto_template: data?.asunto_template || INSTALL_DEFAULT_TEMPLATE.asunto_template, cuerpo_template: data?.cuerpo_template || INSTALL_DEFAULT_TEMPLATE.cuerpo_template };
+}
+async function loadCorreoTemplateInstalaciones(){
+  try{
+    const client = await resolveClient();
+    const { data, error } = await client.from('Plantillas').select('*').eq('nombre', INSTALL_TEMPLATE_NAME).maybeSingle();
+    if(error) throw error;
+    if(data){ installTemplateRowId = data.id; installCorreoTemplate = normalizeTemplatePayload(data); }
+    else{ installTemplateRowId = null; installCorreoTemplate = {...INSTALL_DEFAULT_TEMPLATE}; }
+  }catch(err){ console.warn('No se pudo cargar la plantilla de instalaciones:', err); installCorreoTemplate = {...INSTALL_DEFAULT_TEMPLATE}; }
+}
+function getInstallTemplateVars(row){
+  return {
+    cliente: row?.cliente || '', id_cliente: row?.id_cliente || '', id_cambio: row?.id_cambio || '', id_tarea: row?.id_tarea || '', direccion: row?.direccion || '', operador: row?.operador || '', estado_general: row?.estado_general || '', estado_permisos: row?.estado_permisos || '', fecha_ingreso: fmtDate(row?.fecha_ingreso), fecha_agendamiento_pe: fmtDate(row?.fecha_agendamiento_pe), fecha_agendamiento_pi: fmtDate(row?.fecha_agendamiento_pi), hora_agendamiento: fmtTime(row?.hora_agendamiento), fecha_entrega: fmtDate(row?.fecha_entrega), responsable: row?.responsable || '', contratista: row?.contratista || '', capacidad: row?.capacidad || ''
+  };
+}
+function replaceTemplateVars(template, row){
+  const vars = getInstallTemplateVars(row || {});
+  return String(template || '').replace(/{{\s*([a-zA-Z0-9_]+)\s*}}/g, (match, key) => Object.prototype.hasOwnProperty.call(vars, key) ? String(vars[key] ?? '') : match);
+}
+function insertInstallVariable(token){
+  const ta = document.getElementById('installTemplateBody');
+  if(!ta || ta.disabled) return;
+  const start = ta.selectionStart ?? ta.value.length;
+  const end = ta.selectionEnd ?? ta.value.length;
+  ta.value = ta.value.slice(0, start) + token + ta.value.slice(end);
+  ta.focus();
+  const pos = start + token.length;
+  ta.setSelectionRange(pos, pos);
+  updateInstallTemplatePreview();
+}
+function getPreviewInstallRow(){
+  return installTemplatePreviewRow || instalacionesRows[0] || { cliente:'CLIENTE EJEMPLO', id_cliente:'CI000000', id_cambio:'C000000', id_tarea:'T000000', direccion:'Dirección ejemplo', operador:'Operador', contratista:'Contratista' };
+}
+function updateInstallTemplatePreview(){
+  const row = getPreviewInstallRow();
+  const body = document.getElementById('installTemplateBody')?.value || '';
+  const asunto = document.getElementById('installTemplateSubject')?.value || '';
+  const prev = document.getElementById('installTemplatePreview');
+  const prevSubject = document.getElementById('installTemplateSubjectPreview');
+  if(prev) prev.value = replaceTemplateVars(body, row);
+  if(prevSubject) prevSubject.value = replaceTemplateVars(asunto, row);
+}
+async function openCorreoTemplateConfig(){
+  const pwd = prompt('Ingrese la contraseña para configurar la plantilla:');
+  if(pwd !== INSTALL_TEMPLATE_PASSWORD){ if(pwd !== null) alert('Contraseña incorrecta.'); return; }
+  installTemplateUnlocked = true;
+  installTemplatePreviewRow = instalacionesRows[0] || null;
+  await loadCorreoTemplateInstalaciones();
+  document.getElementById('installTemplateTo').value = installCorreoTemplate.para || '';
+  document.getElementById('installTemplateCc').value = installCorreoTemplate.cc || '';
+  document.getElementById('installTemplateSubject').value = installCorreoTemplate.asunto_template || INSTALL_DEFAULT_TEMPLATE.asunto_template;
+  document.getElementById('installTemplateBody').value = installCorreoTemplate.cuerpo_template || INSTALL_DEFAULT_TEMPLATE.cuerpo_template;
+  document.getElementById('installTemplateMsg').textContent = '';
+  updateInstallTemplatePreview();
+  document.getElementById('installTemplateModal')?.classList.add('show');
+}
+function closeInstallTemplateModal(){ document.getElementById('installTemplateModal')?.classList.remove('show'); }
+function restoreInstallTemplateDefault(){
+  if(!installTemplateUnlocked) return;
+  document.getElementById('installTemplateSubject').value = INSTALL_DEFAULT_TEMPLATE.asunto_template;
+  document.getElementById('installTemplateBody').value = INSTALL_DEFAULT_TEMPLATE.cuerpo_template;
+  updateInstallTemplatePreview();
+}
+async function saveInstallTemplate(){
+  if(!installTemplateUnlocked){ alert('Debe ingresar la contraseña para modificar la plantilla.'); return; }
+  const msg = document.getElementById('installTemplateMsg');
+  try{
+    const payload = { nombre: INSTALL_TEMPLATE_NAME, modulo: 'instalaciones', descripcion: 'Solicitud de agendamiento de instalación al contratista desde módulo instalaciones.', para: (document.getElementById('installTemplateTo')?.value || '').trim(), cc: (document.getElementById('installTemplateCc')?.value || '').trim(), asunto_template: document.getElementById('installTemplateSubject')?.value || INSTALL_DEFAULT_TEMPLATE.asunto_template, cuerpo_template: document.getElementById('installTemplateBody')?.value || INSTALL_DEFAULT_TEMPLATE.cuerpo_template, activa: true, updated_at: new Date().toISOString() };
+    const client = await resolveClient();
+    const { data, error } = await client.from('Plantillas').upsert(payload, { onConflict: 'nombre' }).select().single();
+    if(error) throw error;
+    installCorreoTemplate = normalizeTemplatePayload(data || payload);
+    installTemplateRowId = data?.id || installTemplateRowId;
+    if(msg){ msg.style.color = '#86efac'; msg.textContent = 'Plantilla guardada correctamente en Supabase.'; }
+  }catch(err){ console.error(err); if(msg){ msg.style.color = '#fecaca'; msg.textContent = 'Error guardando plantilla en Supabase: ' + (err.message || err); } }
+}
+function buildOutlookComposeUrl({to, cc, subject, body}){
+  const params = [];
+  if(to) params.push('to=' + encodeURIComponent(to));
+  if(cc) params.push('cc=' + encodeURIComponent(cc));
+  if(subject) params.push('subject=' + encodeURIComponent(subject));
+  if(body) params.push('body=' + encodeURIComponent(body));
+  return 'https://outlook.office.com/mail/deeplink/compose?' + params.join('&');
+}
+async function solicitarContratistaInstalacion(id){
+  const row = instalacionesRows.find(x => String(x.id) === String(id));
+  if(!row) return;
+
+  const confirmar = confirm(
+    `¿Deseas redactar el correo de solicitud al contratista para este registro?\n\n` +
+    `Cliente: \n` +
+    `ID Cliente: \n` +
+    `ID Cambio: \n` +
+    `ID Tarea: \n\n` +
+    `Estado actual: \n` +
+    `Nuevo estado: SOLIC AGENDA CONTRATISTA\n\n` +
+    `Al aceptar se abrirá Outlook y se actualizará el estado en Supabase.`
+  );
+
+  if(!confirmar) return;
+
+  await loadCorreoTemplateInstalaciones();
+  const asunto = replaceTemplateVars(installCorreoTemplate.asunto_template, row);
+  const cuerpo = replaceTemplateVars(installCorreoTemplate.cuerpo_template, row);
+  window.open(buildOutlookComposeUrl({to: installCorreoTemplate.para || "", cc: installCorreoTemplate.cc || "", subject: asunto, body: cuerpo}), "_blank");
+  try{
+    const client = await resolveClient();
+    const { error } = await client.from("instalaciones").update({ estado_general: "SOLIC AGENDA CONTRATISTA" }).eq("id", id);
+    if(error) throw error;
+    await loadInstalaciones();
+  }catch(err){ console.error(err); alert("Outlook fue abierto, pero no se pudo actualizar el estado en Supabase: " + (err.message || err)); }
+}
+function copiarCuerpoInstalacionPreview(){ const txt = document.getElementById('installTemplatePreview')?.value || ''; navigator.clipboard?.writeText(txt).catch(()=>{}); }
+
+window.openFormModal = function(row=null){
+  const modal = document.getElementById('formModal');
+  const form = document.getElementById('instalacionForm');
+  const msg = document.getElementById('formMsg');
+  const el = form.elements;
+
+  form.reset();
+  msg.textContent = '';
+  el['id'].value = '';
+  document.getElementById('formModalTitle').textContent = row ? 'Editar solicitud de instalación' : 'Nueva solicitud de instalación';
+  document.getElementById('saveBtn').textContent = row ? 'Actualizar solicitud' : 'Guardar solicitud';
+
+  document.getElementById('materialsSection')?.setAttribute('data-manual-open','0');
+  if(row){
+    Object.keys(row).forEach(k => {
+      if(el[k]){
+        if(el[k].type === 'checkbox'){
+          el[k].checked = !!row[k];
+        }else{
+          el[k].value = row[k] ?? '';
+        }
+      }
+    });
+  }
+
+  actualizarFoTotal();
+  toggleRadicacionEmsaSection();
+  calcularTiemposMuertosInstalacion();
+  actualizarRequeridoFechaEntrega();
+  setMaterialsVisibility();
+  modal.classList.add('show');
+};
+
+window.closeFormModal = function(){
+  document.getElementById('formModal').classList.remove('show');
+};
+
+document.getElementById('formModal').addEventListener('click', function(e){
+  if(e.target.id === 'formModal'){ /* no cerrar por click fuera */ }
+});
+
+window.showDetail = function(id){
+  const row = instalacionesRows.find(x => x.id === id);
+  if(!row) return;
+
+  document.getElementById('detailTitle').textContent = `Detalle de instalación - ${row.cliente}`;
+  document.getElementById('detailContent').innerHTML = `
+    <div class="detail-grid">
+      <div class="detail-card"><div class="detail-title">Fecha ingreso</div><div class="detail-value">${esc(fmtDate(row.fecha_ingreso))}</div></div>
+      <div class="detail-card"><div class="detail-title">ID Cambio</div><div class="detail-value">${esc(row.id_cambio)}</div></div>
+      <div class="detail-card"><div class="detail-title">ID Tarea</div><div class="detail-value">${esc(row.id_tarea)}</div></div>
+
+      <div class="detail-card"><div class="detail-title">ID Cliente</div><div class="detail-value">${esc(row.id_cliente)}</div></div>
+      <div class="detail-card"><div class="detail-title">Operador</div><div class="detail-value">${esc(row.operador || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Cliente</div><div class="detail-value">${esc(row.cliente)}</div></div>
+
+      <div class="detail-card"><div class="detail-title">Dirección</div><div class="detail-value">${esc(row.direccion || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">FO Externa</div><div class="detail-value">${esc(row.fo_externa || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">FO Interna</div><div class="detail-value">${esc(row.fo_interna || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Capacidad</div><div class="detail-value">${esc(row.capacidad || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Tipo fibra</div><div class="detail-value">${esc(row.tipo_fibra || '')}</div></div>
+
+      <div class="detail-card"><div class="detail-title">Estado general</div><div class="detail-value">${esc(row.estado_general || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Fecha solicitud permisos</div><div class="detail-value">${esc(fmtDate(row.fecha_solicitud_permisos))}</div></div>
+      <div class="detail-card"><div class="detail-title">Fecha respuesta permisos</div><div class="detail-value">${esc(fmtDate(row.fecha_respuesta_permisos))}</div></div>
+      <div class="detail-card"><div class="detail-title">Fecha aprobación permisos</div><div class="detail-value">${esc(fmtDate(row.fecha_aprobacion_permisos))}</div></div>
+      <div class="detail-card"><div class="detail-title">Tiempo muerto permisos</div><div class="detail-value">${esc(row.tiempo_muerto_permisos || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Tiempo total instalación</div><div class="detail-value">${esc(row.tiempo_total_instalacion || calcularDuracionTotalInstRow(row))}</div></div>
+      <div class="detail-card"><div class="detail-title">Tiempo efectivo instalación</div><div class="detail-value">${esc(row.tiempo_efectivo_instalacion || calcularDuracionEfectivaInstRow(row))}</div></div>
+      <div class="detail-card" style="border-color:rgba(147,197,253,.22);background:linear-gradient(180deg,rgba(37,99,235,.12),rgba(255,255,255,.025))"><div class="detail-title">Duración total instalación</div><div class="detail-value">${esc(calcularDuracionTotalInstRow(row))}</div></div>
+      <div class="detail-card" style="border-color:rgba(245,158,11,.35);background:linear-gradient(180deg,rgba(245,158,11,.12),rgba(255,255,255,.025))"><div class="detail-title">Tiempo muerto total</div><div class="detail-value">${esc(calcularTiempoMuertoInstRow(row))}</div></div>
+      <div class="detail-card" style="border-color:rgba(34,197,94,.35);background:linear-gradient(180deg,rgba(34,197,94,.12),rgba(255,255,255,.025))"><div class="detail-title">Duración efectiva</div><div class="detail-value">${esc(calcularDuracionEfectivaInstRow(row))}</div></div>
+      <div class="detail-card"><div class="detail-title">Estado permisos</div><div class="detail-value">${esc(row.estado_permisos || '')}</div></div>
+
+      <div class="detail-card"><div class="detail-title">Fecha agendamiento PE</div><div class="detail-value">${esc(fmtDate(row.fecha_agendamiento_pe))}</div></div>
+      <div class="detail-card"><div class="detail-title">Fecha agendamiento PI</div><div class="detail-value">${esc(fmtDate(row.fecha_agendamiento_pi))}</div></div>
+      <div class="detail-card"><div class="detail-title">Hora agendamiento</div><div class="detail-value">${esc(fmtTime(row.hora_agendamiento))}</div></div>
+      <div class="detail-card"><div class="detail-title">Fecha entrega</div><div class="detail-value">${esc(fmtDate(row.fecha_entrega))}</div></div>
+
+      <div class="detail-card"><div class="detail-title">Estado planta externa</div><div class="detail-value">${esc(row.estado_planta_externa || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Estado planta interna</div><div class="detail-value">${esc(row.estado_planta_interna || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Responsable / Contratista</div><div class="detail-value">${esc((row.responsable || '') + ' / ' + (row.contratista || ''))}</div></div>
+
+      <div class="detail-card"><div class="detail-title">FO Externa</div><div class="detail-value">${esc(row.fo_externa || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">FO Interna</div><div class="detail-value">${esc(row.fo_interna || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">FO Total</div><div class="detail-value">${esc(row.fo_total || '')}</div></div>
+
+      <div class="detail-card"><div class="detail-title">Cant. Herrajes retención</div><div class="detail-value">${esc(row.cant_herrajes_retencion || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Cant. Herrajes suspensión</div><div class="detail-value">${esc(row.cant_herrajes_suspension || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Cant. Argolla poste</div><div class="detail-value">${esc(row.cant_argolla_poste || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Cant. Caja OB</div><div class="detail-value">${esc(row.cant_caja_ob || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Cant. Patchcord</div><div class="detail-value">${esc(row.cant_patchcord || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Cinta Bandi-it (Metros)</div><div class="detail-value">${esc(row.cinta_bandi_it_metros || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Cant Marquilla amarilla</div><div class="detail-value">${esc(row.cant_marquilla_amarilla || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Cant. Marquillas</div><div class="detail-value">${esc(row.cant_marquillas || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Tipo patchcord / Longitud</div><div class="detail-value">${esc((row.tipo_patchcord || '') + ' / ' + (row.longitud_patchcord || ''))}</div></div>
+
+      <div class="detail-card"><div class="detail-title">SFP cliente</div><div class="detail-value">${esc(row.sfp_cliente_descripcion || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Serial / Marca SFP cliente</div><div class="detail-value">${esc((row.serial_sfp_cliente || '') + ' / ' + (row.marca_sfp_cliente || ''))}</div></div>
+      <div class="detail-card"><div class="detail-title">SFP nodo</div><div class="detail-value">${esc(row.sfp_nodo_descripcion || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Serial / Marca SFP nodo</div><div class="detail-value">${esc((row.serial_sfp_nodo || '') + ' / ' + (row.marca_sfp_nodo || ''))}</div></div>
+
+      <div class="detail-card"><div class="detail-title">Alistamiento material</div><div class="detail-value">${row.alistamiento_material ? 'Sí' : 'No'}</div></div>
+      <div class="detail-card"><div class="detail-title">Enrutamiento solicitado</div><div class="detail-value">${row.enrutamiento_solicitado ? 'Sí' : 'No'}</div></div>
+      <div class="detail-card"><div class="detail-title">Enrutamiento aprobado</div><div class="detail-value">${row.enrutamiento_aprobado ? 'Sí' : 'No'}</div></div>
+
+      <div class="detail-card"><div class="detail-title">Agenda aprovisionamiento</div><div class="detail-value">${row.agenda_aprovisionamiento ? 'Sí' : 'No'}</div></div>
+      <div class="detail-card"><div class="detail-title">Lista para agendar</div><div class="detail-value">${calcularListaParaAgendar(row) ? 'Sí' : 'No'}</div></div>
+      <div class="detail-card"><div class="detail-title">Observaciones</div><div class="detail-value">${esc(row.observaciones || '')}</div></div>
+    </div>
+  `;
+  document.getElementById('detailModal').classList.add('show');
+};
+
+window.closeDetailModal = function(){
+  document.getElementById('detailModal').classList.remove('show');
+};
+
+document.getElementById('detailModal').addEventListener('click', function(e){
+  if(e.target.id === 'detailModal'){ /* no cerrar por click fuera */ }
+});
+
+window.editRow = function(id){
+  const row = instalacionesRows.find(x => x.id === id);
+  if(row) openFormModal(row);
+};
+
+document.getElementById('instalacionForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const form = e.target;
+  const el = form.elements;
+  const msg = document.getElementById('formMsg');
+
+  msg.textContent = '';
+
+  try{
+    if(!validarFechaEntregaSiEntregada()){
+      msg.style.color = '#fecaca';
+      msg.textContent = 'La fecha de entrega es obligatoria cuando el estado es ENTREGADA.';
+      const fechaEntregaInput = el['fecha_entrega'];
+      if(fechaEntregaInput) fechaEntregaInput.focus();
+      setMaterialsVisibility();
+      return;
+    }
+
+    calcularTiemposMuertosInstalacion();
+    const client = await resolveClient();
+
+    const payload = {
+      fecha_ingreso: el['fecha_ingreso'].value,
+      id_cambio: (el['id_cambio'].value || '').trim(),
+      id_tarea: (el['id_tarea'].value || '').trim(),
+      id_cliente: (el['id_cliente'].value || '').trim(),
+      operador: (el['operador'].value || '').trim() || null,
+      cliente: (el['cliente'].value || '').trim(),
+      direccion: (el['direccion'].value || '').trim() || null,
+      fo_externa: (el['fo_externa'].value || '').trim() || null,
+      fo_interna: (el['fo_interna'].value || '').trim() || null,
+      capacidad: (el['capacidad'].value || '').trim() || null,
+      tipo_fibra: (el['tipo_fibra'].value || '').trim() || null,
+      estado_general: el['estado_general'].value,
+      fecha_solicitud_permisos: el['fecha_solicitud_permisos'].value || null,
+      fecha_respuesta_permisos: el['fecha_respuesta_permisos']?.value || null,
+      fecha_aprobacion_permisos: el['fecha_aprobacion_permisos']?.value || null,
+      tiempo_muerto_permisos: el['tiempo_muerto_permisos']?.value || null,
+      checklist_radicacion_emsa: el['checklist_radicacion_emsa']?.checked || false,
+      fecha_radicacion_emsa: el['checklist_radicacion_emsa']?.checked ? (el['fecha_radicacion_emsa']?.value || null) : null,
+      numero_radicado_emsa: el['checklist_radicacion_emsa']?.checked ? ((el['numero_radicado_emsa']?.value || '').trim() || null) : null,
+      fecha_respuesta_emsa: el['checklist_radicacion_emsa']?.checked ? (el['fecha_respuesta_emsa']?.value || null) : null,
+      estado_radicacion_emsa: el['checklist_radicacion_emsa']?.checked ? (el['estado_radicacion_emsa']?.value || null) : null,
+      dias_transcurridos_radicacion_emsa: el['checklist_radicacion_emsa']?.checked ? (el['dias_transcurridos_radicacion_emsa']?.value || null) : null,
+      dias_habiles_radicacion_emsa: el['checklist_radicacion_emsa']?.checked ? (el['dias_habiles_radicacion_emsa']?.value || null) : null,
+      tiempo_muerto_radicacion_emsa: el['checklist_radicacion_emsa']?.checked ? (el['tiempo_muerto_radicacion_emsa']?.value || null) : null,
+      tiempo_total_instalacion: el['tiempo_total_instalacion']?.value || null,
+      tiempo_efectivo_instalacion: el['tiempo_efectivo_instalacion']?.value || null,
+      estado_permisos: el['estado_permisos'].value || null,
+      fecha_agendamiento_pe: el['fecha_agendamiento_pe'].value || null,
+      fecha_agendamiento_pi: el['fecha_agendamiento_pi'].value || null,
+      hora_agendamiento: el['hora_agendamiento'].value || null,
+      fecha_entrega: el['fecha_entrega'].value || null,
+      observaciones: (el['observaciones'].value || '').trim() || null,
+      estado_planta_externa: el['estado_planta_externa'].value || null,
+      estado_planta_interna: el['estado_planta_interna'].value || null,
+      fo_total: (el['fo_total'].value || '').trim() || null,
+      cant_herrajes_retencion: (el['cant_herrajes_retencion'].value || '').trim() || null,
+      cant_herrajes_suspension: (el['cant_herrajes_suspension'].value || '').trim() || null,
+      cant_argolla_poste: (el['cant_argolla_poste'].value || '').trim() || null,
+      cant_caja_ob: (el['cant_caja_ob'].value || '').trim() || null,
+      cant_patchcord: (el['cant_patchcord'].value || '').trim() || null,
+      cinta_bandi_it_metros: (el['cinta_bandi_it_metros'].value || '').trim() || null,
+      cant_marquilla_amarilla: (el['cant_marquilla_amarilla'].value || '').trim() || null,
+      cant_marquillas: (el['cant_marquillas'].value || '').trim() || null,
+      tipo_patchcord: (el['tipo_patchcord'].value || '').trim() || null,
+      longitud_patchcord: (el['longitud_patchcord'].value || '').trim() || null,
+      sfp_cliente_descripcion: (el['sfp_cliente_descripcion'].value || '').trim() || null,
+      serial_sfp_cliente: (el['serial_sfp_cliente'].value || '').trim() || null,
+      marca_sfp_cliente: (el['marca_sfp_cliente'].value || '').trim() || null,
+      sfp_nodo_descripcion: (el['sfp_nodo_descripcion'].value || '').trim() || null,
+      serial_sfp_nodo: (el['serial_sfp_nodo'].value || '').trim() || null,
+      marca_sfp_nodo: (el['marca_sfp_nodo'].value || '').trim() || null,
+      alistamiento_material: el['alistamiento_material'].checked,
+      enrutamiento_solicitado: el['enrutamiento_solicitado'].checked,
+      enrutamiento_aprobado: el['enrutamiento_aprobado'].checked,
+      agenda_aprovisionamiento: el['agenda_aprovisionamiento'].checked,
+      contratista: (el['contratista'].value || '').trim() || null,
+      responsable: (el['responsable'].value || '').trim() || null
+    };
+
+    if(calcularListaParaAgendar(payload) && payload.estado_general !== 'AGENDADA' && payload.estado_general !== 'ENTREGADA'){
+      payload.estado_general = 'LISTA_PARA_AGENDAR';
+    }
+
+    const rowId = el['id'].value || '';
+    let result;
+    if(rowId){
+      result = await client.from('instalaciones').update(payload).eq('id', rowId);
+    }else{
+      result = await client.from('instalaciones').insert(payload);
+    }
+    if(result.error) throw result.error;
+
+    msg.textContent = 'Solicitud guardada correctamente';
+    closeFormModal();
+    await loadInstalaciones();
+  }catch(err){
+    console.error(err);
+    msg.style.color = '#fecaca';
+    msg.textContent = 'Error guardando: ' + (err.message || err);
+  }
+});
+
+['searchInst','filterFecha','sortBy'].forEach(id => {
+  const el = document.getElementById(id);
+  if(el){
+    el.addEventListener('input', renderTable);
+    el.addEventListener('change', renderTable);
+  }
+});
+document.querySelectorAll('#estadoMultiMenu input[type="checkbox"]').forEach(el => {
+  el.addEventListener('change', function(){
+    updateEstadoMultiLabel();
+    renderTable();
+  });
+});
+
+['fo_externa','fo_interna'].forEach(name => {
+  document.addEventListener('input', function(e){
+    if(e.target && e.target.name === name) actualizarFoTotal();
+  });
+  document.addEventListener('change', function(e){
+    if(e.target && e.target.name === name) actualizarFoTotal();
+  });
+});
+
+document.addEventListener('change', function(e){
+  if(e.target && ['fecha_ingreso','fecha_solicitud_permisos','fecha_respuesta_permisos','fecha_aprobacion_permisos','fecha_radicacion_emsa','fecha_respuesta_emsa','fecha_entrega'].includes(e.target.name)){ calcularTiemposMuertosInstalacion(); }
+  if(e.target && e.target.name === 'estado_general'){ actualizarRequeridoFechaEntrega(); setMaterialsVisibility(); calcularTiemposMuertosInstalacion(); }
+  if(e.target && e.target.name === 'checklist_radicacion_emsa'){ toggleRadicacionEmsaSection(); calcularTiemposMuertosInstalacion(); }
+});
+
+document.getElementById('plantillaInput')?.addEventListener('change', async function(e){
+  const file = e.target.files?.[0];
+  if(!file) return;
+  try{
+    await processTemplateFile(file);
+  }catch(err){
+    console.error(err);
+    alert('Error procesando la plantilla: ' + (err.message || err));
+  }
+});
+document.getElementById('importModal')?.addEventListener('click', function(e){
+  if(e.target && e.target.id === 'importModal'){ /* no cerrar al hacer click afuera */ }
+});
+
+updateEstadoMultiLabel();
+loadCorreoTemplateInstalaciones();
+loadInstalaciones();
+</script>
+
+
+<div id="installTemplateModal" class="modal-backdrop">
+  <div class="modal large">
+    <div class="modal-header">
+      <div>
+        <h3 style="margin:0 0 6px 0;">Configuración plantilla Sol Contratista - Instalaciones</h3>
+        <div class="muted-note">Esta configuración queda guardada en Supabase. Para modificarse se solicita contraseña.</div>
+      </div>
+      <button class="close-btn" type="button" onclick="closeInstallTemplateModal()">✕</button>
+    </div>
+    <div class="grid">
+      <div class="field span-2"><label>Para</label><input id="installTemplateTo" oninput="updateInstallTemplatePreview()" placeholder="correo1@dominio.com, correo2@dominio.com"></div>
+      <div class="field span-2"><label>CC</label><input id="installTemplateCc" oninput="updateInstallTemplatePreview()" placeholder="correo-copia@dominio.com"></div>
+      <div class="field span-4"><label>Asunto</label><input id="installTemplateSubject" oninput="updateInstallTemplatePreview()"></div>
+      <div class="field span-4"><label>Cuerpo del correo configurable</label><textarea id="installTemplateBody" style="min-height:250px;font-family:Consolas,monospace" oninput="updateInstallTemplatePreview()"></textarea></div>
+    </div>
+    <div class="muted-note" style="margin-bottom:8px">Haz clic sobre una variable para insertarla en el cuerpo del correo.</div>
+    <div class="grid" style="gap:8px">
+      <button type="button" class="small-btn" onclick="insertInstallVariable('{{cliente}}')">{{cliente}}</button>
+      <button type="button" class="small-btn" onclick="insertInstallVariable('{{id_cliente}}')">{{id_cliente}}</button>
+      <button type="button" class="small-btn" onclick="insertInstallVariable('{{id_cambio}}')">{{id_cambio}}</button>
+      <button type="button" class="small-btn" onclick="insertInstallVariable('{{id_tarea}}')">{{id_tarea}}</button>
+      <button type="button" class="small-btn" onclick="insertInstallVariable('{{direccion}}')">{{direccion}}</button>
+      <button type="button" class="small-btn" onclick="insertInstallVariable('{{operador}}')">{{operador}}</button>
+      <button type="button" class="small-btn" onclick="insertInstallVariable('{{contratista}}')">{{contratista}}</button>
+      <button type="button" class="small-btn" onclick="insertInstallVariable('{{fecha_ingreso}}')">{{fecha_ingreso}}</button>
+      <button type="button" class="small-btn" onclick="insertInstallVariable('{{estado_general}}')">{{estado_general}}</button>
+      <button type="button" class="small-btn" onclick="insertInstallVariable('{{estado_permisos}}')">{{estado_permisos}}</button>
+      <button type="button" class="small-btn" onclick="insertInstallVariable('{{fecha_agendamiento_pe}}')">{{fecha_agendamiento_pe}}</button>
+      <button type="button" class="small-btn" onclick="insertInstallVariable('{{fecha_agendamiento_pi}}')">{{fecha_agendamiento_pi}}</button>
+      <button type="button" class="small-btn" onclick="insertInstallVariable('{{hora_agendamiento}}')">{{hora_agendamiento}}</button>
+      <button type="button" class="small-btn" onclick="insertInstallVariable('{{responsable}}')">{{responsable}}</button>
+      <button type="button" class="small-btn" onclick="insertInstallVariable('{{capacidad}}')">{{capacidad}}</button>
+    </div>
+    <div class="field span-4" style="margin-top:18px"><label>Vista previa asunto</label><input id="installTemplateSubjectPreview" readonly></div>
+    <div class="field span-4"><label>Vista previa cuerpo</label><textarea id="installTemplatePreview" readonly style="min-height:190px;font-family:Consolas,monospace"></textarea></div>
+    <div id="installTemplateMsg" style="margin-top:12px;color:#cbd5e1"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:18px">
+      <button type="button" class="small-btn" onclick="restoreInstallTemplateDefault()">Restaurar plantilla</button>
+      <button type="button" class="small-btn" onclick="saveInstallTemplate()">Guardar plantilla en Supabase</button>
+      <button type="button" class="small-btn" onclick="copiarCuerpoInstalacionPreview()">Copiar cuerpo</button>
+    </div>
+  </div>
+</div>
+
+<div id="importModal" class="modal-backdrop">
+  <div class="modal large">
+    <div class="modal-header">
+      <div>
+        <h3 style="margin:0 0 6px 0;">Vista previa de importación</h3>
+        <div class="muted-note">Se tomarán filas del año actual con Finalidad = Instalación o Instalación por Cobertura, Categoría = Obras Civiles Ext. A y cuyo Cambio principal no exista aún en instalaciones.</div>
+      </div>
+      <button class="close-btn" type="button" onclick="closeImportModal()">✕</button>
+    </div>
+    <div id="importSummary" class="summary-row"></div>
+    <div class="preview-wrap">
+      <table class="preview-table">
+        <thead>
+          <tr>
+            <th>Fecha ingreso</th>
+            <th>ID Cambio</th>
+            <th>ID Tarea</th>
+            <th>ID Cliente</th>
+            <th>Cliente</th>
+            <th>Dirección</th>
+            <th>Operador</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="importPreviewBody"></tbody>
+      </table>
+    </div>
+    <div id="importMsg" style="margin-top:12px;color:#cbd5e1"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
+      <button type="button" class="small-btn" onclick="closeImportModal()">Rechazar</button>
+      <button type="button" class="btn" id="confirmImportBtn" onclick="confirmImportRows()">Aceptar e importar</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Ejecutivo O&M</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="app.js"></script>
+  <style>
+    :root{
+      --bg:#050b18;--panel:#081429;--panel2:#0b1830;--line:rgba(148,163,184,.18);
+      --text:#eef6ff;--muted:#92a7c7;--cyan:#22d3ee;--blue:#3b82f6;--green:#22c55e;
+      --amber:#f59e0b;--red:#ef4444;--violet:#8b5cf6;--shadow:0 24px 70px rgba(0,0,0,.35)
+    }
+    *{box-sizing:border-box} html{scroll-behavior:smooth}
+    body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;color:var(--text);background:
+      radial-gradient(circle at top left,rgba(34,211,238,.16),transparent 32%),
+      radial-gradient(circle at 80% 0%,rgba(59,130,246,.18),transparent 35%),
+      linear-gradient(180deg,#030711,#071426 52%,#050b18);min-height:100vh}
+    body:before{content:"";position:fixed;inset:0;pointer-events:none;background-image:
+      linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:36px 36px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.7),transparent 78%)}
+    .page{display:grid;grid-template-columns:240px 1fr;min-height:100vh;transition:grid-template-columns .25s ease}.page.sidebar-hidden{grid-template-columns:0 1fr}.sidebar{background:linear-gradient(180deg,#08142a,#081126);border-right:1px solid var(--line);padding:18px 16px;position:sticky;top:0;height:100vh;overflow:auto;transition:transform .25s ease,opacity .25s ease;z-index:30;font-family:Arial,Helvetica,sans-serif}.page.sidebar-hidden .sidebar{transform:translateX(-100%);opacity:0;pointer-events:none;padding-left:0;padding-right:0;border-right:0}.sidebar-toggle-tab{position:fixed;left:240px;top:50%;transform:translateY(-50%);width:28px;height:72px;border:1px solid var(--line);border-left:0;border-radius:0 14px 14px 0;background:linear-gradient(135deg,#1d4ed8,#0f766e);color:#fff;font-weight:900;cursor:pointer;z-index:80;box-shadow:var(--shadow);transition:left .25s ease}.page.sidebar-hidden .sidebar-toggle-tab{left:0}.brand{font-size:18px;font-weight:800;margin-bottom:4px}.brand span{color:inherit}.subbrand{font-size:12px;color:var(--muted);margin-bottom:24px}.nav a{display:block;padding:12px;border-radius:12px;color:#fff;text-decoration:none;margin-bottom:8px;border:1px solid transparent}.nav a:hover,.nav a.active{background:rgba(255,255,255,.05);border-color:var(--line)}.session-box,.statusbox{margin-top:24px;padding:14px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.03);font-size:12px;color:var(--muted)}.session-box small{display:block;color:var(--muted);margin-bottom:8px;word-break:break-all}.module-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 18px}.module-tabs button{padding:10px 14px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#dbeafe;font-weight:900;cursor:pointer}.module-tabs button.active{border-color:rgba(34,211,238,.45);background:rgba(34,211,238,.12);box-shadow:0 0 24px rgba(34,211,238,.10)}
+    .main{padding:28px;max-width:1800px;width:100%;margin:0 auto}.hero{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:20px}.hero h1{margin:0 0 8px;font-size:30px;letter-spacing:-.6px}.hero p{margin:0;color:var(--muted)}.pill{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(34,211,238,.3);background:rgba(34,211,238,.08);border-radius:999px;padding:8px 12px;color:#bff7ff;font-size:12px;font-weight:800;white-space:nowrap}.dot{width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 14px var(--green)}
+    .filters{display:grid;grid-template-columns:1.2fr repeat(5,minmax(150px,1fr)) auto;gap:10px;align-items:end;margin-bottom:18px}.field label{display:block;color:#a8bad9;font-size:12px;font-weight:800;margin-bottom:7px}.field input,.field select{width:100%;background:#0a1830;border:1px solid var(--line);color:#fff;border-radius:14px;padding:12px 13px;outline:none}.btn{border:0;border-radius:14px;padding:12px 14px;background:linear-gradient(135deg,#2563eb,#22d3ee);color:#fff;font-weight:900;cursor:pointer;box-shadow:0 12px 30px rgba(37,99,235,.18)}.btn.secondary{background:#1f3d79;box-shadow:none}.btn.ghost{background:rgba(255,255,255,.04);border:1px solid var(--line);box-shadow:none}.btn:hover{filter:brightness(1.08)}
+    .kpis{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:13px;margin-bottom:18px}.kpi{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025));box-shadow:var(--shadow);padding:16px;min-height:118px}.kpi:after{content:"";position:absolute;inset:auto -30px -45px auto;width:110px;height:110px;border-radius:50%;background:rgba(34,211,238,.12);filter:blur(4px)}.kpi .label{font-size:12px;color:#aabbd8;font-weight:800;text-transform:uppercase;letter-spacing:.4px}.kpi .value{font-size:30px;font-weight:950;margin-top:9px}.kpi .sub{font-size:12px;color:#b9d2ff;margin-top:7px}.kpi.green:after{background:rgba(34,197,94,.14)}.kpi.amber:after{background:rgba(245,158,11,.14)}.kpi.violet:after{background:rgba(139,92,246,.14)}
+    .grid-2{display:grid;grid-template-columns:1.25fr .75fr;gap:16px;margin-bottom:16px}.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}.card{border:1px solid var(--line);border-radius:24px;background:linear-gradient(180deg,rgba(10,24,48,.92),rgba(8,18,36,.86));box-shadow:var(--shadow);padding:16px;min-height:260px}.card h3{margin:0 0 12px;font-size:16px}.chartbox{height:310px}.chartbox.sm{height:260px}.section{display:none}.section.active{display:block}.table-wrap{overflow:auto;border-radius:18px;border:1px solid var(--line);background:rgba(0,0,0,.12)}table{width:100%;border-collapse:collapse;min-width:820px}th,td{padding:12px 13px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;vertical-align:top}th{background:rgba(148,163,184,.12);color:#c8e8ff;font-size:12px;text-transform:uppercase;letter-spacing:.3px;position:sticky;top:0}td{color:#eaf2ff;font-size:13px}.right{text-align:right}.badge{display:inline-flex;padding:6px 9px;border-radius:999px;border:1px solid var(--line);font-size:11px;font-weight:900}.ok{background:rgba(34,197,94,.14);color:#b7f7ca}.warn{background:rgba(245,158,11,.14);color:#fde68a}.info{background:rgba(59,130,246,.15);color:#bfdbfe}.danger{background:rgba(239,68,68,.15);color:#fecaca}.violet{background:rgba(139,92,246,.15);color:#ddd6fe}.mini-list{display:grid;gap:9px}.rank{display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 11px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035)}.rank small{color:var(--muted)}.muted{color:var(--muted)}.tabs-inline{display:flex;gap:8px;margin:0 0 14px}.tabs-inline button{padding:9px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#dbeafe;font-weight:800;cursor:pointer}.tabs-inline button.active{border-color:rgba(34,211,238,.45);background:rgba(34,211,238,.12)}
+
+    .modal-backdrop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(2,6,23,.72);backdrop-filter:blur(10px);z-index:50}
+    .modal-backdrop.show{display:flex}
+    .modal-card{width:min(1180px,96vw);max-height:88vh;overflow:hidden;border:1px solid rgba(34,211,238,.28);border-radius:24px;background:linear-gradient(180deg,rgba(10,24,48,.98),rgba(5,12,25,.98));box-shadow:0 30px 90px rgba(0,0,0,.55)}
+    .modal-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;padding:17px 18px;border-bottom:1px solid var(--line)}
+    .modal-head h3{margin:0;font-size:18px}.modal-head p{margin:6px 0 0;color:var(--muted);font-size:12px}
+    .modal-body{padding:16px;overflow:auto;max-height:calc(88vh - 86px)}
+    .modal-close{border:1px solid var(--line);background:rgba(255,255,255,.06);color:#fff;border-radius:13px;padding:9px 12px;font-weight:900;cursor:pointer}
+    .chartbox canvas{cursor:pointer}
+
+    .card{position:relative}
+    .chart-expand-btn{position:absolute;top:12px;right:14px;z-index:2;border:1px solid rgba(34,211,238,.35);background:rgba(15,23,42,.78);color:#dbeafe;border-radius:11px;padding:7px 10px;font-weight:900;font-size:12px;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,.22)}
+    .chart-expand-btn:hover{background:rgba(34,211,238,.16);color:#fff}
+    .fullscreen-backdrop{position:fixed;inset:0;display:none;background:rgba(2,6,23,.88);backdrop-filter:blur(12px);z-index:80;padding:20px}
+    .fullscreen-backdrop.show{display:flex;align-items:center;justify-content:center}
+    .fullscreen-card{width:96vw;height:92vh;border:1px solid rgba(34,211,238,.32);border-radius:24px;background:linear-gradient(180deg,rgba(10,24,48,.98),rgba(5,12,25,.98));box-shadow:0 30px 90px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden}
+    .fullscreen-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 18px;border-bottom:1px solid var(--line)}
+    .fullscreen-head h3{margin:0;font-size:18px}.fullscreen-chartbox{flex:1;min-height:0;padding:18px}.fullscreen-chartbox canvas{width:100%!important;height:100%!important}
+    @media(max-width:1300px){.filters{grid-template-columns:repeat(3,1fr)}.kpis{grid-template-columns:repeat(3,1fr)}.grid-2,.grid-3{grid-template-columns:1fr}.page{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.sidebar-toggle-tab{display:none}.page.sidebar-hidden{grid-template-columns:1fr}.page.sidebar-hidden .sidebar{display:none}.nav{display:grid;grid-template-columns:1fr 1fr;gap:8px}.nav a{margin:0}}@media(max-width:780px){.main{padding:16px}.filters,.kpis{grid-template-columns:1fr}.hero{display:block}.chartbox{height:280px}}
+  </style>
+</head>
+<body>
+  <div class="page" id="dashboardPage">
+    <aside class="sidebar" ondblclick="toggleSidebar()">
+      <div class="brand">Nodo O&amp;M</div>
+      <div class="subbrand">Control y seguimiento</div>
+      <nav class="nav">
+        <a href="index.html">Inicio</a>
+        <a href="dashboard.html" class="active">Dashboard</a>
+        <a href="fallas.html">Tickets / Fallas</a>
+        <a href="mantenimientos.html">Mantenimientos</a>
+        <a href="instalaciones.html">Instalaciones</a>
+        <a href="factibilidades.html">Factibilidades</a>
+        <a href="traslados.html">Traslados</a>
+        <a href="materiales.html">Materiales</a>
+        <a href="liquidaciones.html">Liquidaciones</a>
+        <a href="gastos.html">Gastos</a>
+        <a href="tareas.html">Tareas y Alertas</a>
+        <a href="reportes.html">Reportes</a>
+      </nav>
+      <div class="session-box"><small>Sesión<br><span id="sessionEmail">Sin iniciar</span></small><button class="btn secondary" style="width:100%;padding:10px 12px" onclick="safeLogout()">Cerrar sesión</button></div>
+      <div class="statusbox">
+        <b>Estado de conexión</b><br><span id="connStatus">Esperando carga...</span><br><br>
+        <span>----</span>
+      </div>
+    </aside>
+    <button id="sidebarToggleTab" class="sidebar-toggle-tab" title="Ocultar / mostrar barra lateral" onclick="toggleSidebar()">‹</button>
+
+    <main class="main">
+      <div class="hero">
+        <div>
+          <h1 id="pageTitle">Dashboard Ejecutivo de Instalaciones</h1>
+          <p id="pageSubtitle">Histórico mensual, avance semanal, estados, fibra instalada, tiempos, tiempos muertos y ranking de clientes instalados.</p>
+        </div>
+        <div class="pill"><span class="dot"></span><span id="lastUpdate">Sin actualizar</span></div>
+      </div>
+
+      <div class="module-tabs" aria-label="Cambiar módulo del dashboard">
+        <button id="btnInst" class="active" onclick="setModule('instalaciones')">⚡ Instalaciones</button>
+        <button id="btnFact" onclick="setModule('factibilidades')">📡 Factibilidades</button>
+      </div>
+
+      <div class="filters">
+        <div class="field"><label>Estado</label><select id="estadoFilter"><option value="">Todos los estados</option></select></div>
+        <div class="field"><label>Año</label><select id="yearFilter"></select></div>
+        <div class="field"><label>Mes</label><select id="monthFilter"><option value="">Todos</option></select></div>
+        <div class="field"><label>Rango inicio</label><input id="startFilter" type="date"></div>
+        <div class="field"><label>Rango fin</label><input id="endFilter" type="date"></div>
+        <div class="field"><label>Vista rápida</label><select id="quickFilter"><option value="year">Año seleccionado</option><option value="currentMonth">Mes actual</option><option value="currentWeek">Semana actual</option><option value="custom">Rango personalizado</option></select></div>
+        <button class="btn" onclick="loadData()">Actualizar</button>
+      </div>
+
+      <section id="secInst" class="section active">
+        <div id="kpisInst" class="kpis"></div>
+        <div class="grid-2">
+          <div class="card"><h3>Histórico por mes - Instalaciones realizadas</h3><div class="chartbox"><canvas id="instMonthlyChart"></canvas></div></div>
+          <div class="card"><h3>Distribución por estado</h3><div class="chartbox sm"><canvas id="instStatusChart"></canvas></div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><h3>Instalaciones por semana - Año actual</h3><div class="chartbox"><canvas id="instWeeklyChart"></canvas></div><div class="muted" style="font-size:12px;margin-top:8px">La barra resaltada corresponde a la semana actual.</div></div>
+          <div class="card"><h3>Ranking de clientes instalados</h3><div id="rankingInst" class="mini-list"></div></div>
+        </div>
+        <div class="grid-3">
+          <div class="card"><h3>Tabla mensual - Cantidad y promedio</h3><div id="monthlyTableInst" class="table-wrap"></div></div>
+          <div class="card"><h3>Tiempos promedio</h3><div class="chartbox sm"><canvas id="instAvgChart"></canvas></div></div>
+          <div class="card"><h3>Tiempos muertos</h3><div class="chartbox sm"><canvas id="instDeadChart"></canvas></div></div>
+        </div>
+        <div class="grid-3">
+          <div class="card"><h3>Fibra instalada por mes</h3><div class="chartbox sm"><canvas id="instFiberMonthlyChart"></canvas></div></div>
+          <div class="card"><h3>Cantidad de fibra por tipo</h3><div class="chartbox sm"><canvas id="instFiberTypeChart"></canvas></div></div>
+          <div class="card"><h3>Fibra por capacidad de hilo</h3><div class="chartbox sm"><canvas id="instFiberCapacityChart"></canvas></div></div>
+          <div class="card"><h3>Tiempo promedio de instalaciones por mes</h3><div class="chartbox sm"><canvas id="instMonthlyAvgTimeChart"></canvas></div></div>
+        </div>
+        <div class="card"><h3>Detalle de actividades</h3><div id="detailInst" class="table-wrap"></div></div>
+      </section>
+
+      <section id="secFact" class="section">
+        <div id="kpisFact" class="kpis"></div>
+        <div class="grid-2">
+          <div class="card"><h3>Histórico por mes - Factibilidades realizadas</h3><div class="chartbox"><canvas id="factMonthlyChart"></canvas></div></div>
+          <div class="card"><h3>Distribución por estado</h3><div class="chartbox sm"><canvas id="factStatusChart"></canvas></div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><h3>Factibilidades por semana - Año actual</h3><div class="chartbox"><canvas id="factWeeklyChart"></canvas></div><div class="muted" style="font-size:12px;margin-top:8px">La barra resaltada corresponde a la semana actual.</div></div>
+          <div class="card"><h3>Ranking de clientes con factibilidad</h3><div id="rankingFact" class="mini-list"></div></div>
+        </div>
+        <div class="grid-3">
+          <div class="card"><h3>Tabla mensual - Cantidad y promedio</h3><div id="monthlyTableFact" class="table-wrap"></div></div>
+          <div class="card"><h3>Tiempos promedio</h3><div class="chartbox sm"><canvas id="factAvgChart"></canvas></div></div>
+          <div class="card"><h3>Tiempos muertos</h3><div class="chartbox sm"><canvas id="factDeadChart"></canvas></div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><h3>Fibra registrada por mes</h3><div class="chartbox"><canvas id="factFiberMonthlyChart"></canvas></div></div>
+          <div class="card"><h3>Cantidad de fibra por tipo</h3><div class="chartbox"><canvas id="factFiberTypeChart"></canvas></div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><h3>Fibra por capacidad de hilo</h3><div class="chartbox"><canvas id="factFiberCapacityChart"></canvas></div></div>
+        </div>
+        <div class="card"><h3>Detalle de actividades</h3><div id="detailFact" class="table-wrap"></div></div>
+      </section>
+    </main>
+  </div>
+  <div id="detailModal" class="modal-backdrop" onclick="closeDetailModal(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-head">
+        <div>
+          <h3 id="detailModalTitle">Detalle de registros</h3>
+          <p id="detailModalSubtitle">Registros asociados al dato seleccionado.</p>
+        </div>
+        <button class="modal-close" onclick="closeDetailModal()">Cerrar ✕</button>
+      </div>
+      <div id="detailModalBody" class="modal-body"></div>
+    </div>
+  </div>
+
+  <div id="chartFullscreenModal" class="fullscreen-backdrop" onclick="closeChartFullscreen(event)">
+    <div class="fullscreen-card" onclick="event.stopPropagation()">
+      <div class="fullscreen-head">
+        <h3 id="chartFullscreenTitle">Gráfica ampliada</h3>
+        <button class="modal-close" onclick="closeChartFullscreen()">Cerrar ✕</button>
+      </div>
+      <div class="fullscreen-chartbox"><canvas id="fullscreenCanvas"></canvas></div>
+    </div>
+  </div>
+<script>
+function initSidebarSession(){
+  const email = localStorage.getItem('user_email') || '';
+  const el = document.getElementById('sessionEmail');
+  if(el) el.textContent = email || 'Sin iniciar';
+}
+function safeLogout(){
+  try{ if(typeof logout === 'function'){ logout(); return; } }catch(e){}
+  localStorage.removeItem('user_email');
+  location.href = 'index.html';
+}
+function toggleSidebar(){
+  const page = document.getElementById('dashboardPage') || document.querySelector('.page');
+  const tab = document.getElementById('sidebarToggleTab');
+  if(!page) return;
+  page.classList.toggle('sidebar-hidden');
+  const hidden = page.classList.contains('sidebar-hidden');
+  localStorage.setItem('om_sidebar_hidden', hidden ? '1' : '0');
+  if(tab) tab.textContent = hidden ? '›' : '‹';
+}
+function restoreSidebarState(){
+  const page = document.getElementById('dashboardPage') || document.querySelector('.page');
+  const tab = document.getElementById('sidebarToggleTab');
+  if(!page) return;
+  const hidden = localStorage.getItem('om_sidebar_hidden') === '1';
+  page.classList.toggle('sidebar-hidden', hidden);
+  if(tab) tab.textContent = hidden ? '›' : '‹';
+}
+const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const COLORS={blue:'#3b82f6',cyan:'#22d3ee',green:'#22c55e',amber:'#f59e0b',red:'#ef4444',violet:'#8b5cf6',gray:'#64748b'};
+let currentModule='instalaciones', instalaciones=[], factibilidades=[], charts={}, fullscreenChart=null;
+function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+function asDate(v){if(!v)return null; const d=new Date(String(v).slice(0,10)+'T00:00:00'); return isNaN(d)?null:d;}
+function fmtDate(v){const d=asDate(v); return d?d.toLocaleDateString('es-CO'):'';}
+function daysBetween(a,b){const da=asDate(a), db=asDate(b); if(!da||!db)return null; return Math.max(0,Math.round((db-da)/86400000));}
+function parseNum(v){if(v===null||v===undefined||v==='')return null; if(typeof v==='number')return v; const m=String(v).replace(',','.').match(/-?\d+(\.\d+)?/); return m?Number(m[0]):null;}
+function avg(arr){const n=arr.filter(x=>Number.isFinite(x)); return n.length?n.reduce((a,b)=>a+b,0)/n.length:0;}
+function getWeekNumber(date){const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate())); const day=d.getUTCDay()||7; d.setUTCDate(d.getUTCDate()+4-day); const yStart=new Date(Date.UTC(d.getUTCFullYear(),0,1)); return Math.ceil((((d-yStart)/86400000)+1)/7);}
+function closeDate(r){return r.fecha_entrega || r.fecha_cierre || r.fecha_fin || '';}
+function completionDate(r,mod){return closeDate(r) || r.fecha_ingreso || r.created_at || '';}
+function chartDoneDate(r){return closeDate(r);}
+function fmtNum(v){return Number.isFinite(v)?Number(v).toFixed(1):'';}
+function isDone(r,mod){const e=String(r.estado_general||'').toUpperCase(); return mod==='instalaciones' ? e==='ENTREGADA' : ['FACTIBILIDAD REALIZADA','APROBADA'].includes(e);}
+function totalDays(r,mod){ const cierre=closeDate(r); if(mod==='instalaciones') return parseNum(r.tiempo_total_instalacion) ?? daysBetween(r.fecha_ingreso,cierre); return daysBetween(r.fecha_ingreso,cierre); }
+function effectiveDays(r,mod){ if(mod==='instalaciones') return parseNum(r.tiempo_efectivo_instalacion) ?? totalDays(r,mod); const t=totalDays(r,mod); const dead=deadPermDays(r)+deadRadDays(r); return t===null?null:Math.max(0,t-dead); }
+function deadPermDays(r){return parseNum(r.tiempo_muerto_permisos) ?? daysBetween(r.fecha_solicitud_permisos,r.fecha_aprobacion_permisos) ?? daysBetween(r.fecha_solicitud_permisos,r.fecha_respuesta_permisos) ?? 0;}
+function deadRadDays(r){return parseNum(r.tiempo_muerto_radicacion_emsa) ?? parseNum(r.tiempo_muerto_radicacion) ?? daysBetween(r.fecha_radicacion_emsa,r.fecha_respuesta_emsa) ?? daysBetween(r.fecha_radicacion,r.fecha_respuesta_radicacion) ?? 0;}
+function pickNum(r,keys){
+  for(const k of keys){
+    if(Object.prototype.hasOwnProperty.call(r,k)){
+      const n=parseNum(r[k]);
+      if(Number.isFinite(n)) return n;
+    }
+  }
+  return 0;
+}
+function fiberExternal(r){return pickNum(r,['fo_externa','FO Externa','fo_externa_m','metros_fo_externa','fibra_externa','fibra_externa_m','fibra_optica_externa','fibra_fo_externa','cantidad_fo_externa','cantidad_fibra_externa','fo_ext']);}
+function fiberInternal(r){return pickNum(r,['fo_interna','FO Interna','fo_interna_m','metros_fo_interna','fibra_interna','fibra_interna_m','fibra_optica_interna','fibra_fo_interna','cantidad_fo_interna','cantidad_fibra_interna','fo_int']);}
+function fiberTotalExplicit(r){return pickNum(r,['fo_total','FO Total','fo_total_m','metros_fo_total','fibra_total','fibra_total_m','fibra_optica_total','cantidad_fo_total','cantidad_fibra_total']);}
+function fiberTotal(r){const ext=fiberExternal(r), int=fiberInternal(r), explicit=fiberTotalExplicit(r); return ext+int>0 ? ext+int : explicit;}
+function rawFiberType(r){
+  const keys=['tipo_fibra','tipo fibra','tipoFibra','tipo_de_fibra','tipo_cable','tipo cable','cable_fibra','capacidad','capacidad_fibra','fibra_tipo'];
+  for(const k of keys){
+    if(Object.prototype.hasOwnProperty.call(r,k) && r[k]!==null && r[k]!==undefined && String(r[k]).trim()!=='') return String(r[k]).trim();
+  }
+  return '';
+}
+function normalizeFiberCapacity(value){
+  const txt=String(value||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();
+  const m=txt.match(/(\d+)\s*(H|HH|HILOS?|FO|FIBRAS?)/);
+  if(m) return `${Number(m[1])}H`;
+  const n=txt.match(/\b(4|6|8|12|24|36|48|72|96|144)\b/);
+  if(n) return `${Number(n[1])}H`;
+  return txt || 'SIN TIPO';
+}
+function fiberCapacityGroups(rows){
+  const map=new Map();
+  rows.forEach(r=>{
+    const raw=rawFiberType(r);
+    const label=normalizeFiberCapacity(raw);
+    const meters=fiberTotal(r);
+    if(!map.has(label)) map.set(label,{label,value:0,records:[],rawTypes:new Set()});
+    const item=map.get(label);
+    item.value+=Number.isFinite(meters)?meters:0;
+    item.records.push(r);
+    if(raw) item.rawTypes.add(raw);
+  });
+  return [...map.values()].sort((a,b)=>{
+    const na=parseNum(a.label), nb=parseNum(b.label);
+    if(Number.isFinite(na) && Number.isFinite(nb)) return na-nb;
+    return a.label.localeCompare(b.label,'es');
+  }).map(x=>({...x,subtitle:[...x.rawTypes].join(', ')}));
+}
+function fmtMeters(v){return Number.isFinite(v) ? Number(v).toLocaleString('es-CO',{maximumFractionDigits:1}) : '0';}
+
+function badge(e){const u=String(e||'').toUpperCase();let cls=u.includes('ENTREG')||u.includes('APROB')||u.includes('REALIZADA')?'ok':u.includes('CANCEL')||u.includes('RECHAZ')?'danger':u.includes('GESTION')||u.includes('EJECUCION')?'violet':u.includes('PEND')||u.includes('SOLIC')?'warn':'info';return `<span class="badge ${cls}">${esc(e||'SIN ESTADO')}</span>`}
+async function getClient(){
+  if(window.__dashboardSupabaseClient) return window.__dashboardSupabaseClient;
+
+  // 1) Si tu app.js ya expone un cliente directo
+  if(window.supabaseClient){
+    window.__dashboardSupabaseClient = window.supabaseClient;
+    return window.__dashboardSupabaseClient;
+  }
+
+  // 2) Si tu app.js maneja la configuración por resolveClient()
+  // Evita llamarse a sí mismo si alguna página dejó resolveClient apuntando a esta función.
+  if(typeof window.resolveClient === 'function' && window.resolveClient !== getClient){
+    const c = await window.resolveClient();
+    if(c){
+      window.__dashboardSupabaseClient = c;
+      return c;
+    }
+  }
+
+  // 3) Configuración desde variables globales opcionales
+  let url = window.SUPABASE_URL || window.supabaseUrl || '';
+  let key = window.SUPABASE_ANON_KEY || window.supabaseAnonKey || '';
+
+  // 4) Configuración compatible con tus módulos actuales: sb_url y sb_key en localStorage
+  if(!url) key = key || '';
+  url = url || localStorage.getItem('sb_url') || localStorage.getItem('SUPABASE_URL') || '';
+  key = key || localStorage.getItem('sb_key') || localStorage.getItem('SUPABASE_ANON_KEY') || '';
+
+  // 5) Configuración manual dentro del mismo dashboard
+  if(!url || !key){
+    url = prompt('Pega la URL de Supabase. Ejemplo: https://xxxxx.supabase.co') || '';
+    key = prompt('Pega la ANON KEY pública de Supabase') || '';
+    if(url && key){
+      localStorage.setItem('sb_url', url.trim());
+      localStorage.setItem('sb_key', key.trim());
+    }
+  }
+
+  if(!url || !key){
+    throw new Error('No se encontró la configuración de Supabase. Guarda sb_url y sb_key en localStorage o pégalos cuando el dashboard los solicite.');
+  }
+
+  if(!window.supabase || !window.supabase.createClient){
+    throw new Error('No cargó la librería de Supabase. Verifica conexión a internet o el CDN de @supabase/supabase-js.');
+  }
+
+  window.__dashboardSupabaseClient = window.supabase.createClient(url.trim(), key.trim());
+  return window.__dashboardSupabaseClient;
+}
+
+// Funciones auxiliares para configurar o limpiar la conexión desde la consola del navegador:
+// configurarSupabaseDashboard('https://xxxxx.supabase.co','TU_ANON_KEY')
+// limpiarSupabaseDashboard()
+window.configurarSupabaseDashboard = function(url,key){
+  localStorage.setItem('sb_url', String(url || '').trim());
+  localStorage.setItem('sb_key', String(key || '').trim());
+  window.__dashboardSupabaseClient = null;
+  return 'Configuración guardada. Actualiza el dashboard.';
+};
+window.limpiarSupabaseDashboard = function(){
+  localStorage.removeItem('sb_url');
+  localStorage.removeItem('sb_key');
+  localStorage.removeItem('SUPABASE_URL');
+  localStorage.removeItem('SUPABASE_ANON_KEY');
+  window.__dashboardSupabaseClient = null;
+  return 'Configuración eliminada. Actualiza el dashboard.';
+};
+function setModule(m){currentModule=m; document.getElementById('btnInst').classList.toggle('active',m==='instalaciones'); document.getElementById('btnFact').classList.toggle('active',m==='factibilidades'); document.getElementById('secInst').classList.toggle('active',m==='instalaciones'); document.getElementById('secFact').classList.toggle('active',m==='factibilidades'); document.getElementById('pageTitle').textContent=m==='instalaciones'?'Dashboard Ejecutivo de Instalaciones':'Dashboard Ejecutivo de Factibilidades'; document.getElementById('pageSubtitle').textContent=m==='instalaciones'?'Histórico mensual, avance semanal, estados, fibra instalada, tiempos, tiempos muertos y ranking de clientes instalados.':'Histórico mensual, avance semanal, estados, fibra registrada, tiempos, tiempos muertos y ranking de clientes con factibilidad.'; fillEstadoFilter(); renderAll();}
+function initFilters(){const ySel=document.getElementById('yearFilter'); const now=new Date(); for(let y=now.getFullYear()+1;y>=now.getFullYear()-5;y--) ySel.innerHTML+=`<option value="${y}" ${y===now.getFullYear()?'selected':''}>${y}</option>`; const mSel=document.getElementById('monthFilter'); MESES.forEach((m,i)=>mSel.innerHTML+=`<option value="${i}">${m}</option>`); ['estadoFilter','yearFilter','monthFilter','startFilter','endFilter','quickFilter'].forEach(id=>document.getElementById(id).addEventListener('change',renderAll));}
+function fillEstadoFilter(){const rows=currentModule==='instalaciones'?instalaciones:factibilidades; const sel=document.getElementById('estadoFilter'); const current=sel.value; const estados=[...new Set(rows.map(r=>r.estado_general).filter(Boolean))].sort(); sel.innerHTML='<option value="">Todos los estados</option>'+estados.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join(''); if(estados.includes(current)) sel.value=current;}
+function filteredRows(mod){const rows=mod==='instalaciones'?instalaciones:factibilidades; const year=Number(document.getElementById('yearFilter').value); const month=document.getElementById('monthFilter').value; const estado=document.getElementById('estadoFilter').value; const quick=document.getElementById('quickFilter').value; const s=asDate(document.getElementById('startFilter').value), e=asDate(document.getElementById('endFilter').value); const now=new Date(); const cw=getWeekNumber(now); return rows.filter(r=>{if(estado && r.estado_general!==estado)return false; const d=asDate(completionDate(r,mod)); if(!d)return false; if(quick==='currentWeek') return d.getFullYear()===now.getFullYear() && getWeekNumber(d)===cw; if(quick==='currentMonth') return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth(); if(quick==='custom'){ if(s && d<s)return false; if(e && d>e)return false; return true;} if(d.getFullYear()!==year)return false; if(month!=='' && d.getMonth()!==Number(month))return false; return true;});}
+function allYearDone(mod){const rows=mod==='instalaciones'?instalaciones:factibilidades; const year=Number(document.getElementById('yearFilter').value); return rows.filter(r=>isDone(r,mod)).filter(r=>{const d=asDate(chartDoneDate(r)); return d&&d.getFullYear()===year;});}
+function selectedMonthValue(){return document.getElementById('monthFilter').value;}
+function selectedYearValue(){return Number(document.getElementById('yearFilter').value);}
+function weeksForSelectedMonth(){
+  const month=selectedMonthValue();
+  if(month==='') return null;
+  const y=selectedYearValue(), m=Number(month), weeks=new Set();
+  const last=new Date(y,m+1,0).getDate();
+  for(let d=1; d<=last; d++) weeks.add(getWeekNumber(new Date(y,m,d)));
+  return weeks;
+}
+function groupMonthly(rows,mod){
+  const m=Array.from({length:12},(_,i)=>({mes:MESES[i],mesIndex:i,cantidad:0,total:[],efectivo:[],muertoPerm:[],muertoRad:[],records:[]}));
+  rows.forEach(r=>{const d=asDate(chartDoneDate(r)); if(!d)return; const x=m[d.getMonth()]; x.cantidad++; x.records.push(r); const td=totalDays(r,mod), ed=effectiveDays(r,mod), dp=deadPermDays(r), dr=deadRadDays(r); if(td!==null)x.total.push(td); if(ed!==null)x.efectivo.push(ed); if(dp)x.muertoPerm.push(dp); if(dr)x.muertoRad.push(dr);});
+  const out=m.map(x=>({...x,prom:avg(x.total),promEfectivo:avg(x.efectivo),promPerm:avg(x.muertoPerm),promRad:avg(x.muertoRad)}));
+  const month=selectedMonthValue();
+  return month==='' ? out : [out[Number(month)]];
+}
+function groupWeekly(rows,mod){
+  const arr=Array.from({length:53},(_,i)=>({semana:i+1,cantidad:0,records:[]}));
+  rows.forEach(r=>{const d=asDate(chartDoneDate(r)); if(!d)return; const w=getWeekNumber(d); if(w>=1&&w<=53){arr[w-1].cantidad++; arr[w-1].records.push(r);}});
+  const allowedWeeks=weeksForSelectedMonth();
+  return allowedWeeks ? arr.filter(x=>allowedWeeks.has(x.semana)) : arr;
+}
+function groupFiberMonthly(rows,mod){
+  const m=Array.from({length:12},(_,i)=>({mes:MESES[i],mesIndex:i,externa:0,interna:0,total:0,records:[]}));
+  rows.forEach(r=>{
+    const d=asDate(chartDoneDate(r)); if(!d)return;
+    const x=m[d.getMonth()], ext=fiberExternal(r), int=fiberInternal(r), total=fiberTotal(r);
+    x.externa+=ext; x.interna+=int; x.total+=total; x.records.push(r);
+  });
+  const month=selectedMonthValue();
+  return month==='' ? m : [m[Number(month)]];
+}
+function fiberTypeGroups(rows){
+  const extRecords=rows.filter(r=>fiberExternal(r)>0);
+  const intRecords=rows.filter(r=>fiberInternal(r)>0);
+  const explicitOnlyRecords=rows.filter(r=>fiberExternal(r)===0 && fiberInternal(r)===0 && fiberTotalExplicit(r)>0);
+  return [
+    {label:'FO Externa',value:extRecords.reduce((a,r)=>a+fiberExternal(r),0),records:extRecords},
+    {label:'FO Interna',value:intRecords.reduce((a,r)=>a+fiberInternal(r),0),records:intRecords},
+    {label:'FO Total sin clasificar',value:explicitOnlyRecords.reduce((a,r)=>a+fiberTotalExplicit(r),0),records:explicitOnlyRecords}
+  ].filter(x=>x.value>0 || x.records.length>0);
+}
+
+function renderRowsTable(mod,rows){
+  const sorted=[...rows].sort((a,b)=>String(completionDate(b,mod)).localeCompare(String(completionDate(a,mod))));
+  return `<table><thead><tr><th>Fecha ingreso</th><th>Fecha cierre</th><th>ID Cliente</th><th>Cliente</th><th>Estado</th><th class="right">FO externa</th><th class="right">FO interna</th><th class="right">FO total</th><th class="right">Tiempo total</th><th class="right">Tiempo efectivo</th><th class="right">T. muerto permisos</th><th class="right">T. muerto radicación</th><th>Responsable / Contratista</th></tr></thead><tbody>${sorted.map(r=>`<tr><td>${fmtDate(r.fecha_ingreso)}</td><td>${fmtDate(closeDate(r))}</td><td>${esc(r.id_cliente)}</td><td><b>${esc(r.cliente)}</b><br><span class="muted">${esc(r.direccion||'')}</span></td><td>${badge(r.estado_general)}</td><td class="right">${fmtMeters(fiberExternal(r))}</td><td class="right">${fmtMeters(fiberInternal(r))}</td><td class="right">${fmtMeters(fiberTotal(r))}</td><td class="right">${fmtNum(totalDays(r,mod))}</td><td class="right">${fmtNum(effectiveDays(r,mod))}</td><td class="right">${deadPermDays(r).toFixed(1)}</td><td class="right">${deadRadDays(r).toFixed(1)}</td><td>${esc(r.responsable||r.contratista||'')}</td></tr>`).join('') || '<tr><td colspan="13" class="muted">Sin registros asociados a este dato.</td></tr>'}</tbody></table>`;
+}
+function openDetailModal(title,subtitle,rows,mod){
+  document.getElementById('detailModalTitle').textContent=title;
+  document.getElementById('detailModalSubtitle').textContent=`${rows.length} registro(s) asociado(s). ${subtitle||''}`;
+  document.getElementById('detailModalBody').innerHTML=`<div class="table-wrap">${renderRowsTable(mod,rows)}</div>`;
+  document.getElementById('detailModal').classList.add('show');
+}
+function closeDetailModal(evt){
+  if(evt && evt.target && evt.target.id!=='detailModal') return;
+  document.getElementById('detailModal').classList.remove('show');
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){ closeDetailModal(); closeChartFullscreen(); }});
+const dataLabelsPlugin = {
+  id: 'dataLabelsPlugin',
+  afterDatasetsDraw(chart){
+    const {ctx, data} = chart;
+    ctx.save();
+    ctx.font = 'bold 12px Inter, Segoe UI, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    data.datasets.forEach((dataset, datasetIndex) => {
+      const meta = chart.getDatasetMeta(datasetIndex);
+      if(!meta || meta.hidden) return;
+      meta.data.forEach((element, index) => {
+        const raw = dataset.data[index];
+        const value = Number(raw);
+        if(!Number.isFinite(value) || value === 0) return;
+        const label = Math.abs(value % 1) > 0.001 ? value.toFixed(1) : String(Math.round(value));
+        const bg = 'rgba(3, 7, 18, .78)';
+        const stroke = dataset.borderColor || '#22d3ee';
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = Array.isArray(stroke) ? stroke[index] : stroke;
+        ctx.lineWidth = 1;
+        if(chart.config.type === 'doughnut'){
+          const props = element.getProps(['x','y','startAngle','endAngle','innerRadius','outerRadius'], true);
+          const angle = (props.startAngle + props.endAngle) / 2;
+          const radius = (props.innerRadius + props.outerRadius) / 2;
+          const x = props.x + Math.cos(angle) * radius;
+          const y = props.y + Math.sin(angle) * radius;
+          drawLabelBox(ctx, label, x, y, bg);
+        } else {
+          const pos = element.tooltipPosition();
+          const x = pos.x;
+          const y = chart.config.type === 'line' ? pos.y - 18 : element.y - 16;
+          drawLabelBox(ctx, label, x, Math.max(y, 12), bg);
+        }
+      });
+    });
+    ctx.restore();
+  }
+};
+function drawLabelBox(ctx, text, x, y, bg){
+  const padX = 6, h = 20, w = ctx.measureText(text).width + padX * 2;
+  const r = 7;
+  ctx.beginPath();
+  ctx.roundRect(x - w/2, y - h/2, w, h, r);
+  ctx.fillStyle = bg;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.30)';
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(text, x, y + 0.5);
+}
+function mergeChartOptions(base, extra){
+  const merged = {...base, ...extra};
+  merged.plugins = {...(base.plugins||{}), ...(extra.plugins||{})};
+  merged.scales = extra.scales ? extra.scales : base.scales;
+  return merged;
+}
+function chart(id,type,data,options={}){
+  if(charts[id]) charts[id].destroy();
+  const ctx=document.getElementById(id); if(!ctx)return;
+  const detailHandler=options.detailHandler;
+  const cleanOptions={...options};
+  delete cleanOptions.detailHandler;
+  const baseOptions = {
+    responsive:true,
+    maintainAspectRatio:false,
+    layout:{padding:{top:26,right:14,left:8,bottom:8}},
+    plugins:{legend:{labels:{color:'#dbeafe'}},tooltip:{mode:'index',intersect:false}},
+    scales:type==='doughnut'?{}:{x:{ticks:{color:'#b8c7e3'},grid:{color:'rgba(255,255,255,.06)'}},y:{beginAtZero:true,ticks:{color:'#b8c7e3'},grid:{color:'rgba(255,255,255,.07)'}}}
+  };
+  charts[id]=new Chart(ctx,{type,data,options:mergeChartOptions(baseOptions,cleanOptions),plugins:[dataLabelsPlugin]});
+  addExpandButton(id);
+  ctx.ondblclick=null;
+  if(typeof detailHandler==='function'){
+    ctx.ondblclick=(evt)=>{
+      const mode=type==='doughnut'?'nearest':'nearest';
+      const points=charts[id].getElementsAtEventForMode(evt,mode,{intersect:false},true);
+      if(!points.length) return;
+      const p=points[0];
+      detailHandler({chart:charts[id],datasetIndex:p.datasetIndex,index:p.index,event:evt});
+    };
+  }
+}
+function renderKPIs(mod,rows){const done=rows.filter(r=>isDone(r,mod)); const inProgress=rows.filter(r=>!isDone(r,mod) && !String(r.estado_general||'').toUpperCase().includes('CANCEL')); const totalAvg=avg(done.map(r=>totalDays(r,mod)).filter(x=>x!==null)); const effAvg=avg(done.map(r=>effectiveDays(r,mod)).filter(x=>x!==null)); const deadP=avg(done.map(deadPermDays).filter(Boolean)); const deadR=avg(done.map(deadRadDays).filter(Boolean)); const target=mod==='instalaciones'?'kpisInst':'kpisFact'; const label=mod==='instalaciones'?'Instalaciones':'Factibilidades'; document.getElementById(target).innerHTML=`
+ <div class="kpi green"><div class="label">${label} realizadas</div><div class="value">${done.length}</div><div class="sub">Según estado final</div></div>
+ <div class="kpi"><div class="label">Total registros</div><div class="value">${rows.length}</div><div class="sub">Con filtros aplicados</div></div>
+ <div class="kpi amber"><div class="label">En proceso</div><div class="value">${inProgress.length}</div><div class="sub">No finalizadas</div></div>
+ <div class="kpi violet"><div class="label">Promedio total</div><div class="value">${totalAvg.toFixed(1)}</div><div class="sub">días promedio</div></div>
+ <div class="kpi"><div class="label">Promedio efectivo</div><div class="value">${effAvg.toFixed(1)}</div><div class="sub">descontando tiempos muertos</div></div>
+ <div class="kpi amber"><div class="label">Tiempo muerto prom.</div><div class="value">${(deadP+deadR).toFixed(1)}</div><div class="sub">permisos + radicación</div></div>`;}
+function renderMonthlyTable(mod,monthly){const total=monthly.reduce((a,b)=>a+b.cantidad,0); const prom=avg(monthly.flatMap(x=>x.total)); const rows=monthly.filter(x=>x.cantidad>0).map(x=>`<tr><td>${x.mes}</td><td class="right">${x.cantidad}</td><td class="right">${x.prom.toFixed(1)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Sin datos para el periodo.</td></tr>'; const html=`<table><thead><tr><th>Mes</th><th class="right">${mod==='instalaciones'?'Ingreso de instalaciones en el mes':'Factibilidades realizadas en el mes'}</th><th class="right">Promedio</th></tr></thead><tbody>${rows}<tr><th>Total general</th><th class="right">${total}</th><th class="right">${prom.toFixed(1)}</th></tr></tbody></table>`; document.getElementById(mod==='instalaciones'?'monthlyTableInst':'monthlyTableFact').innerHTML=html;}
+function renderRanking(mod,rows){const done=rows.filter(r=>isDone(r,mod)); const map=new Map(); done.forEach(r=>{const k=(r.cliente||'SIN CLIENTE').trim(); map.set(k,(map.get(k)||0)+1);}); const list=[...map.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10); const id=mod==='instalaciones'?'rankingInst':'rankingFact'; document.getElementById(id).innerHTML=list.length?list.map(([c,n],i)=>`<div class="rank"><div><b>${i+1}. ${esc(c)}</b><br><small>${mod==='instalaciones'?'Cliente instalado':'Cliente con factibilidad'}</small></div><b>${n}</b></div>`).join(''):'<div class="muted">Sin clientes finalizados en el periodo.</div>';}
+
+function addExpandButton(canvasId){
+  const canvas=document.getElementById(canvasId); if(!canvas) return;
+  const card=canvas.closest('.card'); if(!card || card.querySelector(`.chart-expand-btn[data-chart="${canvasId}"]`)) return;
+  const btn=document.createElement('button');
+  btn.type='button'; btn.className='chart-expand-btn'; btn.dataset.chart=canvasId; btn.title='Ampliar gráfica'; btn.textContent='⛶ Ampliar';
+  btn.addEventListener('click',e=>{e.stopPropagation(); openChartFullscreen(canvasId);});
+  card.appendChild(btn);
+}
+function openChartFullscreen(canvasId){
+  const original=charts[canvasId]; if(!original) return;
+  const titleEl=document.querySelector(`#${canvasId}`)?.closest('.card')?.querySelector('h3');
+  document.getElementById('chartFullscreenTitle').textContent=titleEl ? titleEl.textContent : 'Gráfica ampliada';
+  document.getElementById('chartFullscreenModal').classList.add('show');
+  if(fullscreenChart){fullscreenChart.destroy(); fullscreenChart=null;}
+  const ctx=document.getElementById('fullscreenCanvas');
+  const type=original.config.type;
+  const data=JSON.parse(JSON.stringify(original.data));
+  const options={
+    responsive:true,maintainAspectRatio:false,layout:{padding:{top:32,right:22,left:12,bottom:12}},
+    plugins:{legend:{labels:{color:'#dbeafe',font:{size:14}}},tooltip:{mode:'index',intersect:false}},
+    scales:type==='doughnut'?{}:{x:{ticks:{color:'#dbeafe',font:{size:13}},grid:{color:'rgba(255,255,255,.06)'}},y:{beginAtZero:true,ticks:{color:'#dbeafe',font:{size:13}},grid:{color:'rgba(255,255,255,.07)'}}}
+  };
+  fullscreenChart=new Chart(ctx,{type,data,options,plugins:[dataLabelsPlugin]});
+}
+function closeChartFullscreen(evt){
+  if(evt && evt.target && evt.target.id!=='chartFullscreenModal') return;
+  document.getElementById('chartFullscreenModal').classList.remove('show');
+  if(fullscreenChart){fullscreenChart.destroy(); fullscreenChart=null;}
+}
+function renderDetail(mod,rows){const html=renderRowsTable(mod,rows); document.getElementById(mod==='instalaciones'?'detailInst':'detailFact').innerHTML=html;}
+function renderModule(mod){
+  const rows=filteredRows(mod);
+  const done=rows.filter(r=>isDone(r,mod));
+  const monthly=groupMonthly(done,mod);
+  const weekly=groupWeekly(done,mod);
+  renderKPIs(mod,rows);
+  renderMonthlyTable(mod,monthly);
+  renderRanking(mod,rows);
+  renderDetail(mod,rows);
+  const pref=mod==='instalaciones'?'inst':'fact';
+  const moduleLabel=mod==='instalaciones'?'Instalaciones':'Factibilidades';
+
+  chart(pref+'MonthlyChart','line',{
+    labels:monthly.map(x=>x.mes),
+    datasets:[
+      {label:moduleLabel+' realizadas',data:monthly.map(x=>x.cantidad),borderColor:COLORS.cyan,backgroundColor:'rgba(34,211,238,.14)',tension:.35,fill:true,pointRadius:4},
+      {label:'Promedio días',data:monthly.map(x=>Number(x.prom.toFixed(1))),borderColor:COLORS.amber,backgroundColor:'rgba(245,158,11,.12)',tension:.35,yAxisID:'y1'}
+    ]},
+    {scales:{y:{beginAtZero:true,ticks:{color:'#b8c7e3'},grid:{color:'rgba(255,255,255,.07)'}},y1:{position:'right',beginAtZero:true,ticks:{color:'#fcd34d'},grid:{drawOnChartArea:false}},x:{ticks:{color:'#b8c7e3'},grid:{color:'rgba(255,255,255,.06)'}}},
+    detailHandler:({index,datasetIndex})=>{
+      const item=monthly[index]; if(!item) return;
+      const tipo=datasetIndex===1?'promedio de días':'cantidad realizada';
+      openDetailModal(`${moduleLabel} - ${item.mes}`,`Dato seleccionado: ${tipo}.`,item.records,mod);
+    }});
+
+  const cw=getWeekNumber(new Date());
+  chart(pref+'WeeklyChart','bar',{
+    labels:weekly.map(x=>'Semana '+x.semana),
+    datasets:[{label:'Realizadas por semana',data:weekly.map(x=>x.cantidad),backgroundColor:weekly.map(x=>x.semana===cw?COLORS.green:'rgba(59,130,246,.65)'),borderColor:weekly.map(x=>x.semana===cw?COLORS.green:COLORS.blue),borderWidth:1}]},
+    {plugins:{legend:{display:false},tooltip:{callbacks:{label:(c)=>` ${c.raw} realizadas`}}},
+    detailHandler:({index})=>{
+      const item=weekly[index]; if(!item) return;
+      openDetailModal(`${moduleLabel} - Semana ${item.semana}`,`Dato seleccionado: ${item.cantidad}.`,item.records,mod);
+    }});
+
+  const statusMap=new Map();
+  rows.forEach(r=>{const k=r.estado_general||'SIN ESTADO'; if(!statusMap.has(k)) statusMap.set(k,{cantidad:0,records:[]}); const item=statusMap.get(k); item.cantidad++; item.records.push(r);});
+  const statusEntries=[...statusMap.entries()];
+  chart(pref+'StatusChart','doughnut',{labels:statusEntries.map(x=>x[0]),datasets:[{data:statusEntries.map(x=>x[1].cantidad),backgroundColor:[COLORS.green,COLORS.blue,COLORS.amber,COLORS.violet,COLORS.red,COLORS.cyan,COLORS.gray]}]},
+    {detailHandler:({index})=>{
+      const entry=statusEntries[index]; if(!entry) return;
+      openDetailModal(`${moduleLabel} - Estado ${entry[0]}`,`Distribución por estado.`,entry[1].records,mod);
+    }});
+
+  const avgGroups=[
+    {label:'Total',records:done.filter(r=>totalDays(r,mod)!==null)},
+    {label:'Efectivo',records:done.filter(r=>effectiveDays(r,mod)!==null)}
+  ];
+  chart(pref+'AvgChart','bar',{labels:avgGroups.map(x=>x.label),datasets:[{label:'Días promedio',data:[avg(avgGroups[0].records.map(r=>totalDays(r,mod))).toFixed(1),avg(avgGroups[1].records.map(r=>effectiveDays(r,mod))).toFixed(1)],backgroundColor:[COLORS.violet,COLORS.cyan]}]},
+    {plugins:{legend:{display:false}},detailHandler:({index})=>{
+      const item=avgGroups[index]; if(!item) return;
+      openDetailModal(`${moduleLabel} - Tiempo promedio ${item.label}`,`Registros usados para calcular el promedio.`,item.records,mod);
+    }});
+
+  const deadGroups=[
+    {label:'Permisos',records:done.filter(r=>deadPermDays(r)>0)},
+    {label:'Radicación',records:done.filter(r=>deadRadDays(r)>0)},
+    {label:'Total muerto',records:done.filter(r=>(deadPermDays(r)+deadRadDays(r))>0)}
+  ];
+  chart(pref+'DeadChart','bar',{labels:deadGroups.map(x=>x.label),datasets:[{label:'Días promedio',data:[avg(deadGroups[0].records.map(deadPermDays)).toFixed(1),avg(deadGroups[1].records.map(deadRadDays)).toFixed(1),avg(deadGroups[2].records.map(r=>deadPermDays(r)+deadRadDays(r))).toFixed(1)],backgroundColor:[COLORS.amber,COLORS.red,COLORS.violet]}]},
+    {plugins:{legend:{display:false}},detailHandler:({index})=>{
+      const item=deadGroups[index]; if(!item) return;
+      openDetailModal(`${moduleLabel} - ${item.label}`,`Registros usados para calcular este tiempo muerto.`,item.records,mod);
+    }});
+
+  const fiberMonthly=groupFiberMonthly(done,mod);
+  chart(pref+'FiberMonthlyChart','bar',{
+    labels:fiberMonthly.map(x=>x.mes),
+    datasets:[
+      {label:'FO Externa',data:fiberMonthly.map(x=>Number(x.externa.toFixed(1))),backgroundColor:'rgba(59,130,246,.72)',borderColor:COLORS.blue,borderWidth:1},
+      {label:'FO Interna',data:fiberMonthly.map(x=>Number(x.interna.toFixed(1))),backgroundColor:'rgba(34,211,238,.72)',borderColor:COLORS.cyan,borderWidth:1},
+      {label:'FO Total',data:fiberMonthly.map(x=>Number(x.total.toFixed(1))),type:'line',borderColor:COLORS.green,backgroundColor:'rgba(34,197,94,.12)',tension:.35,yAxisID:'y'}
+    ]},
+    {plugins:{tooltip:{callbacks:{label:(c)=>` ${c.dataset.label}: ${fmtMeters(Number(c.raw))} m`}}},
+    detailHandler:({index,datasetIndex})=>{
+      const item=fiberMonthly[index]; if(!item) return;
+      const label=datasetIndex===0?'FO Externa':datasetIndex===1?'FO Interna':'FO Total';
+      const records=datasetIndex===0?item.records.filter(r=>fiberExternal(r)>0):datasetIndex===1?item.records.filter(r=>fiberInternal(r)>0):item.records.filter(r=>fiberTotal(r)>0);
+      openDetailModal(`${moduleLabel} - ${label} - ${item.mes}`,`Fibra asociada al mes seleccionado.`,records,mod);
+    }});
+
+  const fiberTypes=fiberTypeGroups(done);
+  chart(pref+'FiberTypeChart','doughnut',{
+    labels:fiberTypes.map(x=>x.label),
+    datasets:[{data:fiberTypes.map(x=>Number(x.value.toFixed(1))),backgroundColor:[COLORS.blue,COLORS.cyan,COLORS.violet,COLORS.green]}]},
+    {plugins:{tooltip:{callbacks:{label:(c)=>` ${c.label}: ${fmtMeters(Number(c.raw))} m`}}},
+    detailHandler:({index})=>{
+      const item=fiberTypes[index]; if(!item) return;
+      openDetailModal(`${moduleLabel} - ${item.label}`,`Total: ${fmtMeters(item.value)} m.`,item.records,mod);
+    }});
+
+  const capacityTypes=fiberCapacityGroups(done);
+  chart(pref+'FiberCapacityChart','bar',{
+    labels:capacityTypes.map(x=>x.label),
+    datasets:[{label:'Metros de fibra por capacidad',data:capacityTypes.map(x=>Number(x.value.toFixed(1))),backgroundColor:'rgba(34,211,238,.72)',borderColor:COLORS.cyan,borderWidth:1}]},
+    {plugins:{legend:{display:false},tooltip:{callbacks:{label:(c)=>` ${c.label}: ${fmtMeters(Number(c.raw))} m`}}},
+    detailHandler:({index})=>{
+      const item=capacityTypes[index]; if(!item) return;
+      openDetailModal(`${moduleLabel} - Fibra ${item.label}`,`Total: ${fmtMeters(item.value)} m. ${item.subtitle ? 'Tipos encontrados: '+item.subtitle : ''}`,item.records,mod);
+    }});
+
+  if(mod==='instalaciones'){
+    chart('instMonthlyAvgTimeChart','line',{
+      labels:monthly.map(x=>x.mes),
+      datasets:[
+        {label:'Tiempo promedio total',data:monthly.map(x=>Number(x.prom.toFixed(1))),borderColor:COLORS.violet,backgroundColor:'rgba(139,92,246,.14)',tension:.35,fill:true,pointRadius:4},
+        {label:'Tiempo promedio efectivo',data:monthly.map(x=>Number(x.promEfectivo.toFixed(1))),borderColor:COLORS.cyan,backgroundColor:'rgba(34,211,238,.10)',tension:.35,pointRadius:4}
+      ]},
+      {plugins:{tooltip:{callbacks:{label:(c)=>` ${c.dataset.label}: ${c.raw} días`}}},
+      detailHandler:({index})=>{
+        const item=monthly[index]; if(!item) return;
+        openDetailModal(`Instalaciones - Tiempo promedio - ${item.mes}`,`Registros usados para calcular el tiempo promedio mensual.`,item.records,mod);
+      }});
+  }
+
+}
+function renderAll(){fillEstadoFilter(); renderModule('instalaciones'); renderModule('factibilidades');}
+async function loadData(){document.getElementById('connStatus').textContent='Cargando datos desde Supabase...'; try{const client=await getClient(); const [i,f]=await Promise.all([client.from('instalaciones').select('*').order('fecha_ingreso',{ascending:false}),client.from('factibilidades').select('*').order('fecha_ingreso',{ascending:false})]); if(i.error)throw i.error; if(f.error)throw f.error; instalaciones=i.data||[]; factibilidades=f.data||[]; document.getElementById('connStatus').textContent=`Conectado: ${instalaciones.length} instalaciones / ${factibilidades.length} factibilidades`; document.getElementById('lastUpdate').textContent='Actualizado: '+new Date().toLocaleString('es-CO'); renderAll();}catch(err){console.error(err); document.getElementById('connStatus').innerHTML='<span style="color:#fecaca">Error: '+esc(err.message||err)+'</span>';}}
+initSidebarSession(); restoreSidebarState(); initFilters(); loadData();
+</script>
+</body>
+</html>

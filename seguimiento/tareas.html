@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tareas y alertas</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+  <style>
+    :root{
+      --bg:#061225;
+      --panel:#0c1830;
+      --panel-2:#0f1d39;
+      --border:rgba(255,255,255,.10);
+      --text:#eef4ff;
+      --muted:#9ab0d0;
+      --green:#22c55e;
+      --green-soft:rgba(34,197,94,.16);
+      --blue:#3b82f6;
+      --amber:#f59e0b;
+      --red:#ef4444;
+      --shadow:0 18px 40px rgba(0,0,0,.28);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#04101f,#07152a);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+    .page{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+    .sidebar{
+      background:linear-gradient(180deg,#08142a,#081126);
+      border-right:1px solid var(--border);
+      padding:18px 16px; position:sticky; top:0; height:100vh;
+    }
+    .brand{font-size:18px;font-weight:800;margin-bottom:4px}
+    .subbrand{font-size:12px;color:var(--muted);margin-bottom:24px}
+    .nav a{
+      display:block;padding:12px 12px;border-radius:12px;color:#fff;text-decoration:none;
+      margin-bottom:8px;border:1px solid transparent
+    }
+    .nav a:hover,.nav a.active{background:rgba(255,255,255,.05);border-color:var(--border)}
+    .session-box{
+      margin-top:24px;padding:14px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.03)
+    }
+    .session-box small{display:block;color:var(--muted);margin-bottom:8px;word-break:break-all}
+    .btn{
+      border:none;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;
+      background:linear-gradient(135deg,#2563eb,#22c55e);color:#fff
+    }
+    .btn.secondary{background:#1f3d79}
+    .btn.ghost{
+      background:rgba(255,255,255,.04);border:1px solid var(--border)
+    }
+    .main{padding:26px 28px}
+    .header h1{margin:0 0 6px 0;font-size:28px}
+    .header p{margin:0 0 20px 0;color:var(--muted)}
+    .toolbar-row{
+      display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px
+    }
+    .toolbar-left,.toolbar-right{display:flex;gap:12px;flex-wrap:wrap}
+    .control{
+      min-width:190px;padding:12px 14px;border-radius:12px;border:1px solid var(--border);
+      background:var(--panel);color:#fff
+    }
+    .summary{
+      display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:14px;margin-bottom:18px
+    }
+    .stat{
+      border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));
+      padding:16px;box-shadow:var(--shadow)
+    }
+    .stat .label{font-size:12px;color:var(--muted);margin-bottom:8px}
+    .stat .value{font-size:30px;font-weight:800}
+    .card{
+      border:1px solid var(--border);border-radius:20px;background:linear-gradient(180deg,#08152c,#0a1730);
+      box-shadow:var(--shadow)
+    }
+    .table-wrap{overflow:auto}
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    thead th{
+      position:sticky;top:0;background:#0a1730;color:#9fd0ff;padding:14px 12px;text-align:left;
+      border-bottom:1px solid var(--border);white-space:nowrap
+    }
+    tbody td{padding:14px 12px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
+    tr:hover{background:rgba(255,255,255,.03)}
+    tr.completed{background:linear-gradient(90deg, rgba(20,120,55,.38), rgba(34,197,94,.12))}
+    .title{font-weight:700;margin-bottom:4px}
+    .desc{font-size:12px;color:var(--muted);max-width:360px;white-space:pre-wrap}
+    .badge{
+      display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--border)
+    }
+    .priority-CRITICA{background:rgba(239,68,68,.15);color:#fecaca}
+    .priority-ALTA{background:rgba(245,158,11,.16);color:#fde68a}
+    .priority-MEDIA{background:rgba(59,130,246,.16);color:#bfdbfe}
+    .priority-BAJA{background:rgba(148,163,184,.16);color:#e2e8f0}
+    .status-ABIERTA{background:rgba(59,130,246,.16);color:#bfdbfe}
+    .status-EN_PROCESO{background:rgba(245,158,11,.16);color:#fde68a}
+    .status-BLOQUEADA{background:rgba(239,68,68,.16);color:#fecaca}
+    .status-CERRADA{background:rgba(34,197,94,.16);color:#bbf7d0}
+    .select-status{
+      min-width:155px;padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:#091326;color:#fff
+    }
+    .actions{display:flex;gap:8px;flex-wrap:nowrap;align-items:center}
+    .small-btn{
+      padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:#fff;cursor:pointer
+    }
+    .small-btn.danger{color:#fecaca}
+    .empty{padding:26px;text-align:center;color:var(--muted);display:none}
+    .floating-add{
+      position:fixed;right:28px;bottom:28px;width:62px;height:62px;border-radius:50%;border:none;
+      font-size:34px;font-weight:700;cursor:pointer;color:#fff;background:linear-gradient(135deg,#2563eb,#22c55e);box-shadow:var(--shadow);z-index:40
+    }
+    .modal-backdrop{
+      position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:60;padding:20px
+    }
+    .modal-backdrop.show{display:flex}
+    .modal{
+      width:min(760px,100%);max-height:92vh;overflow:auto;background:linear-gradient(180deg,#08152c,#0a1730);
+      border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow);padding:22px
+    }
+    .modal-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
+    .close-btn{
+      width:40px;height:40px;border:none;border-radius:12px;background:rgba(255,255,255,.05);color:#fff;cursor:pointer
+    }
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .field{margin-bottom:8px}
+    .field label{display:block;margin-bottom:6px;font-size:13px;color:#cfe0ff}
+    .field input,.field select,.field textarea{
+      width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--panel);color:#fff
+    }
+    .field textarea{min-height:120px;resize:vertical}
+    .footer-note{margin-top:10px;font-size:13px;color:#86efac}
+    .hidden{display:none}
+    @media (max-width:1100px){.summary{grid-template-columns:repeat(2,minmax(180px,1fr))}}
+    @media (max-width:900px){
+      .page{grid-template-columns:1fr}
+      .sidebar{position:relative;height:auto}
+      .grid{grid-template-columns:1fr}
+      .summary{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<div id="taskModal" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h3 id="modalTitle" style="margin:0 0 6px 0;">Nueva tarea</h3>
+        <div style="color:var(--muted);font-size:13px">Registra actividades operativas, seguimientos y alertas.</div>
+      </div>
+      <button class="close-btn" onclick="closeTaskModal()">✕</button>
+    </div>
+
+    <form id="taskForm">
+      <input type="hidden" name="id">
+      <div class="grid">
+        <div class="field" style="grid-column:1/-1">
+          <label>Título</label>
+          <input name="task_title" required>
+        </div>
+        <div class="field">
+          <label>Tipo</label>
+          <input name="task_type" placeholder="Seguimiento, visita, mantenimiento...">
+        </div>
+        <div class="field">
+          <label>Prioridad</label>
+          <select name="priority">
+            <option value="MEDIA">MEDIA</option>
+            <option value="BAJA">BAJA</option>
+            <option value="ALTA">ALTA</option>
+            <option value="CRITICA">CRITICA</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Estado</label>
+          <select name="status">
+            <option value="ABIERTA">ABIERTA</option>
+            <option value="EN_PROCESO">EN_PROCESO</option>
+            <option value="BLOQUEADA">BLOQUEADA</option>
+            <option value="CERRADA">CERRADA</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Asignado a</label>
+          <input name="assigned_to">
+        </div>
+        <div class="field">
+          <label>Fecha límite</label>
+          <input type="date" name="due_date">
+        </div>
+        <div class="field">
+          <label>Recordatorio</label>
+          <input type="datetime-local" name="reminder_date">
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Módulo relacionado</label>
+          <input name="related_module" placeholder="tickets, instalaciones, materiales...">
+        </div>
+        <div class="field" style="grid-column:1/-1">
+          <label>Descripción</label>
+          <textarea name="description"></textarea>
+        </div>
+      </div>
+      <div class="actions" style="justify-content:flex-end;margin-top:10px">
+        <button type="button" class="small-btn" onclick="closeTaskModal()">Cancelar</button>
+        <button type="submit" class="btn" id="saveBtn">Guardar tarea</button>
+      </div>
+      <div id="taskMsg" class="footer-note"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+function safeShell(content){
+  const root = document.getElementById('root');
+  const email = localStorage.getItem('user_email') || '';
+  root.innerHTML = `
+    <div class="page">
+      <aside class="sidebar">
+        <div class="brand">Nodo O&amp;M</div>
+        <div class="subbrand">Control y seguimiento</div>
+        <nav class="nav">
+          <a href="index.html">Inicio</a>
+          <a href="dashboard.html">Dashboard</a>
+          <a href="tickets.html">Tickets / Fallas</a>
+          <a href="mantenimientos.html">Mantenimientos</a>
+          <a href="instalaciones.html">Instalaciones</a>
+          <a href="factibilidades.html">Factibilidades</a>
+          <a href="traslados.html">Traslados</a>
+          <a href="materiales.html">Materiales</a>
+          <a href="liquidaciones.html">Liquidaciones</a>
+          <a href="gastos.html">Gastos</a>
+          <a href="tareas.html" class="active">Tareas y Alertas</a>
+          <a href="reportes.html">Reportes</a>
+        </nav>
+        <div class="session-box">
+          <small>Sesión<br>${email}</small>
+          <button class="btn secondary" style="width:100%" onclick="safeLogout()">Cerrar sesión</button>
+        </div>
+      </aside>
+      <main class="main">${content}</main>
+    </div>
+  `;
+}
+function safeLogout(){
+  try{
+    if(typeof logout === 'function'){ logout(); return; }
+  }catch(e){}
+  localStorage.removeItem('user_email');
+  window.location.href = 'index.html';
+}
+
+const content = `
+  <div class="toolbar-row">
+    <div class="toolbar-left">
+      <input id="searchTask" class="control" placeholder="Buscar por tarea, asignado o módulo">
+      <select id="filterStatus" class="control">
+        <option value="">Todos los estados</option>
+        <option value="ABIERTA">ABIERTA</option>
+        <option value="EN_PROCESO">EN_PROCESO</option>
+        <option value="BLOQUEADA">BLOQUEADA</option>
+        <option value="CERRADA">CERRADA</option>
+      </select>
+      <select id="filterPriority" class="control">
+        <option value="">Todas las prioridades</option>
+        <option value="CRITICA">CRITICA</option>
+        <option value="ALTA">ALTA</option>
+        <option value="MEDIA">MEDIA</option>
+        <option value="BAJA">BAJA</option>
+      </select>
+    </div>
+    <div class="toolbar-right">
+      <select id="sortBy" class="control">
+        <option value="created_at_desc">Más recientes</option>
+        <option value="priority_desc">Prioridad alta primero</option>
+        <option value="priority_asc">Prioridad baja primero</option>
+        <option value="due_date_asc">Vencimiento más próximo</option>
+        <option value="due_date_desc">Vencimiento más lejano</option>
+        <option value="task_title_asc">Título A-Z</option>
+        <option value="status_asc">Estado</option>
+      </select>
+      <button class="btn ghost" onclick="loadTasks()">Actualizar</button>
+    </div>
+  </div>
+
+  <div id="taskSummary" class="summary"></div>
+
+  <div class="card">
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Tarea</th>
+            <th>Tipo</th>
+            <th>Prioridad</th>
+            <th>Estado actual</th>
+            <th>Cambiar estado</th>
+            <th>Asignado</th>
+            <th>Vence</th>
+            <th>Recordatorio</th>
+            <th>Módulo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="taskTableBody"></tbody>
+      </table>
+    </div>
+    <div id="taskEmpty" class="empty">No hay tareas para mostrar con los filtros actuales.</div>
+  </div>
+
+  <button class="floating-add" title="Nueva tarea" onclick="openTaskModal()">+</button>
+`;
+
+try{
+  if(typeof appShell === 'function'){
+    document.getElementById('root').innerHTML = appShell(
+      'tareas.html',
+      'Tareas y alertas',
+      'Seguimiento profesional de actividades operativas, responsables, fechas de vencimiento y recordatorios.',
+      content
+    );
+  }else{
+    safeShell(content);
+  }
+}catch(err){
+  console.error('Error renderizando appShell:', err);
+  safeShell(content);
+}
+
+let clientRef = null;
+let taskRows = [];
+const PRIORITY_ORDER = { CRITICA:4, ALTA:3, MEDIA:2, BAJA:1 };
+
+function esc(v){
+  return String(v ?? '')
+    .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+    .replaceAll('"','&quot;').replaceAll("'",'&#039;');
+}
+function formatDate(v){ if(!v) return ''; try{return new Date(v+'T00:00:00').toLocaleDateString('es-CO')}catch(e){return v}}
+function formatDateTime(v){ if(!v) return ''; try{return new Date(v).toLocaleString('es-CO')}catch(e){return v}}
+function badgePriority(v){ return `<span class="badge priority-${esc(v)}">${esc(v)}</span>`; }
+function badgeStatus(v){ return `<span class="badge status-${esc(v)}">${esc(v)}</span>`; }
+
+async function resolveClient(){
+  if(clientRef) return clientRef;
+  if(typeof getClient === 'function'){
+    clientRef = await getClient();
+    return clientRef;
+  }
+  const url = localStorage.getItem('sb_url');
+  const key = localStorage.getItem('sb_key');
+  if(!url || !key) throw new Error('No se encontró configuración de Supabase');
+  clientRef = window.supabase.createClient(url, key);
+  return clientRef;
+}
+
+function renderSummary(rows){
+  const total = rows.length;
+  const abiertas = rows.filter(r=>r.status==='ABIERTA').length;
+  const proceso = rows.filter(r=>r.status==='EN_PROCESO').length;
+  const bloqueadas = rows.filter(r=>r.status==='BLOQUEADA').length;
+  const cerradas = rows.filter(r=>r.status==='CERRADA').length;
+  document.getElementById('taskSummary').innerHTML = `
+    <div class="stat"><div class="label">Total visible</div><div class="value">${total}</div></div>
+    <div class="stat"><div class="label">Abiertas</div><div class="value">${abiertas}</div></div>
+    <div class="stat"><div class="label">En proceso</div><div class="value">${proceso}</div></div>
+    <div class="stat"><div class="label">Bloqueadas</div><div class="value">${bloqueadas}</div></div>
+  `;
+}
+
+function getFilteredRows(){
+  const txt = (document.getElementById('searchTask')?.value || '').trim().toLowerCase();
+  const st = document.getElementById('filterStatus')?.value || '';
+  const pr = document.getElementById('filterPriority')?.value || '';
+  const sort = document.getElementById('sortBy')?.value || 'created_at_desc';
+
+  let rows = taskRows.filter(r=>{
+    const hayTexto = !txt || [r.task_title,r.task_type,r.assigned_to,r.related_module,r.description]
+      .map(x=>String(x||'').toLowerCase()).some(v=>v.includes(txt));
+    const hayEstado = !st || r.status===st;
+    const hayPr = !pr || r.priority===pr;
+    return hayTexto && hayEstado && hayPr;
+  });
+
+  rows.sort((a,b)=>{
+    switch(sort){
+      case 'priority_desc': return (PRIORITY_ORDER[b.priority]||0)-(PRIORITY_ORDER[a.priority]||0);
+      case 'priority_asc': return (PRIORITY_ORDER[a.priority]||0)-(PRIORITY_ORDER[b.priority]||0);
+      case 'due_date_asc': return String(a.due_date||'9999-12-31').localeCompare(String(b.due_date||'9999-12-31'));
+      case 'due_date_desc': return String(b.due_date||'').localeCompare(String(a.due_date||''));
+      case 'task_title_asc': return String(a.task_title||'').localeCompare(String(b.task_title||''));
+      case 'status_asc': return String(a.status||'').localeCompare(String(b.status||''));
+      default: return String(b.created_at||'').localeCompare(String(a.created_at||''));
+    }
+  });
+  return rows;
+}
+
+function renderTasks(){
+  const rows = getFilteredRows();
+  renderSummary(rows);
+  const body = document.getElementById('taskTableBody');
+  const empty = document.getElementById('taskEmpty');
+  if(!body) return;
+
+  if(!rows.length){
+    body.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  body.innerHTML = rows.map(r=>`
+    <tr class="${r.status==='CERRADA' ? 'completed' : ''}">
+      <td><div class="title">${esc(r.task_title)}</div><div class="desc">${esc(r.description||'')}</div></td>
+      <td>${esc(r.task_type||'')}</td>
+      <td>${badgePriority(r.priority||'')}</td>
+      <td>${badgeStatus(r.status||'')}</td>
+      <td>
+        <select class="select-status" onchange="changeTaskStatus('${r.id}', this.value)">
+          <option value="ABIERTA" ${r.status==='ABIERTA'?'selected':''}>ABIERTA</option>
+          <option value="EN_PROCESO" ${r.status==='EN_PROCESO'?'selected':''}>EN_PROCESO</option>
+          <option value="BLOQUEADA" ${r.status==='BLOQUEADA'?'selected':''}>BLOQUEADA</option>
+          <option value="CERRADA" ${r.status==='CERRADA'?'selected':''}>CERRADA</option>
+        </select>
+      </td>
+      <td>${esc(r.assigned_to||'')}</td>
+      <td>${formatDate(r.due_date)}</td>
+      <td>${formatDateTime(r.reminder_date)}</td>
+      <td>${esc(r.related_module||'')}</td>
+      <td>
+        <div class="actions">
+          <button class="small-btn" onclick="editTask('${r.id}')">Editar</button>
+          <button class="small-btn danger" onclick="deleteTask('${r.id}')">Eliminar</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function loadTasks(){
+  try{
+    const client = await resolveClient();
+    const pageSize = 1000;
+    let from = 0;
+    let allRows = [];
+    let keepLoading = true;
+
+    while(keepLoading){
+      const {data, error} = await client
+        .from('om_tasks')
+        .select('*')
+        .order('created_at', {ascending:false})
+        .range(from, from + pageSize - 1);
+
+      if(error) throw error;
+
+      const rows = data || [];
+      allRows = allRows.concat(rows);
+
+      if(rows.length < pageSize){
+        keepLoading = false;
+      }else{
+        from += pageSize;
+      }
+    }
+
+    taskRows = allRows;
+    renderTasks();
+  }catch(err){
+    console.error(err);
+    const body = document.getElementById('taskTableBody');
+    if(body){
+      body.innerHTML = `<tr><td colspan="10" style="padding:18px;color:#fecaca">Error cargando tareas: ${esc(err.message || err)}</td></tr>`;
+    }
+  }
+}
+
+window.openTaskModal = function(task=null){
+  const modal = document.getElementById('taskModal');
+  const form = document.getElementById('taskForm');
+  const msg = document.getElementById('taskMsg');
+  form.reset();
+  msg.textContent = '';
+  document.getElementById('modalTitle').textContent = task ? 'Editar tarea' : 'Nueva tarea';
+  document.getElementById('saveBtn').textContent = task ? 'Actualizar tarea' : 'Guardar tarea';
+
+  if(task){
+    form.id.value = task.id || '';
+    form.task_title.value = task.task_title || '';
+    form.task_type.value = task.task_type || '';
+    form.priority.value = task.priority || 'MEDIA';
+    form.status.value = task.status || 'ABIERTA';
+    form.assigned_to.value = task.assigned_to || '';
+    form.due_date.value = task.due_date || '';
+    form.reminder_date.value = task.reminder_date ? new Date(task.reminder_date).toISOString().slice(0,16) : '';
+    form.related_module.value = task.related_module || '';
+    form.description.value = task.description || '';
+  }
+  modal.classList.add('show');
+};
+window.closeTaskModal = function(){ document.getElementById('taskModal').classList.remove('show'); };
+document.getElementById('taskModal').addEventListener('click', (e)=>{ if(e.target.id==='taskModal') closeTaskModal(); });
+
+document.getElementById('taskForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const form = e.target;
+  const msg = document.getElementById('taskMsg');
+  msg.textContent = '';
+  try{
+    const client = await resolveClient();
+    const payload = {
+      task_title: form.task_title.value.trim(),
+      task_type: form.task_type.value.trim() || null,
+      priority: form.priority.value,
+      status: form.status.value,
+      assigned_to: form.assigned_to.value.trim() || null,
+      due_date: form.due_date.value || null,
+      reminder_date: form.reminder_date.value ? new Date(form.reminder_date.value).toISOString() : null,
+      related_module: form.related_module.value.trim() || null,
+      description: form.description.value.trim() || null
+    };
+
+    let result;
+    if(form.id.value){
+      result = await client.from('om_tasks').update(payload).eq('id', form.id.value);
+    }else{
+      result = await client.from('om_tasks').insert(payload);
+    }
+    if(result.error) throw result.error;
+
+    msg.textContent = 'Registro guardado correctamente';
+    closeTaskModal();
+    await loadTasks();
+  }catch(err){
+    console.error(err);
+    msg.textContent = 'Error guardando: ' + (err.message || err);
+    msg.style.color = '#fecaca';
+  }
+});
+
+window.changeTaskStatus = async function(id, status){
+  try{
+    const client = await resolveClient();
+    const {error} = await client.from('om_tasks').update({status}).eq('id', id);
+    if(error) throw error;
+    const row = taskRows.find(x=>x.id===id);
+    if(row) row.status = status;
+    renderTasks();
+  }catch(err){
+    console.error(err);
+    alert('No fue posible actualizar el estado: ' + (err.message || err));
+    await loadTasks();
+  }
+};
+
+window.editTask = function(id){
+  const row = taskRows.find(x=>x.id===id);
+  if(row) openTaskModal(row);
+};
+
+window.deleteTask = async function(id){
+  if(!confirm('¿Deseas eliminar esta tarea?')) return;
+  try{
+    const client = await resolveClient();
+    const {error} = await client.from('om_tasks').delete().eq('id', id);
+    if(error) throw error;
+    taskRows = taskRows.filter(x=>x.id!==id);
+    renderTasks();
+  }catch(err){
+    console.error(err);
+    alert('No fue posible eliminar la tarea: ' + (err.message || err));
+  }
+};
+
+['searchTask','filterStatus','filterPriority','sortBy'].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el){
+    el.addEventListener('input', renderTasks);
+    el.addEventListener('change', renderTasks);
+  }
+});
+
+try{
+  if(typeof ensureSession === 'function'){ ensureSession(); }
+}catch(err){
+  console.warn('ensureSession no disponible o falló:', err);
+}
+
+loadTasks();
+</script>
+</body>
+</html>

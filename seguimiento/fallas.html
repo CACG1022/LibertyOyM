@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tickets y fallas</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+  <style>
+    :root{--border:rgba(255,255,255,.10);--text:#eef4ff;--muted:#9ab0d0;--shadow:0 18px 40px rgba(0,0,0,.28)}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#04101f,#07152a);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+    .page{display:grid;grid-template-columns:240px 1fr;min-height:100vh;transition:grid-template-columns .25s ease}
+    .sidebar{background:linear-gradient(180deg,#08142a,#081126);border-right:1px solid var(--border);padding:18px 16px;position:sticky;top:0;height:100vh;transition:transform .25s ease, opacity .25s ease, width .25s ease;overflow:hidden}
+    .brand{font-size:18px;font-weight:800;margin-bottom:4px}.subbrand{font-size:12px;color:var(--muted);margin-bottom:24px}
+    .nav a{display:block;padding:12px;border-radius:12px;color:#fff;text-decoration:none;margin-bottom:8px;border:1px solid transparent}
+    .nav a:hover,.nav a.active{background:rgba(255,255,255,.05);border-color:var(--border)}
+    .session-box{margin-top:24px;padding:14px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.03)}
+    .session-box small{display:block;color:var(--muted);margin-bottom:8px;word-break:break-all}
+    .btn{border:none;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#2563eb,#22c55e);color:#fff}
+    .btn.secondary{background:#1f3d79}.btn.ghost{background:rgba(255,255,255,.04);border:1px solid var(--border)}
+    .main{padding:26px 28px}
+    .header h1{margin:0 0 6px;font-size:28px}.header p{margin:0 0 20px;color:var(--muted)}
+    .toolbar-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+    .toolbar-left,.toolbar-right{display:flex;gap:12px;flex-wrap:wrap}
+    .control{min-width:190px;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}
+    .summary{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+    .stat{border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));padding:16px;box-shadow:var(--shadow);min-height:108px}
+    .stat .label{font-size:12px;color:var(--muted);margin-bottom:8px}.stat .value{font-size:30px;font-weight:800}.stat .sub{font-size:12px;color:#b9d6ff;margin-top:6px}
+    .card{border:1px solid var(--border);border-radius:20px;background:linear-gradient(180deg,#08152c,#0a1730);box-shadow:var(--shadow)}
+    .table-wrap{overflow:auto} table{width:100%;border-collapse:separate;border-spacing:0}
+    thead th{position:sticky;top:0;background:#0a1730;color:#9fd0ff;padding:14px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+    tbody td{padding:14px 12px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
+    tr:hover{background:rgba(255,255,255,.03)} tr.completed{background:linear-gradient(90deg, rgba(20,120,55,.38), rgba(34,197,94,.12))}
+    .title{font-weight:700;margin-bottom:4px}.desc{font-size:12px;color:var(--muted);max-width:360px;white-space:pre-wrap}
+    .badge{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--border)}
+    .priority-CRITICA{background:rgba(239,68,68,.15);color:#fecaca}.priority-ALTA{background:rgba(245,158,11,.16);color:#fde68a}.priority-MEDIA{background:rgba(59,130,246,.16);color:#bfdbfe}.priority-BAJA{background:rgba(148,163,184,.16);color:#e2e8f0}
+    .status-ABIERTO{background:rgba(59,130,246,.16);color:#bfdbfe}.status-EN_GESTION{background:rgba(245,158,11,.16);color:#fde68a}.status-ESCALADO{background:rgba(239,68,68,.16);color:#fecaca}.status-CERRADO{background:rgba(34,197,94,.16);color:#bbf7d0}
+    .select-status{min-width:155px;padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:#091326;color:#fff}
+    .actions{display:flex;gap:8px;flex-wrap:nowrap;align-items:center}.small-btn{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:#fff;cursor:pointer}
+    .small-btn.danger{color:#fecaca}.small-btn.info{color:#bfdbfe}.small-btn.whatsapp{color:#86efac}
+    .empty{padding:26px;text-align:center;color:var(--muted);display:none}
+    .floating-add{position:fixed;right:28px;bottom:28px;width:62px;height:62px;border-radius:50%;border:none;font-size:34px;font-weight:700;cursor:pointer;color:#fff;background:linear-gradient(135deg,#2563eb,#22c55e);box-shadow:var(--shadow);z-index:40}
+    .sidebar-toggle{
+      position:fixed;
+      top:50vh;
+      z-index:80;
+      border:none;
+      border-radius:10px;
+      width:28px;
+      height:44px;
+      padding:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(12,24,48,.96);
+      color:#fff;
+      cursor:pointer;
+      box-shadow:var(--shadow);
+      transition:left .25s ease, transform .25s ease;
+      line-height:1;
+      font-size:18px;
+}
+body:not(.sidebar-hidden) .sidebar-toggle{
+      left:246px;
+      transform:translate(-50%, -50%);
+}
+body.sidebar-hidden .sidebar-toggle{
+      left:8px;
+      transform:translateY(-50%);
+}
+    body.sidebar-hidden .page{grid-template-columns:0 1fr}
+    body.sidebar-hidden .sidebar{transform:translateX(-100%);opacity:0;pointer-events:none;width:0;padding-left:0;padding-right:0;border-right:none}
+    body.sidebar-hidden .sidebar-toggle{left:16px}
+    .main{transition:margin .25s ease}
+
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+    .modal-backdrop.show{display:flex}
+    .modal{width:min(1180px,100%);max-height:94vh;overflow:auto;background:linear-gradient(180deg,#08152c,#0a1730);border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow);padding:22px}
+    .modal.small{width:min(920px,100%)} .modal-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
+    .close-btn{width:40px;height:40px;border:none;border-radius:12px;background:rgba(255,255,255,.05);color:#fff;cursor:pointer}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.field{margin-bottom:8px}.field label{display:block;margin-bottom:6px;font-size:13px;color:#cfe0ff}
+    .field input,.field select,.field textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}.field textarea{min-height:100px;resize:vertical}
+    .span-2{grid-column:span 2}.span-4{grid-column:1/-1}.footer-note{margin-top:10px;font-size:13px;color:#86efac}.muted-note{font-size:12px;color:var(--muted)}
+    .timeline{display:grid;gap:12px}.timeline-item{border:1px solid var(--border);border-radius:14px;padding:14px;background:rgba(255,255,255,.03)}
+    .timeline-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.timeline-title{font-weight:700}.timeline-date{font-size:12px;color:#b9d6ff}
+    .timeline-detail{font-size:13px;color:#dce7f8;margin-top:8px;white-space:pre-wrap}.timeline-meta{font-size:12px;color:var(--muted);margin-top:6px}
+    @media (max-width:1400px){.summary{grid-template-columns:repeat(3,minmax(150px,1fr))}}
+    @media (max-width:1250px){.grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:900px){.page{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.grid,.summary{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<button id="sidebarToggle" class="sidebar-toggle" type="button" onclick="toggleSidebar()">☰</button>
+<div id="root"></div>
+
+<div id="ticketModal" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h3 id="modalTitle" style="margin:0 0 6px 0;">Nueva falla / ticket</h3>
+        <div class="muted-note">Registra inicio, cierre, causa, solución, datos técnicos y ubicación.</div>
+      </div>
+      <button class="close-btn" type="button" onclick="closeTicketModal()">✕</button>
+    </div>
+    <form id="ticketForm" action="javascript:void(0);" method="post">
+      <input type="hidden" name="id">
+      <div class="grid">
+        <div class="field"><label>Fecha inicio</label><input type="date" name="fecha_inicio" required></div>
+        <div class="field"><label>Hora inicio</label><input type="time" name="hora_inicio" required></div>
+        <div class="field"><label>Ticket</label><input name="ticket" required></div>
+        <div class="field"><label>ID del cliente</label><input name="id_cliente"></div>
+        <div class="field span-2"><label>Nombre cliente</label><input name="nombre_cliente" required></div>
+        <div class="field span-2"><label>Dirección cliente</label><input name="direccion_cliente"></div>
+        <div class="field span-2"><label>Coordenada cliente</label><input name="coordenada_cliente"></div>
+        <div class="field"><label>Demónico</label><input name="demonico"></div>
+        <div class="field"><label>Equipo / Switch</label><input name="equipo_switch"></div>
+        <div class="field"><label>Puerto switch</label><input name="puerto_switch"></div>
+        <div class="field"><label>ODF espejo</label><input name="odf_espejo"></div>
+        <div class="field"><label>ODF salida</label><input name="odf_salida"></div>
+        <div class="field"><label>Puerto ODF salida</label><input name="puerto_odf_salida"></div>
+        <div class="field"><label>Responsable</label><input name="responsable"></div>
+        <div class="field"><label>Estado</label><select name="estado"><option>ABIERTO</option><option>EN_GESTION</option><option>ESCALADO</option><option>CERRADO</option></select></div>
+        <div class="field"><label>Prioridad</label><select name="prioridad"><option>MEDIA</option><option>BAJA</option><option>ALTA</option><option>CRITICA</option></select></div>
+        <div class="field"><label>Tipo de falla</label><input name="tipo_falla"></div>
+        <div class="field"><label>Fecha fin</label><input type="date" name="fecha_fin"></div>
+        <div class="field"><label>Hora fin</label><input type="time" name="hora_fin"></div>
+        <div class="field"><label>Duración falla</label><input name="duracion_falla" readonly></div>
+        <div class="field"><label>Coord daño</label><input name="coord_dano"></div>
+        <div class="field span-2"><label>Causa</label><textarea name="causa"></textarea></div>
+        <div class="field span-2"><label>Solución</label><textarea name="solucion"></textarea></div>
+        <div class="field span-4"><label>Observación</label><textarea name="observacion"></textarea></div>
+      </div>
+      <div class="actions" style="justify-content:flex-end;margin-top:10px">
+        <button type="button" class="small-btn" onclick="closeTicketModal()">Cancelar</button>
+        <button type="submit" class="btn" id="saveBtn">Guardar ticket</button>
+      </div>
+      <div id="ticketMsg" class="footer-note"></div>
+    </form>
+  </div>
+</div>
+
+<div id="historyModal" class="modal-backdrop">
+  <div class="modal small">
+    <div class="modal-header">
+      <div>
+        <h3 id="historyTitle" style="margin:0 0 6px 0;">Historial del ticket</h3>
+        <div class="muted-note">Cambios, estados y eventos del ticket.</div>
+      </div>
+      <button class="close-btn" type="button" onclick="closeHistoryModal()">✕</button>
+    </div>
+    <div id="historyContent" class="timeline"></div>
+  </div>
+</div>
+
+<script>
+function renderShell(){
+  const email = localStorage.getItem('user_email') || '';
+  document.getElementById('root').innerHTML = `
+    <div class="page">
+      <aside class="sidebar">
+        <div class="brand">Nodo O&M</div>
+        <div class="subbrand">Control y seguimiento</div>
+        <nav class="nav">
+          <a href="index.html">Inicio</a>
+          <a href="dashboard.html">Dashboard</a>
+          <a href="fallas.html" class="active">Tickets / Fallas</a>
+          <a href="mantenimientos.html">Mantenimientos</a>
+          <a href="instalaciones.html">Instalaciones</a>
+          <a href="factibilidades.html">Factibilidades</a>
+          <a href="traslados.html">Traslados</a>
+          <a href="materiales.html">Materiales</a>
+          <a href="liquidaciones.html">Liquidaciones</a>
+          <a href="gastos.html">Gastos</a>
+          <a href="tareas.html">Tareas y Alertas</a>
+          <a href="reportes.html">Reportes</a>
+        </nav>
+        <div class="session-box"><small>Sesión<br>${email || 'Sin iniciar'}</small><button class="btn secondary" style="width:100%" onclick="safeLogout()">Cerrar sesión</button></div>
+      </aside>
+      <main class="main">
+        <div class="header"><h1>Tickets y fallas</h1><p>Registro operativo de incidentes, causa, solución, tiempos de falla y trazabilidad técnica.</p></div>
+        <div class="toolbar-row">
+          <div class="toolbar-left">
+            <input id="searchTicket" class="control" placeholder="Buscar por ticket, cliente, ID cliente, equipo o responsable">
+            <select id="filterEstado" class="control"><option value="">Todos los estados</option><option>ABIERTO</option><option>EN_GESTION</option><option>ESCALADO</option><option>CERRADO</option></select>
+            <select id="filterPrioridad" class="control"><option value="">Todas las prioridades</option><option>CRITICA</option><option>ALTA</option><option>MEDIA</option><option>BAJA</option></select>
+          </div>
+          <div class="toolbar-right">
+            <select id="sortBy" class="control"><option value="fecha_inicio_desc">Más recientes</option><option value="prioridad_desc">Prioridad alta primero</option><option value="prioridad_asc">Prioridad baja primero</option><option value="duracion_desc">Mayor duración</option><option value="ticket_asc">Ticket A-Z</option><option value="estado_asc">Estado</option></select>
+            <button class="btn ghost" onclick="loadTickets()">Actualizar</button>
+          </div>
+        </div>
+        <div id="ticketSummary" class="summary"></div>
+        <div class="card"><div class="table-wrap"><table><thead><tr><th>Fecha / Hora</th><th>Ticket</th><th>ID cliente</th><th>Cliente</th><th>Equipo</th><th>Puerto</th><th>Responsable</th><th>Estado</th><th>Prioridad</th><th>Duración</th><th>Causa</th><th>Solución</th><th>Coord daño</th><th>Acciones</th></tr></thead><tbody id="ticketsTableBody"></tbody></table></div><div id="ticketEmpty" class="empty">No hay tickets para mostrar.</div></div>
+        <button class="floating-add" title="Nuevo ticket" onclick="openTicketModal()">+</button>
+      </main>
+    </div>`;
+}
+function safeLogout(){ try{ if(typeof logout==='function'){ logout(); return; } }catch(e){} localStorage.removeItem('user_email'); location.href='index.html'; }
+function applySidebarState(){
+  const hidden = localStorage.getItem('fallas_sidebar_hidden') === '1';
+  document.body.classList.toggle('sidebar-hidden', hidden);
+}
+function toggleSidebar(){
+  const hidden = !(localStorage.getItem('fallas_sidebar_hidden') === '1');
+  localStorage.setItem('fallas_sidebar_hidden', hidden ? '1' : '0');
+  applySidebarState();
+}
+renderShell();
+applySidebarState();
+
+let clientRef=null,ticketRows=[]; const PRIORITY_ORDER={CRITICA:4,ALTA:3,MEDIA:2,BAJA:1};
+const LABELS={ticket:'Ticket',id_cliente:'ID cliente',nombre_cliente:'Nombre cliente',direccion_cliente:'Dirección cliente',coordenada_cliente:'Coordenada cliente',demonico:'Demónico',equipo_switch:'Equipo / Switch',puerto_switch:'Puerto switch',odf_espejo:'ODF espejo',odf_salida:'ODF salida',puerto_odf_salida:'Puerto ODF salida',responsable:'Responsable',fecha_inicio:'Fecha inicio',hora_inicio:'Hora inicio',fecha_fin:'Fecha fin',hora_fin:'Hora fin',duracion_falla:'Duración falla',estado:'Estado',prioridad:'Prioridad',tipo_falla:'Tipo de falla',causa:'Causa',solucion:'Solución',coord_dano:'Coord daño',observacion:'Observación'};
+
+function esc(v){return String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;")}
+function formatDate(v){if(!v)return ''; try{return new Date(v+'T00:00:00').toLocaleDateString('es-CO')}catch(e){return v}}
+function formatTime(v){if(!v)return ''; try{const [h,m]=String(v).split(':'); const d=new Date(); d.setHours(Number(h),Number(m),0,0); return d.toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit'})}catch(e){return v}}
+function formatDateTime(d,t){return [formatDate(d),formatTime(t)].filter(Boolean).join(' ')}
+function badgePriority(v){return `<span class="badge priority-${esc(v)}">${esc(v||'')}</span>`}
+function badgeEstado(v){return `<span class="badge status-${esc(v)}">${esc(v||'')}</span>`}
+function calcularDuracionTexto(fi,hi,ff,hf){if(!fi||!hi||!ff||!hf)return ''; const ini=new Date(`${fi}T${hi}`), fin=new Date(`${ff}T${hf}`); if(Number.isNaN(ini.getTime())||Number.isNaN(fin.getTime())||fin<ini)return ''; const dm=Math.floor((fin-ini)/60000), d=Math.floor(dm/1440), h=Math.floor((dm%1440)/60), m=dm%60; const p=[]; if(d)p.push(`${d} d`); if(h||d)p.push(`${h} h`); p.push(`${m} min`); return p.join(' ')}
+function calcularDuracionMinutos(fi,hi,ff,hf){if(!fi||!hi||!ff||!hf)return null; const ini=new Date(`${fi}T${hi}`), fin=new Date(`${ff}T${hf}`); if(Number.isNaN(ini.getTime())||Number.isNaN(fin.getTime())||fin<ini)return null; return Math.floor((fin-ini)/60000)}
+function updateDuracionForm(){const form=document.getElementById('ticketForm'); const el=form.elements; if(el['duracion_falla']) el['duracion_falla'].value=calcularDuracionTexto(el['fecha_inicio']?.value||'',el['hora_inicio']?.value||'',el['fecha_fin']?.value||'',el['hora_fin']?.value||'')}
+
+async function resolveClient(){ if(clientRef) return clientRef; if(typeof getClient==='function'){clientRef=await getClient(); return clientRef;} const url=localStorage.getItem('sb_url'), key=localStorage.getItem('sb_key'); if(!url||!key) throw new Error('No se encontró configuración de Supabase'); clientRef=window.supabase.createClient(url,key); return clientRef; }
+async function getCurrentUserEmail(){ try{ const client=await resolveClient(); const {data}=await client.auth.getUser(); return data?.user?.email || localStorage.getItem('user_email') || 'Desconocido'; }catch(e){ return localStorage.getItem('user_email') || 'Desconocido'; } }
+async function logTicketAudit(row,accion,detalle){
+  try{
+    const client=await resolveClient();
+    const email=await getCurrentUserEmail();
+    await client.from('om_ticket_auditoria').insert({
+      ticket_id: row?.id || null,
+      ticket_codigo: row?.ticket || null,
+      accion: accion,
+      detalle: detalle,
+      estado: row?.estado || null,
+      responsable: row?.responsable || null,
+      usuario_email: email,
+      fecha_evento: new Date().toISOString(),
+      datos: row || {}
+    });
+  }catch(e){
+    console.warn('No se pudo registrar auditoría',e);
+  }
+}
+function buildChangeDetail(oldRow,payload){ const changes=[]; Object.keys(payload).forEach(k=>{ const oldVal=oldRow?.[k]??''; const newVal=payload?.[k]??''; if(String(oldVal)!==String(newVal)){ changes.push(`${LABELS[k]||k}: "${oldVal}" → "${newVal}"`); } }); return changes.length ? 'Cambios realizados:\n'+changes.join('\n') : 'Se actualizó el ticket sin cambios detectados en campos visibles.'; }
+
+function getFilteredRows(){ const txt=(document.getElementById('searchTicket')?.value||'').trim().toLowerCase(), estado=document.getElementById('filterEstado')?.value||'', prioridad=document.getElementById('filterPrioridad')?.value||'', sort=document.getElementById('sortBy')?.value||'fecha_inicio_desc'; let rows=ticketRows.filter(r=>{ const hayTexto=!txt||[r.ticket,r.nombre_cliente,r.id_cliente,r.equipo_switch,r.responsable,r.demonico,r.direccion_cliente].map(x=>String(x||'').toLowerCase()).some(v=>v.includes(txt)); return hayTexto&&(!estado||r.estado===estado)&&(!prioridad||r.prioridad===prioridad); }); rows.sort((a,b)=>{ switch(sort){ case 'prioridad_desc': return (PRIORITY_ORDER[b.prioridad]||0)-(PRIORITY_ORDER[a.prioridad]||0); case 'prioridad_asc': return (PRIORITY_ORDER[a.prioridad]||0)-(PRIORITY_ORDER[b.prioridad]||0); case 'duracion_desc': return (Number(b.duracion_falla_minutos)||0)-(Number(a.duracion_falla_minutos)||0); case 'ticket_asc': return String(a.ticket||'').localeCompare(String(b.ticket||'')); case 'estado_asc': return String(a.estado||'').localeCompare(String(b.estado||'')); default: return `${b.fecha_inicio||''} ${b.hora_inicio||''}`.localeCompare(`${a.fecha_inicio||''} ${a.hora_inicio||''}`); } }); return rows; }
+function renderSummary(rows){ const total=rows.length, abiertos=rows.filter(r=>r.estado==='ABIERTO').length, gestion=rows.filter(r=>r.estado==='EN_GESTION').length, escalados=rows.filter(r=>r.estado==='ESCALADO').length, cerrados=rows.filter(r=>r.estado==='CERRADO').length; const resueltos=rows.filter(r=>Number(r.duracion_falla_minutos)>0); const promedio=resueltos.length?Math.round(resueltos.reduce((a,b)=>a+Number(b.duracion_falla_minutos||0),0)/resueltos.length):0; const promHoras=promedio?`${Math.floor(promedio/60)} h ${promedio%60} min`:'0 min'; document.getElementById('ticketSummary').innerHTML=`<div class="stat"><div class="label">Total tickets</div><div class="value">${total}</div><div class="sub">Registros visibles</div></div><div class="stat"><div class="label">Abiertos</div><div class="value">${abiertos}</div><div class="sub">Pendientes</div></div><div class="stat"><div class="label">En gestión</div><div class="value">${gestion}</div><div class="sub">Trabajo activo</div></div><div class="stat"><div class="label">Escalados</div><div class="value">${escalados}</div><div class="sub">Requieren apoyo</div></div><div class="stat"><div class="label">Cerrados</div><div class="value">${cerrados}</div><div class="sub">Resueltos</div></div><div class="stat"><div class="label">Promedio resolución</div><div class="value">${promHoras}</div><div class="sub">${resueltos.length} tickets medidos</div></div>`; }
+
+function buildMensajeInicio(row){
+  return [
+    '*Mensaje de Inicio:*',
+    `*ID ticket:* ${row.ticket || ''}`,
+    `*Nombre del cliente:* ${row.nombre_cliente || ''}`,
+    `*Fecha inicio:* ${formatDate(row.fecha_inicio) || ''}`,
+    `*Hora inicio:* ${formatTime(row.hora_inicio) || ''}`,
+    `*Responsable:* ${row.responsable || ''}`
+  ].join('\n');
+}
+function buildMensajeFin(row){
+  return [
+    '*Mensaje FIN:*',
+    `*ID ticket:* ${row.ticket || ''}`,
+    `*Nombre del cliente:* ${row.nombre_cliente || ''}`,
+    `*Fecha inicio:* ${formatDate(row.fecha_inicio) || ''}`,
+    `*Hora inicio:* ${formatTime(row.hora_inicio) || ''}`,
+    `*Fecha fin:* ${formatDate(row.fecha_fin) || ''}`,
+    `*Hora fin:* ${formatTime(row.hora_fin) || ''}`,
+    `*Duración Falla:* ${row.duracion_falla || calcularDuracionTexto(row.fecha_inicio,row.hora_inicio,row.fecha_fin,row.hora_fin) || ''}`,
+    `*Causa:* ${row.causa || ''}`,
+    `*Solución:* ${row.solucion || ''}`,
+    `*Coord Geográfica:* ${row.coord_dano || row.coordenada_cliente || ''}`
+  ].join('\n');
+}
+async function copyToClipboardText(text){
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  }catch(e){}
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){
+    return false;
+  }
+}
+window.copyMensajeInicio = async function(id){
+  const row = ticketRows.find(x => x.id === id);
+  if(!row) return;
+  const ok = await copyToClipboardText(buildMensajeInicio(row));
+  alert(ok ? 'Mensaje de Inicio copiado para WhatsApp.' : 'No fue posible copiar el mensaje.');
+}
+window.copyMensajeFin = async function(id){
+  const row = ticketRows.find(x => x.id === id);
+  if(!row) return;
+  const ok = await copyToClipboardText(buildMensajeFin(row));
+  alert(ok ? 'Mensaje FIN copiado para WhatsApp.' : 'No fue posible copiar el mensaje.');
+}
+
+function renderTickets(){ const rows=getFilteredRows(); renderSummary(rows); const body=document.getElementById('ticketsTableBody'), empty=document.getElementById('ticketEmpty'); if(!rows.length){ body.innerHTML=''; empty.style.display='block'; return; } empty.style.display='none'; body.innerHTML=rows.map(r=>`<tr class="${r.estado==='CERRADO'?'completed':''}"><td>${esc(formatDateTime(r.fecha_inicio,r.hora_inicio))}</td><td><div class="title">${esc(r.ticket)}</div><div class="desc">${esc(r.tipo_falla||'')}</div></td><td>${esc(r.id_cliente||'')}</td><td><div class="title">${esc(r.nombre_cliente||'')}</div><div class="desc">${esc(r.direccion_cliente||'')}</div></td><td><div class="title">${esc(r.equipo_switch||'')}</div><div class="desc">${esc(r.demonico||'')}</div></td><td><div>${esc(r.puerto_switch||'')}</div><div class="desc">ODF ${esc(r.odf_salida||'')} / P ${esc(r.puerto_odf_salida||'')}</div></td><td>${esc(r.responsable||'')}</td><td>${badgeEstado(r.estado)}<div style="margin-top:8px"><select class="select-status" onchange="changeTicketStatus('${r.id}', this.value)"><option value="ABIERTO" ${r.estado==='ABIERTO'?'selected':''}>ABIERTO</option><option value="EN_GESTION" ${r.estado==='EN_GESTION'?'selected':''}>EN_GESTION</option><option value="ESCALADO" ${r.estado==='ESCALADO'?'selected':''}>ESCALADO</option><option value="CERRADO" ${r.estado==='CERRADO'?'selected':''}>CERRADO</option></select></div></td><td>${badgePriority(r.prioridad||'')}</td><td>${esc(r.duracion_falla||calcularDuracionTexto(r.fecha_inicio,r.hora_inicio,r.fecha_fin,r.hora_fin)||'')}</td><td><div class="desc">${esc(r.causa||'')}</div></td><td><div class="desc">${esc(r.solucion||'')}</div></td><td>${esc(r.coord_dano||'')}</td><td><div class="actions">
+<div class="row top-row">
+<button class="small-btn info" onclick="showHistory('${r.id}','${esc(r.ticket)}')">Historial</button>
+<button class="small-btn" onclick="editTicket('${r.id}')">Editar</button>
+<button class="small-btn danger" onclick="deleteTicket('${r.id}')">Eliminar</button>
+</div>
+<div class="row">
+<button class="small-btn whatsapp" onclick="copyMensajeInicio('${r.id}')">Mensaje Inicio</button>
+<button class="small-btn whatsapp" onclick="copyMensajeFin('${r.id}')">Mensaje FIN</button>
+</div>
+</div></td></tr>`).join(''); }
+async function loadTickets(){ try{ const client=await resolveClient(); const {data,error}=await client.from('om_tickets').select('*').order('fecha_inicio',{ascending:false}).order('hora_inicio',{ascending:false}); if(error) throw error; ticketRows=data||[]; renderTickets(); }catch(err){ console.error(err); document.getElementById('ticketsTableBody').innerHTML=`<tr><td colspan="14" style="padding:18px;color:#fecaca">Error cargando tickets: ${esc(err.message||err)}</td></tr>`; } }
+
+window.openTicketModal=function(row=null){ const modal=document.getElementById('ticketModal'), form=document.getElementById('ticketForm'), el=form.elements, msg=document.getElementById('ticketMsg'); form.reset(); msg.textContent=''; if(el['id']) el['id'].value=''; document.getElementById('modalTitle').textContent=row?'Editar falla / ticket':'Nueva falla / ticket'; document.getElementById('saveBtn').textContent=row?'Actualizar ticket':'Guardar ticket'; if(row){ Object.keys(row).forEach(k=>{ if(el[k]) el[k].value=row[k]??''; }); if(el['duracion_falla']) el['duracion_falla'].value=row.duracion_falla||calcularDuracionTexto(row.fecha_inicio,row.hora_inicio,row.fecha_fin,row.hora_fin); } updateDuracionForm(); modal.classList.add('show'); }
+window.closeTicketModal=function(){ document.getElementById('ticketModal').classList.remove('show'); }
+document.getElementById('ticketModal').addEventListener('click', function(e){ if(e.target.id==='ticketModal'){ /* no cerrar */ } });
+
+window.closeHistoryModal=function(){ document.getElementById('historyModal').classList.remove('show'); }
+document.getElementById('historyModal').addEventListener('click', function(e){ if(e.target.id==='historyModal'){ /* no cerrar */ } });
+
+['fecha_inicio','hora_inicio','fecha_fin','hora_fin'].forEach(name=>{ document.addEventListener('input',e=>{ if(e.target&&e.target.name===name) updateDuracionForm(); }); document.addEventListener('change',e=>{ if(e.target&&e.target.name===name) updateDuracionForm(); }); });
+
+document.getElementById('ticketForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const form=e.target, el=form.elements, msg=document.getElementById('ticketMsg');
+  msg.textContent='';
+  try{
+    const client=await resolveClient();
+    const fechaInicio=el['fecha_inicio']?.value||'', horaInicio=el['hora_inicio']?.value||'', fechaFin=el['fecha_fin']?.value||'', horaFin=el['hora_fin']?.value||'';
+    const durMin=calcularDuracionMinutos(fechaInicio,horaInicio,fechaFin,horaFin);
+    const payload={ticket:(el['ticket']?.value||'').trim(),id_cliente:(el['id_cliente']?.value||'').trim()||null,nombre_cliente:(el['nombre_cliente']?.value||'').trim(),direccion_cliente:(el['direccion_cliente']?.value||'').trim()||null,coordenada_cliente:(el['coordenada_cliente']?.value||'').trim()||null,demonico:(el['demonico']?.value||'').trim()||null,equipo_switch:(el['equipo_switch']?.value||'').trim()||null,puerto_switch:(el['puerto_switch']?.value||'').trim()||null,odf_espejo:(el['odf_espejo']?.value||'').trim()||null,odf_salida:(el['odf_salida']?.value||'').trim()||null,puerto_odf_salida:(el['puerto_odf_salida']?.value||'').trim()||null,responsable:(el['responsable']?.value||'').trim()||null,fecha_inicio:fechaInicio,hora_inicio:horaInicio,fecha_fin:fechaFin||null,hora_fin:horaFin||null,duracion_falla_minutos:durMin,duracion_falla:el['duracion_falla']?.value||null,estado:el['estado']?.value||'ABIERTO',prioridad:el['prioridad']?.value||'MEDIA',tipo_falla:(el['tipo_falla']?.value||'').trim()||null,causa:(el['causa']?.value||'').trim()||null,solucion:(el['solucion']?.value||'').trim()||null,coord_dano:(el['coord_dano']?.value||'').trim()||null,observacion:(el['observacion']?.value||'').trim()||null};
+    let result; const rowId=el['id']?.value||'';
+    if(rowId){
+      const oldRow=ticketRows.find(x=>x.id===rowId)||{};
+      result=await client.from('om_tickets').update(payload).eq('id',rowId);
+      if(result.error) throw result.error;
+      const detail=buildChangeDetail(oldRow,payload);
+      await logTicketAudit({...oldRow,...payload,id:rowId},'ACTUALIZACION',detail);
+    }else{
+      result=await client.from('om_tickets').insert(payload).select().single();
+      if(result.error) throw result.error;
+      await logTicketAudit({...payload,id:result.data.id},'CREACION','Ticket creado.');
+    }
+    msg.textContent='Registro guardado correctamente'; msg.style.color='#86efac'; closeTicketModal(); await loadTickets();
+  }catch(err){ console.error(err); msg.textContent='Error guardando: '+(err.message||err); msg.style.color='#fecaca'; }
+});
+
+window.changeTicketStatus=async function(id,estado){
+  try{
+    const client=await resolveClient(); const row=ticketRows.find(x=>x.id===id); const prev=row?.estado||'';
+    const {error}=await client.from('om_tickets').update({estado}).eq('id',id); if(error) throw error;
+    if(row) row.estado=estado;
+    await logTicketAudit({...row,estado},'CAMBIO_ESTADO',`Cambio de estado: "${prev}" → "${estado}"`);
+    renderTickets();
+  }catch(err){ console.error(err); alert('No fue posible actualizar el estado: '+(err.message||err)); }
+};
+
+window.editTicket=function(id){ const row=ticketRows.find(x=>x.id===id); if(row) openTicketModal(row); };
+window.deleteTicket=async function(id){
+  const row=ticketRows.find(x=>x.id===id);
+  const ok=confirm(`¿Seguro que deseas eliminar este ticket?\n\nTicket: ${row?.ticket||''}\nCliente: ${row?.nombre_cliente||''}\n\nEsta acción no se puede deshacer.`);
+  if(!ok) return;
+  try{
+    await logTicketAudit(row||{id},'ELIMINACION','Ticket eliminado por el usuario.');
+    const client=await resolveClient(); const {error}=await client.from('om_tickets').delete().eq('id',id); if(error) throw error;
+    ticketRows=ticketRows.filter(x=>x.id!==id); renderTickets();
+  }catch(err){ console.error(err); alert('No fue posible eliminar el ticket: '+(err.message||err)); }
+};
+
+window.showHistory = async function(ticketId, ticketCodigo){
+  const client = await resolveClient();
+  document.getElementById('historyTitle').textContent = `Historial del ticket ${ticketCodigo}`;
+  const container = document.getElementById('historyContent');
+  container.innerHTML = '<div class="timeline-item"><div class="timeline-title">Cargando historial...</div></div>';
+  document.getElementById('historyModal').classList.add('show');
+
+  const events = [];
+  try{
+    const aud = await client
+      .from('om_ticket_auditoria')
+      .select('*')
+      .or(`ticket_id.eq.${ticketId},ticket_codigo.eq.${ticketCodigo}`)
+      .order('fecha_evento', { ascending:false });
+
+    if(!aud.error && aud.data){
+      aud.data.forEach(x => events.push({
+        fecha: x.fecha_evento,
+        titulo: `Auditoría: ${x.accion || 'Evento'}`,
+        detalle: x.detalle || '',
+        meta: x.usuario_email || 'Usuario desconocido'
+      }));
+    }
+  }catch(e){
+    console.warn('Sin tabla de auditoría o sin datos', e);
+  }
+
+  events.sort((a,b) => String(b.fecha || '').localeCompare(String(a.fecha || '')));
+
+  if(!events.length){
+    container.innerHTML = '<div class="timeline-item"><div class="timeline-title">Sin historial disponible</div><div class="timeline-detail">Aún no se encontraron cambios registrados para este ticket.</div></div>';
+    return;
+  }
+
+  container.innerHTML = events.map(ev => `
+    <div class="timeline-item">
+      <div class="timeline-top">
+        <div class="timeline-title">${esc(ev.titulo)}</div>
+        <div class="timeline-date">${esc(new Date(ev.fecha).toLocaleString('es-CO'))}</div>
+      </div>
+      <div class="timeline-detail">${esc(ev.detalle)}</div>
+      <div class="timeline-meta">${esc(ev.meta)}</div>
+    </div>
+  `).join('');
+};
+
+['searchTicket','filterEstado','filterPrioridad','sortBy'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.addEventListener('input',renderTickets); el.addEventListener('change',renderTickets); } });
+loadTickets();
+</script>
+</body>
+</html>

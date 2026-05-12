@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Factibilidades</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+  <style>
+    :root{--border:rgba(255,255,255,.10);--text:#eef4ff;--muted:#9ab0d0;--shadow:0 18px 40px rgba(0,0,0,.28)}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#04101f,#07152a);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+    .page{display:grid;grid-template-columns:240px 1fr;min-height:100vh;transition:grid-template-columns .25s ease}.page.sidebar-hidden{grid-template-columns:0 1fr}
+    .sidebar{background:linear-gradient(180deg,#08142a,#081126);border-right:1px solid var(--border);padding:18px 16px;position:sticky;top:0;height:100vh;overflow:auto;transition:transform .25s ease,opacity .25s ease;z-index:30}.page.sidebar-hidden .sidebar{transform:translateX(-100%);opacity:0;pointer-events:none;padding-left:0;padding-right:0;border-right:0}.sidebar-toggle-tab{position:fixed;left:240px;top:50%;transform:translateY(-50%);width:28px;height:72px;border:1px solid var(--border);border-left:0;border-radius:0 14px 14px 0;background:linear-gradient(135deg,#1d4ed8,#0f766e);color:#fff;font-weight:900;cursor:pointer;z-index:80;box-shadow:var(--shadow);transition:left .25s ease}.page.sidebar-hidden .sidebar-toggle-tab{left:0}
+    .brand{font-size:18px;font-weight:800;margin-bottom:4px}.subbrand{font-size:12px;color:var(--muted);margin-bottom:24px}
+    .nav a{display:block;padding:12px;border-radius:12px;color:#fff;text-decoration:none;margin-bottom:8px;border:1px solid transparent}
+    .nav a:hover,.nav a.active{background:rgba(255,255,255,.05);border-color:var(--border)}
+    .session-box{margin-top:24px;padding:14px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.03)}
+    .session-box small{display:block;color:var(--muted);margin-bottom:8px;word-break:break-all}
+    .btn{border:none;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#2563eb,#22c55e);color:#fff}
+    .btn.secondary{background:#1f3d79}.btn.ghost{background:rgba(255,255,255,.04);border:1px solid var(--border)}
+    .small-btn{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:#fff;cursor:pointer}.copy-msg{font-size:12px;color:#86efac;margin-left:10px;align-self:center}
+    .small-btn.email-btn{display:block;width:100%;background:linear-gradient(135deg,#2563eb,#0891b2);border-color:rgba(147,197,253,.35);margin-top:8px;padding:6px 10px;line-height:1.05;font-size:11px;min-height:26px;white-space:nowrap}.actions-cell{min-width:150px}.actions-cell .small-btn:not(.email-btn){display:block;width:100%;padding:7px 10px;line-height:1.05;font-size:11px;min-height:26px}
+    .template-help{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:8px;margin-top:8px}.template-token{font-size:12px;color:#bfdbfe;border:1px solid var(--border);border-radius:10px;padding:8px;background:rgba(255,255,255,.03);cursor:pointer}.template-token:hover{background:rgba(59,130,246,.16)}
+    .main{padding:26px 28px}
+    .header h1{margin:0 0 6px;font-size:28px}.header p{margin:0 0 20px;color:var(--muted)}
+    .toolbar-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+    .toolbar-left,.toolbar-right{display:flex;gap:12px;flex-wrap:wrap}
+    .control{min-width:190px;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}
+    .summary{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+    .stat{border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));padding:16px;box-shadow:var(--shadow);min-height:110px;cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease}
+    .stat .label{font-size:12px;color:var(--muted);margin-bottom:8px}.stat .value{font-size:30px;font-weight:800}.stat .sub{font-size:12px;color:#b9d6ff;margin-top:6px}.stat:hover{transform:translateY(-2px);border-color:rgba(96,165,250,.45)}.stat.active{border-color:rgba(34,197,94,.60);background:linear-gradient(180deg,rgba(34,197,94,.12),rgba(255,255,255,.02))}
+    .card{border:1px solid var(--border);border-radius:20px;background:linear-gradient(180deg,#08152c,#0a1730);box-shadow:var(--shadow)}
+    .table-wrap{overflow:auto}
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    thead th{position:sticky;top:0;background:#0a1730;color:#9fd0ff;padding:14px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}.th-tools{display:flex;flex-direction:column;gap:6px;min-width:115px}.th-sort{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;font-weight:800}.th-sort:hover{color:#dbeafe}.sort-icon{font-size:11px;color:#60a5fa}.th-tools select{width:100%;padding:7px 8px;border-radius:9px;border:1px solid rgba(255,255,255,.10);background:#0c1830;color:#fff;font-size:12px}
+    tbody td{padding:14px 12px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
+    tbody tr{cursor:pointer}
+    tbody tr:hover{background:rgba(255,255,255,.04)}
+    tbody tr.row-aprobada{background:rgba(34,197,94,.14)}
+    tbody tr.row-aprobada:hover{background:rgba(34,197,94,.22)}
+    tbody tr.row-aprobada td{border-bottom-color:rgba(34,197,94,.25)}
+    tbody tr.row-no-viable{background:rgba(239,68,68,.14)}
+    tbody tr.row-no-viable:hover{background:rgba(239,68,68,.22)}
+    tbody tr.row-no-viable td{border-bottom-color:rgba(239,68,68,.25)}
+    .title{font-weight:700;margin-bottom:4px}.desc{font-size:12px;color:var(--muted);white-space:pre-wrap}
+    .badge{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--border)}
+    .estado-INGRESADA{background:rgba(59,130,246,.16);color:#bfdbfe}
+    .estado-EN_VALIDACION{background:rgba(59,130,246,.16);color:#bfdbfe}
+    .estado-PENDIENTE_DOCUMENTACION{background:rgba(245,158,11,.16);color:#fde68a}
+    .estado-GESTION_DE_PERMISOS{background:rgba(245,158,11,.16);color:#fde68a}
+    .estado-FACTIBILIDAD_REALIZADA{background:rgba(245,158,11,.16);color:#fde68a}
+
+
+
+    .estado-PENDIENTE_PRESUPUESTO{background:rgba(245,158,11,.16);color:#fde68a}
+    .estado-LISTA_PARA_RADICAR{background:rgba(34,197,94,.16);color:#bbf7d0}
+    .estado-RADICADA{background:rgba(59,130,246,.16);color:#bfdbfe}
+    .estado-EN_GESTION_EMSA{background:rgba(168,85,247,.16);color:#ddd6fe}
+    .estado-APROBADA{background:rgba(34,197,94,.16);color:#bbf7d0}
+    .estado-NO_VIABLE{background:rgba(239,68,68,.16);color:#fecaca}
+    .estado-SOLIC_AGENDA_CONTRATISTA{background:rgba(14,165,233,.16);color:#bae6fd}
+    .estado-RECHAZADA,.estado-CANCELADA{background:rgba(239,68,68,.16);color:#fecaca}
+    .hidden{display:none!important}
+    .empty{padding:26px;text-align:center;color:var(--muted);display:none}
+    .floating-add{position:fixed;right:28px;bottom:28px;width:62px;height:62px;border-radius:50%;border:none;font-size:34px;font-weight:700;cursor:pointer;color:#fff;background:linear-gradient(135deg,#2563eb,#22c55e);box-shadow:var(--shadow);z-index:40}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+    .modal-backdrop.show{display:flex}
+    .modal{width:min(1200px,100%);max-height:94vh;overflow:auto;background:linear-gradient(180deg,#08152c,#0a1730);border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow);padding:22px}
+    .modal.large{width:min(1320px,100%)} .modal-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}
+    .close-btn{width:40px;height:40px;border:none;border-radius:12px;background:rgba(255,255,255,.05);color:#fff;cursor:pointer}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.field{margin-bottom:8px}.field label{display:block;margin-bottom:6px;font-size:13px;color:#cfe0ff}
+    .field input,.field select,.field textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}.field textarea{min-height:90px;resize:vertical}
+    .span-2{grid-column:span 2}.span-4{grid-column:1/-1}.muted-note{font-size:12px;color:var(--muted)}
+    .check-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px}.check-item{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.03)}
+    .modal-kpis{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:12px;margin:16px 0 14px}
+    .modal-kpi{border:1px solid rgba(147,197,253,.22);border-radius:16px;padding:14px;background:linear-gradient(180deg,rgba(37,99,235,.12),rgba(255,255,255,.025));box-shadow:0 12px 28px rgba(0,0,0,.18)}
+    .modal-kpi .k-label{font-size:12px;color:#bfdbfe;margin-bottom:8px}
+    .modal-kpi .k-value{font-size:26px;font-weight:900;color:#fff;line-height:1}
+    .modal-kpi .k-sub{font-size:11px;color:#9ab0d0;margin-top:8px}
+    .modal-kpi.dead{border-color:rgba(245,158,11,.35);background:linear-gradient(180deg,rgba(245,158,11,.12),rgba(255,255,255,.025))}
+    .modal-kpi.effective{border-color:rgba(34,197,94,.35);background:linear-gradient(180deg,rgba(34,197,94,.12),rgba(255,255,255,.025))}
+    .row-kpi{display:inline-flex;flex-direction:column;gap:2px;min-width:92px;padding:8px 10px;border-radius:12px;border:1px solid rgba(147,197,253,.22);background:linear-gradient(180deg,rgba(37,99,235,.12),rgba(255,255,255,.025))}
+    .row-kpi .rk-label{font-size:10px;color:#bfdbfe;line-height:1.05}
+    .row-kpi .rk-value{font-size:16px;font-weight:900;color:#fff;line-height:1.1}
+    .row-kpi.dead{border-color:rgba(245,158,11,.35);background:linear-gradient(180deg,rgba(245,158,11,.12),rgba(255,255,255,.025))}
+    .row-kpi.effective{border-color:rgba(34,197,94,.35);background:linear-gradient(180deg,rgba(34,197,94,.12),rgba(255,255,255,.025))}
+    .detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.detail-card{border:1px solid var(--border);border-radius:16px;padding:14px;background:rgba(255,255,255,.03)}
+    .detail-title{font-size:12px;color:var(--muted);margin-bottom:6px}.detail-value{font-size:14px;font-weight:700;white-space:pre-wrap}
+    @media (max-width:1400px){.summary{grid-template-columns:repeat(3,minmax(150px,1fr))}}
+    @media (max-width:1100px){.grid,.detail-grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:900px){.page{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.grid,.summary,.detail-grid{grid-template-columns:1fr}}.import-btn{white-space:nowrap}.preview-wrap{max-height:380px;overflow:auto;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02)}.preview-table{width:100%;border-collapse:separate;border-spacing:0}.preview-table th,.preview-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px;text-align:left;vertical-align:top}.preview-table th{color:#9fd0ff;background:#0a1730;position:sticky;top:0}.summary-row{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:12px;margin:10px 0 16px}.summary-mini{padding:12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.03)}.summary-mini .n{font-size:24px;font-weight:800}.summary-mini .l{font-size:12px;color:#9ab0d0}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<div id="formModal" class="modal-backdrop">
+  <div class="modal large">
+    <div class="modal-header">
+      <div>
+        <h3 id="formModalTitle" style="margin:0 0 6px 0;">Nueva solicitud de factibilidad</h3>
+        <div class="muted-note">Control integral de presupuesto, documentación, permisos y tiempos de gestión.</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="small-btn" type="button" onclick="copiarInfoFactibilidad()">Copiar info</button>
+        <span id="copyInfoMsg" class="copy-msg"></span>
+        <button class="close-btn" type="button" onclick="closeFormModal()">✕</button>
+      </div>
+    </div>
+    <form id="factibilidadForm" action="javascript:void(0);" method="post">
+      <input type="hidden" name="id">
+      <div class="grid">
+        <div class="field"><label>Fecha ingreso</label><input type="date" name="fecha_ingreso" required onchange="calcularTiemposMuertosFactibilidad()"></div>
+        <div class="field"><label>ID Cambio</label><input name="id_cambio" required></div>
+        <div class="field"><label>ID Tarea</label><input name="id_tarea" required></div>
+        <div class="field"><label>ID Cliente</label><input name="id_cliente" required></div>
+
+        <div class="field"><label>Operador</label><input name="operador"></div>
+        <div class="field span-2"><label>Cliente</label><input name="cliente" required></div>
+        <div class="field"><label>Responsable</label><input name="responsable"></div>
+
+        <div class="field span-2"><label>Dirección</label><input name="direccion"></div>
+        <div class="field"><label>Capacidad</label><input name="capacidad"></div>
+        <div class="field"><label>Tipo fibra</label>
+          <select name="tipo_fibra">
+            <option value="">Seleccionar</option>
+            <option>4H</option><option>12H</option><option>24H</option><option>48H</option><option>96H</option><option>N/A</option>
+          </select>
+        </div>
+
+        <div class="field"><label>FO Externa</label><input name="fo_externa"></div>
+        <div class="field"><label>FO Interna</label><input name="fo_interna"></div>
+        <div class="field"><label>Estado viabilidad planta externa</label>
+          <select name="estado_viabilidad_planta_externa">
+            <option>PENDIENTE</option><option>VIABLE</option><option>EN_GESTION</option><option>COMPLETA</option><option>NO_VIABLE</option><option>N/A</option>
+          </select>
+        </div>
+        <div class="field"><label>Estado viabilidad planta interna</label>
+          <select name="estado_viabilidad_planta_interna">
+            <option>PENDIENTE</option><option>VIABLE</option><option>EN_GESTION</option><option>COMPLETA</option><option>NO_VIABLE</option><option>N/A</option>
+          </select>
+        </div>
+
+        <div class="field"><label>Fecha solicitud permisos</label><input type="date" name="fecha_solicitud_permisos" onchange="calcularTiemposMuertosFactibilidad()"></div>
+        <div class="field"><label>Fecha aprobación permisos</label><input type="date" name="fecha_aprobacion_permisos" onchange="calcularTiemposMuertosFactibilidad()"></div>
+        <div class="field"><label>Tiempo muerto permisos</label><input name="tiempo_muerto_permisos" readonly></div>
+        <div class="field"><label>Estado permisos</label>
+          <select name="estado_permisos">
+            <option>PENDIENTE</option><option>SOLICITADOS</option><option>EN_GESTION</option><option>APROBADOS</option><option>RECHAZADOS</option><option>NO_REQUIERE</option>
+          </select>
+        </div>
+        <div class="field"><label>Fecha agendamiento</label><input type="date" name="fecha_agendamiento"></div>
+        <div class="field"><label>Hora agendamiento</label><input type="time" name="hora_agendamiento"></div>
+        <div class="field"><label>Fecha de entrega</label><input type="date" name="fecha_entrega" onchange="calcularTiemposMuertosFactibilidad()"></div>
+
+        <div class="field"><label>Estado general</label>
+          <select name="estado_general">
+            <option>INGRESADA</option><option>SOLIC AGENDA CONTRATISTA</option><option>EN_VALIDACION</option><option>PENDIENTE_DOCUMENTACION</option><option>PENDIENTE_PRESUPUESTO</option><option>GESTION DE PERMISOS</option><option>FACTIBILIDAD REALIZADA</option>
+            <option>LISTA_PARA_RADICAR</option><option>RADICADA</option><option>EN_GESTION_EMSA</option><option>APROBADA</option><option>RECHAZADA</option><option>NO VIABLE</option><option>CANCELADA</option>
+          </select>
+        </div>
+
+        <div class="field span-4"><label>Observaciones</label><textarea name="observaciones"></textarea></div>
+      </div>
+
+      <div class="modal-kpis" id="factibilidadDurationKpis">
+        <div class="modal-kpi">
+          <div class="k-label">Duración total factibilidad</div>
+          <div class="k-value" id="kpiDuracionTotalFact">0 días</div>
+          <div class="k-sub">Fecha entrega - Fecha ingreso</div>
+        </div>
+        <div class="modal-kpi dead">
+          <div class="k-label">Tiempo muerto</div>
+          <div class="k-value" id="kpiTiempoMuertoFact">0 días</div>
+          <div class="k-sub">Permisos + otros tiempos muertos</div>
+        </div>
+        <div class="modal-kpi effective">
+          <div class="k-label">Duración efectiva</div>
+          <div class="k-value" id="kpiDuracionEfectivaFact">0 días</div>
+          <div class="k-sub">Duración total - tiempos muertos</div>
+        </div>
+      </div>
+
+      <div class="check-row">
+        <label class="check-item"><input type="checkbox" name="checklist_presupuesto"> Presupuesto</label>
+        <label class="check-item"><input type="checkbox" name="checklist_documentacion"> Documentación</label>
+        <label class="check-item"><input type="checkbox" disabled name="checklist_radicacion_emsa" onchange="toggleRadicacionFields()"> Radicación EMSA (No applica en factibilidades)</label>
+      </div>
+
+      <div id="radicacionFields" class="grid hidden" style="margin-top:14px">
+        <div class="field"><label>Fecha de radicación</label><input type="date" name="fecha_radicacion" onchange="actualizarIndicadoresRadicacion(); calcularTiemposMuertosFactibilidad()"></div>
+        <div class="field"><label>Fecha respuesta radicación</label><input type="date" name="fecha_respuesta_radicacion" onchange="calcularTiemposMuertosFactibilidad()"></div>
+        <div class="field"><label>Estado de radicación</label>
+          <select name="estado_radicacion">
+            <option>PENDIENTE</option><option>RADICADA</option><option>EN_REVISION</option><option>APROBADA</option><option>RECHAZADA</option><option>N/A</option>
+          </select>
+        </div>
+        <div class="field"><label>Días transcurridos</label><input name="dias_transcurridos" readonly></div>
+        <div class="field"><label>Días hábiles transcurridos</label><input name="dias_habiles_transcurridos" readonly></div>
+        <div class="field"><label>Tiempo muerto radicación</label><input name="tiempo_muerto_radicacion" readonly></div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
+        <button type="button" class="small-btn" onclick="closeFormModal()">Cancelar</button>
+        <button type="submit" class="btn" id="saveBtn">Guardar solicitud</button>
+      </div>
+      <div id="formMsg" style="margin-top:10px;color:#86efac"></div>
+    </form>
+  </div>
+</div>
+
+
+<div id="emailModal" class="modal-backdrop">
+  <div class="modal large">
+    <div class="modal-header">
+      <div>
+        <h3 style="margin:0 0 6px 0;">Configuración plantilla Sol Contratista</h3>
+        <div class="muted-note">Esta configuración queda guardada en Supabase. Para modificarla se solicita contraseña.</div>
+      </div>
+      <button class="close-btn" type="button" onclick="closeEmailModal()">✕</button>
+    </div>
+
+    <div class="grid">
+      <div class="field span-2"><label>Para</label><input id="emailTo" placeholder="correo@empresa.com"></div>
+      <div class="field span-2"><label>CC</label><input id="emailCc" placeholder="correo1@empresa.com; correo2@empresa.com"></div>
+      <div class="field span-4"><label>Asunto</label><input id="emailSubject" readonly></div>
+      <div class="field span-4">
+        <label>Cuerpo del correo configurable</label>
+        <textarea id="emailTemplate" style="min-height:260px"></textarea>
+        <div class="muted-note" style="margin-top:8px">Haz clic sobre una variable para insertarla en el cuerpo del correo.</div>
+        <div id="emailTokens" class="template-help"></div>
+      </div>
+      <div class="field span-4">
+        <label>Vista previa</label>
+        <textarea id="emailPreview" style="min-height:220px" readonly></textarea>
+      </div>
+    </div>
+
+    <div id="emailMsg" style="margin-top:10px;color:#86efac"></div>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px;flex-wrap:wrap">
+      <button type="button" class="small-btn" onclick="resetEmailTemplate()">Restaurar plantilla</button>
+      <button type="button" class="small-btn" onclick="saveEmailTemplate()">Guardar plantilla en Supabase</button>
+      <button type="button" class="small-btn" onclick="copyEmailBody()">Copiar cuerpo</button>
+      <button type="button" class="btn" onclick="openOutlookSolicitudContratista()">Probar en Outlook</button>
+    </div>
+  </div>
+</div>
+
+<div id="detailModal" class="modal-backdrop">
+  <div class="modal large">
+    <div class="modal-header">
+      <div>
+        <h3 id="detailTitle" style="margin:0 0 6px 0;">Detalle de la factibilidad</h3>
+        <div class="muted-note">Vista integral del proceso y control de tiempos de factibilidad.</div>
+      </div>
+      <button class="close-btn" type="button" onclick="closeDetailModal()">✕</button>
+    </div>
+    <div id="detailContent"></div>
+  </div>
+</div>
+
+<script>
+function safeRenderError(message){
+  document.body.innerHTML = `<div style="min-height:100vh;background:linear-gradient(180deg,#04101f,#07152a);color:#fff;font-family:Arial,Helvetica,sans-serif;display:flex;align-items:center;justify-content:center;padding:24px"><div style="max-width:900px;width:100%;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:24px;background:rgba(255,255,255,.04)"><h2 style="margin-top:0">Error cargando el módulo de factibilidades</h2><p style="color:#cbd5e1">Revisa app.js, la configuración de Supabase y la consola del navegador.</p><pre style="white-space:pre-wrap;color:#fecaca">${String(message || '')}</pre></div></div>`;
+}
+function renderShell(){
+  const email = localStorage.getItem('user_email') || '';
+  document.getElementById('root').innerHTML = `
+    <div class="page">
+      <aside class="sidebar" ondblclick="toggleSidebar()">
+        <div class="brand">Nodo O&M</div><div class="subbrand">Control y seguimiento</div>
+        <nav class="nav">
+          <a href="index.html">Inicio</a><a href="dashboard.html">Dashboard</a><a href="fallas.html">Tickets / Fallas</a><a href="mantenimientos.html">Mantenimientos</a>
+          <a href="instalaciones.html">Instalaciones</a><a href="factibilidades.html" class="active">Factibilidades</a><a href="traslados.html">Traslados</a>
+          <a href="materiales.html">Materiales</a>
+          <a href="liquidaciones.html">Liquidaciones</a>
+<a href="gastos.html">Gastos</a><a href="tareas.html">Tareas y Alertas</a><a href="reportes.html">Reportes</a>
+        </nav>
+        <div class="session-box"><small>Sesión<br>${email || 'Sin iniciar'}</small><button class="btn secondary" style="width:100%" onclick="safeLogout()">Cerrar sesión</button></div>
+      </aside>
+      <button id="sidebarToggleTab" class="sidebar-toggle-tab" title="Ocultar / mostrar barra lateral" onclick="toggleSidebar()">‹</button>
+      <main class="main">
+        <div class="header"><h1>Factibilidades</h1><p>Seguimiento profesional de presupuesto, documentación, permisos y tiempos de gestión.</p></div>
+        <div class="toolbar-row">
+          <div class="toolbar-left">
+            <input id="searchFact" class="control" placeholder="Buscar por cliente, ID cliente, ID cambio o tarea">
+            <select id="filterEstado" class="control">
+              <option value="">Todos los estados</option><option>INGRESADA</option><option>SOLIC AGENDA CONTRATISTA</option><option>EN_VALIDACION</option><option>PENDIENTE_DOCUMENTACION</option><option>GESTION DE PERMISOS</option><option>FACTIBILIDAD REALIZADA</option>
+              <option>PENDIENTE_PRESUPUESTO</option><option>LISTA_PARA_RADICAR</option><option>RADICADA</option><option>EN_GESTION_EMSA</option><option>APROBADA</option><option>RECHAZADA</option><option>NO VIABLE</option><option>CANCELADA</option>
+            </select>
+            <input id="filterFecha" class="control" type="date" title="Filtrar por fecha de ingreso">
+          </div>
+          <div class="toolbar-right">
+            <select id="sortBy" class="control">
+              <option value="fecha_ingreso_desc">Más recientes</option><option value="fecha_ingreso_asc">Más antiguas</option><option value="cliente_asc">Cliente A-Z</option><option value="estado_asc">Estado</option>
+            </select>
+            <button class="btn ghost import-btn" type="button" onclick="openImportPicker()">Cargar plantilla</button>
+            <button class="btn ghost import-btn" type="button" onclick="openEmailTemplateConfig()">Config. plantilla correo</button>
+            <button class="btn ghost" onclick="loadFactibilidades()">Actualizar</button>
+            <input id="plantillaInput" type="file" accept=".txt,.csv,.tsv,text/plain" style="display:none">
+          </div>
+        </div>
+        <div id="summary" class="summary"></div>
+        <div class="card"><div class="table-wrap"><table><thead><tr>
+          <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('fecha_ingreso')">Fecha ingreso <span id="sort_fecha_ingreso" class="sort-icon"></span></div><select id="filter_col_fecha_ingreso" onchange="setColumnFilter('fecha_ingreso', this.value)"><option value="">Todas</option></select></div></th>
+          <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('id_cambio')">ID Cambio <span id="sort_id_cambio" class="sort-icon"></span></div><select id="filter_col_id_cambio" onchange="setColumnFilter('id_cambio', this.value)"><option value="">Todos</option></select></div></th>
+          <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('id_tarea')">ID Tarea <span id="sort_id_tarea" class="sort-icon"></span></div><select id="filter_col_id_tarea" onchange="setColumnFilter('id_tarea', this.value)"><option value="">Todos</option></select></div></th>
+          <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('id_cliente')">ID Cliente <span id="sort_id_cliente" class="sort-icon"></span></div><select id="filter_col_id_cliente" onchange="setColumnFilter('id_cliente', this.value)"><option value="">Todos</option></select></div></th>
+          <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('cliente')">Cliente <span id="sort_cliente" class="sort-icon"></span></div><select id="filter_col_cliente" onchange="setColumnFilter('cliente', this.value)"><option value="">Todos</option></select></div></th>
+          <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('estado_general')">Estado general <span id="sort_estado_general" class="sort-icon"></span></div><select id="filter_col_estado_general" onchange="setColumnFilter('estado_general', this.value)"><option value="">Todos</option></select></div></th>
+          <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('estado_permisos')">Permisos <span id="sort_estado_permisos" class="sort-icon"></span></div><select id="filter_col_estado_permisos" onchange="setColumnFilter('estado_permisos', this.value)"><option value="">Todos</option></select></div></th>
+          <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('fecha_agendamiento')">Fecha agendamiento <span id="sort_fecha_agendamiento" class="sort-icon"></span></div><select id="filter_col_fecha_agendamiento" onchange="setColumnFilter('fecha_agendamiento', this.value)"><option value="">Todas</option></select></div></th>
+          <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('duracion_total')">Duración total <span id="sort_duracion_total" class="sort-icon"></span></div><select id="filter_col_duracion_total" onchange="setColumnFilter('duracion_total', this.value)"><option value="">Todos</option></select></div></th>
+          <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('tiempo_muerto')">Tiempo muerto <span id="sort_tiempo_muerto" class="sort-icon"></span></div><select id="filter_col_tiempo_muerto" onchange="setColumnFilter('tiempo_muerto', this.value)"><option value="">Todos</option></select></div></th>
+          <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('duracion_efectiva')">Duración efectiva <span id="sort_duracion_efectiva" class="sort-icon"></span></div><select id="filter_col_duracion_efectiva" onchange="setColumnFilter('duracion_efectiva', this.value)"><option value="">Todos</option></select></div></th>
+          <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('acciones')">Acciones <span id="sort_acciones" class="sort-icon"></span></div><select id="filter_col_acciones" onchange="setColumnFilter('acciones', this.value)"><option value="">Todas</option></select></div></th>
+        </tr></thead><tbody id="tableBody"></tbody></table></div><div id="emptyState" class="empty">No hay factibilidades para mostrar.</div></div>
+        <button class="floating-add" title="Nueva factibilidad" onclick="openFormModal()">+</button>
+      </main>
+    </div>`;
+}
+function safeLogout(){ try{ if(typeof logout==='function'){ logout(); return; } }catch(e){} localStorage.removeItem('user_email'); location.href='index.html'; }
+function toggleSidebar(){
+  const page = document.querySelector('.page');
+  const tab = document.getElementById('sidebarToggleTab');
+  if(!page) return;
+  page.classList.toggle('sidebar-hidden');
+  const hidden = page.classList.contains('sidebar-hidden');
+  localStorage.setItem('om_sidebar_hidden', hidden ? '1' : '0');
+  if(tab) tab.textContent = hidden ? '›' : '‹';
+}
+function restoreSidebarState(){
+  const page = document.querySelector('.page');
+  const tab = document.getElementById('sidebarToggleTab');
+  if(!page) return;
+  const hidden = localStorage.getItem('om_sidebar_hidden') === '1';
+  page.classList.toggle('sidebar-hidden', hidden);
+  if(tab) tab.textContent = hidden ? '›' : '‹';
+}
+try{ renderShell(); restoreSidebarState(); }catch(err){ console.error(err); safeRenderError(err.message || err); throw err; }
+
+let clientRef = null, factRows = [];
+let importRowsPending = [];
+let activeKpi = null;
+let columnFilters = {fecha_ingreso:'', id_cambio:'', id_tarea:'', id_cliente:'', cliente:'', estado_general:'', estado_permisos:'', fecha_agendamiento:'', duracion_total:'', tiempo_muerto:'', duracion_efectiva:'', acciones:''};
+let sortField = 'fecha_ingreso';
+let sortDir = 'desc';
+function esc(v){ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;"); }
+
+const DEFAULT_SOL_CONTRATISTA_TEMPLATE = `Buenos días,
+
+Cordial saludo.
+
+Solicito por favor su apoyo con la programación de visita/agendamiento para la siguiente factibilidad:
+
+Cliente: {{cliente}}
+ID Cliente: {{id_cliente}}
+ID Cambio: {{id_cambio}}
+ID Tarea: {{id_tarea}}
+Dirección: {{direccion}}
+Operador: {{operador}}
+Fecha de ingreso: {{fecha_ingreso}}
+Estado actual: {{estado_general}}
+
+Agradezco nos confirmen la fecha de agendamiento y la persona asignada para la atención.
+
+Quedo atento.
+
+Cordialmente,
+Camilo Andrés Carreño
+Ingeniero de Operación y Mantenimiento`;
+let selectedEmailRow = null;
+let emailPlantillaCache = null;
+const SOL_CONTRATISTA_PLANTILLA_NOMBRE = 'factibilidades_sol_contratista';
+const SOL_CONTRATISTA_MODULO = 'Factibilidades';
+
+function getDefaultEmailConfig(){
+  return {
+    nombre: SOL_CONTRATISTA_PLANTILLA_NOMBRE,
+    modulo: SOL_CONTRATISTA_MODULO,
+    descripcion: 'Correo para solicitar fecha de agendamiento de factibilidad al contratista',
+    para: '',
+    cc: '',
+    asunto_template: document.getElementById('emailSubject')?.value || 'Solicitud Fecha Agendamiento Factibilidad {{cliente}} - {{id_cliente}} - {{id_cambio}} - {{id_tarea}}',
+    cuerpo_template: DEFAULT_SOL_CONTRATISTA_TEMPLATE,
+    activa: true
+  };
+}
+async function getEmailTemplateConfig(){
+  if(emailPlantillaCache) return emailPlantillaCache;
+  const defaults = getDefaultEmailConfig();
+  try{
+    const client = await resolveClient();
+    const { data, error } = await client
+      .from('Plantillas')
+      .select('*')
+      .eq('nombre', SOL_CONTRATISTA_PLANTILLA_NOMBRE)
+      .maybeSingle();
+    if(error) throw error;
+    emailPlantillaCache = data ? { ...defaults, ...data } : defaults;
+    return emailPlantillaCache;
+  }catch(err){
+    console.error('No se pudo cargar la plantilla desde Supabase:', err);
+    emailPlantillaCache = defaults;
+    return emailPlantillaCache;
+  }
+}
+async function saveEmailTemplateConfig(){
+  const client = await resolveClient();
+  const payload = {
+    nombre: SOL_CONTRATISTA_PLANTILLA_NOMBRE,
+    modulo: SOL_CONTRATISTA_MODULO,
+    descripcion: 'Correo para solicitar fecha de agendamiento de factibilidad al contratista',
+    para: (document.getElementById('emailTo')?.value || '').trim() || null,
+    cc: (document.getElementById('emailCc')?.value || '').trim() || null,
+    asunto_template: document.getElementById('emailSubject')?.value || 'Solicitud Fecha Agendamiento Factibilidad {{cliente}} - {{id_cliente}} - {{id_cambio}} - {{id_tarea}}',
+    cuerpo_template: document.getElementById('emailTemplate')?.value || DEFAULT_SOL_CONTRATISTA_TEMPLATE,
+    activa: true,
+    updated_at: new Date().toISOString()
+  };
+  const { data, error } = await client
+    .from('Plantillas')
+    .upsert(payload, { onConflict: 'nombre' })
+    .select()
+    .single();
+  if(error) throw error;
+  emailPlantillaCache = { ...getDefaultEmailConfig(), ...data };
+  return emailPlantillaCache;
+}
+function formatValueForEmail(row, key){
+  const value = row?.[key];
+  if(['fecha_ingreso','fecha_agendamiento','fecha_solicitud_permisos','fecha_entrega','fecha_radicacion'].includes(key)) return fmtDate(value);
+  if(typeof value === 'boolean') return value ? 'Sí' : 'No';
+  return value ?? '';
+}
+function renderEmailTemplate(template, row){
+  return String(template || '').replace(/{{\s*([a-zA-Z0-9_]+)\s*}}/g, (m, key) => formatValueForEmail(row, key));
+}
+function normalizeEmailRecipients(value){
+  // Outlook Web acepta varios destinatarios separados por punto y coma.
+  // Esto evita que el campo CC se ignore cuando se escribe con comas o espacios.
+  return String(value || '')
+    .split(/[;,]+/)
+    .map(x => x.trim())
+    .filter(Boolean)
+    .join(';');
+}
+function openOutlookCompose(to, cc, subject, body){
+  const toValue = normalizeEmailRecipients(to);
+  const ccValue = normalizeEmailRecipients(cc);
+
+  // No usamos URLSearchParams porque convierte los espacios en '+'.
+  // Outlook Web en algunos casos no los interpreta bien y los deja visibles.
+  const params = [];
+  if(toValue) params.push('to=' + encodeURIComponent(toValue));
+  if(ccValue) params.push('cc=' + encodeURIComponent(ccValue));
+  params.push('subject=' + encodeURIComponent(subject || ''));
+  params.push('body=' + encodeURIComponent(body || ''));
+
+  window.open('https://outlook.office.com/mail/deeplink/compose?' + params.join('&'), '_blank');
+}
+function buildSolicitudSubject(row){
+  return `Solicitud Fecha Agendamiento Factibilidad ${row?.cliente || ''} - ${row?.id_cliente || ''} - ${row?.id_cambio || ''} - ${row?.id_tarea || ''}`.replace(/\s+/g,' ').trim();
+}
+function renderEmailTokens(){
+  const tokens = ['cliente','id_cliente','id_cambio','id_tarea','direccion','operador','fecha_ingreso','estado_general','estado_permisos','fecha_agendamiento','hora_agendamiento','responsable'];
+  const box = document.getElementById('emailTokens');
+  if(!box) return;
+  box.innerHTML = tokens.map(t => `<button type="button" class="template-token" onclick="insertEmailToken('{{${t}}}')">{{${t}}}</button>`).join('');
+}
+function updateEmailPreview(){
+  const tpl = document.getElementById('emailTemplate')?.value || '';
+  const preview = document.getElementById('emailPreview');
+  if(preview) preview.value = renderEmailTemplate(tpl, selectedEmailRow);
+}
+window.insertEmailToken = function(token){
+  const textarea = document.getElementById('emailTemplate');
+  if(!textarea) return;
+  const start = textarea.selectionStart || 0;
+  const end = textarea.selectionEnd || 0;
+  textarea.value = textarea.value.slice(0,start) + token + textarea.value.slice(end);
+  textarea.focus();
+  textarea.selectionStart = textarea.selectionEnd = start + token.length;
+  updateEmailPreview();
+};
+async function marcarSolicitudAgendaContratista(row){
+  if(!row || !row.id) return;
+  const nuevoEstado = 'SOLIC AGENDA CONTRATISTA';
+  try{
+    const client = await resolveClient();
+    const { error } = await client.from('factibilidades').update({ estado_general: nuevoEstado }).eq('id', row.id);
+    if(error) throw error;
+    row.estado_general = nuevoEstado;
+    const idx = factRows.findIndex(x => x.id === row.id);
+    if(idx >= 0) factRows[idx].estado_general = nuevoEstado;
+    renderTable();
+  }catch(err){
+    console.error('No se pudo actualizar el estado a SOLIC AGENDA CONTRATISTA:', err);
+    alert('Outlook fue abierto, pero no se pudo actualizar el estado en Supabase: ' + (err.message || err));
+  }
+}
+window.openSolicitudContratistaModal = async function(id){
+  selectedEmailRow = factRows.find(x => x.id === id);
+  if(!selectedEmailRow) return;
+
+  try{
+    const cfg = await getEmailTemplateConfig();
+    const to = cfg.para || '';
+    const cc = cfg.cc || '';
+    const subjectTemplate = cfg.asunto_template || 'Solicitud Fecha Agendamiento Factibilidad {{cliente}} - {{id_cliente}} - {{id_cambio}} - {{id_tarea}}';
+    const subject = renderEmailTemplate(subjectTemplate, selectedEmailRow);
+    const body = renderEmailTemplate(cfg.cuerpo_template || DEFAULT_SOL_CONTRATISTA_TEMPLATE, selectedEmailRow);
+    openOutlookCompose(to, cc, subject, body);
+    await marcarSolicitudAgendaContratista(selectedEmailRow);
+  }catch(err){
+    console.error(err);
+    alert('No se pudo abrir Outlook con la plantilla: ' + (err.message || err));
+  }
+};
+
+window.openEmailTemplateConfig = async function(){
+  const pass = prompt('Ingrese la contraseña para modificar la plantilla:');
+  if(pass !== '1022956631'){
+    if(pass !== null) alert('Contraseña incorrecta.');
+    return;
+  }
+
+  selectedEmailRow = factRows[0] || {
+    cliente:'CLIENTE EJEMPLO', id_cliente:'CI000000', id_cambio:'C000000', id_tarea:'T000000',
+    direccion:'Dirección ejemplo', operador:'Operador ejemplo', fecha_ingreso:'', estado_general:'INGRESADA'
+  };
+
+  const msg = document.getElementById('emailMsg');
+  document.getElementById('emailModal').classList.add('show');
+  if(msg){ msg.style.color = '#cbd5e1'; msg.textContent = 'Cargando plantilla desde Supabase...'; }
+  const cfg = await getEmailTemplateConfig();
+  document.getElementById('emailTo').value = cfg.para || '';
+  document.getElementById('emailCc').value = cfg.cc || '';
+  document.getElementById('emailSubject').value = cfg.asunto_template || 'Solicitud Fecha Agendamiento Factibilidad {{cliente}} - {{id_cliente}} - {{id_cambio}} - {{id_tarea}}';
+  document.getElementById('emailTemplate').value = cfg.cuerpo_template || DEFAULT_SOL_CONTRATISTA_TEMPLATE;
+  if(msg) msg.textContent = '';
+  renderEmailTokens();
+  updateEmailPreview();
+};
+window.closeEmailModal = function(){ document.getElementById('emailModal').classList.remove('show'); };
+window.saveEmailTemplate = async function(){
+  const msg = document.getElementById('emailMsg');
+  const pass = prompt('Confirme la contraseña para guardar cambios:');
+  if(pass !== '1022956631'){
+    if(msg){ msg.style.color = '#fecaca'; msg.textContent = 'Contraseña incorrecta. No se guardaron cambios.'; }
+    return;
+  }
+  try{
+    if(msg){ msg.style.color = '#cbd5e1'; msg.textContent = 'Guardando plantilla en Supabase...'; }
+    await saveEmailTemplateConfig();
+    if(msg){ msg.style.color = '#86efac'; msg.textContent = 'Plantilla guardada en Supabase.'; setTimeout(()=>msg.textContent='',2400); }
+  }catch(err){
+    console.error(err);
+    if(msg){ msg.style.color = '#fecaca'; msg.textContent = 'Error guardando plantilla en Supabase: ' + (err.message || err); }
+  }
+};
+window.resetEmailTemplate = function(){
+  document.getElementById('emailTemplate').value = DEFAULT_SOL_CONTRATISTA_TEMPLATE;
+  updateEmailPreview();
+};
+window.copyEmailBody = async function(){
+  const body = document.getElementById('emailPreview')?.value || '';
+  try{
+    if(navigator.clipboard && window.isSecureContext){ await navigator.clipboard.writeText(body); }
+    else{
+      const ta = document.createElement('textarea'); ta.value = body; ta.style.position = 'fixed'; ta.style.left = '-9999px'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    }
+    const msg = document.getElementById('emailMsg');
+    if(msg){ msg.style.color = '#86efac'; msg.textContent = 'Cuerpo copiado.'; setTimeout(()=>msg.textContent='',2000); }
+  }catch(e){
+    const msg = document.getElementById('emailMsg');
+    if(msg){ msg.style.color = '#fecaca'; msg.textContent = 'No se pudo copiar automáticamente.'; }
+  }
+};
+window.openOutlookSolicitudContratista = function(){
+  if(!selectedEmailRow) return;
+  const to = document.getElementById('emailTo')?.value || '';
+  const cc = document.getElementById('emailCc')?.value || '';
+  const subjectTemplate = document.getElementById('emailSubject')?.value || 'Solicitud Fecha Agendamiento Factibilidad {{cliente}} - {{id_cliente}} - {{id_cambio}} - {{id_tarea}}';
+  const subject = renderEmailTemplate(subjectTemplate, selectedEmailRow);
+  const body = document.getElementById('emailPreview')?.value || '';
+  openOutlookCompose(to, cc, subject, body);
+};
+document.getElementById('emailTemplate')?.addEventListener('input', updateEmailPreview);
+
+function fmtDate(v){ if(!v) return ''; try{return new Date(v+'T00:00:00').toLocaleDateString('es-CO')}catch(e){return v} }
+function normalizeHeader(s){
+  return String(s || '').replace(/^"+|"+$/g,'').trim();
+}
+function cleanCell(s){
+  return String(s ?? '').replace(/^"+|"+$/g,'').trim();
+}
+function parseTemplateDate(value){
+  const v = cleanCell(value);
+  if(!v) return null;
+  const m = v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(!m) return null;
+  const dd = m[1].padStart(2,'0');
+  const mm = m[2].padStart(2,'0');
+  const yyyy = m[3];
+  return `${yyyy}-${mm}-${dd}`;
+}
+function parseDelimitedLine(line, delimiter){
+  // Parser robusto para plantillas TXT/CSV/TSV.
+  // Respeta textos entre comillas, por ejemplo direcciones que traen tabs internos.
+  const cols = [];
+  let current = '';
+  let inQuotes = false;
+
+  for(let i = 0; i < String(line || '').length; i++){
+    const ch = line[i];
+    const next = line[i + 1];
+
+    if(ch === '"'){
+      if(inQuotes && next === '"'){
+        current += '"';
+        i++;
+      }else{
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+
+    if(ch === delimiter && !inQuotes){
+      cols.push(current);
+      current = '';
+      continue;
+    }
+
+    current += ch;
+  }
+
+  cols.push(current);
+  return cols;
+}
+
+function detectDelimiter(line){
+  const candidates = ['	', ';', ','];
+  let bestDelimiter = '	';
+  let bestCount = -1;
+
+  candidates.forEach(d => {
+    const count = parseDelimitedLine(line, d).length;
+    if(count > bestCount){
+      bestCount = count;
+      bestDelimiter = d;
+    }
+  });
+
+  return bestDelimiter;
+}
+
+function parseDelimitedText(text){
+  const lines = String(text || '').split(/\r?\n/).filter(x => x.trim() !== '');
+  if(!lines.length) return [];
+
+  // La plantilla normalmente viene separada por tabulaciones.
+  // Este parser respeta comillas para no romper campos como Direccion A.
+  const first = lines[0];
+  const delimiter = detectDelimiter(first);
+  const headers = parseDelimitedLine(first, delimiter).map(normalizeHeader);
+
+  return lines.slice(1).map(line => {
+    const cols = parseDelimitedLine(line, delimiter);
+    const row = {};
+    headers.forEach((h, i) => row[h] = cleanCell(cols[i] || ''));
+    return row;
+  });
+}
+function mapTemplateRow(row){
+  return {
+    id_cliente: cleanCell(row['Servicio']) || null,
+    id_cambio: cleanCell(row['Cambio principal']) || null,
+    id_tarea: cleanCell(row['ID de tarea']) || null,
+    cliente: cleanCell(row['Ubicacion A']) || null,
+    direccion: cleanCell(row['Direccion A']) || null,
+    operador: cleanCell(row['Operador']) || null,
+    fecha_ingreso: parseTemplateDate(row['Fecha Real Solic']),
+    estado_general: 'INGRESADA'
+  };
+}
+function openImportPicker(){
+  const input = document.getElementById('plantillaInput');
+  if(!input) return;
+  input.value = '';
+  input.click();
+}
+function closeImportModal(){
+  document.getElementById('importModal')?.classList.remove('show');
+  importRowsPending = [];
+}
+function renderImportPreview(rows, meta){
+  const body = document.getElementById('importPreviewBody');
+  const summary = document.getElementById('importSummary');
+  const msg = document.getElementById('importMsg');
+
+  summary.innerHTML = `
+    <div class="summary-mini"><div class="n">${meta.total}</div><div class="l">Filas plantilla</div></div>
+    <div class="summary-mini"><div class="n">${meta.filtered}</div><div class="l">Cumplen filtro</div></div>
+    <div class="summary-mini"><div class="n">${meta.existing}</div><div class="l">Ya existentes</div></div>
+    <div class="summary-mini"><div class="n">${meta.newRows}</div><div class="l">Nuevos a importar</div></div>
+  `;
+
+  body.innerHTML = rows.map(r => `
+    <tr>
+      <td>${esc(fmtDate(r.fecha_ingreso))}</td>
+      <td>${esc(r.id_cambio || '')}</td>
+      <td>${esc(r.id_tarea || '')}</td>
+      <td>${esc(r.id_cliente || '')}</td>
+      <td>${esc(r.cliente || '')}</td>
+      <td>${esc(r.direccion || '')}</td>
+      <td>${esc(r.operador || '')}</td>
+      <td>${esc(r.estado_general || '')}</td>
+    </tr>
+  `).join('');
+
+  msg.style.color = '#cbd5e1';
+  msg.textContent = rows.length
+    ? 'Revisa los registros nuevos. Si aceptas, se agregarán a la tabla factibilidades.'
+    : 'No se encontraron registros nuevos para importar.';
+
+  const btn = document.getElementById('confirmImportBtn');
+  if(btn) btn.disabled = !rows.length;
+
+  document.getElementById('importModal')?.classList.add('show');
+}
+async function processTemplateFile(file){
+  const text = await file.text();
+  const rawRows = parseDelimitedText(text);
+  const currentYear = new Date().getFullYear();
+
+  const filteredTemplate = rawRows.filter(r => {
+    const finalidad = cleanCell(r['Finalidad']);
+    const categoria = cleanCell(r['Categoría']);
+    const fecha = cleanCell(r['Fecha Real Solic']);
+    const match = fecha.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    const year = match ? parseInt(match[3], 10) : null;
+
+    return (
+      (finalidad === 'Instalación' || finalidad === 'Instalación por Cobertura') &&
+      categoria === 'Site Survey Ext. A' &&
+      year === currentYear
+    );
+  });
+
+  const mapped = filteredTemplate.map(mapTemplateRow).filter(r => r.id_cambio);
+
+  // Evita duplicados dentro de la misma plantilla por Cambio principal.
+  const uniqueMap = new Map();
+  mapped.forEach(r => {
+    if(!uniqueMap.has(r.id_cambio)) uniqueMap.set(r.id_cambio, r);
+  });
+  const uniqueRows = Array.from(uniqueMap.values());
+
+  const client = await resolveClient();
+  const { data: existingData, error } = await client.from('factibilidades').select('id_cambio');
+  if(error) throw error;
+
+  const existing = new Set((existingData || []).map(x => String(x.id_cambio || '').trim()).filter(Boolean));
+  const newRows = uniqueRows.filter(r => !existing.has(String(r.id_cambio || '').trim()));
+
+  importRowsPending = newRows;
+
+  renderImportPreview(newRows, {
+    total: rawRows.length,
+    filtered: filteredTemplate.length,
+    existing: uniqueRows.length - newRows.length,
+    newRows: newRows.length
+  });
+}
+async function confirmImportRows(){
+  if(!importRowsPending.length) return;
+
+  const client = await resolveClient();
+  const btn = document.getElementById('confirmImportBtn');
+  const msg = document.getElementById('importMsg');
+
+  try{
+    if(btn) btn.disabled = true;
+    if(msg){
+      msg.style.color = '#cbd5e1';
+      msg.textContent = 'Importando registros...';
+    }
+
+    const { error } = await client.from('factibilidades').insert(importRowsPending);
+    if(error) throw error;
+
+    const totalImportados = importRowsPending.length;
+    closeImportModal();
+    await loadFactibilidades();
+    alert(`Se importaron ${totalImportados} registros correctamente.`);
+  }catch(err){
+    console.error(err);
+    if(msg){
+      msg.style.color = '#fecaca';
+      msg.textContent = 'Error importando registros: ' + (err.message || err);
+    }
+  }finally{
+    if(btn) btn.disabled = false;
+  }
+}
+
+function estadoCssClass(v){ return String(v || '').trim().replace(/\s+/g, '_').replace(/[^A-Za-z0-9_\-]/g, '_'); }
+function badgeEstado(v){ return `<span class="badge estado-${esc(estadoCssClass(v))}">${esc(v || '')}</span>`; }
+async function resolveClient(){ if(clientRef) return clientRef; if(typeof getClient === 'function'){ clientRef = await getClient(); return clientRef; } const url = localStorage.getItem('sb_url'); const key = localStorage.getItem('sb_key'); if(!url || !key) throw new Error('No se encontró configuración de Supabase'); clientRef = window.supabase.createClient(url, key); return clientRef; }
+
+function calcularListaParaRadicar(row){ return !!row.checklist_presupuesto && !!row.checklist_documentacion; }
+function diasEntreFechas(fecha){ if(!fecha) return ''; const inicio = new Date(fecha + 'T00:00:00'); const hoy = new Date(); hoy.setHours(0,0,0,0); const ms = hoy - inicio; if(ms < 0) return 0; return Math.floor(ms / 86400000); }
+function diasHabilesEntreFechas(fecha){ if(!fecha) return ''; const inicio = new Date(fecha + 'T00:00:00'); const hoy = new Date(); hoy.setHours(0,0,0,0); let contador = 0; const actual = new Date(inicio); while(actual <= hoy){ const dia = actual.getDay(); if(dia !== 0 && dia !== 6) contador++; actual.setDate(actual.getDate() + 1); } return contador > 0 ? contador - 1 : 0; }
+function toggleRadicacionFields(){ const checked = document.querySelector('input[name="checklist_radicacion_emsa"]')?.checked || false; document.getElementById('radicacionFields').classList.toggle('hidden', !checked); calcularTiemposMuertosFactibilidad(); }
+function actualizarIndicadoresRadicacion(){ const fecha = document.querySelector('input[name="fecha_radicacion"]').value; document.querySelector('input[name="dias_transcurridos"]').value = fecha ? diasEntreFechas(fecha) : ''; document.querySelector('input[name="dias_habiles_transcurridos"]').value = fecha ? diasHabilesEntreFechas(fecha) : ''; }
+function diasCalendarioEntre(fechaInicio, fechaFin){
+  if(!fechaInicio || !fechaFin) return '';
+  const inicio = new Date(fechaInicio + 'T00:00:00');
+  const fin = new Date(fechaFin + 'T00:00:00');
+  const diff = Math.floor((fin - inicio) / 86400000);
+  return diff < 0 ? 0 : diff;
+}
+function calcularTiemposMuertosFactibilidad(){
+  const form = document.getElementById('factibilidadForm');
+  if(!form) return;
+  const el = form.elements;
+
+  const permiso = diasCalendarioEntre(el['fecha_solicitud_permisos']?.value, el['fecha_aprobacion_permisos']?.value);
+  const radicacionActiva = !!el['checklist_radicacion_emsa']?.checked;
+  const radicacion = radicacionActiva ? diasCalendarioEntre(el['fecha_radicacion']?.value, el['fecha_respuesta_radicacion']?.value) : '';
+
+  if(el['tiempo_muerto_permisos']) el['tiempo_muerto_permisos'].value = permiso === '' ? '' : `${permiso} días`;
+  if(el['tiempo_muerto_radicacion']) el['tiempo_muerto_radicacion'].value = radicacion === '' ? '' : `${radicacion} días`;
+
+  const total = diasCalendarioEntre(el['fecha_ingreso']?.value, el['fecha_entrega']?.value);
+  const tiempoMuerto = (permiso === '' ? 0 : Number(permiso)) + (radicacion === '' ? 0 : Number(radicacion));
+  const efectiva = total === '' ? '' : Math.max(0, Number(total) - tiempoMuerto);
+
+  const totalEl = document.getElementById('kpiDuracionTotalFact');
+  const muertoEl = document.getElementById('kpiTiempoMuertoFact');
+  const efectivaEl = document.getElementById('kpiDuracionEfectivaFact');
+
+  if(totalEl) totalEl.textContent = total === '' ? '0 días' : `${total} días`;
+  if(muertoEl) muertoEl.textContent = `${tiempoMuerto} días`;
+  if(efectivaEl) efectivaEl.textContent = efectiva === '' ? '0 días' : `${efectiva} días`;
+}
+
+
+function parseDiasTexto(v){
+  if(v === null || v === undefined || v === '') return 0;
+  const n = parseInt(String(v).replace(/[^\d-]/g,''), 10);
+  return Number.isFinite(n) ? Math.max(0, n) : 0;
+}
+function calcularDuracionTotalRow(row){
+  const total = diasCalendarioEntre(row?.fecha_ingreso, row?.fecha_entrega);
+  return total === '' ? '0 días' : `${total} días`;
+}
+function calcularTiempoMuertoRow(row){
+  const permiso = diasCalendarioEntre(row?.fecha_solicitud_permisos, row?.fecha_aprobacion_permisos);
+  const permisoDias = permiso === '' ? parseDiasTexto(row?.tiempo_muerto_permisos) : Number(permiso);
+  const radDias = row?.checklist_radicacion_emsa ? parseDiasTexto(row?.tiempo_muerto_radicacion) : 0;
+  return `${permisoDias + radDias} días`;
+}
+function calcularDuracionEfectivaRow(row){
+  const total = diasCalendarioEntre(row?.fecha_ingreso, row?.fecha_entrega);
+  if(total === '') return '0 días';
+  const muerto = parseDiasTexto(calcularTiempoMuertoRow(row));
+  return `${Math.max(0, Number(total) - muerto)} días`;
+}
+
+function applyKpiFilter(rows){
+  if(activeKpi === 'RADICADAS_EMSA' || activeKpi === 'GESTION_EMSA') activeKpi = null;
+  switch(activeKpi){
+    case 'TOTAL':
+      return rows;
+    case 'PENDIENTES':
+      return rows.filter(r => !['APROBADA','RECHAZADA','CANCELADA','FACTIBILIDAD REALIZADA'].includes(r.estado_general));
+    case 'LISTAS_RADICAR':
+      return rows.filter(r => calcularListaParaRadicar(r));
+    case 'APROBADAS':
+      return rows.filter(r => r.estado_general === 'APROBADA' || r.estado_general === 'FACTIBILIDAD REALIZADA');
+    default:
+      return rows;
+  }
+}
+function bindKpiClicks(){
+  document.querySelectorAll('#summary .stat[data-kpi]').forEach(card => {
+    card.onclick = () => {
+      const k = card.getAttribute('data-kpi');
+      activeKpi = activeKpi === k ? null : k;
+      renderTable();
+    };
+  });
+}
+function renderSummary(rows){
+  const total = rows.length, listas = rows.filter(r => calcularListaParaRadicar(r)).length, aprobadas = rows.filter(r => r.estado_general === 'APROBADA').length, pendientes = rows.filter(r => !['APROBADA','RECHAZADA','CANCELADA'].includes(r.estado_general)).length;
+  document.getElementById('summary').innerHTML = `
+    <div class="stat ${activeKpi==='TOTAL'?'active':''}" data-kpi="TOTAL"><div class="label">Total solicitudes</div><div class="value">${total}</div><div class="sub">Base visible</div></div>
+    <div class="stat ${activeKpi==='PENDIENTES'?'active':''}" data-kpi="PENDIENTES"><div class="label">Pendientes</div><div class="value">${pendientes}</div><div class="sub">Aún activas</div></div>
+    <div class="stat ${activeKpi==='LISTAS_RADICAR'?'active':''}" data-kpi="LISTAS_RADICAR"><div class="label">Listas para radicar</div><div class="value">${listas}</div><div class="sub">Presupuesto + documentación</div></div>
+    <div class="stat ${activeKpi==='APROBADAS'?'active':''}" data-kpi="APROBADAS"><div class="label">Aprobadas</div><div class="value">${aprobadas}</div><div class="sub">Factibilidades cerradas</div></div>`;
+  bindKpiClicks();
+}
+
+
+function getChecklistText(r){
+  return `Presupuesto: ${r.checklist_presupuesto ? 'Sí' : 'No'} | Documentación: ${r.checklist_documentacion ? 'Sí' : 'No'}`;
+}
+function getColumnValue(r, field){
+  switch(field){
+    case 'fecha_ingreso': return fmtDate(r.fecha_ingreso);
+    case 'id_cambio': return r.id_cambio || '';
+    case 'id_tarea': return r.id_tarea || '';
+    case 'id_cliente': return r.id_cliente || '';
+    case 'cliente': return `${r.cliente || ''}${r.direccion ? ' - ' + r.direccion : ''}`.trim();
+    case 'estado_general': return r.estado_general || '';
+    case 'estado_permisos': return r.estado_permisos || '';
+    case 'fecha_agendamiento': return `${fmtDate(r.fecha_agendamiento)} ${r.hora_agendamiento || ''}`.trim();
+    case 'duracion_total': return calcularDuracionTotalRow(r);
+    case 'tiempo_muerto': return calcularTiempoMuertoRow(r);
+    case 'duracion_efectiva': return calcularDuracionEfectivaRow(r);
+    case 'acciones': return 'Editar | Sol Contratista';
+    default: return '';
+  }
+}
+function getSortValue(r, field){
+  if(['fecha_ingreso','fecha_agendamiento'].includes(field)){
+    const raw = field === 'fecha_agendamiento' ? r.fecha_agendamiento : r.fecha_ingreso;
+    const d = new Date(String(raw || '') + 'T00:00:00');
+    return isNaN(d) ? 0 : d.getTime();
+  }
+  if(['duracion_total','tiempo_muerto','duracion_efectiva'].includes(field)) return parseDiasTexto(getColumnValue(r, field));
+  return String(getColumnValue(r, field) || '').toLowerCase();
+}
+function uniqueSorted(values){
+  return Array.from(new Set(values.filter(v => String(v || '').trim() !== '')))
+    .sort((a,b) => String(a).localeCompare(String(b), 'es', {numeric:true}));
+}
+function hydrateColumnFilters(baseRows){
+  const configs = [
+    ['fecha_ingreso','filter_col_fecha_ingreso','Todas'],
+    ['id_cambio','filter_col_id_cambio','Todos'],
+    ['id_tarea','filter_col_id_tarea','Todos'],
+    ['id_cliente','filter_col_id_cliente','Todos'],
+    ['cliente','filter_col_cliente','Todos'],
+    ['estado_general','filter_col_estado_general','Todos'],
+    ['estado_permisos','filter_col_estado_permisos','Todos'],
+    ['fecha_agendamiento','filter_col_fecha_agendamiento','Todas'],
+    ['duracion_total','filter_col_duracion_total','Todos'],
+    ['tiempo_muerto','filter_col_tiempo_muerto','Todos'],
+    ['duracion_efectiva','filter_col_duracion_efectiva','Todos'],
+    ['acciones','filter_col_acciones','Todas']
+  ];
+  configs.forEach(([field, id, label]) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const current = columnFilters[field] || '';
+    const values = uniqueSorted(baseRows.map(r => getColumnValue(r, field)));
+    el.innerHTML = `<option value="">${label}</option>` + values.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    el.value = values.includes(current) ? current : '';
+    columnFilters[field] = el.value;
+  });
+}
+function applyColumnFilters(data){
+  return data.filter(r => Object.entries(columnFilters).every(([field, value]) => {
+    if(!value) return true;
+    return getColumnValue(r, field) === value;
+  }));
+}
+function setColumnFilter(field, value){ columnFilters[field] = value || ''; renderTable(); }
+function sortColumn(field){
+  if(sortField === field){ sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
+  else{ sortField = field; sortDir = ['fecha_ingreso','fecha_agendamiento','duracion_total','tiempo_muerto','duracion_efectiva'].includes(field) ? 'desc' : 'asc'; }
+  renderTable();
+}
+function updateSortIcons(){
+  Object.keys(columnFilters).forEach(field => {
+    const el = document.getElementById('sort_' + field);
+    if(el) el.textContent = sortField === field ? (sortDir === 'asc' ? '▲' : '▼') : '';
+  });
+}
+
+function getFilteredRows(){
+  const txt = (document.getElementById('searchFact')?.value || '').trim().toLowerCase(),
+        estado = document.getElementById('filterEstado')?.value || '',
+        fecha = document.getElementById('filterFecha')?.value || '';
+
+  let rows = factRows.filter(r => {
+    const hayTexto = !txt || [
+      r.cliente, r.id_cliente, r.id_cambio, r.id_tarea, r.operador, r.direccion,
+      r.estado_general, r.estado_permisos, r.fecha_radicacion, r.fecha_respuesta_radicacion
+    ].map(x => String(x || '').toLowerCase()).some(v => v.includes(txt));
+    return hayTexto && (!estado || r.estado_general === estado) && (!fecha || r.fecha_ingreso === fecha);
+  });
+
+  rows = applyKpiFilter(rows);
+  hydrateColumnFilters(rows);
+  rows = applyColumnFilters(rows);
+
+  rows.sort((a,b) => {
+    const va = getSortValue(a, sortField);
+    const vb = getSortValue(b, sortField);
+    if(typeof va === 'number' && typeof vb === 'number'){
+      return sortDir === 'asc' ? va - vb : vb - va;
+    }
+    return sortDir === 'asc'
+      ? String(va).localeCompare(String(vb), 'es', {numeric:true})
+      : String(vb).localeCompare(String(va), 'es', {numeric:true});
+  });
+
+  updateSortIcons();
+  return rows;
+}
+
+function getEstadoRowClass(estado){
+  const normalized = String(estado || '').trim().toUpperCase();
+  if(normalized === 'APROBADA') return 'row-aprobada';
+  if(normalized === 'NO VIABLE' || normalized === 'NO_VIABLE') return 'row-no-viable';
+  return '';
+}
+
+function renderTable(){
+  const rows = getFilteredRows();
+  renderSummary(rows);
+  const body = document.getElementById('tableBody'), empty = document.getElementById('emptyState');
+  if(!rows.length){ body.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+  body.innerHTML = rows.map(r => `
+    <tr class="${getEstadoRowClass(r.estado_general)}" onclick="showDetail('${r.id}')">
+      <td>${esc(fmtDate(r.fecha_ingreso))}</td>
+      <td><div class="title">${esc(r.id_cambio)}</div></td>
+      <td>${esc(r.id_tarea)}</td>
+      <td>${esc(r.id_cliente)}</td>
+      <td><div class="title">${esc(r.cliente)}</div><div class="desc">${esc(r.direccion || '')}</div></td>
+      <td>${badgeEstado(r.estado_general)}</td>
+      <td>${esc(r.estado_permisos || '')}</td>
+      <td>${esc(fmtDate(r.fecha_agendamiento))} ${esc(r.hora_agendamiento || '')}</td>
+      <td><div class="row-kpi"><span class="rk-label">Total</span><span class="rk-value">${esc(calcularDuracionTotalRow(r))}</span></div></td>
+      <td><div class="row-kpi dead"><span class="rk-label">Muerto</span><span class="rk-value">${esc(calcularTiempoMuertoRow(r))}</span></div></td>
+      <td><div class="row-kpi effective"><span class="rk-label">Efectiva</span><span class="rk-value">${esc(calcularDuracionEfectivaRow(r))}</span></div></td>
+      <td class="actions-cell" onclick="event.stopPropagation()"><button class="small-btn" onclick="editRow('${r.id}')">Editar</button><button class="small-btn email-btn" onclick="openSolicitudContratistaModal('${r.id}')">Sol Contratista</button></td>
+    </tr>`).join('');
+}
+
+async function loadFactibilidades(){
+  try{
+    const client = await resolveClient();
+    const { data, error } = await client.from('factibilidades').select('*').order('fecha_ingreso', { ascending:false });
+    if(error) throw error;
+    factRows = data || [];
+    renderTable();
+  }catch(err){
+    console.error(err);
+    document.getElementById('tableBody').innerHTML = `<tr><td colspan="12" style="padding:18px;color:#fecaca">Error cargando factibilidades: ${err.message || err}</td></tr>`;
+  }
+}
+
+
+async function copiarInfoFactibilidad(){
+  const form = document.getElementById('factibilidadForm');
+  const msg = document.getElementById('copyInfoMsg');
+  if(!form) return;
+
+  const el = form.elements;
+  const texto = [
+    `Nombre cliente: ${(el['cliente']?.value || '').trim()}`,
+    `Dirección: ${(el['direccion']?.value || '').trim()}`,
+    `ID Cliente: ${(el['id_cliente']?.value || '').trim()}`,
+    `ID Cambio: ${(el['id_cambio']?.value || '').trim()}`,
+    `ID Tarea: ${(el['id_tarea']?.value || '').trim()}`
+  ].join('\n');
+
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(texto);
+    }else{
+      const ta = document.createElement('textarea');
+      ta.value = texto;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    if(msg){
+      msg.textContent = 'Copiado';
+      setTimeout(()=>msg.textContent='',2000);
+    }
+  }catch(e){
+    if(msg){
+      msg.textContent = 'Error al copiar';
+      msg.style.color = '#fecaca';
+    }
+  }
+}
+
+window.openFormModal = function(row=null){
+  const modal = document.getElementById('formModal'), form = document.getElementById('factibilidadForm'), msg = document.getElementById('formMsg'), el = form.elements;
+  form.reset(); msg.textContent = ''; msg.style.color = '#86efac'; el['id'].value = '';
+  document.getElementById('formModalTitle').textContent = row ? 'Editar solicitud de factibilidad' : 'Nueva solicitud de factibilidad';
+  document.getElementById('saveBtn').textContent = row ? 'Actualizar solicitud' : 'Guardar solicitud';
+  if(row){
+    Object.keys(row).forEach(k => { if(el[k]){ if(el[k].type === 'checkbox') el[k].checked = !!row[k]; else el[k].value = row[k] ?? ''; } });
+  }
+  toggleRadicacionFields(); actualizarIndicadoresRadicacion(); calcularTiemposMuertosFactibilidad(); modal.classList.add('show');
+};
+window.closeFormModal = function(){ document.getElementById('formModal').classList.remove('show'); };
+document.getElementById('formModal').addEventListener('click', function(e){ if(e.target.id === 'formModal'){} });
+
+window.showDetail = function(id){
+  const row = factRows.find(x => x.id === id); if(!row) return;
+  document.getElementById('detailTitle').textContent = `Detalle de factibilidad - ${row.cliente}`;
+  document.getElementById('detailContent').innerHTML = `
+    <div class="detail-grid">
+      <div class="detail-card"><div class="detail-title">Fecha ingreso</div><div class="detail-value">${esc(fmtDate(row.fecha_ingreso))}</div></div>
+      <div class="detail-card"><div class="detail-title">ID Cambio</div><div class="detail-value">${esc(row.id_cambio)}</div></div>
+      <div class="detail-card"><div class="detail-title">ID Tarea</div><div class="detail-value">${esc(row.id_tarea)}</div></div>
+      <div class="detail-card"><div class="detail-title">ID Cliente</div><div class="detail-value">${esc(row.id_cliente)}</div></div>
+      <div class="detail-card"><div class="detail-title">Operador</div><div class="detail-value">${esc(row.operador || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Cliente</div><div class="detail-value">${esc(row.cliente)}</div></div>
+      <div class="detail-card"><div class="detail-title">Dirección</div><div class="detail-value">${esc(row.direccion || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Capacidad</div><div class="detail-value">${esc(row.capacidad || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Tipo fibra</div><div class="detail-value">${esc(row.tipo_fibra || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">FO Externa</div><div class="detail-value">${esc(row.fo_externa || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">FO Interna</div><div class="detail-value">${esc(row.fo_interna || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Estado viabilidad planta externa</div><div class="detail-value">${esc(row.estado_viabilidad_planta_externa || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Estado viabilidad planta interna</div><div class="detail-value">${esc(row.estado_viabilidad_planta_interna || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Fecha solicitud permisos</div><div class="detail-value">${esc(fmtDate(row.fecha_solicitud_permisos))}</div></div>
+      <div class="detail-card"><div class="detail-title">Fecha aprobación permisos</div><div class="detail-value">${esc(fmtDate(row.fecha_aprobacion_permisos))}</div></div>
+      <div class="detail-card"><div class="detail-title">Tiempo muerto permisos</div><div class="detail-value">${esc(row.tiempo_muerto_permisos || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Estado permisos</div><div class="detail-value">${esc(row.estado_permisos || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Fecha agendamiento</div><div class="detail-value">${esc(fmtDate(row.fecha_agendamiento))}</div></div>
+      <div class="detail-card"><div class="detail-title">Hora agendamiento</div><div class="detail-value">${esc(row.hora_agendamiento || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Fecha de entrega</div><div class="detail-value">${esc(fmtDate(row.fecha_entrega))}</div></div>
+      <div class="detail-card"><div class="detail-title">Duración total factibilidad</div><div class="detail-value">${esc(calcularDuracionTotalRow(row))}</div></div>
+      <div class="detail-card"><div class="detail-title">Tiempo muerto factibilidad</div><div class="detail-value">${esc(calcularTiempoMuertoRow(row))}</div></div>
+      <div class="detail-card"><div class="detail-title">Duración efectiva factibilidad</div><div class="detail-value">${esc(calcularDuracionEfectivaRow(row))}</div></div>
+      <div class="detail-card"><div class="detail-title">Estado general</div><div class="detail-value">${esc(row.estado_general || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Presupuesto</div><div class="detail-value">${row.checklist_presupuesto ? 'Sí' : 'No'}</div></div>
+      <div class="detail-card"><div class="detail-title">Documentación</div><div class="detail-value">${row.checklist_documentacion ? 'Sí' : 'No'}</div></div>
+      <div class="detail-card"><div class="detail-title">Radicación EMSA</div><div class="detail-value">${row.checklist_radicacion_emsa ? 'Sí' : 'No'}</div></div>
+      <div class="detail-card"><div class="detail-title">Fecha de radicación</div><div class="detail-value">${esc(fmtDate(row.fecha_radicacion))}</div></div>
+      <div class="detail-card"><div class="detail-title">Fecha respuesta radicación</div><div class="detail-value">${esc(fmtDate(row.fecha_respuesta_radicacion))}</div></div>
+      <div class="detail-card"><div class="detail-title">Tiempo muerto radicación</div><div class="detail-value">${esc(row.tiempo_muerto_radicacion || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Estado de radicación</div><div class="detail-value">${esc(row.estado_radicacion || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Días transcurridos</div><div class="detail-value">${esc(row.dias_transcurridos ?? '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Días hábiles transcurridos</div><div class="detail-value">${esc(row.dias_habiles_transcurridos ?? '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Responsable</div><div class="detail-value">${esc(row.responsable || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Lista para radicar</div><div class="detail-value">${calcularListaParaRadicar(row) ? 'Sí' : 'No'}</div></div>
+      <div class="detail-card" style="grid-column:1/-1"><div class="detail-title">Observaciones</div><div class="detail-value">${esc(row.observaciones || '')}</div></div>
+    </div>`;
+  document.getElementById('detailModal').classList.add('show');
+};
+window.closeDetailModal = function(){ document.getElementById('detailModal').classList.remove('show'); };
+document.getElementById('detailModal').addEventListener('click', function(e){ if(e.target.id === 'detailModal'){} });
+document.getElementById('emailModal')?.addEventListener('click', function(e){ if(e.target.id === 'emailModal'){} });
+
+window.editRow = function(id){ const row = factRows.find(x => x.id === id); if(row) openFormModal(row); };
+
+document.getElementById('factibilidadForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  const form = e.target, el = form.elements, msg = document.getElementById('formMsg');
+  msg.textContent = '';
+  try{
+    const client = await resolveClient();
+    const payload = {
+      fecha_ingreso: el['fecha_ingreso'].value,
+      id_cambio: (el['id_cambio'].value || '').trim(),
+      id_tarea: (el['id_tarea'].value || '').trim(),
+      id_cliente: (el['id_cliente'].value || '').trim(),
+      operador: (el['operador'].value || '').trim() || null,
+      cliente: (el['cliente'].value || '').trim(),
+      direccion: (el['direccion'].value || '').trim() || null,
+      capacidad: (el['capacidad'].value || '').trim() || null,
+      tipo_fibra: (el['tipo_fibra'].value || '').trim() || null,
+      fo_externa: (el['fo_externa'].value || '').trim() || null,
+      fo_interna: (el['fo_interna'].value || '').trim() || null,
+      estado_viabilidad_planta_externa: (el['estado_viabilidad_planta_externa'].value || '').trim() || null,
+      estado_viabilidad_planta_interna: (el['estado_viabilidad_planta_interna'].value || '').trim() || null,
+      fecha_solicitud_permisos: el['fecha_solicitud_permisos'].value || null,
+      fecha_aprobacion_permisos: el['fecha_aprobacion_permisos']?.value || null,
+      tiempo_muerto_permisos: el['tiempo_muerto_permisos']?.value || null,
+      estado_permisos: (el['estado_permisos'].value || '').trim() || null,
+      fecha_agendamiento: el['fecha_agendamiento'].value || null,
+      hora_agendamiento: el['hora_agendamiento'].value || null,
+      fecha_entrega: el['fecha_entrega'].value || null,
+      estado_general: el['estado_general'].value,
+      observaciones: (el['observaciones'].value || '').trim() || null,
+      responsable: (el['responsable'].value || '').trim() || null,
+      checklist_presupuesto: el['checklist_presupuesto'].checked,
+      checklist_documentacion: el['checklist_documentacion'].checked,
+      checklist_radicacion_emsa: false,
+      fecha_radicacion: null,
+      fecha_respuesta_radicacion: null,
+      tiempo_muerto_radicacion: null,
+      estado_radicacion: null,
+      dias_transcurridos: null,
+      dias_habiles_transcurridos: null
+    };
+
+    if(calcularListaParaRadicar(payload) && !['RADICADA','APROBADA','SOLIC AGENDA CONTRATISTA'].includes(payload.estado_general)){
+      payload.estado_general = 'LISTA_PARA_RADICAR';
+    }
+    // Radicación EMSA no aplica en factibilidades.
+    // if(payload.checklist_radicacion_emsa && payload.estado_general === 'LISTA_PARA_RADICAR'){
+    //   payload.estado_general = 'RADICADA';
+    // }
+
+    const rowId = el['id'].value || '';
+    let result;
+    if(rowId) result = await client.from('factibilidades').update(payload).eq('id', rowId);
+    else result = await client.from('factibilidades').insert(payload);
+    if(result.error) throw result.error;
+
+    msg.textContent = 'Solicitud guardada correctamente';
+    closeFormModal();
+    await loadFactibilidades();
+  }catch(err){
+    console.error(err);
+    msg.style.color = '#fecaca';
+    msg.textContent = 'Error guardando: ' + (err.message || err);
+  }
+});
+
+['searchFact','filterEstado','filterFecha','sortBy'].forEach(id => {
+  const el = document.getElementById(id);
+  if(el){ el.addEventListener('input', renderTable); el.addEventListener('change', renderTable); }
+});
+
+document.getElementById('plantillaInput')?.addEventListener('change', async function(e){
+  const file = e.target.files?.[0];
+  if(!file) return;
+
+  try{
+    await processTemplateFile(file);
+  }catch(err){
+    console.error(err);
+    alert('Error procesando la plantilla: ' + (err.message || err));
+  }
+});
+
+document.getElementById('importModal')?.addEventListener('click', function(e){
+  if(e.target && e.target.id === 'importModal'){
+    // No se cierra al hacer clic afuera, para evitar perder la revisión.
+  }
+});
+
+loadFactibilidades();
+</script>
+
+<div id="importModal" class="modal-backdrop">
+  <div class="modal large">
+    <div class="modal-header">
+      <div>
+        <h3 style="margin:0 0 6px 0;">Vista previa de importación</h3>
+        <div class="muted-note">
+          Se tomarán filas del año actual con Finalidad = Instalación o Instalación por Cobertura,
+          Categoría = Site Survey Ext. A y cuyo Cambio principal no exista aún en factibilidades.
+        </div>
+      </div>
+      <button class="close-btn" type="button" onclick="closeImportModal()">✕</button>
+    </div>
+
+    <div id="importSummary" class="summary-row"></div>
+
+    <div class="preview-wrap">
+      <table class="preview-table">
+        <thead>
+          <tr>
+            <th>Fecha ingreso</th>
+            <th>ID Cambio</th>
+            <th>ID Tarea</th>
+            <th>ID Cliente</th>
+            <th>Cliente</th>
+            <th>Dirección</th>
+            <th>Operador</th>
+            <th>Estado</th>
+          </tr>
+        </thead>
+        <tbody id="importPreviewBody"></tbody>
+      </table>
+    </div>
+
+    <div id="importMsg" style="margin-top:12px;color:#cbd5e1"></div>
+
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
+      <button type="button" class="small-btn" onclick="closeImportModal()">Rechazar</button>
+      <button type="button" class="btn" id="confirmImportBtn" onclick="confirmImportRows()">Aceptar e importar</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

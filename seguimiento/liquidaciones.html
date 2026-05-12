@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Liquidaciones O&M</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="app.js"></script>
+  <style>
+    :root{--border:rgba(255,255,255,.10);--text:#eef4ff;--muted:#9ab0d0;--shadow:0 18px 40px rgba(0,0,0,.28)}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#04101f,#07152a);color:var(--text);font-family:Arial,Helvetica,sans-serif}
+    .page{display:grid;grid-template-columns:240px 1fr;min-height:100vh;transition:grid-template-columns .25s ease}.page.sidebar-hidden{grid-template-columns:0 1fr}
+    .sidebar{background:linear-gradient(180deg,#08142a,#081126);border-right:1px solid var(--border);padding:18px 16px;position:sticky;top:0;height:100vh;overflow:auto;transition:transform .25s ease,opacity .25s ease;z-index:30}.page.sidebar-hidden .sidebar{transform:translateX(-100%);opacity:0;pointer-events:none;padding-left:0;padding-right:0;border-right:0}.sidebar-toggle-tab{position:fixed;left:240px;top:50%;transform:translateY(-50%);width:28px;height:72px;border:1px solid var(--border);border-left:0;border-radius:0 14px 14px 0;background:linear-gradient(135deg,#1d4ed8,#0f766e);color:#fff;font-weight:900;cursor:pointer;z-index:80;box-shadow:var(--shadow);transition:left .25s ease}.page.sidebar-hidden .sidebar-toggle-tab{left:0}
+    .brand{font-size:18px;font-weight:800;margin-bottom:4px}.subbrand{font-size:12px;color:var(--muted);margin-bottom:24px}
+    .nav a{display:block;padding:12px;border-radius:12px;color:#fff;text-decoration:none;margin-bottom:8px;border:1px solid transparent}
+    .nav a:hover,.nav a.active{background:rgba(255,255,255,.05);border-color:var(--border)}
+    .session-box{margin-top:24px;padding:14px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.03)}
+    .session-box small{display:block;color:var(--muted);margin-bottom:8px;word-break:break-all}
+    .btn{border:none;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#2563eb,#22c55e);color:#fff}
+    .btn.secondary{background:#1f3d79}.btn.ghost{background:rgba(255,255,255,.04);border:1px solid var(--border)}
+    .small-btn{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:#fff;cursor:pointer;font-weight:700}.copy-msg{font-size:12px;color:#86efac;margin-left:10px;align-self:center}
+    .main{padding:26px 28px}
+    .header h1{margin:0 0 6px;font-size:28px}.header p{margin:0 0 20px;color:var(--muted)}
+    .toolbar{display:grid;grid-template-columns:minmax(280px,1fr) 190px 190px 170px auto auto;gap:12px;margin-bottom:18px;align-items:center}
+    .control{min-width:0;width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}
+    .summary{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+    .stat{border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));padding:16px;box-shadow:var(--shadow);min-height:110px;cursor:pointer;transition:.15s}
+    .stat:hover{transform:translateY(-2px);border-color:rgba(96,165,250,.45)}
+    .stat.active{border-color:rgba(34,197,94,.60);background:linear-gradient(180deg,rgba(34,197,94,.12),rgba(255,255,255,.02))}
+    .stat .label{font-size:12px;color:var(--muted);margin-bottom:8px}.stat .value{font-size:30px;font-weight:800}.stat .sub{font-size:12px;color:#b9d6ff;margin-top:6px}
+    .card{border:1px solid var(--border);border-radius:20px;background:linear-gradient(180deg,#08152c,#0a1730);box-shadow:var(--shadow)}
+    .table-wrap{overflow:auto}
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    thead th{position:sticky;top:0;background:#0a1730;color:#9fd0ff;padding:14px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}.th-tools{display:flex;flex-direction:column;gap:6px;min-width:120px}.th-sort{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;font-weight:800}.th-sort:hover{color:#dbeafe}.sort-icon{font-size:11px;color:#60a5fa}.th-tools select{width:100%;padding:7px 8px;border-radius:9px;border:1px solid rgba(255,255,255,.10);background:#0c1830;color:#fff;font-size:12px}
+    tbody td{padding:14px 12px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
+    tbody tr:hover{background:rgba(255,255,255,.04)}
+    .title{font-weight:800;margin-bottom:4px}.desc{font-size:12px;color:#9fc3ff;white-space:pre-wrap}
+    .badge{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:800;border:1px solid var(--border)}
+    .estado-PENDIENTE{background:rgba(245,158,11,.16);color:#fde68a}.estado-EN_REVISION{background:rgba(59,130,246,.16);color:#bfdbfe}.estado-LIQUIDADA{background:rgba(34,197,94,.16);color:#bbf7d0}.estado-RECHAZADA{background:rgba(239,68,68,.16);color:#fecaca}.estado-NO_APLICA{background:rgba(148,163,184,.16);color:#e2e8f0}
+    .tipo-INSTALACION{background:rgba(34,197,94,.16);color:#bbf7d0}.tipo-FACTIBILIDAD{background:rgba(96,165,250,.16);color:#bfdbfe}
+    .floating-add{position:fixed;right:28px;bottom:28px;width:62px;height:62px;border-radius:50%;border:none;font-size:28px;font-weight:700;cursor:pointer;color:#fff;background:linear-gradient(135deg,#2563eb,#22c55e);box-shadow:var(--shadow);z-index:40}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
+    .modal-backdrop.show{display:flex}
+    .modal{width:min(1180px,100%);max-height:94vh;overflow:auto;background:linear-gradient(180deg,#08152c,#0a1730);border:1px solid var(--border);border-radius:22px;box-shadow:var(--shadow);padding:22px}
+    .modal-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}.close-btn{width:40px;height:40px;border:none;border-radius:12px;background:rgba(255,255,255,.05);color:#fff;cursor:pointer}
+    .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.field label{display:block;margin-bottom:6px;font-size:13px;color:#cfe0ff}
+    .field input,.field select,.field textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}.field textarea{min-height:90px;resize:vertical}
+    .span-2{grid-column:span 2}.span-3{grid-column:span 3}.span-4{grid-column:1/-1}.muted-note{font-size:12px;color:var(--muted)}
+    .section-title{margin:18px 0 10px;font-size:16px;font-weight:800;color:#dbeafe;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.03)}
+    .materials-box{margin-top:12px;padding:14px;border-radius:16px;border:1px solid rgba(96,165,250,.18);background:rgba(37,99,235,.08)}
+    .empty{padding:26px;text-align:center;color:var(--muted);display:none}
+    @media (max-width:1300px){.summary{grid-template-columns:repeat(3,1fr)}.toolbar{grid-template-columns:1fr 1fr}.grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:900px){.page{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.summary,.toolbar,.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<div id="liqModal" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <h3 id="liqTitle" style="margin:0 0 6px 0;">Liquidación</h3>
+        <div class="muted-note">Gestión, control y seguimiento de liquidaciones de instalaciones y factibilidades.</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="small-btn" type="button" onclick="copiarInfoLiquidacion()">Copiar info</button>
+        <span id="copyInfoMsgLiq" class="copy-msg"></span>
+        <button class="close-btn" onclick="closeLiqModal()">✕</button>
+      </div>
+    </div>
+    <form id="liqForm" action="javascript:void(0)">
+      <input type="hidden" name="id"><input type="hidden" name="origen_id">
+      <div class="grid">
+        <div class="field"><label>Tipo origen</label><input name="tipo_origen" readonly></div>
+        <div class="field"><label>ID Cambio</label><input name="id_cambio" readonly></div>
+        <div class="field"><label>ID Tarea</label><input name="id_tarea" readonly></div>
+        <div class="field"><label>ID Cliente</label><input name="id_cliente" readonly></div>
+        <div class="field span-2"><label>Cliente</label><input name="cliente" readonly></div>
+        <div class="field span-2"><label>Dirección</label><input name="direccion" readonly></div>
+        <div class="field"><label>Operador</label><input name="operador" readonly></div>
+        <div class="field"><label>Fecha ingreso</label><input type="date" name="fecha_ingreso" readonly></div>
+        <div class="field"><label>Fecha entrega</label><input type="date" name="fecha_entrega" readonly></div>
+        <div class="field"><label>Estado liquidación</label><select name="estado_liquidacion"><option>PENDIENTE</option><option>EN_REVISION</option><option>LIQUIDADA</option><option>RECHAZADA</option><option>NO_APLICA</option><option>NO APARECE EN SAR</option><option>PEND_INFO_CONTRATISTA</option></select></div> 
+
+        <div class="field"><label>Fecha liquidación</label><input type="date" name="fecha_liquidacion"></div>
+        <div class="field"><label>Responsable liquidación</label><input name="responsable_liquidacion"></div>
+        <div class="field"><label>Valor liquidado Planta externa</label><input type="number" step="0.01" min="0" name="valor_liquidado_pe"></div>
+        <div class="field"><label>Número acta Planta externa</label><input name="numero_acta_pe"></div>
+        <div class="field"><label>Valor liquidado Planta Interna</label><input type="number" step="0.01" min="0" name="valor_liquidado_pi"></div>
+        <div class="field"><label>Número acta Planta Interna</label><input name="numero_acta_pi"></div>
+        <div class="field"><label>Número factura</label><input name="numero_factura"></div>
+        <div class="field span-3"><label>Observaciones</label><input name="observaciones"></div>
+      </div>
+      <div id="materialsBox" class="materials-box">
+        <div class="section-title">Materiales asociados a la instalación</div>
+        <div class="grid">
+          <div class="field"><label>FO Externa</label><input type="number" step="0.01" name="fo_externa"></div>
+          <div class="field"><label>FO Interna</label><input type="number" step="0.01" name="fo_interna"></div>
+          <div class="field"><label>FO Total</label><input type="number" step="0.01" name="fo_total"></div>
+          <div class="field"><label>Tipo fibra</label><input name="tipo_fibra"></div>
+          <div class="field"><label>Herrajes retención</label><input type="number" name="cant_herrajes_retencion"></div>
+          <div class="field"><label>Herrajes suspensión</label><input type="number" name="cant_herrajes_suspension"></div>
+          <div class="field"><label>Argolla poste</label><input type="number" name="cant_argolla_poste"></div>
+          <div class="field"><label>Caja OB</label><input type="number" name="cant_caja_ob"></div>
+          <div class="field"><label>Patchcord</label><input type="number" name="cant_patchcord"></div>
+          <div class="field"><label>Tipo patchcord</label><input name="tipo_patchcord"></div>
+          <div class="field"><label>Longitud patchcord</label><input name="longitud_patchcord"></div>
+          <div class="field"><label>Cinta Bandi-it</label><input type="number" step="0.01" name="cinta_bandi_it_metros"></div>
+          <div class="field"><label>Marquilla amarilla</label><input type="number" name="cant_marquilla_amarilla"></div>
+          <div class="field"><label>Marquillas</label><input type="number" name="cant_marquillas"></div>
+        </div>
+      </div>
+      <div id="liqMsg" style="margin-top:12px;color:#86efac"></div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
+        <button type="button" class="small-btn" onclick="closeLiqModal()">Cancelar</button>
+        <button class="btn" type="submit">Guardar liquidación</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function renderShell(){
+  const email = localStorage.getItem('user_email') || '';
+  document.getElementById('root').innerHTML = `
+  <div class="page">
+    <aside class="sidebar" ondblclick="toggleSidebar()">
+      <div class="brand">Nodo O&M</div><div class="subbrand">Control y seguimiento</div>
+      <nav class="nav">
+        <a href="index.html">Inicio</a><a href="dashboard.html">Dashboard</a><a href="fallas.html">Tickets / Fallas</a>
+        <a href="mantenimientos.html">Mantenimientos</a><a href="instalaciones.html">Instalaciones</a>
+        <a href="factibilidades.html">Factibilidades</a><a href="traslados.html">Traslados</a>
+        <a href="materiales.html">Materiales</a><a href="liquidaciones.html" class="active">Liquidaciones</a>
+        <a href="gastos.html">Gastos</a><a href="tareas.html">Tareas y Alertas</a><a href="reportes.html">Reportes</a>
+      </nav>
+      <div class="session-box"><small>Sesión<br>${email || 'Sin iniciar'}</small><button class="btn secondary" style="width:100%" onclick="safeLogout()">Cerrar sesión</button></div>
+    </aside>
+    <button id="sidebarToggleTab" class="sidebar-toggle-tab" title="Ocultar / mostrar barra lateral" onclick="toggleSidebar()">‹</button>
+    <main class="main">
+      <div class="header"><h1>Liquidaciones</h1><p>Clientes e intervenciones pendientes por liquidar, liquidadas y en revisión.</p></div>
+      <div class="toolbar">
+        <input id="searchBox" class="control" placeholder="Buscar por cliente, ID cliente, ID cambio, dirección, operador, acta PE o acta PI">
+        <select id="filterTipo" class="control"><option value="">Todos los orígenes</option><option>INSTALACION</option><option>FACTIBILIDAD</option></select>
+        <select id="filterEstado" class="control"><option value="">Todos los estados</option><option>PENDIENTE</option><option>EN_REVISION</option><option>LIQUIDADA</option><option>RECHAZADA</option><option>NO_APLICA</option><option>NO APARECE EN SAR</option></select>
+        <select id="sortBy" class="control"><option value="fecha_desc">Más recientes</option><option value="fecha_asc">Más antiguas</option><option value="cliente_asc">Cliente A-Z</option><option value="estado_asc">Estado</option></select>
+        <button class="btn ghost" onclick="exportLiquidacionesExcel()">Exportar Excel</button>
+        <button class="btn ghost" onclick="loadAll()">Actualizar</button>
+      </div>
+      <div id="summary" class="summary"></div>
+      <section class="card"><div class="table-wrap"><table><thead><tr>
+        <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('origen')">Origen <span id="sort_origen" class="sort-icon"></span></div><select id="filter_origen" onchange="setColumnFilter('origen', this.value)"><option value="">Todos</option></select></div></th>
+        <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('fecha')">Fecha <span id="sort_fecha" class="sort-icon"></span></div><select id="filter_fecha" onchange="setColumnFilter('fecha', this.value)"><option value="">Todas</option></select></div></th>
+        <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('id_cambio')">ID Cambio <span id="sort_id_cambio" class="sort-icon"></span></div><select id="filter_id_cambio" onchange="setColumnFilter('id_cambio', this.value)"><option value="">Todos</option></select></div></th>
+        <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('id_tarea')">ID Tarea <span id="sort_id_tarea" class="sort-icon"></span></div><select id="filter_id_tarea" onchange="setColumnFilter('id_tarea', this.value)"><option value="">Todos</option></select></div></th>
+        <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('id_cliente')">ID Cliente <span id="sort_id_cliente" class="sort-icon"></span></div><select id="filter_id_cliente" onchange="setColumnFilter('id_cliente', this.value)"><option value="">Todos</option></select></div></th>
+        <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('cliente')">Cliente <span id="sort_cliente" class="sort-icon"></span></div><select id="filter_cliente" onchange="setColumnFilter('cliente', this.value)"><option value="">Todos</option></select></div></th>
+        <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('estado')">Estado liquidación <span id="sort_estado" class="sort-icon"></span></div><select id="filter_estado_col" onchange="setColumnFilter('estado', this.value)"><option value="">Todos</option></select></div></th>
+        <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('acta_pe')">Acta PE <span id="sort_acta_pe" class="sort-icon"></span></div><select id="filter_acta_pe" onchange="setColumnFilter('acta_pe', this.value)"><option value="">Todas</option></select></div></th>
+        <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('acta_pi')">Acta PI <span id="sort_acta_pi" class="sort-icon"></span></div><select id="filter_acta_pi" onchange="setColumnFilter('acta_pi', this.value)"><option value="">Todas</option></select></div></th>
+        <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('fo_total')">FO Total <span id="sort_fo_total" class="sort-icon"></span></div><select id="filter_fo_total" onchange="setColumnFilter('fo_total', this.value)"><option value="">Todos</option></select></div></th>
+        <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('acciones')">Acciones <span id="sort_acciones" class="sort-icon"></span></div><select id="filter_acciones" onchange="setColumnFilter('acciones', this.value)"><option value="">Todas</option></select></div></th>
+      </tr></thead><tbody id="liqBody"></tbody></table></div><div id="liqEmpty" class="empty">No hay registros para mostrar.</div></section>
+      <button class="floating-add" title="Sincronizar nuevas liquidaciones" onclick="syncEligible()">↻</button>
+    </main>
+  </div>`;
+}
+function safeLogout(){ try{ if(typeof logout==='function'){ logout(); return; } }catch(e){} localStorage.removeItem('user_email'); location.href='index.html'; }
+function toggleSidebar(){
+  const page = document.querySelector('.page');
+  const tab = document.getElementById('sidebarToggleTab');
+  if(!page) return;
+  page.classList.toggle('sidebar-hidden');
+  const hidden = page.classList.contains('sidebar-hidden');
+  localStorage.setItem('om_sidebar_hidden', hidden ? '1' : '0');
+  if(tab) tab.textContent = hidden ? '›' : '‹';
+}
+function restoreSidebarState(){
+  const page = document.querySelector('.page');
+  const tab = document.getElementById('sidebarToggleTab');
+  if(!page) return;
+  const hidden = localStorage.getItem('om_sidebar_hidden') === '1';
+  page.classList.toggle('sidebar-hidden', hidden);
+  if(tab) tab.textContent = hidden ? '›' : '‹';
+}
+renderShell();
+restoreSidebarState();
+
+let clientRef = null, instalaciones = [], factibilidades = [], liquidaciones = [], rows = [], activeKpi = null;
+let columnFilters = {origen:'', fecha:'', id_cambio:'', id_tarea:'', id_cliente:'', cliente:'', estado:'', acta_pe:'', acta_pi:'', fo_total:'', acciones:''};
+let sortField = 'fecha';
+let sortDir = 'desc';
+function esc(v){ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;"); }
+function fmtDate(v){ if(!v) return ''; try{return new Date(String(v)+'T00:00:00').toLocaleDateString('es-CO')}catch(e){return v} }
+function fmtNum(v){ const n = Number(v || 0); return n.toFixed(2).replace(/\.00$/,'').replace(/(\.\d)0$/,'$1'); }
+function badgeEstado(v){ return `<span class="badge estado-${esc(v)}">${esc(v || '')}</span>`; }
+function badgeTipo(v){ return `<span class="badge tipo-${esc(v)}">${esc(v || '')}</span>`; }
+async function resolveClient(){ if(clientRef) return clientRef; if(typeof getClient === 'function'){ clientRef = await getClient(); return clientRef; } const url = localStorage.getItem('sb_url'); const key = localStorage.getItem('sb_key'); if(!url || !key) throw new Error('No se encontró configuración de Supabase'); clientRef = window.supabase.createClient(url, key); return clientRef; }
+function normalizeNum(v){ const n = parseFloat(String(v ?? '').replace(',','.')); return Number.isFinite(n) ? n : 0; }
+
+function buildInstallacionLiquidacion(i){
+  const foEx = normalizeNum(i.fo_externa), foIn = normalizeNum(i.fo_interna), foTotal = normalizeNum(i.fo_total) || (foEx + foIn);
+  return {tipo_origen:'INSTALACION',origen_id:i.id,id_cambio:i.id_cambio,id_tarea:i.id_tarea,id_cliente:i.id_cliente,cliente:i.cliente,direccion:i.direccion,operador:i.operador,fecha_ingreso:i.fecha_ingreso,fecha_entrega:i.fecha_entrega,estado_liquidacion:'PENDIENTE',fo_externa:foEx,fo_interna:foIn,fo_total:foTotal,tipo_fibra:i.tipo_fibra,cant_herrajes_retencion:i.cant_herrajes_retencion||0,cant_herrajes_suspension:i.cant_herrajes_suspension||0,cant_argolla_poste:i.cant_argolla_poste||0,cant_caja_ob:i.cant_caja_ob||0,cant_patchcord:i.cant_patchcord||0,tipo_patchcord:i.tipo_patchcord,longitud_patchcord:i.longitud_patchcord,cinta_bandi_it_metros:i.cinta_bandi_it_metros||0,cant_marquilla_amarilla:i.cant_marquilla_amarilla||0,cant_marquillas:i.cant_marquillas||0};
+}
+function buildFactibilidadLiquidacion(f){
+  return {tipo_origen:'FACTIBILIDAD',origen_id:f.id,id_cambio:f.id_cambio,id_tarea:f.id_tarea,id_cliente:f.id_cliente,cliente:f.cliente,direccion:f.direccion,operador:f.operador,fecha_ingreso:f.fecha_ingreso,fecha_entrega:f.fecha_entrega||null,estado_liquidacion:'PENDIENTE',fo_externa:0,fo_interna:0,fo_total:0};
+}
+function mergeRows(){
+  const liqByKey = new Map(liquidaciones.map(l => [`${l.tipo_origen}|${l.id_cambio}`, l]));
+  const eligibleInst = instalaciones.filter(x => x.estado_general === 'ENTREGADA').map(buildInstallacionLiquidacion);
+  const eligibleFact = factibilidades.filter(x => x.estado_general === 'APROBADA').map(buildFactibilidadLiquidacion);
+  rows = [...eligibleInst, ...eligibleFact].map(base => { const saved = liqByKey.get(`${base.tipo_origen}|${base.id_cambio}`); return saved ? {...base, ...saved, existe:true} : {...base, existe:false}; });
+}
+async function syncEligible(){
+  try{
+    const client = await resolveClient(); const email = localStorage.getItem('user_email') || null;
+    const candidates = [...instalaciones.filter(x=>x.estado_general==='ENTREGADA').map(buildInstallacionLiquidacion), ...factibilidades.filter(x=>x.estado_general==='APROBADA').map(buildFactibilidadLiquidacion)].filter(x=>x.id_cambio);
+    const existingKeys = new Set(liquidaciones.map(x => `${x.tipo_origen}|${x.id_cambio}`));
+    const toInsert = candidates.filter(x => !existingKeys.has(`${x.tipo_origen}|${x.id_cambio}`)).map(x => ({...x, created_by_email: email}));
+    if(!toInsert.length){ alert('No hay nuevas instalaciones entregadas o factibilidades aprobadas pendientes por sincronizar.'); return; }
+    const { error } = await client.from('om_liquidaciones').insert(toInsert); if(error) throw error;
+    alert(`Se agregaron ${toInsert.length} registros nuevos a liquidaciones.`); await loadAll();
+  }catch(err){ console.error(err); alert('Error sincronizando liquidaciones: ' + (err.message || err)); }
+}
+function renderSummary(viewRows){
+  const total=viewRows.length, pendientes=viewRows.filter(x=>x.estado_liquidacion==='PENDIENTE').length, revision=viewRows.filter(x=>x.estado_liquidacion==='EN_REVISION').length, liquidadas=viewRows.filter(x=>x.estado_liquidacion==='LIQUIDADA').length, inst=viewRows.filter(x=>x.tipo_origen==='INSTALACION').length, fact=viewRows.filter(x=>x.tipo_origen==='FACTIBILIDAD').length, foTotal=viewRows.reduce((a,b)=>a+Number(b.fo_total||0),0);
+  document.getElementById('summary').innerHTML = `
+    <div class="stat ${activeKpi==='TOTAL'?'active':''}" onclick="toggleKpi('TOTAL')"><div class="label">Total por liquidar</div><div class="value">${total}</div><div class="sub">Instalaciones + factibilidades</div></div>
+    <div class="stat ${activeKpi==='PENDIENTE'?'active':''}" onclick="toggleKpi('PENDIENTE')"><div class="label">Pendientes</div><div class="value">${pendientes}</div><div class="sub">Requieren gestión</div></div>
+    <div class="stat ${activeKpi==='EN_REVISION'?'active':''}" onclick="toggleKpi('EN_REVISION')"><div class="label">En revisión</div><div class="value">${revision}</div><div class="sub">Validación interna</div></div>
+    <div class="stat ${activeKpi==='LIQUIDADA'?'active':''}" onclick="toggleKpi('LIQUIDADA')"><div class="label">Liquidadas</div><div class="value">${liquidadas}</div><div class="sub">Cerradas</div></div>
+    <div class="stat ${activeKpi==='INSTALACION'?'active':''}" onclick="toggleKpi('INSTALACION')"><div class="label">Instalaciones</div><div class="value">${inst}</div><div class="sub">Estado ENTREGADA</div></div>
+    <div class="stat ${activeKpi==='FO_TOTAL'?'active':''}" onclick="toggleKpi('FO_TOTAL')"><div class="label">FO usada</div><div class="value">${fmtNum(foTotal)}</div><div class="sub">${fact} factibilidades</div></div>`;
+}
+function toggleKpi(kpi){ activeKpi = activeKpi === kpi ? null : kpi; renderTable(); }
+
+function getRowColumnValue(r, field){
+  switch(field){
+    case 'origen': return r.tipo_origen || '';
+    case 'fecha': return fmtDate(r.fecha_entrega || r.fecha_ingreso);
+    case 'id_cambio': return r.id_cambio || '';
+    case 'id_tarea': return r.id_tarea || '';
+    case 'id_cliente': return r.id_cliente || '';
+    case 'cliente': return `${r.cliente || ''}${r.direccion ? ' - ' + r.direccion : ''}`.trim();
+    case 'estado': return r.estado_liquidacion || 'PENDIENTE';
+    case 'acta_pe': return r.numero_acta_pe || '';
+    case 'acta_pi': return r.numero_acta_pi || '';
+    case 'fo_total': return `${fmtNum(r.fo_total)} | Ext ${fmtNum(r.fo_externa)} | Int ${fmtNum(r.fo_interna)}`;
+    case 'acciones': return 'Gestionar';
+    default: return '';
+  }
+}
+function getSortValue(r, field){
+  if(field === 'fecha'){
+    const base = r.fecha_entrega || r.fecha_ingreso || '';
+    const d = new Date(String(base) + 'T00:00:00');
+    return isNaN(d) ? 0 : d.getTime();
+  }
+  if(field === 'fo_total') return Number(r.fo_total || 0);
+  return String(getRowColumnValue(r, field) || '').toLowerCase();
+}
+function uniqueSorted(values){
+  return Array.from(new Set(values.filter(v => String(v || '').trim() !== '')))
+    .sort((a,b) => String(a).localeCompare(String(b), 'es', {numeric:true}));
+}
+function hydrateColumnFilters(baseRows){
+  const configs = [
+    ['origen','filter_origen','Todos'],
+    ['fecha','filter_fecha','Todas'],
+    ['id_cambio','filter_id_cambio','Todos'],
+    ['id_tarea','filter_id_tarea','Todos'],
+    ['id_cliente','filter_id_cliente','Todos'],
+    ['cliente','filter_cliente','Todos'],
+    ['estado','filter_estado_col','Todos'],
+    ['acta_pe','filter_acta_pe','Todas'],
+    ['acta_pi','filter_acta_pi','Todas'],
+    ['fo_total','filter_fo_total','Todos'],
+    ['acciones','filter_acciones','Todas']
+  ];
+  configs.forEach(([field, id, label]) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const current = columnFilters[field] || '';
+    const values = uniqueSorted(baseRows.map(r => getRowColumnValue(r, field)));
+    el.innerHTML = `<option value="">${label}</option>` + values.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+    el.value = values.includes(current) ? current : '';
+    columnFilters[field] = el.value;
+  });
+}
+function applyColumnFilters(data){
+  return data.filter(r => Object.entries(columnFilters).every(([field, value]) => {
+    if(!value) return true;
+    return getRowColumnValue(r, field) === value;
+  }));
+}
+function setColumnFilter(field, value){
+  columnFilters[field] = value || '';
+  renderTable(false);
+}
+function sortColumn(field){
+  if(sortField === field){
+    sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  }else{
+    sortField = field;
+    sortDir = field === 'fecha' ? 'desc' : 'asc';
+  }
+  renderTable(false);
+}
+function updateSortIcons(){
+  ['origen','fecha','id_cambio','id_tarea','id_cliente','cliente','estado','acta_pe','acta_pi','fo_total','acciones'].forEach(field => {
+    const el = document.getElementById('sort_' + field);
+    if(el) el.textContent = sortField === field ? (sortDir === 'asc' ? '▲' : '▼') : '';
+  });
+}
+function getFilteredRows(){
+  const txt=(document.getElementById('searchBox')?.value||'').trim().toLowerCase(), tipo=document.getElementById('filterTipo')?.value||'', estado=document.getElementById('filterEstado')?.value||'', sort=document.getElementById('sortBy')?.value||'fecha_desc';
+  let filtered = rows.filter(r => {
+    const matchText=!txt||[r.cliente,r.id_cliente,r.id_cambio,r.id_tarea,r.direccion,r.operador,r.tipo_origen,r.estado_liquidacion,r.numero_acta_pe,r.numero_acta_pi].map(x=>String(x||'').toLowerCase()).some(x=>x.includes(txt));
+    return matchText && (!tipo||r.tipo_origen===tipo) && (!estado||r.estado_liquidacion===estado);
+  });
+  if(activeKpi && activeKpi!=='TOTAL'){ if(['PENDIENTE','EN_REVISION','LIQUIDADA'].includes(activeKpi)) filtered=filtered.filter(r=>r.estado_liquidacion===activeKpi); if(activeKpi==='INSTALACION') filtered=filtered.filter(r=>r.tipo_origen==='INSTALACION'); if(activeKpi==='FO_TOTAL') filtered=filtered.filter(r=>Number(r.fo_total||0)>0); }
+  hydrateColumnFilters(filtered);
+  filtered = applyColumnFilters(filtered);
+
+  filtered.sort((a,b)=>{
+    const va = getSortValue(a, sortField);
+    const vb = getSortValue(b, sortField);
+    if(typeof va === 'number' && typeof vb === 'number'){
+      return sortDir === 'asc' ? va - vb : vb - va;
+    }
+    return sortDir === 'asc'
+      ? String(va).localeCompare(String(vb), 'es', {numeric:true})
+      : String(vb).localeCompare(String(va), 'es', {numeric:true});
+  });
+
+  updateSortIcons();
+  return filtered;
+}
+function renderTable(){
+  const filtered=getFilteredRows(); renderSummary(filtered); const body=document.getElementById('liqBody'), empty=document.getElementById('liqEmpty');
+  if(!filtered.length){ body.innerHTML=''; empty.style.display='block'; return; } empty.style.display='none';
+  body.innerHTML = filtered.map(r => `
+    <tr onclick="openLiqModal('${esc(r.tipo_origen)}','${esc(r.id_cambio)}')" style="cursor:pointer" title="Clic para gestionar liquidación">
+      <td>${badgeTipo(r.tipo_origen)}<div class="desc">${r.existe ? 'Guardada' : 'Sin registrar'}</div></td>
+      <td>${fmtDate(r.fecha_entrega || r.fecha_ingreso)}<div class="desc">${r.fecha_entrega ? 'Entrega' : 'Ingreso'}</div></td>
+      <td><b>${esc(r.id_cambio||'')}</b></td><td>${esc(r.id_tarea||'')}</td><td>${esc(r.id_cliente||'')}</td>
+      <td><div class="title">${esc(r.cliente||'')}</div><div class="desc">${esc(r.direccion||'')}</div></td>
+      <td>${badgeEstado(r.estado_liquidacion||'PENDIENTE')}</td>
+      <td><b>${esc(r.numero_acta_pe || '')}</b><div class="desc">Planta externa</div></td>
+      <td><b>${esc(r.numero_acta_pi || '')}</b><div class="desc">Planta interna</div></td>
+      <td><b>${fmtNum(r.fo_total)}</b><div class="desc">Ext: ${fmtNum(r.fo_externa)} / Int: ${fmtNum(r.fo_interna)}</div></td>
+      <td onclick="event.stopPropagation()"><button class="small-btn" onclick="openLiqModal('${esc(r.tipo_origen)}','${esc(r.id_cambio)}')">Gestionar</button></td>
+    </tr>`).join('');
+}
+
+async function copiarInfoLiquidacion(){
+  const form = document.getElementById('liqForm');
+  const msg = document.getElementById('copyInfoMsgLiq');
+  if(!form) return;
+
+  const el = form.elements;
+  const texto = [
+    `Nombre cliente: ${(el['cliente']?.value || '').trim()}`,
+    `Dirección: ${(el['direccion']?.value || '').trim()}`,
+    `ID Cliente: ${(el['id_cliente']?.value || '').trim()}`,
+    `ID Cambio: ${(el['id_cambio']?.value || '').trim()}`,
+    `ID Tarea: ${(el['id_tarea']?.value || '').trim()}`
+  ].join('\n');
+
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(texto);
+    }else{
+      const ta = document.createElement('textarea');
+      ta.value = texto;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+    if(msg){
+      msg.textContent = 'Copiado';
+      setTimeout(()=>msg.textContent='',2000);
+    }
+  }catch(e){
+    if(msg){
+      msg.textContent = 'Error al copiar';
+      msg.style.color = '#fecaca';
+    }
+  }
+}
+
+function openLiqModal(tipo,cambio){
+  const row=rows.find(r=>r.tipo_origen===tipo && String(r.id_cambio)===String(cambio)); if(!row) return;
+  const form=document.getElementById('liqForm'); form.reset(); document.getElementById('liqMsg').textContent='';
+  Object.keys(row).forEach(k=>{ if(form.elements[k]) form.elements[k].value = row[k] ?? ''; });
+  if(form.elements['valor_liquidado_pe'] && !form.elements['valor_liquidado_pe'].value && row.valor_liquidado) form.elements['valor_liquidado_pe'].value = row.valor_liquidado;
+  if(form.elements['numero_acta_pe'] && !form.elements['numero_acta_pe'].value && row.numero_acta) form.elements['numero_acta_pe'].value = row.numero_acta;
+  form.elements['estado_liquidacion'].value = row.estado_liquidacion || 'PENDIENTE';
+  document.getElementById('materialsBox').style.display = row.tipo_origen === 'INSTALACION' ? '' : 'none';
+  document.getElementById('liqTitle').textContent = `Liquidación ${row.tipo_origen} - ${row.id_cambio || ''}`;
+  document.getElementById('liqModal').classList.add('show');
+}
+function closeLiqModal(){ document.getElementById('liqModal').classList.remove('show'); }
+document.getElementById('liqForm').addEventListener('submit', async function(e){
+  e.preventDefault(); const form=e.target, msg=document.getElementById('liqMsg'); msg.textContent=''; msg.style.color='#86efac';
+  try{
+    const client=await resolveClient(), email=localStorage.getItem('user_email')||null;
+    const payload={tipo_origen:form.elements['tipo_origen'].value, origen_id:form.elements['origen_id'].value||null, id_cambio:form.elements['id_cambio'].value||null, id_tarea:form.elements['id_tarea'].value||null, id_cliente:form.elements['id_cliente'].value||null, cliente:form.elements['cliente'].value||null, direccion:form.elements['direccion'].value||null, operador:form.elements['operador'].value||null, fecha_ingreso:form.elements['fecha_ingreso'].value||null, fecha_entrega:form.elements['fecha_entrega'].value||null, estado_liquidacion:form.elements['estado_liquidacion'].value, fecha_liquidacion:form.elements['fecha_liquidacion'].value||null, responsable_liquidacion:form.elements['responsable_liquidacion'].value||null, valor_liquidado_pe:form.elements['valor_liquidado_pe'].value||null, numero_acta_pe:form.elements['numero_acta_pe'].value||null, valor_liquidado_pi:form.elements['valor_liquidado_pi'].value||null, numero_acta_pi:form.elements['numero_acta_pi'].value||null, numero_factura:form.elements['numero_factura'].value||null, observaciones:form.elements['observaciones'].value||null, fo_externa:form.elements['fo_externa'].value||0, fo_interna:form.elements['fo_interna'].value||0, fo_total:form.elements['fo_total'].value||0, tipo_fibra:form.elements['tipo_fibra'].value||null, cant_herrajes_retencion:form.elements['cant_herrajes_retencion'].value||0, cant_herrajes_suspension:form.elements['cant_herrajes_suspension'].value||0, cant_argolla_poste:form.elements['cant_argolla_poste'].value||0, cant_caja_ob:form.elements['cant_caja_ob'].value||0, cant_patchcord:form.elements['cant_patchcord'].value||0, tipo_patchcord:form.elements['tipo_patchcord'].value||null, longitud_patchcord:form.elements['longitud_patchcord'].value||null, cinta_bandi_it_metros:form.elements['cinta_bandi_it_metros'].value||0, cant_marquilla_amarilla:form.elements['cant_marquilla_amarilla'].value||0, cant_marquillas:form.elements['cant_marquillas'].value||0, created_by_email:email};
+    const existing=liquidaciones.find(l=>l.tipo_origen===payload.tipo_origen && String(l.id_cambio)===String(payload.id_cambio));
+    const result = existing ? await client.from('om_liquidaciones').update(payload).eq('id', existing.id) : await client.from('om_liquidaciones').insert(payload);
+    if(result.error) throw result.error; msg.textContent='Liquidación guardada correctamente'; closeLiqModal(); await loadAll();
+  }catch(err){ console.error(err); msg.style.color='#fecaca'; msg.textContent='Error guardando liquidación: '+(err.message||err); }
+});
+
+function excelDate(v){
+  if(!v) return '';
+  try{
+    return new Date(String(v) + 'T00:00:00').toLocaleDateString('es-CO');
+  }catch(e){
+    return v || '';
+  }
+}
+function exportLiquidacionesExcel(){
+  try{
+    const data = (rows && rows.length ? rows : []).map(r => ({
+      'Tipo origen': r.tipo_origen || '',
+      'ID Cambio': r.id_cambio || '',
+      'ID Tarea': r.id_tarea || '',
+      'ID Cliente': r.id_cliente || '',
+      'Cliente': r.cliente || '',
+      'Dirección': r.direccion || '',
+      'Operador': r.operador || '',
+      'Fecha ingreso': excelDate(r.fecha_ingreso),
+      'Fecha entrega': excelDate(r.fecha_entrega),
+      'Estado liquidación': r.estado_liquidacion || 'PENDIENTE',
+      'Fecha liquidación': excelDate(r.fecha_liquidacion),
+      'Responsable liquidación': r.responsable_liquidacion || '',
+      'Valor liquidado Planta externa': Number(r.valor_liquidado_pe || 0),
+      'Número acta Planta externa': r.numero_acta_pe || '',
+      'Valor liquidado Planta Interna': Number(r.valor_liquidado_pi || 0),
+      'Número acta Planta Interna': r.numero_acta_pi || '',
+      'Número factura': r.numero_factura || '',
+      'FO Externa': Number(r.fo_externa || 0),
+      'FO Interna': Number(r.fo_interna || 0),
+      'FO Total': Number(r.fo_total || 0),
+      'Tipo fibra': r.tipo_fibra || '',
+      'Herrajes retención': Number(r.cant_herrajes_retencion || 0),
+      'Herrajes suspensión': Number(r.cant_herrajes_suspension || 0),
+      'Argolla poste': Number(r.cant_argolla_poste || 0),
+      'Caja OB': Number(r.cant_caja_ob || 0),
+      'Patchcord': Number(r.cant_patchcord || 0),
+      'Tipo patchcord': r.tipo_patchcord || '',
+      'Longitud patchcord': r.longitud_patchcord || '',
+      'Cinta Bandi-it metros': Number(r.cinta_bandi_it_metros || 0),
+      'Marquilla amarilla': Number(r.cant_marquilla_amarilla || 0),
+      'Marquillas': Number(r.cant_marquillas || 0),
+      'Observaciones': r.observaciones || '',
+      'Registro guardado en liquidaciones': r.existe ? 'SI' : 'NO',
+      'Creado por': r.created_by_email || '',
+      'Fecha creación': r.created_at ? new Date(r.created_at).toLocaleString('es-CO') : '',
+      'Última actualización': r.updated_at ? new Date(r.updated_at).toLocaleString('es-CO') : ''
+    }));
+
+    if(!data.length){
+      alert('No hay registros para exportar.');
+      return;
+    }
+
+    if(typeof XLSX === 'undefined'){
+      alert('No se pudo cargar la librería de Excel. Verifica que tengas conexión a internet para cargar SheetJS.');
+      return;
+    }
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    const headers = Object.keys(data[0]);
+
+    ws['!cols'] = headers.map(h => ({ wch: Math.max(16, Math.min(42, h.length + 6)) }));
+    ws['!autofilter'] = {
+      ref: XLSX.utils.encode_range({
+        s: { r: 0, c: 0 },
+        e: { r: data.length, c: headers.length - 1 }
+      })
+    };
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Liquidaciones');
+    const fecha = new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb, `reporte_liquidaciones_${fecha}.xlsx`);
+  }catch(err){
+    console.error(err);
+    alert('Error exportando Excel: ' + (err.message || err));
+  }
+}
+
+async function loadAll(){
+  try{
+    const client=await resolveClient();
+    const [instRes,factRes,liqRes]=await Promise.all([
+      client.from('instalaciones').select('*').eq('estado_general','ENTREGADA').order('fecha_entrega',{ascending:false}),
+      client.from('factibilidades').select('*').eq('estado_general','APROBADA').order('fecha_ingreso',{ascending:false}),
+      client.from('om_liquidaciones').select('*').order('updated_at',{ascending:false})
+    ]);
+    if(instRes.error) throw instRes.error; if(factRes.error) throw factRes.error; if(liqRes.error) throw liqRes.error;
+    instalaciones=instRes.data||[]; factibilidades=factRes.data||[]; liquidaciones=liqRes.data||[];
+    mergeRows(); renderTable();
+  }catch(err){ console.error(err); alert('Error cargando liquidaciones: '+(err.message||err)); }
+}
+['searchBox','filterTipo','filterEstado','sortBy'].forEach(id=>{ document.getElementById(id)?.addEventListener('input',renderTable); document.getElementById(id)?.addEventListener('change',renderTable); });
+document.getElementById('liqModal').addEventListener('click', e => { if(e.target.id === 'liqModal'){} });
+loadAll();
+</script>
+</body>
+</html>
