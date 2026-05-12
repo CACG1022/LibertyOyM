@@ -68,7 +68,7 @@
       <div class="session-box"><small>Sesión<br><span id="sessionEmail">Sin iniciar</span></small><button class="btn secondary" style="width:100%;padding:10px 12px" onclick="safeLogout()">Cerrar sesión</button></div>
       <div class="statusbox">
         <b>Estado de conexión</b><br><span id="connStatus">Esperando carga...</span><br><br>
-        <span>----</span>
+        <span>Diseño ejecutivo futurista, conectado a Supabase.</span>
       </div>
     </aside>
     <button id="sidebarToggleTab" class="sidebar-toggle-tab" title="Ocultar / mostrar barra lateral" onclick="toggleSidebar()">‹</button>
@@ -265,18 +265,20 @@ function fiberCapacityGroups(rows){
 function fmtMeters(v){return Number.isFinite(v) ? Number(v).toLocaleString('es-CO',{maximumFractionDigits:1}) : '0';}
 
 function badge(e){const u=String(e||'').toUpperCase();let cls=u.includes('ENTREG')||u.includes('APROB')||u.includes('REALIZADA')?'ok':u.includes('CANCEL')||u.includes('RECHAZ')?'danger':u.includes('GESTION')||u.includes('EJECUCION')?'violet':u.includes('PEND')||u.includes('SOLIC')?'warn':'info';return `<span class="badge ${cls}">${esc(e||'SIN ESTADO')}</span>`}
-async function getClient(){
+async function getDashboardClient(){
   if(window.__dashboardSupabaseClient) return window.__dashboardSupabaseClient;
 
-  // 1) Si tu app.js ya expone un cliente directo
-  if(window.supabaseClient){
-    window.__dashboardSupabaseClient = window.supabaseClient;
-    return window.__dashboardSupabaseClient;
+  // El dashboard NO debe pedir URL ni ANON KEY al usuario.
+  // Debe tomar el cliente de Supabase desde app.js, igual que los demás módulos.
+  if(typeof window.getClient === 'function' && window.getClient !== getDashboardClient){
+    const c = await window.getClient();
+    if(c){
+      window.__dashboardSupabaseClient = c;
+      return c;
+    }
   }
 
-  // 2) Si tu app.js maneja la configuración por resolveClient()
-  // Evita llamarse a sí mismo si alguna página dejó resolveClient apuntando a esta función.
-  if(typeof window.resolveClient === 'function' && window.resolveClient !== getClient){
+  if(typeof window.resolveClient === 'function' && window.resolveClient !== getDashboardClient){
     const c = await window.resolveClient();
     if(c){
       window.__dashboardSupabaseClient = c;
@@ -284,46 +286,34 @@ async function getClient(){
     }
   }
 
-  // 3) Configuración desde variables globales opcionales
-  let url = window.SUPABASE_URL || window.supabaseUrl || '';
-  let key = window.SUPABASE_ANON_KEY || window.supabaseAnonKey || '';
+  if(window.supabaseClient){
+    window.__dashboardSupabaseClient = window.supabaseClient;
+    return window.__dashboardSupabaseClient;
+  }
 
-  // 4) Configuración compatible con tus módulos actuales: sb_url y sb_key en localStorage
-  if(!url) key = key || '';
-  url = url || localStorage.getItem('sb_url') || localStorage.getItem('SUPABASE_URL') || '';
-  key = key || localStorage.getItem('sb_key') || localStorage.getItem('SUPABASE_ANON_KEY') || '';
+  // Si no hay cliente disponible, se envía al login en vez de mostrar prompts técnicos.
+  throw new Error('No se pudo obtener la conexión de Supabase desde app.js. Inicia sesión nuevamente o verifica que app.js esté cargando correctamente.');
+}
 
-  // 5) Configuración manual dentro del mismo dashboard
-  if(!url || !key){
-    url = prompt('Pega la URL de Supabase. Ejemplo: https://xxxxx.supabase.co') || '';
-    key = prompt('Pega la ANON KEY pública de Supabase') || '';
-    if(url && key){
-      localStorage.setItem('sb_url', url.trim());
-      localStorage.setItem('sb_key', key.trim());
+
+function requireDashboardLogin(){
+  const email = localStorage.getItem('user_email') || '';
+  // Si tu login usa otra variable, app.js seguirá validando la sesión.
+  // Esta validación evita que el dashboard quede en blanco en navegadores nuevos.
+  if(!email && !window.__dashboardSkipLoginCheck){
+    const current = location.pathname.split('/').pop() || 'dashboard.html';
+    if(!['index.html','login.html'].includes(current)){
+      location.href = 'index.html';
+      return false;
     }
   }
-
-  if(!url || !key){
-    throw new Error('No se encontró la configuración de Supabase. Guarda sb_url y sb_key en localStorage o pégalos cuando el dashboard los solicite.');
-  }
-
-  if(!window.supabase || !window.supabase.createClient){
-    throw new Error('No cargó la librería de Supabase. Verifica conexión a internet o el CDN de @supabase/supabase-js.');
-  }
-
-  window.__dashboardSupabaseClient = window.supabase.createClient(url.trim(), key.trim());
-  return window.__dashboardSupabaseClient;
+  return true;
 }
 
 // Funciones auxiliares para configurar o limpiar la conexión desde la consola del navegador:
 // configurarSupabaseDashboard('https://xxxxx.supabase.co','TU_ANON_KEY')
 // limpiarSupabaseDashboard()
-window.configurarSupabaseDashboard = function(url,key){
-  localStorage.setItem('sb_url', String(url || '').trim());
-  localStorage.setItem('sb_key', String(key || '').trim());
-  window.__dashboardSupabaseClient = null;
-  return 'Configuración guardada. Actualiza el dashboard.';
-};
+window.configurarSupabaseDashboard = function(){ return 'Este dashboard toma Supabase desde app.js; no requiere configurar URL ni ANON KEY aquí.'; };
 window.limpiarSupabaseDashboard = function(){
   localStorage.removeItem('sb_url');
   localStorage.removeItem('sb_key');
@@ -636,8 +626,9 @@ function renderModule(mod){
 
 }
 function renderAll(){fillEstadoFilter(); renderModule('instalaciones'); renderModule('factibilidades');}
-async function loadData(){document.getElementById('connStatus').textContent='Cargando datos desde Supabase...'; try{const client=await getClient(); const [i,f]=await Promise.all([client.from('instalaciones').select('*').order('fecha_ingreso',{ascending:false}),client.from('factibilidades').select('*').order('fecha_ingreso',{ascending:false})]); if(i.error)throw i.error; if(f.error)throw f.error; instalaciones=i.data||[]; factibilidades=f.data||[]; document.getElementById('connStatus').textContent=`Conectado: ${instalaciones.length} instalaciones / ${factibilidades.length} factibilidades`; document.getElementById('lastUpdate').textContent='Actualizado: '+new Date().toLocaleString('es-CO'); renderAll();}catch(err){console.error(err); document.getElementById('connStatus').innerHTML='<span style="color:#fecaca">Error: '+esc(err.message||err)+'</span>';}}
-initSidebarSession(); restoreSidebarState(); initFilters(); loadData();
+async function loadData(){document.getElementById('connStatus').textContent='Cargando datos desde Supabase...'; try{const client=await getDashboardClient(); const [i,f]=await Promise.all([client.from('instalaciones').select('*').order('fecha_ingreso',{ascending:false}),client.from('factibilidades').select('*').order('fecha_ingreso',{ascending:false})]); if(i.error)throw i.error; if(f.error)throw f.error; instalaciones=i.data||[]; factibilidades=f.data||[]; document.getElementById('connStatus').textContent=`Conectado: ${instalaciones.length} instalaciones / ${factibilidades.length} factibilidades`; document.getElementById('lastUpdate').textContent='Actualizado: '+new Date().toLocaleString('es-CO'); renderAll();}catch(err){console.error(err); document.getElementById('connStatus').innerHTML='<span style="color:#fecaca">Error: '+esc(err.message||err)+'</span>';}}
+initSidebarSession(); restoreSidebarState(); initFilters(); if(requireDashboardLogin()) loadData();
 </script>
 </body>
 </html>
+
