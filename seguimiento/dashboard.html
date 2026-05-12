@@ -296,18 +296,30 @@ async function getDashboardClient(){
 }
 
 
-function requireDashboardLogin(){
-  const email = localStorage.getItem('user_email') || '';
-  // Si tu login usa otra variable, app.js seguirá validando la sesión.
-  // Esta validación evita que el dashboard quede en blanco en navegadores nuevos.
-  if(!email && !window.__dashboardSkipLoginCheck){
-    const current = location.pathname.split('/').pop() || 'dashboard.html';
-    if(!['index.html','login.html'].includes(current)){
-      location.href = 'index.html';
+async function requireDashboardLogin(){
+  try{
+    const client = await getDashboardClient();
+    const { data, error } = await client.auth.getSession();
+    if(error) throw error;
+
+    const user = data?.session?.user || null;
+    if(!user){
+      localStorage.removeItem('user_email');
+      location.replace('index.html');
       return false;
     }
+
+    const email = user.email || localStorage.getItem('user_email') || '';
+    if(email) localStorage.setItem('user_email', email);
+    const sessionEmail = document.getElementById('sessionEmail');
+    if(sessionEmail) sessionEmail.textContent = email || 'Sesión activa';
+    return true;
+  }catch(err){
+    console.error('Error validando sesión del dashboard:', err);
+    localStorage.removeItem('user_email');
+    location.replace('index.html');
+    return false;
   }
-  return true;
 }
 
 // Funciones auxiliares para configurar o limpiar la conexión desde la consola del navegador:
@@ -627,8 +639,15 @@ function renderModule(mod){
 }
 function renderAll(){fillEstadoFilter(); renderModule('instalaciones'); renderModule('factibilidades');}
 async function loadData(){document.getElementById('connStatus').textContent='Cargando datos desde Supabase...'; try{const client=await getDashboardClient(); const [i,f]=await Promise.all([client.from('instalaciones').select('*').order('fecha_ingreso',{ascending:false}),client.from('factibilidades').select('*').order('fecha_ingreso',{ascending:false})]); if(i.error)throw i.error; if(f.error)throw f.error; instalaciones=i.data||[]; factibilidades=f.data||[]; document.getElementById('connStatus').textContent=`Conectado: ${instalaciones.length} instalaciones / ${factibilidades.length} factibilidades`; document.getElementById('lastUpdate').textContent='Actualizado: '+new Date().toLocaleString('es-CO'); renderAll();}catch(err){console.error(err); document.getElementById('connStatus').innerHTML='<span style="color:#fecaca">Error: '+esc(err.message||err)+'</span>';}}
-initSidebarSession(); restoreSidebarState(); initFilters(); if(requireDashboardLogin()) loadData();
+initSidebarSession();
+restoreSidebarState();
+initFilters();
+(async()=>{
+  const logged = await requireDashboardLogin();
+  if(logged) await loadData();
+})();
 </script>
 </body>
 </html>
+
 
