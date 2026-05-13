@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Módulo de Gastos</title>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Iconos y Excel -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#0f172a;
+      --panel:#111827;
+      --panel-2:#1f2937;
+      --card:#111827;
+      --muted:#94a3b8;
+      --text:#e5e7eb;
+      --primary:#38bdf8;
+      --primary-2:#0ea5e9;
+      --green:#22c55e;
+      --red:#ef4444;
+      --yellow:#f59e0b;
+      --border:#334155;
+      --shadow: 0 18px 40px rgba(0,0,0,.35);
+      --radius:18px;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:linear-gradient(135deg,#020617 0%,#0f172a 55%,#111827 100%);
+      color:var(--text);
+      min-height:100vh;
+    }
+
+    .app{
+      min-height:100vh;
+    }
+
+    .sidebar{
+      display:none;
+    }
+
+    .brand{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      margin-bottom:26px;
+      padding:10px;
+      border-radius:16px;
+      background:rgba(56,189,248,.08);
+      border:1px solid rgba(56,189,248,.2);
+    }
+
+    .brand-icon{
+      width:42px;
+      height:42px;
+      display:grid;
+      place-items:center;
+      background:linear-gradient(135deg,#38bdf8,#2563eb);
+      border-radius:14px;
+      box-shadow:0 10px 24px rgba(14,165,233,.35);
+    }
+
+    .brand h1{
+      font-size:16px;
+      margin:0;
+      letter-spacing:.2px;
+    }
+
+    .brand span{
+      display:block;
+      color:var(--muted);
+      font-size:12px;
+      margin-top:2px;
+    }
+
+    .nav a{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:12px 13px;
+      color:#cbd5e1;
+      text-decoration:none;
+      border-radius:12px;
+      margin-bottom:6px;
+      font-size:14px;
+      transition:.2s ease;
+    }
+
+    .nav a:hover,
+    .nav a.active{
+      background:rgba(56,189,248,.12);
+      color:white;
+    }
+
+    .main{
+      padding:24px;
+      overflow:auto;
+      width:100%;
+      max-width:1600px;
+      margin:0 auto;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:16px;
+      margin-bottom:22px;
+    }
+
+    .topbar h2{
+      font-size:28px;
+      margin:0;
+      letter-spacing:-.5px;
+    }
+
+    .topbar p{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    .user-chip{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background:rgba(15,23,42,.7);
+      border:1px solid var(--border);
+      padding:10px 14px;
+      border-radius:999px;
+      color:#dbeafe;
+      white-space:nowrap;
+    }
+
+    .grid-kpi{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(160px,1fr));
+      gap:16px;
+      margin-bottom:18px;
+    }
+
+    .kpi{
+      background:rgba(17,24,39,.88);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:18px;
+      box-shadow:var(--shadow);
+      position:relative;
+      overflow:hidden;
+    }
+
+    .kpi::after{
+      content:"";
+      position:absolute;
+      right:-34px;
+      top:-34px;
+      width:90px;
+      height:90px;
+      background:rgba(56,189,248,.11);
+      border-radius:50%;
+    }
+
+    .kpi .label{
+      color:var(--muted);
+      font-size:13px;
+      margin-bottom:8px;
+    }
+
+    .kpi .value{
+      font-size:25px;
+      font-weight:800;
+      letter-spacing:-.5px;
+    }
+
+    .kpi.green .value{color:var(--green)}
+    .kpi.yellow .value{color:var(--yellow)}
+    .kpi.red .value{color:var(--red)}
+
+    .toolbar{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      background:rgba(17,24,39,.82);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:14px;
+      margin-bottom:18px;
+      box-shadow:var(--shadow);
+    }
+
+    .filters{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+    }
+
+    input, select, textarea{
+      width:100%;
+      background:#0b1220;
+      color:var(--text);
+      border:1px solid #334155;
+      border-radius:12px;
+      padding:11px 12px;
+      outline:none;
+      font-family:inherit;
+    }
+
+    input:focus, select:focus, textarea:focus{
+      border-color:var(--primary);
+      box-shadow:0 0 0 3px rgba(56,189,248,.13);
+    }
+
+    .filters input,.filters select{
+      min-width:170px;
+      width:auto;
+    }
+
+    .btn{
+      border:none;
+      border-radius:12px;
+      padding:11px 14px;
+      font-weight:700;
+      cursor:pointer;
+      color:white;
+      background:#334155;
+      display:inline-flex;
+      gap:8px;
+      align-items:center;
+      transition:.15s ease;
+      text-decoration:none;
+    }
+
+    .btn:hover{transform:translateY(-1px); filter:brightness(1.08)}
+    .btn.primary{background:linear-gradient(135deg,#0ea5e9,#2563eb)}
+    .btn.green{background:linear-gradient(135deg,#16a34a,#22c55e)}
+    .btn.red{background:linear-gradient(135deg,#dc2626,#ef4444)}
+    .btn.yellow{background:linear-gradient(135deg,#d97706,#f59e0b)}
+    .btn.ghost{background:transparent;border:1px solid var(--border);}
+
+    .card{
+      background:rgba(17,24,39,.88);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+
+    .table-wrap{overflow:auto; max-height:calc(100vh - 320px);}
+    table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:1180px;
+    }
+
+    th,td{
+      padding:12px 10px;
+      border-bottom:1px solid rgba(51,65,85,.65);
+      text-align:left;
+      font-size:13px;
+      vertical-align:top;
+    }
+
+    th{
+      position:sticky;
+      top:0;
+      background:#172033;
+      z-index:3;
+      color:#bfdbfe;
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.4px;
+      cursor:pointer;
+    }
+
+    tr:hover td{background:rgba(56,189,248,.045)}
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      border-radius:999px;
+      padding:5px 9px;
+      font-size:12px;
+      font-weight:700;
+      background:#1e293b;
+      border:1px solid #334155;
+    }
+
+    .badge.cash{color:#86efac;background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.25)}
+    .badge.bank{color:#93c5fd;background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.25)}
+    .badge.nequi{color:#f0abfc;background:rgba(217,70,239,.1);border-color:rgba(217,70,239,.25)}
+
+    .actions{
+      display:flex;
+      gap:7px;
+      flex-wrap:wrap;
+    }
+
+    .icon-btn{
+      width:35px;
+      height:35px;
+      display:grid;
+      place-items:center;
+      border:1px solid var(--border);
+      background:#0b1220;
+      color:white;
+      border-radius:10px;
+      cursor:pointer;
+    }
+
+    .modal{
+      position:fixed;
+      inset:0;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      background:rgba(2,6,23,.76);
+      backdrop-filter:blur(5px);
+      z-index:1000;
+      padding:18px;
+    }
+
+    .modal.show{display:flex}
+
+    .modal-box{
+      width:min(980px,96vw);
+      max-height:92vh;
+      overflow:auto;
+      background:#0f172a;
+      border:1px solid #334155;
+      border-radius:24px;
+      box-shadow:0 30px 80px rgba(0,0,0,.55);
+    }
+
+    .modal-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:18px 20px;
+      border-bottom:1px solid #334155;
+      background:#111827;
+      position:sticky;
+      top:0;
+      z-index:2;
+    }
+
+    .modal-head h3{margin:0;font-size:20px}
+    .modal-body{padding:20px}
+
+    .form-grid{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:14px;
+    }
+
+    .field label{
+      display:block;
+      color:#cbd5e1;
+      font-size:13px;
+      font-weight:700;
+      margin-bottom:7px;
+    }
+
+    .field.full{grid-column:1/-1}
+
+    .scan-box{
+      border:1px dashed #475569;
+      background:rgba(15,23,42,.75);
+      padding:14px;
+      border-radius:16px;
+    }
+
+    .preview{
+      margin-top:12px;
+      display:none;
+      border:1px solid #334155;
+      border-radius:14px;
+      overflow:hidden;
+      max-height:280px;
+      background:#020617;
+    }
+
+    .preview img{
+      width:100%;
+      display:block;
+      object-fit:contain;
+      max-height:280px;
+    }
+
+    .small{
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.45;
+    }
+
+    .footer-actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      margin-top:18px;
+      border-top:1px solid #334155;
+      padding-top:16px;
+    }
+
+    .toast{
+      position:fixed;
+      right:20px;
+      bottom:20px;
+      background:#111827;
+      border:1px solid #334155;
+      color:white;
+      padding:13px 16px;
+      border-radius:14px;
+      box-shadow:var(--shadow);
+      display:none;
+      z-index:2000;
+      max-width:420px;
+    }
+
+    .toast.show{display:block}
+    .empty{
+      text-align:center;
+      color:var(--muted);
+      padding:24px;
+    }
+
+    @media(max-width:1000px){
+      .grid-kpi{grid-template-columns:repeat(2,1fr)}
+      .form-grid{grid-template-columns:1fr}
+    }
+
+    @media(max-width:600px){
+      .grid-kpi{grid-template-columns:1fr}
+      .topbar{flex-direction:column}
+      .filters input,.filters select{width:100%;min-width:100%}
+      .toolbar{align-items:stretch}
+      .toolbar > div{width:100%}
+      .btn{justify-content:center}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+<main class="main">
+    <section class="topbar">
+      <div>
+        <h2>Módulo de Gastos</h2>
+        <p>Registra gastos, adjunta factura escaneada y controla saldo en cuenta y efectivo.</p>
+      </div>
+      <div class="user-chip">
+        <i data-lucide="user-round"></i>
+        <span id="currentUser">Cargando usuario...</span>
+      </div>
+    </section>
+
+    <section class="grid-kpi">
+      <div class="kpi green">
+        <div class="label">Saldo en cuenta</div>
+        <div class="value" id="kpiCuenta">$0</div>
+      </div>
+      <div class="kpi yellow">
+        <div class="label">Saldo en efectivo</div>
+        <div class="value" id="kpiEfectivo">$0</div>
+      </div>
+      <div class="kpi red">
+        <div class="label">Gastos del mes</div>
+        <div class="value" id="kpiMes">$0</div>
+      </div>
+      <div class="kpi">
+        <div class="label">Registros</div>
+        <div class="value" id="kpiRegistros">0</div>
+      </div>
+    </section>
+
+    <section class="toolbar">
+      <div class="filters">
+        <input type="text" id="buscar" placeholder="Buscar descripción, factura, actividad..." />
+        <select id="filtroUsuario">
+          <option value="">Todos los usuarios</option>
+        </select>
+        <select id="filtroTipo">
+          <option value="">Todos los tipos</option>
+        </select>
+        <select id="filtroMetodo">
+          <option value="">Todos los métodos</option>
+          <option value="Efectivo">Efectivo</option>
+          <option value="Transaccion">Transacción</option>
+          <option value="Nequi">Nequi</option>
+        </select>
+        <input type="month" id="filtroMes" />
+      </div>
+      <div class="actions">
+        <button class="btn yellow" onclick="abrirModalMovimiento()"><i data-lucide="landmark"></i> Registrar retiro/ajuste</button>
+        <button class="btn green" onclick="exportarExcel()"><i data-lucide="file-spreadsheet"></i> Exportar Excel</button>
+        <button class="btn primary" onclick="abrirModalGasto()"><i data-lucide="plus"></i> Nuevo gasto</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="ordenarPor('fecha')">Fecha</th>
+              <th onclick="ordenarPor('usuario_email')">Usuario</th>
+              <th onclick="ordenarPor('valor')">Valor</th>
+              <th onclick="ordenarPor('numero_factura')">Factura</th>
+              <th onclick="ordenarPor('metodo_pago')">Método</th>
+              <th onclick="ordenarPor('tipo_gasto')">Tipo gasto</th>
+              <th>Descripción / Actividad</th>
+              <th>Soporte</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyGastos">
+            <tr><td colspan="9" class="empty">Cargando gastos...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Modal gasto -->
+<div class="modal" id="modalGasto">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="tituloModalGasto">Nuevo gasto</h3>
+      <button class="icon-btn" onclick="cerrarModalGasto()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="formGasto">
+        <input type="hidden" id="gastoId" />
+
+        <div class="form-grid">
+          <div class="field">
+            <label>Fecha</label>
+            <input type="date" id="fecha" required />
+          </div>
+
+          <div class="field">
+            <label>Usuario</label>
+            <input type="text" id="usuarioVisible" readonly />
+          </div>
+
+          <div class="field">
+            <label>Valor del gasto</label>
+            <input type="text" id="valor" placeholder="$0" required />
+          </div>
+
+          <div class="field">
+            <label>Número de factura</label>
+            <input type="text" id="numeroFactura" placeholder="Ej: FV-00123" />
+          </div>
+
+          <div class="field">
+            <label>Método de pago</label>
+            <select id="metodoPago" required>
+              <option value="">Seleccione...</option>
+              <option value="Efectivo">Efectivo</option>
+              <option value="Transaccion">Transacción</option>
+              <option value="Nequi">Nequi</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Tipo de gasto</label>
+            <select id="tipoGasto" required></select>
+          </div>
+
+          <div class="field full">
+            <label>Descripción / actividad</label>
+            <textarea id="descripcion" rows="3" placeholder="Describe brevemente la actividad o el motivo del gasto..."></textarea>
+          </div>
+
+          <div class="field full">
+            <label>Factura / soporte</label>
+            <div class="scan-box">
+              <input id="facturaFile" type="file" accept="image/*,.pdf" capture="environment" />
+              <p class="small">
+                Puedes tomar foto desde el celular o seleccionar una imagen/PDF. 
+                Para guardar en Google Drive debes configurar la variable <b>APPS_SCRIPT_DRIVE_URL</b>.
+              </p>
+              <div class="preview" id="previewFactura">
+                <img id="previewImg" alt="Vista previa factura" />
+              </div>
+              <p class="small" id="facturaActual"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-actions">
+          <button type="button" class="btn ghost" onclick="cerrarModalGasto()">Cancelar</button>
+          <button type="submit" class="btn primary"><i data-lucide="save"></i> Guardar gasto</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal movimiento de caja -->
+<div class="modal" id="modalMovimiento">
+  <div class="modal-box" style="width:min(700px,96vw)">
+    <div class="modal-head">
+      <h3>Registrar retiro / ajuste de saldos</h3>
+      <button class="icon-btn" onclick="cerrarModalMovimiento()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="formMovimiento">
+        <div class="form-grid">
+          <div class="field">
+            <label>Fecha</label>
+            <input type="date" id="movFecha" required />
+          </div>
+
+          <div class="field">
+            <label>Tipo de movimiento</label>
+            <select id="movTipo" required>
+              <option value="RETIRO_CAJERO">Retiro de cajero: cuenta → efectivo</option>
+              <option value="INGRESO_CUENTA">Ingreso a cuenta</option>
+              <option value="INGRESO_EFECTIVO">Ingreso a efectivo</option>
+              <option value="AJUSTE_CUENTA">Ajuste cuenta</option>
+              <option value="AJUSTE_EFECTIVO">Ajuste efectivo</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label>Valor</label>
+            <input type="text" id="movValor" placeholder="$0" required />
+          </div>
+
+          <div class="field">
+            <label>Usuario</label>
+            <input type="text" id="movUsuarioVisible" readonly />
+          </div>
+
+          <div class="field full">
+            <label>Descripción</label>
+            <textarea id="movDescripcion" rows="3" placeholder="Ej: Retiro de cajero para gastos operativos..."></textarea>
+          </div>
+
+          <div class="field full" id="campoReciboRetiro" style="display:none;">
+            <label>Foto del recibo de retiro <span style="color:#f59e0b">*</span></label>
+            <div class="scan-box">
+              <input id="movReciboFile" type="file" accept="image/*,.pdf" capture="environment" />
+              <p class="small">
+                Cuando el movimiento sea <b>Retiro de cajero</b>, debes adjuntar la foto o PDF del recibo.
+              </p>
+              <div class="preview" id="previewReciboMovimiento">
+                <img id="previewReciboMovimientoImg" alt="Vista previa recibo retiro" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-actions">
+          <button type="button" class="btn ghost" onclick="cerrarModalMovimiento()">Cancelar</button>
+          <button type="submit" class="btn yellow"><i data-lucide="save"></i> Guardar movimiento</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /***************************************************************
+   * CONFIGURACIÓN
+   * Reemplaza estos datos por los de tu proyecto Supabase.
+   * No dejes el sistema pidiendo URL/AnonKey al usuario final.
+   ***************************************************************/
+  const SUPABASE_URL = "https://lvwmpwnzavqdspdfvceb.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2d21wd256YXZxZHNwZGZ2Y2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxOTg3MzYsImV4cCI6MjA5MTc3NDczNn0.u6g4OCm4kl-LEmyIf9VWwf43cdqYbik7Y60rdKQ8npI";
+
+  /***************************************************************
+   * GOOGLE DRIVE
+   * Pega aquí la URL de tu Web App de Google Apps Script.
+   * Si la dejas vacía, el gasto se guarda sin subir factura a Drive.
+   ***************************************************************/
+  const APPS_SCRIPT_DRIVE_URL = "https://script.google.com/macros/s/AKfycby47SAT3Tl0KrXgsWMhDKBvY-K07-T5nsHdHlXpdP0xdSk0doKEC98uCFLao9Hm6v-F/exec";
+
+  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const TIPOS_GASTO = [
+    "Actividades y Eventos",
+    "Alimentación",
+    "Atenciones a Clientes",
+    "Atenciones a Empleados",
+    "Capacitaciones",
+    "Celebraciones",
+    "Combustible",
+    "Estacionamiento/Peaje",
+    "Fletes",
+    "Gastos Bancarios",
+    "Hospedaje",
+    "Mantenimiento Nodos",
+    "Mantenimiento Oficina",
+    "Mantenimiento Vehículos",
+    "Materiales y Repuestos",
+    "Otros",
+    "Papelería y útiles de oficina",
+    "Pasajes aéreos",
+    "Transporte terrestre"
+  ];
+
+  let usuarioActual = null;
+  let gastos = [];
+  let movimientosCaja = [];
+  let gastosFiltrados = [];
+  let sortKey = "fecha";
+  let sortAsc = false;
+  let archivoFacturaSeleccionado = null;
+  let archivoReciboMovimientoSeleccionado = null;
+
+  const $ = (id) => document.getElementById(id);
+
+  function formatCOP(value){
+    const number = Number(value || 0);
+    return new Intl.NumberFormat("es-CO", {
+      style:"currency",
+      currency:"COP",
+      maximumFractionDigits:0
+    }).format(number);
+  }
+
+  function limpiarMoneda(texto){
+    return Number(String(texto || "").replace(/[^\d.-]/g,"")) || 0;
+  }
+
+  function hoyISO(){
+    return new Date().toISOString().slice(0,10);
+  }
+
+  function mesActual(){
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+  }
+
+  function toast(msg){
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    setTimeout(() => el.classList.remove("show"), 3600);
+  }
+
+  function llenarTipos(){
+    const selects = [$("tipoGasto"), $("filtroTipo")];
+    selects.forEach((select, idx) => {
+      if(!select) return;
+      if(idx === 0) select.innerHTML = '<option value="">Seleccione...</option>';
+      TIPOS_GASTO.forEach(tipo => {
+        const opt = document.createElement("option");
+        opt.value = tipo;
+        opt.textContent = tipo;
+        select.appendChild(opt);
+      });
+    });
+  }
+
+  async function verificarSesion(){
+    const { data, error } = await supabaseClient.auth.getUser();
+
+    if(error || !data?.user){
+      toast("No hay usuario autenticado. Redirigiendo al login...");
+      setTimeout(() => window.location.href = "login.html", 900);
+      return null;
+    }
+
+    usuarioActual = data.user;
+    const nombre = usuarioActual.user_metadata?.full_name || usuarioActual.user_metadata?.name || usuarioActual.email;
+    $("currentUser").textContent = nombre;
+    $("usuarioVisible").value = `${nombre} (${usuarioActual.email})`;
+    $("movUsuarioVisible").value = `${nombre} (${usuarioActual.email})`;
+    return usuarioActual;
+  }
+
+  function configurarEventos(){
+    $("valor").addEventListener("blur", () => {
+      $("valor").value = formatCOP(limpiarMoneda($("valor").value));
+    });
+
+    $("movValor").addEventListener("blur", () => {
+      $("movValor").value = formatCOP(limpiarMoneda($("movValor").value));
+    });
+
+    $("buscar").addEventListener("input", aplicarFiltros);
+    $("filtroUsuario").addEventListener("change", aplicarFiltros);
+    $("filtroTipo").addEventListener("change", aplicarFiltros);
+    $("filtroMetodo").addEventListener("change", aplicarFiltros);
+    $("filtroMes").addEventListener("change", aplicarFiltros);
+
+    $("facturaFile").addEventListener("change", (e) => {
+      archivoFacturaSeleccionado = e.target.files?.[0] || null;
+      mostrarPreviewFactura(archivoFacturaSeleccionado);
+    });
+
+    $("movTipo").addEventListener("change", actualizarCampoReciboRetiro);
+
+    $("movReciboFile").addEventListener("change", (e) => {
+      archivoReciboMovimientoSeleccionado = e.target.files?.[0] || null;
+      mostrarPreviewReciboMovimiento(archivoReciboMovimientoSeleccionado);
+    });
+
+    $("formGasto").addEventListener("submit", guardarGasto);
+    $("formMovimiento").addEventListener("submit", guardarMovimiento);
+  }
+
+  function mostrarPreviewFactura(file){
+    const preview = $("previewFactura");
+    const img = $("previewImg");
+
+    preview.style.display = "none";
+    img.src = "";
+
+    if(!file) return;
+
+    if(file.type.startsWith("image/")){
+      const reader = new FileReader();
+      reader.onload = () => {
+        img.src = reader.result;
+        preview.style.display = "block";
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function abrirModalGasto(gasto=null){
+    $("formGasto").reset();
+    $("gastoId").value = "";
+    $("fecha").value = hoyISO();
+    $("usuarioVisible").value = `${usuarioActual?.user_metadata?.full_name || usuarioActual?.email} (${usuarioActual?.email})`;
+    $("facturaActual").textContent = "";
+    $("previewFactura").style.display = "none";
+    archivoFacturaSeleccionado = null;
+
+    if(gasto){
+      $("tituloModalGasto").textContent = "Editar gasto";
+      $("gastoId").value = gasto.id;
+      $("fecha").value = gasto.fecha || hoyISO();
+      $("valor").value = formatCOP(gasto.valor);
+      $("numeroFactura").value = gasto.numero_factura || "";
+      $("metodoPago").value = gasto.metodo_pago || "";
+      $("tipoGasto").value = gasto.tipo_gasto || "";
+      $("descripcion").value = gasto.descripcion || "";
+      if(gasto.factura_drive_url){
+        $("facturaActual").innerHTML = `Soporte actual: <a href="${gasto.factura_drive_url}" target="_blank" style="color:#38bdf8">Ver factura en Drive</a>`;
+      }
+    }else{
+      $("tituloModalGasto").textContent = "Nuevo gasto";
+    }
+
+    $("modalGasto").classList.add("show");
+    lucide.createIcons();
+  }
+
+  function cerrarModalGasto(){
+    $("modalGasto").classList.remove("show");
+  }
+
+  function mostrarPreviewReciboMovimiento(file){
+    const preview = $("previewReciboMovimiento");
+    const img = $("previewReciboMovimientoImg");
+
+    if(!preview || !img) return;
+
+    preview.style.display = "none";
+    img.src = "";
+
+    if(!file) return;
+
+    if(file.type.startsWith("image/")){
+      const reader = new FileReader();
+      reader.onload = () => {
+        img.src = reader.result;
+        preview.style.display = "block";
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function actualizarCampoReciboRetiro(){
+    const tipo = $("movTipo")?.value || "";
+    const campo = $("campoReciboRetiro");
+    const input = $("movReciboFile");
+
+    if(!campo || !input) return;
+
+    const esRetiro = tipo === "RETIRO_CAJERO";
+    campo.style.display = esRetiro ? "block" : "none";
+    input.required = esRetiro;
+
+    if(!esRetiro){
+      input.value = "";
+      archivoReciboMovimientoSeleccionado = null;
+      mostrarPreviewReciboMovimiento(null);
+    }
+  }
+
+  function abrirModalMovimiento(){
+    $("formMovimiento").reset();
+    $("movFecha").value = hoyISO();
+    $("movUsuarioVisible").value = `${usuarioActual?.user_metadata?.full_name || usuarioActual?.email} (${usuarioActual?.email})`;
+    archivoReciboMovimientoSeleccionado = null;
+    if($("movReciboFile")) $("movReciboFile").value = "";
+    mostrarPreviewReciboMovimiento(null);
+    actualizarCampoReciboRetiro();
+    $("modalMovimiento").classList.add("show");
+    lucide.createIcons();
+  }
+
+  function cerrarModalMovimiento(){
+    $("modalMovimiento").classList.remove("show");
+  }
+
+  async function fileToBase64(file){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = String(reader.result);
+        resolve(result.split(",")[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function subirFacturaDrive(file){
+    if(!file) return null;
+
+    if(!APPS_SCRIPT_DRIVE_URL){
+      toast("No se configuró APPS_SCRIPT_DRIVE_URL. El gasto se guardará sin subir factura a Drive.");
+      return null;
+    }
+
+    const base64 = await fileToBase64(file);
+    const payload = {
+      fileName: `${Date.now()}_${file.name}`,
+      mimeType: file.type || "application/octet-stream",
+      base64
+    };
+
+    const resp = await fetch(APPS_SCRIPT_DRIVE_URL, {
+      method:"POST",
+      headers:{ "Content-Type":"text/plain;charset=utf-8" },
+      body: JSON.stringify(payload)
+    });
+
+    const json = await resp.json();
+
+    if(!json.ok){
+      throw new Error(json.error || "No se pudo subir la factura a Drive");
+    }
+
+    return {
+      factura_drive_url: json.url,
+      factura_file_id: json.fileId,
+      factura_nombre: file.name
+    };
+  }
+
+  async function guardarGasto(e){
+    e.preventDefault();
+
+    if(!usuarioActual){
+      toast("No hay usuario autenticado.");
+      return;
+    }
+
+    const id = $("gastoId").value || null;
+    const valor = limpiarMoneda($("valor").value);
+
+    if(valor <= 0){
+      toast("El valor del gasto debe ser mayor a cero.");
+      return;
+    }
+
+    let facturaInfo = {};
+    try{
+      if(archivoFacturaSeleccionado){
+        facturaInfo = await subirFacturaDrive(archivoFacturaSeleccionado) || {};
+      }
+    }catch(err){
+      console.error(err);
+      toast("Error subiendo la factura a Drive: " + err.message);
+      return;
+    }
+
+    const nombreUsuario = usuarioActual.user_metadata?.full_name || usuarioActual.user_metadata?.name || usuarioActual.email;
+
+    const payload = {
+      fecha: $("fecha").value,
+      usuario_id: usuarioActual.id,
+      usuario_email: usuarioActual.email,
+      usuario_nombre: nombreUsuario,
+      valor,
+      numero_factura: $("numeroFactura").value.trim(),
+      metodo_pago: $("metodoPago").value,
+      descripcion: $("descripcion").value.trim(),
+      tipo_gasto: $("tipoGasto").value,
+      ...facturaInfo
+    };
+
+    let error;
+    if(id){
+      const resp = await supabaseClient.from("gastos").update(payload).eq("id", id);
+      error = resp.error;
+    }else{
+      const resp = await supabaseClient.from("gastos").insert(payload);
+      error = resp.error;
+    }
+
+    if(error){
+      console.error(error);
+      toast("Error guardando gasto: " + error.message);
+      return;
+    }
+
+    cerrarModalGasto();
+    toast("Gasto guardado correctamente.");
+    await cargarTodo();
+  }
+
+  async function guardarMovimiento(e){
+    e.preventDefault();
+
+    const valor = limpiarMoneda($("movValor").value);
+    if(valor <= 0){
+      toast("El valor debe ser mayor a cero.");
+      return;
+    }
+
+    const tipoMovimiento = $("movTipo").value;
+
+    if(tipoMovimiento === "RETIRO_CAJERO" && !archivoReciboMovimientoSeleccionado){
+      toast("Debes adjuntar la foto del recibo para registrar un retiro de cajero.");
+      return;
+    }
+
+    let soporteInfo = {};
+    try{
+      if(archivoReciboMovimientoSeleccionado){
+        const uploadInfo = await subirFacturaDrive(archivoReciboMovimientoSeleccionado) || {};
+        if(uploadInfo.factura_drive_url){
+          soporteInfo = {
+            soporte_drive_url: uploadInfo.factura_drive_url,
+            soporte_file_id: uploadInfo.factura_file_id,
+            soporte_nombre: (uploadInfo.factura_nombre || archivoReciboMovimientoSeleccionado.name)
+          };
+        }
+      }
+    }catch(err){
+      console.error(err);
+      toast("Error subiendo el recibo a Drive: " + err.message);
+      return;
+    }
+
+    const nombreUsuario = usuarioActual.user_metadata?.full_name || usuarioActual.user_metadata?.name || usuarioActual.email;
+
+    const payload = {
+      fecha: $("movFecha").value,
+      usuario_id: usuarioActual.id,
+      usuario_email: usuarioActual.email,
+      usuario_nombre: nombreUsuario,
+      tipo_movimiento: tipoMovimiento,
+      valor,
+      descripcion: $("movDescripcion").value.trim(),
+      ...soporteInfo
+    };
+
+    const { error } = await supabaseClient.from("gastos_movimientos_caja").insert(payload);
+
+    if(error){
+      console.error(error);
+      toast("Error guardando movimiento: " + error.message);
+      return;
+    }
+
+    cerrarModalMovimiento();
+    toast("Movimiento registrado correctamente.");
+    await cargarTodo();
+  }
+
+  async function cargarTodo(){
+    await Promise.all([cargarGastos(), cargarMovimientosCaja()]);
+    llenarFiltroUsuarios();
+    await cargarKPIs();
+  }
+
+  async function cargarGastos(){
+    const { data, error } = await supabaseClient
+      .from("gastos")
+      .select("*")
+      .order("fecha", { ascending:false })
+      .order("created_at", { ascending:false });
+
+    if(error){
+      console.error(error);
+      $("tbodyGastos").innerHTML = `<tr><td colspan="9" class="empty">Error cargando gastos: ${error.message}</td></tr>`;
+      return;
+    }
+
+    gastos = data || [];
+    aplicarFiltros();
+  }
+
+  async function cargarMovimientosCaja(){
+    const { data, error } = await supabaseClient
+      .from("gastos_movimientos_caja")
+      .select("*")
+      .order("fecha", { ascending:false })
+      .order("created_at", { ascending:false });
+
+    if(error){
+      console.error("Error cargando movimientos de caja:", error);
+      movimientosCaja = [];
+      return;
+    }
+
+    movimientosCaja = data || [];
+  }
+
+  function llenarFiltroUsuarios(){
+    const select = $("filtroUsuario");
+    if(!select) return;
+
+    const valorActual = select.value;
+
+    const mapaUsuarios = new Map();
+
+    gastos.forEach(g => {
+      const key = g.usuario_id || g.usuario_email || g.usuario_nombre;
+      if(!key) return;
+      const label = g.usuario_nombre
+        ? `${g.usuario_nombre}${g.usuario_email ? " - " + g.usuario_email : ""}`
+        : (g.usuario_email || key);
+      mapaUsuarios.set(key, label);
+    });
+
+    movimientosCaja.forEach(m => {
+      const key = m.usuario_id || m.usuario_email || m.usuario_nombre;
+      if(!key) return;
+      const label = m.usuario_nombre
+        ? `${m.usuario_nombre}${m.usuario_email ? " - " + m.usuario_email : ""}`
+        : (m.usuario_email || key);
+      mapaUsuarios.set(key, label);
+    });
+
+    const usuariosOrdenados = Array.from(mapaUsuarios.entries())
+      .sort((a,b) => a[1].localeCompare(b[1], "es"));
+
+    select.innerHTML = '<option value="">Todos los usuarios</option>';
+
+    usuariosOrdenados.forEach(([key, label]) => {
+      const opt = document.createElement("option");
+      opt.value = key;
+      opt.textContent = label;
+      select.appendChild(opt);
+    });
+
+    if([...mapaUsuarios.keys()].includes(valorActual)){
+      select.value = valorActual;
+    }
+  }
+
+  async function cargarKPIs(){
+    const usuarioFiltro = $("filtroUsuario")?.value || "";
+    const mesFiltro = $("filtroMes")?.value || mesActual();
+
+    const gastosBase = usuarioFiltro
+      ? gastos.filter(g => (g.usuario_id || g.usuario_email || g.usuario_nombre) === usuarioFiltro)
+      : gastos;
+
+    const movimientosBase = usuarioFiltro
+      ? movimientosCaja.filter(m => (m.usuario_id || m.usuario_email || m.usuario_nombre) === usuarioFiltro)
+      : movimientosCaja;
+
+    const gastosEfectivo = gastosBase
+      .filter(g => g.metodo_pago === "Efectivo")
+      .reduce((acc, g) => acc + Number(g.valor || 0), 0);
+
+    const gastosCuenta = gastosBase
+      .filter(g => ["Transaccion", "Nequi"].includes(g.metodo_pago))
+      .reduce((acc, g) => acc + Number(g.valor || 0), 0);
+
+    const retirosCajero = movimientosBase
+      .filter(m => m.tipo_movimiento === "RETIRO_CAJERO")
+      .reduce((acc, m) => acc + Number(m.valor || 0), 0);
+
+    const ingresosCuenta = movimientosBase
+      .filter(m => m.tipo_movimiento === "INGRESO_CUENTA")
+      .reduce((acc, m) => acc + Number(m.valor || 0), 0);
+
+    const ingresosEfectivo = movimientosBase
+      .filter(m => m.tipo_movimiento === "INGRESO_EFECTIVO")
+      .reduce((acc, m) => acc + Number(m.valor || 0), 0);
+
+    const ajustesCuenta = movimientosBase
+      .filter(m => m.tipo_movimiento === "AJUSTE_CUENTA")
+      .reduce((acc, m) => acc + Number(m.valor || 0), 0);
+
+    const ajustesEfectivo = movimientosBase
+      .filter(m => m.tipo_movimiento === "AJUSTE_EFECTIVO")
+      .reduce((acc, m) => acc + Number(m.valor || 0), 0);
+
+    const saldoCuenta = ingresosCuenta + ajustesCuenta - retirosCajero - gastosCuenta;
+    const saldoEfectivo = ingresosEfectivo + ajustesEfectivo + retirosCajero - gastosEfectivo;
+
+    $("kpiCuenta").textContent = formatCOP(saldoCuenta);
+    $("kpiEfectivo").textContent = formatCOP(saldoEfectivo);
+
+    const totalMes = gastosBase
+      .filter(g => String(g.fecha || "").startsWith(mesFiltro))
+      .reduce((acc, g) => acc + Number(g.valor || 0), 0);
+
+    $("kpiMes").textContent = formatCOP(totalMes);
+    $("kpiRegistros").textContent = gastosFiltrados.length;
+  }
+
+  function aplicarFiltros(){
+    const q = $("buscar").value.trim().toLowerCase();
+    const usuarioFiltro = $("filtroUsuario").value;
+    const tipo = $("filtroTipo").value;
+    const metodo = $("filtroMetodo").value;
+    const mes = $("filtroMes").value;
+
+    gastosFiltrados = gastos.filter(g => {
+      const texto = [
+        g.usuario_email,
+        g.usuario_nombre,
+        g.numero_factura,
+        g.descripcion,
+        g.tipo_gasto,
+        g.metodo_pago
+      ].join(" ").toLowerCase();
+
+      const usuarioKey = g.usuario_id || g.usuario_email || g.usuario_nombre;
+
+      const matchQ = !q || texto.includes(q);
+      const matchUsuario = !usuarioFiltro || usuarioKey === usuarioFiltro;
+      const matchTipo = !tipo || g.tipo_gasto === tipo;
+      const matchMetodo = !metodo || g.metodo_pago === metodo;
+      const matchMes = !mes || String(g.fecha || "").startsWith(mes);
+
+      return matchQ && matchUsuario && matchTipo && matchMetodo && matchMes;
+    });
+
+    gastosFiltrados.sort((a,b) => {
+      let va = a[sortKey] ?? "";
+      let vb = b[sortKey] ?? "";
+
+      if(sortKey === "valor"){
+        va = Number(va || 0);
+        vb = Number(vb || 0);
+      }else{
+        va = String(va).toLowerCase();
+        vb = String(vb).toLowerCase();
+      }
+
+      if(va < vb) return sortAsc ? -1 : 1;
+      if(va > vb) return sortAsc ? 1 : -1;
+      return 0;
+    });
+
+    renderTabla();
+
+    if(typeof cargarKPIs === "function"){
+      cargarKPIs();
+    }
+  }
+
+  function ordenarPor(key){
+    if(sortKey === key){
+      sortAsc = !sortAsc;
+    }else{
+      sortKey = key;
+      sortAsc = true;
+    }
+    aplicarFiltros();
+  }
+
+  function badgeMetodo(metodo){
+    const clase = metodo === "Efectivo" ? "cash" : metodo === "Nequi" ? "nequi" : "bank";
+    return `<span class="badge ${clase}">${metodo || "N/A"}</span>`;
+  }
+
+  function renderTabla(){
+    const tbody = $("tbodyGastos");
+
+    if(!gastosFiltrados.length){
+      tbody.innerHTML = `<tr><td colspan="9" class="empty">No hay registros para los filtros seleccionados.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = gastosFiltrados.map(g => `
+      <tr>
+        <td>${g.fecha || ""}</td>
+        <td>
+          <b>${g.usuario_nombre || ""}</b><br>
+          <span class="small">${g.usuario_email || ""}</span>
+        </td>
+        <td><b>${formatCOP(g.valor)}</b></td>
+        <td>${g.numero_factura || ""}</td>
+        <td>${badgeMetodo(g.metodo_pago)}</td>
+        <td>${g.tipo_gasto || ""}</td>
+        <td>${g.descripcion || ""}</td>
+        <td>
+          ${g.factura_drive_url ? `<a href="${g.factura_drive_url}" target="_blank" class="btn ghost" style="padding:8px 10px"><i data-lucide="external-link"></i> Ver</a>` : `<span class="small">Sin soporte</span>`}
+        </td>
+        <td>
+          <div class="actions">
+            <button class="icon-btn" title="Editar" onclick='editarGasto("${g.id}")'><i data-lucide="pencil"></i></button>
+            <button class="icon-btn" title="Eliminar" onclick='eliminarGasto("${g.id}")'><i data-lucide="trash-2"></i></button>
+          </div>
+        </td>
+      </tr>
+    `).join("");
+
+    lucide.createIcons();
+  }
+
+  function editarGasto(id){
+    const gasto = gastos.find(g => g.id === id);
+    if(gasto) abrirModalGasto(gasto);
+  }
+
+  async function eliminarGasto(id){
+    const gasto = gastos.find(g => g.id === id);
+    const ok = confirm(`¿Seguro que deseas eliminar el gasto ${gasto?.numero_factura || ""} por ${formatCOP(gasto?.valor || 0)}?`);
+    if(!ok) return;
+
+    const { error } = await supabaseClient.from("gastos").delete().eq("id", id);
+
+    if(error){
+      console.error(error);
+      toast("Error eliminando gasto: " + error.message);
+      return;
+    }
+
+    toast("Gasto eliminado.");
+    await cargarTodo();
+  }
+
+  function exportarExcel(){
+    const data = gastosFiltrados.map(g => ({
+      Fecha: g.fecha,
+      Usuario: g.usuario_nombre,
+      Email: g.usuario_email,
+      Valor: Number(g.valor || 0),
+      "Número factura": g.numero_factura,
+      "Método de pago": g.metodo_pago,
+      "Tipo gasto": g.tipo_gasto,
+      "Descripción": g.descripcion,
+      "URL Factura Drive": g.factura_drive_url
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Gastos");
+    XLSX.writeFile(wb, `gastos_${new Date().toISOString().slice(0,10)}.xlsx`);
+  }
+
+  async function init(){
+    lucide.createIcons();
+    llenarTipos();
+
+    $("fecha").value = hoyISO();
+    $("movFecha").value = hoyISO();
+    $("filtroMes").value = mesActual();
+
+    configurarEventos();
+    const user = await verificarSesion();
+    if(!user) return;
+
+    await cargarTodo();
+  }
+
+  init();
+</script>
+</body>
+</html>
