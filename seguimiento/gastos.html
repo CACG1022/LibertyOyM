@@ -433,6 +433,36 @@
       padding:24px;
     }
 
+
+    .section-title{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin:22px 0 10px;
+      color:#e5e7eb;
+    }
+
+    .section-title h3{
+      margin:0;
+      font-size:18px;
+      letter-spacing:-.2px;
+    }
+
+    .section-title span{
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .movement-card{
+      margin-top:18px;
+    }
+
+    .movement-type{
+      font-weight:800;
+      color:#fbbf24;
+    }
+
     @media(max-width:1000px){
       .grid-kpi{grid-template-columns:repeat(2,1fr)}
       .form-grid{grid-template-columns:1fr}
@@ -527,6 +557,34 @@
         </table>
       </div>
     </section>
+
+    <div class="section-title">
+      <div>
+        <h3>Movimientos de caja</h3>
+        <span>Retiros de cajero, ingresos y ajustes de saldos.</span>
+      </div>
+    </div>
+
+    <section class="card movement-card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="ordenarMovimientosPor('fecha')">Fecha</th>
+              <th onclick="ordenarMovimientosPor('usuario_email')">Usuario</th>
+              <th onclick="ordenarMovimientosPor('tipo_movimiento')">Tipo movimiento</th>
+              <th onclick="ordenarMovimientosPor('valor')">Valor</th>
+              <th>Descripción</th>
+              <th>Soporte / Recibo</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyMovimientos">
+            <tr><td colspan="7" class="empty">Cargando movimientos...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
   </main>
 </div>
 
@@ -588,7 +646,7 @@
               <input id="facturaFile" type="file" accept="image/*,.pdf" capture="environment" />
               <p class="small">
                 Puedes tomar foto desde el celular o seleccionar una imagen/PDF. 
-                Para guardar en Google Drive debes configurar la variable <b>APPS_SCRIPT_DRIVE_URL</b>.
+                El soporte se enviará a n8n y se guardará en Google Drive.
               </p>
               <div class="preview" id="previewFactura">
                 <img id="previewImg" alt="Vista previa factura" />
@@ -687,7 +745,7 @@
    * Pega aquí la URL de tu Web App de Google Apps Script.
    * Si la dejas vacía, el gasto se guarda sin subir factura a Drive.
    ***************************************************************/
-  const APPS_SCRIPT_DRIVE_URL = "https://script.google.com/macros/s/AKfycby47SAT3Tl0KrXgsWMhDKBvY-K07-T5nsHdHlXpdP0xdSk0doKEC98uCFLao9Hm6v-F/exec";
+  const N8N_WEBHOOK_DRIVE_URL = "https://ftth-n8n2.pzveh5.easypanel.host/webhook/6dffc669-abb7-4570-83c3-efb8a0ac3ff9";
 
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -717,8 +775,11 @@
   let gastos = [];
   let movimientosCaja = [];
   let gastosFiltrados = [];
+  let movimientosFiltrados = [];
   let sortKey = "fecha";
   let sortAsc = false;
+  let sortMovKey = "fecha";
+  let sortMovAsc = false;
   let archivoFacturaSeleccionado = null;
   let archivoReciboMovimientoSeleccionado = null;
 
@@ -937,104 +998,56 @@
   async function subirFacturaDrive(file){
     if(!file) return null;
 
-    if(!APPS_SCRIPT_DRIVE_URL){
-      toast("No se configuró APPS_SCRIPT_DRIVE_URL. El gasto se guardará sin subir factura a Drive.");
+    if(!N8N_WEBHOOK_DRIVE_URL){
+      toast("No se configuró N8N_WEBHOOK_DRIVE_URL. El gasto se guardará sin subir soporte a Drive.");
       return null;
     }
 
-    const base64 = await fileToBase64(file);
-    const requestId = "upload_" + Date.now() + "_" + Math.random().toString(36).slice(2);
+    const nombreArchivo = `${Date.now()}_${file.name}`;
+    const formData = new FormData();
 
-    const payload = {
-      requestId,
-      fileName: `${Date.now()}_${file.name}`,
-      mimeType: file.type || "application/octet-stream",
-      base64
-    };
+    /*
+      IMPORTANTE:
+      En n8n, el nodo Google Drive suele tomar por defecto el binario llamado "data".
+      Por eso aquí enviamos el archivo con el nombre de campo "data".
+      Si en tu nodo Google Drive configuras otro campo, cambia "data" por ese mismo nombre.
+    */
+    formData.append("data", file, nombreArchivo);
+    formData.append("fileName", nombreArchivo);
+    formData.append("originalName", file.name);
+    formData.append("mimeType", file.type || "application/octet-stream");
+    formData.append("usuario", usuarioActual?.email || "");
+    formData.append("usuario_nombre", usuarioActual?.user_metadata?.full_name || usuarioActual?.user_metadata?.name || usuarioActual?.email || "");
+    formData.append("fecha", new Date().toISOString());
+    formData.append("origen", "modulo_gastos");
 
-    return new Promise((resolve, reject) => {
-      const popupName = "drive_upload_" + requestId;
-
-      // Se abre como ventana principal, no como iframe, para evitar el error 401 por bloqueo de cookies de terceros.
-      const popup = window.open("", popupName, "width=520,height=420,left=200,top=120");
-
-      if(!popup){
-        reject(new Error("El navegador bloqueó la ventana emergente. Permite pop-ups para esta página e intenta nuevamente."));
-        return;
-      }
-
-      popup.document.write(`
-        <html>
-          <head>
-            <title>Subiendo soporte...</title>
-            <style>
-              body{font-family:Arial,sans-serif;background:#0f172a;color:white;display:grid;place-items:center;height:100vh;margin:0;text-align:center}
-              .box{padding:24px;border:1px solid #334155;border-radius:16px;background:#111827}
-            </style>
-          </head>
-          <body>
-            <div class="box">
-              <h3>Subiendo soporte a Drive...</h3>
-              <p>No cierres esta ventana.</p>
-            </div>
-          </body>
-        </html>
-      `);
-      popup.document.close();
-
-      const formId = "form_" + requestId;
-
-      const form = document.createElement("form");
-      form.id = formId;
-      form.method = "POST";
-      form.action = APPS_SCRIPT_DRIVE_URL;
-      form.target = popupName;
-      form.style.display = "none";
-
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = "payload";
-      input.value = JSON.stringify(payload);
-
-      form.appendChild(input);
-      document.body.appendChild(form);
-
-      const cleanup = () => {
-        window.removeEventListener("message", onMessage);
-        setTimeout(() => form.remove(), 300);
-      };
-
-      const timer = setTimeout(() => {
-        cleanup();
-        try{ popup.close(); }catch(e){}
-        reject(new Error("No se recibió respuesta de Google Drive. Verifica el Apps Script y que no esté bloqueada la ventana emergente."));
-      }, 90000);
-
-      const onMessage = (event) => {
-        const data = event.data || {};
-
-        if(!data || data.requestId !== requestId) return;
-
-        clearTimeout(timer);
-        cleanup();
-
-        try{ popup.close(); }catch(e){}
-
-        if(!data.ok){
-          reject(new Error(data.error || "No se pudo subir el archivo a Drive"));
-          return;
-        }
-
-        resolve({
-          factura_drive_url: data.url,
-          factura_file_id: data.fileId,
-          factura_nombre: data.name || file.name
-        });
-      };
-
-      window.addEventListener("message", onMessage);
-      form.submit();
+    const response = await fetch(N8N_WEBHOOK_DRIVE_URL, {
+      method: "POST",
+      body: formData
     });
+
+    const text = await response.text();
+    let result = null;
+
+    try{
+      result = text ? JSON.parse(text) : null;
+    }catch(e){
+      throw new Error("n8n respondió, pero no devolvió un JSON válido: " + text.slice(0, 200));
+    }
+
+    if(!response.ok){
+      throw new Error(result?.error || `Error HTTP ${response.status} subiendo soporte a n8n`);
+    }
+
+    if(!result?.ok){
+      throw new Error(result?.error || "n8n no confirmó la subida del archivo a Drive.");
+    }
+
+    return {
+      factura_drive_url: result.url || result.webViewLink || result.webContentLink || "",
+      factura_file_id: result.fileId || result.id || "",
+      factura_nombre: result.name || nombreArchivo
+    };
   }
 
   async function guardarGasto(e){
@@ -1323,6 +1336,41 @@
       return matchQ && matchUsuario && matchTipo && matchMetodo && matchMes;
     });
 
+    movimientosFiltrados = movimientosCaja.filter(m => {
+      const texto = [
+        m.usuario_email,
+        m.usuario_nombre,
+        m.tipo_movimiento,
+        m.descripcion,
+        m.soporte_nombre
+      ].join(" ").toLowerCase();
+
+      const usuarioKey = m.usuario_id || m.usuario_email || m.usuario_nombre;
+
+      const matchQ = !q || texto.includes(q);
+      const matchUsuario = !usuarioFiltro || usuarioKey === usuarioFiltro;
+      const matchMes = !mes || String(m.fecha || "").startsWith(mes);
+
+      return matchQ && matchUsuario && matchMes;
+    });
+
+    movimientosFiltrados.sort((a,b) => {
+      let va = a[sortMovKey] ?? "";
+      let vb = b[sortMovKey] ?? "";
+
+      if(sortMovKey === "valor"){
+        va = Number(va || 0);
+        vb = Number(vb || 0);
+      }else{
+        va = String(va).toLowerCase();
+        vb = String(vb).toLowerCase();
+      }
+
+      if(va < vb) return sortMovAsc ? -1 : 1;
+      if(va > vb) return sortMovAsc ? 1 : -1;
+      return 0;
+    });
+
     gastosFiltrados.sort((a,b) => {
       let va = a[sortKey] ?? "";
       let vb = b[sortKey] ?? "";
@@ -1341,6 +1389,7 @@
     });
 
     renderTabla();
+    renderMovimientos();
 
     if(typeof cargarKPIs === "function"){
       cargarKPIs();
@@ -1397,6 +1446,86 @@
     lucide.createIcons();
   }
 
+  function tipoMovimientoLabel(tipo){
+    const labels = {
+      RETIRO_CAJERO: "Retiro de cajero",
+      INGRESO_CUENTA: "Ingreso a cuenta",
+      INGRESO_EFECTIVO: "Ingreso a efectivo",
+      AJUSTE_CUENTA: "Ajuste cuenta",
+      AJUSTE_EFECTIVO: "Ajuste efectivo"
+    };
+
+    return labels[tipo] || tipo || "N/A";
+  }
+
+  function ordenarMovimientosPor(key){
+    if(sortMovKey === key){
+      sortMovAsc = !sortMovAsc;
+    }else{
+      sortMovKey = key;
+      sortMovAsc = true;
+    }
+    aplicarFiltros();
+  }
+
+  function renderMovimientos(){
+    const tbody = $("tbodyMovimientos");
+    if(!tbody) return;
+
+    if(!movimientosFiltrados.length){
+      tbody.innerHTML = `<tr><td colspan="7" class="empty">No hay movimientos para los filtros seleccionados.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = movimientosFiltrados.map(m => {
+      const soporteUrl = m.soporte_drive_url || m.factura_drive_url || "";
+      const soporteNombre = m.soporte_nombre || m.factura_nombre || "Ver recibo";
+
+      return `
+        <tr>
+          <td>${m.fecha || ""}</td>
+          <td>
+            <b>${m.usuario_nombre || ""}</b><br>
+            <span class="small">${m.usuario_email || ""}</span>
+          </td>
+          <td><span class="movement-type">${tipoMovimientoLabel(m.tipo_movimiento)}</span></td>
+          <td><b>${formatCOP(m.valor)}</b></td>
+          <td>${m.descripcion || ""}</td>
+          <td>
+            ${soporteUrl
+              ? `<a href="${soporteUrl}" target="_blank" class="btn ghost" style="padding:8px 10px"><i data-lucide="external-link"></i> ${soporteNombre}</a>`
+              : `<span class="small">Sin soporte</span>`
+            }
+          </td>
+          <td>
+            <div class="actions">
+              <button class="icon-btn" title="Eliminar movimiento" onclick='eliminarMovimiento("${m.id}")'><i data-lucide="trash-2"></i></button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join("");
+
+    lucide.createIcons();
+  }
+
+  async function eliminarMovimiento(id){
+    const mov = movimientosCaja.find(m => m.id === id);
+    const ok = confirm(`¿Seguro que deseas eliminar el movimiento ${tipoMovimientoLabel(mov?.tipo_movimiento)} por ${formatCOP(mov?.valor || 0)}?`);
+    if(!ok) return;
+
+    const { error } = await supabaseClient.from("gastos_movimientos_caja").delete().eq("id", id);
+
+    if(error){
+      console.error(error);
+      toast("Error eliminando movimiento: " + error.message);
+      return;
+    }
+
+    toast("Movimiento eliminado.");
+    await cargarTodo();
+  }
+
   function editarGasto(id){
     const gasto = gastos.find(g => g.id === id);
     if(gasto) abrirModalGasto(gasto);
@@ -1420,7 +1549,7 @@
   }
 
   function exportarExcel(){
-    const data = gastosFiltrados.map(g => ({
+    const dataGastos = gastosFiltrados.map(g => ({
       Fecha: g.fecha,
       Usuario: g.usuario_nombre,
       Email: g.usuario_email,
@@ -1432,10 +1561,25 @@
       "URL Factura Drive": g.factura_drive_url
     }));
 
-    const ws = XLSX.utils.json_to_sheet(data);
+    const dataMovimientos = movimientosFiltrados.map(m => ({
+      Fecha: m.fecha,
+      Usuario: m.usuario_nombre,
+      Email: m.usuario_email,
+      "Tipo movimiento": tipoMovimientoLabel(m.tipo_movimiento),
+      Valor: Number(m.valor || 0),
+      Descripción: m.descripcion,
+      "URL Recibo Drive": m.soporte_drive_url || "",
+      "Nombre soporte": m.soporte_nombre || ""
+    }));
+
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Gastos");
-    XLSX.writeFile(wb, `gastos_${new Date().toISOString().slice(0,10)}.xlsx`);
+    const wsGastos = XLSX.utils.json_to_sheet(dataGastos);
+    const wsMovimientos = XLSX.utils.json_to_sheet(dataMovimientos);
+
+    XLSX.utils.book_append_sheet(wb, wsGastos, "Gastos");
+    XLSX.utils.book_append_sheet(wb, wsMovimientos, "Movimientos Caja");
+
+    XLSX.writeFile(wb, `gastos_movimientos_${new Date().toISOString().slice(0,10)}.xlsx`);
   }
 
   async function init(){
@@ -1457,4 +1601,5 @@
 </script>
 </body>
 </html>
+
 
