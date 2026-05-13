@@ -953,19 +953,42 @@
     };
 
     return new Promise((resolve, reject) => {
-      const iframeName = "iframe_" + requestId;
-      const formId = "form_" + requestId;
+      const popupName = "drive_upload_" + requestId;
 
-      const iframe = document.createElement("iframe");
-      iframe.name = iframeName;
-      iframe.id = iframeName;
-      iframe.style.display = "none";
+      // Se abre como ventana principal, no como iframe, para evitar el error 401 por bloqueo de cookies de terceros.
+      const popup = window.open("", popupName, "width=520,height=420,left=200,top=120");
+
+      if(!popup){
+        reject(new Error("El navegador bloqueó la ventana emergente. Permite pop-ups para esta página e intenta nuevamente."));
+        return;
+      }
+
+      popup.document.write(`
+        <html>
+          <head>
+            <title>Subiendo soporte...</title>
+            <style>
+              body{font-family:Arial,sans-serif;background:#0f172a;color:white;display:grid;place-items:center;height:100vh;margin:0;text-align:center}
+              .box{padding:24px;border:1px solid #334155;border-radius:16px;background:#111827}
+            </style>
+          </head>
+          <body>
+            <div class="box">
+              <h3>Subiendo soporte a Drive...</h3>
+              <p>No cierres esta ventana.</p>
+            </div>
+          </body>
+        </html>
+      `);
+      popup.document.close();
+
+      const formId = "form_" + requestId;
 
       const form = document.createElement("form");
       form.id = formId;
       form.method = "POST";
       form.action = APPS_SCRIPT_DRIVE_URL;
-      form.target = iframeName;
+      form.target = popupName;
       form.style.display = "none";
 
       const input = document.createElement("input");
@@ -974,21 +997,18 @@
       input.value = JSON.stringify(payload);
 
       form.appendChild(input);
-      document.body.appendChild(iframe);
       document.body.appendChild(form);
 
       const cleanup = () => {
         window.removeEventListener("message", onMessage);
-        setTimeout(() => {
-          form.remove();
-          iframe.remove();
-        }, 300);
+        setTimeout(() => form.remove(), 300);
       };
 
       const timer = setTimeout(() => {
         cleanup();
-        reject(new Error("No se recibió respuesta de Google Drive. Verifica la implementación del Apps Script."));
-      }, 60000);
+        try{ popup.close(); }catch(e){}
+        reject(new Error("No se recibió respuesta de Google Drive. Verifica el Apps Script y que no esté bloqueada la ventana emergente."));
+      }, 90000);
 
       const onMessage = (event) => {
         const data = event.data || {};
@@ -997,6 +1017,8 @@
 
         clearTimeout(timer);
         cleanup();
+
+        try{ popup.close(); }catch(e){}
 
         if(!data.ok){
           reject(new Error(data.error || "No se pudo subir el archivo a Drive"));
@@ -1435,3 +1457,4 @@
 </script>
 </body>
 </html>
+
