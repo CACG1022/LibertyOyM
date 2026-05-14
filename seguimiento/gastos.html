@@ -592,6 +592,34 @@
       margin-top:10px;
     }
 
+
+    .column-filter-row th{
+      background:#111827;
+      position:sticky;
+      top:42px;
+      z-index:3;
+      padding:8px;
+      cursor:default;
+    }
+
+    .column-filter-row input,
+    .column-filter-row select{
+      width:100%;
+      min-width:120px;
+      padding:8px 9px;
+      font-size:12px;
+      border-radius:10px;
+    }
+
+    .sortable-th{
+      user-select:none;
+      white-space:nowrap;
+    }
+
+    .sortable-th:hover{
+      color:#38bdf8;
+    }
+
     .section-title{
       display:flex;
       align-items:center;
@@ -809,13 +837,36 @@
         <table>
           <thead>
             <tr>
-              <th onclick="ordenarMovimientosPor('fecha')">Fecha</th>
-              <th onclick="ordenarMovimientosPor('usuario_email')">Usuario</th>
-              <th onclick="ordenarMovimientosPor('tipo_movimiento')">Tipo movimiento</th>
-              <th onclick="ordenarMovimientosPor('valor')">Valor</th>
-              <th>Descripción</th>
-              <th>Soporte / Recibo</th>
+              <th class="sortable-th" onclick="ordenarMovimientosPor('fecha')">Fecha ⇅</th>
+              <th class="sortable-th" onclick="ordenarMovimientosPor('usuario_email')">Usuario ⇅</th>
+              <th class="sortable-th" onclick="ordenarMovimientosPor('tipo_movimiento')">Tipo movimiento ⇅</th>
+              <th class="sortable-th" onclick="ordenarMovimientosPor('valor')">Valor ⇅</th>
+              <th class="sortable-th" onclick="ordenarMovimientosPor('descripcion')">Descripción ⇅</th>
+              <th class="sortable-th" onclick="ordenarMovimientosPor('soporte_nombre')">Soporte / Recibo ⇅</th>
               <th>Acciones</th>
+            </tr>
+            <tr class="column-filter-row">
+              <th><input type="date" id="movFiltroFecha" title="Filtrar fecha movimiento"></th>
+              <th><input type="text" id="movFiltroUsuario" placeholder="Filtrar usuario"></th>
+              <th>
+                <select id="movFiltroTipo">
+                  <option value="">Todos</option>
+                  <option value="RETIRO_CAJERO">Retiro de cajero</option>
+                  <option value="ENTREGA_DIEGO">Entrega a Diego</option>
+                  <option value="INGRESO_CUENTA">Ingreso a cuenta</option>
+                  <option value="INGRESO_EFECTIVO">Ingreso a efectivo</option>
+                  <option value="AJUSTE_CUENTA">Ajuste cuenta</option>
+                  <option value="AJUSTE_EFECTIVO">Ajuste efectivo</option>
+                </select>
+              </th>
+              <th><input type="text" id="movFiltroValor" placeholder="Ej: 50000"></th>
+              <th><input type="text" id="movFiltroDescripcion" placeholder="Filtrar descripción"></th>
+              <th><input type="text" id="movFiltroSoporte" placeholder="Filtrar soporte"></th>
+              <th>
+                <button class="btn ghost" type="button" onclick="limpiarFiltrosMovimientos()" style="padding:8px 10px;">
+                  <i data-lucide="filter-x"></i>
+                </button>
+              </th>
             </tr>
           </thead>
           <tbody id="tbodyMovimientos">
@@ -1335,6 +1386,14 @@
         }
       });
     }
+
+    ["movFiltroFecha","movFiltroUsuario","movFiltroTipo","movFiltroValor","movFiltroDescripcion","movFiltroSoporte"].forEach(id => {
+      const el = $(id);
+      if(el){
+        el.addEventListener("input", aplicarFiltros);
+        el.addEventListener("change", aplicarFiltros);
+      }
+    });
 
     $("formGasto").addEventListener("submit", guardarGasto);
     $("formMovimiento").addEventListener("submit", guardarMovimiento);
@@ -2338,6 +2397,16 @@
     return false;
   }
 
+  function limpiarFiltrosMovimientos(){
+    const ids = ["movFiltroFecha","movFiltroUsuario","movFiltroTipo","movFiltroValor","movFiltroDescripcion","movFiltroSoporte"];
+    ids.forEach(id => {
+      const el = $(id);
+      if(el) el.value = "";
+    });
+    aplicarFiltros();
+    toast("Filtros de movimientos limpiados.");
+  }
+
   function limpiarFiltros(){
     $("buscar").value = "";
     $("filtroUsuario").value = "";
@@ -2381,17 +2450,47 @@
         m.usuario_email,
         m.usuario_nombre,
         m.tipo_movimiento,
+        tipoMovimientoLabel(m.tipo_movimiento),
         m.descripcion,
-        m.soporte_nombre
+        m.soporte_nombre,
+        m.soporte_drive_url
       ].join(" ").toLowerCase();
 
       const usuarioKey = m.usuario_id || m.usuario_email || m.usuario_nombre;
+
+      const movFecha = $("movFiltroFecha")?.value || "";
+      const movUsuario = ($("movFiltroUsuario")?.value || "").trim().toLowerCase();
+      const movTipo = $("movFiltroTipo")?.value || "";
+      const movValor = ($("movFiltroValor")?.value || "").trim();
+      const movDescripcion = ($("movFiltroDescripcion")?.value || "").trim().toLowerCase();
+      const movSoporte = ($("movFiltroSoporte")?.value || "").trim().toLowerCase();
+
+      const usuarioTexto = [m.usuario_nombre, m.usuario_email].join(" ").toLowerCase();
+      const descripcionTexto = [m.descripcion, m.destinatario_nombre, m.destinatario_email].join(" ").toLowerCase();
+      const soporteTexto = [m.soporte_nombre, m.soporte_drive_url, m.soporte_file_id].join(" ").toLowerCase();
+      const valorTexto = String(Number(m.valor || 0));
 
       const matchQ = !q || texto.includes(q);
       const matchUsuario = !usuarioFiltro || usuarioKey === usuarioFiltro;
       const matchMes = !mes || String(m.fecha || "").startsWith(mes);
 
-      return movimientoVisibleParaUsuario(m) && matchQ && matchUsuario && matchMes;
+      const matchMovFecha = !movFecha || String(m.fecha || "") === movFecha;
+      const matchMovUsuario = !movUsuario || usuarioTexto.includes(movUsuario);
+      const matchMovTipo = !movTipo || m.tipo_movimiento === movTipo;
+      const matchMovValor = !movValor || valorTexto.includes(String(limpiarMoneda(movValor))) || formatCOP(m.valor).toLowerCase().includes(movValor.toLowerCase());
+      const matchMovDescripcion = !movDescripcion || descripcionTexto.includes(movDescripcion);
+      const matchMovSoporte = !movSoporte || soporteTexto.includes(movSoporte);
+
+      return movimientoVisibleParaUsuario(m)
+        && matchQ
+        && matchUsuario
+        && matchMes
+        && matchMovFecha
+        && matchMovUsuario
+        && matchMovTipo
+        && matchMovValor
+        && matchMovDescripcion
+        && matchMovSoporte;
     });
 
     movimientosFiltrados.sort((a,b) => {
@@ -2401,6 +2500,12 @@
       if(sortMovKey === "valor"){
         va = Number(va || 0);
         vb = Number(vb || 0);
+      }else if(sortMovKey === "soporte_nombre"){
+        va = String(a.soporte_nombre || a.factura_nombre || a.soporte_drive_url || "").toLowerCase();
+        vb = String(b.soporte_nombre || b.factura_nombre || b.soporte_drive_url || "").toLowerCase();
+      }else if(sortMovKey === "descripcion"){
+        va = String([a.descripcion, a.destinatario_nombre, a.destinatario_email].join(" ")).toLowerCase();
+        vb = String([b.descripcion, b.destinatario_nombre, b.destinatario_email].join(" ")).toLowerCase();
       }else{
         va = String(va).toLowerCase();
         vb = String(vb).toLowerCase();
