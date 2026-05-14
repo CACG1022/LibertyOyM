@@ -1897,6 +1897,60 @@
   }
 
 
+  function asignarArchivoAInput(input, file){
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    input.files = dataTransfer.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function usarEscaneoDocumento(){
+    const canvas = $("scannerCanvas");
+
+    if(!canvas || !canvas.width){
+      toast("No hay escaneo editado para usar.");
+      return;
+    }
+
+    /*
+      Tomamos SIEMPRE la imagen visible/editada del canvas.
+      Así se respeta el recorte manual y el filtro seleccionado.
+    */
+    canvas.toBlob((blob) => {
+      if(!blob){
+        toast("No se pudo generar el archivo del escaneo.");
+        return;
+      }
+
+      scannerBlob = blob;
+
+      const destinoActual = scannerDestino;
+      const fileName = `escaneo_${destinoActual || "soporte"}_${new Date().toISOString().replace(/[:.]/g, "-")}.jpg`;
+      const file = new File([blob], fileName, { type: "image/jpeg" });
+
+      if(destinoActual === "factura"){
+        const input = $("facturaFile");
+        if(input){
+          asignarArchivoAInput(input, file);
+          archivoFacturaSeleccionado = file;
+          mostrarPreviewFactura(file);
+        }
+      }
+
+      if(destinoActual === "movimiento"){
+        const input = $("movReciboFile");
+        if(input){
+          asignarArchivoAInput(input, file);
+          archivoReciboMovimientoSeleccionado = file;
+          mostrarPreviewReciboMovimiento(file);
+        }
+      }
+
+      cerrarScannerDocumento();
+      toast("Escaneo editado agregado como soporte.");
+    }, "image/jpeg", 0.9);
+  }
+
   async function fileToBase64(file){
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -2616,7 +2670,5 @@
 </script>
 </body>
 </html>
-
-
 
 
