@@ -1010,7 +1010,7 @@
       <canvas id="scannerCanvas"></canvas>
 
       <div class="scanner-step" id="scannerStep">
-        Paso 1: captura la imagen. Luego ajusta las cuatro esquinas manualmente y aplica el recorte.
+        Paso 1: captura la imagen.
       </div>
 
       <div class="scanner-filter-row">
@@ -1026,10 +1026,7 @@
         </button>
       </div>
 
-      <p class="scanner-note">
-        Ubica el recibo o factura sobre una superficie plana, con buen contraste contra el fondo y buena iluminación.
-        El escáner manual permite ajustar las cuatro esquinas del documento, aplicar recorte con corrección de perspectiva y luego seleccionar el filtro.
-      </p>
+      <p class="scanner-note">Captura, ajusta las esquinas, recorta y aplica el filtro.</p>
 
       <div class="footer-actions">
         <button type="button" class="btn ghost" onclick="cerrarScannerDocumento()">Cancelar</button>
@@ -1114,6 +1111,7 @@
   let scannerCropPoints = [];
   let scannerDraggingPoint = null;
   let scannerImagenRecortada = false;
+  let scannerRecorteBaseDataUrl = null;
 
   const $ = (id) => document.getElementById(id);
 
@@ -1330,6 +1328,14 @@
       mostrarPreviewReciboMovimiento(archivoReciboMovimientoSeleccionado);
     });
 
+    if($("scannerFiltro")){
+      $("scannerFiltro").addEventListener("change", () => {
+        if(scannerImagenRecortada){
+          aplicarFiltroEscaneoActual();
+        }
+      });
+    }
+
     $("formGasto").addEventListener("submit", guardarGasto);
     $("formMovimiento").addEventListener("submit", guardarMovimiento);
   }
@@ -1482,6 +1488,7 @@
     scannerCropPoints = [];
     scannerDraggingPoint = null;
     scannerImagenRecortada = false;
+    scannerRecorteBaseDataUrl = null;
 
     const modal = $("modalScanner");
     const video = $("scannerVideo");
@@ -1502,7 +1509,7 @@
     if(btnUsar) btnUsar.disabled = true;
     if(btnRecortar) btnRecortar.disabled = true;
     if(btnFiltro) btnFiltro.disabled = true;
-    if(step) step.textContent = "Paso 1: captura la imagen. Luego ajusta las cuatro esquinas manualmente y aplica el recorte.";
+    if(step) step.textContent = "Paso 1: captura la imagen.";
 
     try{
       scannerStream = await navigator.mediaDevices.getUserMedia({
@@ -1514,6 +1521,7 @@
         audio: false
       });
 
+      video.style.display = "block";
       video.srcObject = scannerStream;
       modal.classList.add("show");
       configurarEventosCropManual();
@@ -1541,6 +1549,7 @@
     scannerCropPoints = [];
     scannerDraggingPoint = null;
     scannerImagenRecortada = false;
+    scannerRecorteBaseDataUrl = null;
 
     if(modal) modal.classList.remove("show");
   }
@@ -1629,6 +1638,16 @@
     scannerOriginalDataUrl = canvas.toDataURL("image/jpeg", 0.92);
     scannerBlob = null;
     scannerImagenRecortada = false;
+    scannerRecorteBaseDataUrl = null;
+
+    if(scannerStream){
+      scannerStream.getTracks().forEach(track => track.stop());
+      scannerStream = null;
+    }
+    if(video){
+      video.srcObject = null;
+      video.style.display = "none";
+    }
 
     cropImage.onload = () => {
       cropEditor.style.display = "block";
@@ -1653,7 +1672,7 @@
     if(btnRecortar) btnRecortar.disabled = false;
     if(btnUsar) btnUsar.disabled = true;
     if(btnFiltro) btnFiltro.disabled = true;
-    if(step) step.textContent = "Paso 2: mueve las cuatro esquinas azules hasta los bordes del documento y presiona Recortar.";
+    if(step) step.textContent = "Ajusta las cuatro esquinas y presiona Recortar.";
 
     toast("Captura lista. Ajusta manualmente las esquinas del documento.");
   }
@@ -1830,12 +1849,13 @@
       canvas.style.display = "block";
       scannerImagenRecortada = true;
 
+      scannerRecorteBaseDataUrl = canvas.toDataURL("image/jpeg", 0.95);
       aplicarFiltroEscaneoActual();
 
       if(btnUsar) btnUsar.disabled = false;
       if(btnFiltro) btnFiltro.disabled = false;
-      if(step) step.textContent = "Paso 3: cambia el filtro si lo deseas y presiona Aplicar filtro. Luego usa el escaneo.";
-      toast("Documento recortado. Ahora puedes aplicar el filtro que prefieras.");
+      if(step) step.textContent = "Edita el filtro y usa el escaneo.";
+      toast("Documento recortado. Puedes cambiar el filtro sin volver a tomar la foto.");
     };
 
     img.src = scannerOriginalDataUrl;
@@ -1848,11 +1868,17 @@
       return;
     }
 
+    const baseDataUrl = scannerRecorteBaseDataUrl || scannerOriginalDataUrl || canvas.toDataURL("image/jpeg", 0.95);
     const img = new Image();
-    const currentDataUrl = canvas.toDataURL("image/jpeg", 0.95);
 
     img.onload = () => {
       const ctx = canvas.getContext("2d");
+
+      if(canvas.width !== img.naturalWidth || canvas.height !== img.naturalHeight){
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+      }
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
@@ -1867,12 +1893,7 @@
       }, "image/jpeg", 0.9);
     };
 
-    /*
-      Para evitar aplicar filtros sobre filtros varias veces con mala calidad,
-      si ya existe imagen recortada guardamos una copia limpia cada vez que se recorta.
-      En esta versión el filtro se aplica sobre la imagen visible actual.
-    */
-    img.src = currentDataUrl;
+    img.src = baseDataUrl;
   }
 
 
