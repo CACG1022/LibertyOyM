@@ -470,6 +470,64 @@
 
 
 
+
+    .crop-editor{
+      position:relative;
+      display:none;
+      width:100%;
+      margin-top:12px;
+      border:1px solid #334155;
+      border-radius:14px;
+      overflow:hidden;
+      background:#020617;
+      touch-action:none;
+    }
+
+    #cropImage{
+      width:100%;
+      display:block;
+      user-select:none;
+      -webkit-user-drag:none;
+    }
+
+    .crop-point{
+      position:absolute;
+      width:22px;
+      height:22px;
+      background:#38bdf8;
+      border:3px solid white;
+      border-radius:999px;
+      transform:translate(-50%, -50%);
+      box-shadow:0 4px 14px rgba(0,0,0,.45);
+      cursor:grab;
+      z-index:5;
+      touch-action:none;
+    }
+
+    .crop-point:active{
+      cursor:grabbing;
+      background:#f59e0b;
+    }
+
+    #cropOverlay{
+      position:absolute;
+      inset:0;
+      width:100%;
+      height:100%;
+      pointer-events:none;
+      z-index:4;
+    }
+
+    .scanner-step{
+      color:#bfdbfe;
+      font-size:13px;
+      margin-top:10px;
+      background:rgba(56,189,248,.08);
+      border:1px solid rgba(56,189,248,.18);
+      padding:10px 12px;
+      border-radius:12px;
+    }
+
     .scanner-filter-row{
       display:flex;
       gap:10px;
@@ -932,7 +990,7 @@
 <div class="modal" id="modalScanner">
   <div class="modal-box" style="width:min(820px,96vw)">
     <div class="modal-head">
-      <h3>Escanear documento <span class="small">(recorte automático)</span></h3>
+      <h3>Escanear documento <span class="small">(recorte manual)</span></h3>
       <button class="icon-btn" onclick="cerrarScannerDocumento()"><i data-lucide="x"></i></button>
     </div>
     <div class="modal-body">
@@ -940,27 +998,46 @@
         <video id="scannerVideo" autoplay playsinline></video>
       </div>
 
+      <div class="crop-editor" id="cropEditor">
+        <img id="cropImage" alt="Imagen para recortar" />
+        <svg id="cropOverlay"></svg>
+        <div class="crop-point" id="cropPoint0"></div>
+        <div class="crop-point" id="cropPoint1"></div>
+        <div class="crop-point" id="cropPoint2"></div>
+        <div class="crop-point" id="cropPoint3"></div>
+      </div>
+
       <canvas id="scannerCanvas"></canvas>
 
+      <div class="scanner-step" id="scannerStep">
+        Paso 1: captura la imagen. Luego ajusta las cuatro esquinas manualmente y aplica el recorte.
+      </div>
+
       <div class="scanner-filter-row">
-        <label for="scannerFiltro">Filtro de escaneo</label>
+        <label for="scannerFiltro">Filtro después del recorte</label>
         <select id="scannerFiltro">
           <option value="documento_bn" selected>Documento blanco y negro</option>
           <option value="original">Dejar original</option>
           <option value="gris">Escala de grises</option>
           <option value="color_mejorado">Color mejorado</option>
         </select>
+        <button type="button" class="btn ghost" id="btnAplicarFiltro" onclick="aplicarFiltroEscaneoActual()" disabled>
+          <i data-lucide="sliders-horizontal"></i> Aplicar filtro
+        </button>
       </div>
 
       <p class="scanner-note">
         Ubica el recibo o factura sobre una superficie plana, con buen contraste contra el fondo y buena iluminación.
-        El escáner avanzado intentará detectar bordes, recortar automáticamente, corregir perspectiva y mejorar el documento.
+        El escáner manual permite ajustar las cuatro esquinas del documento, aplicar recorte con corrección de perspectiva y luego seleccionar el filtro.
       </p>
 
       <div class="footer-actions">
         <button type="button" class="btn ghost" onclick="cerrarScannerDocumento()">Cancelar</button>
         <button type="button" class="btn yellow" onclick="capturarScannerDocumento()">
           <i data-lucide="camera"></i> Capturar
+        </button>
+        <button type="button" class="btn green" id="btnRecortarManual" onclick="recortarScannerManual()" disabled>
+          <i data-lucide="crop"></i> Recortar
         </button>
         <button type="button" class="btn primary" id="btnUsarEscaneo" onclick="usarEscaneoDocumento()" disabled>
           <i data-lucide="check"></i> Usar escaneo
@@ -1033,6 +1110,10 @@
   let scannerStream = null;
   let scannerDestino = null;
   let scannerBlob = null;
+  let scannerOriginalDataUrl = null;
+  let scannerCropPoints = [];
+  let scannerDraggingPoint = null;
+  let scannerImagenRecortada = false;
 
   const $ = (id) => document.getElementById(id);
 
@@ -1397,11 +1478,19 @@
   async function abrirScannerDocumento(destino){
     scannerDestino = destino;
     scannerBlob = null;
+    scannerOriginalDataUrl = null;
+    scannerCropPoints = [];
+    scannerDraggingPoint = null;
+    scannerImagenRecortada = false;
 
     const modal = $("modalScanner");
     const video = $("scannerVideo");
     const canvas = $("scannerCanvas");
+    const cropEditor = $("cropEditor");
     const btnUsar = $("btnUsarEscaneo");
+    const btnRecortar = $("btnRecortarManual");
+    const btnFiltro = $("btnAplicarFiltro");
+    const step = $("scannerStep");
 
     if(canvas){
       canvas.style.display = "none";
@@ -1409,7 +1498,11 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
+    if(cropEditor) cropEditor.style.display = "none";
     if(btnUsar) btnUsar.disabled = true;
+    if(btnRecortar) btnRecortar.disabled = true;
+    if(btnFiltro) btnFiltro.disabled = true;
+    if(step) step.textContent = "Paso 1: captura la imagen. Luego ajusta las cuatro esquinas manualmente y aplica el recorte.";
 
     try{
       scannerStream = await navigator.mediaDevices.getUserMedia({
@@ -1423,6 +1516,7 @@
 
       video.srcObject = scannerStream;
       modal.classList.add("show");
+      configurarEventosCropManual();
       lucide.createIcons();
 
     }catch(err){
@@ -1443,6 +1537,10 @@
     if(video) video.srcObject = null;
     scannerDestino = null;
     scannerBlob = null;
+    scannerOriginalDataUrl = null;
+    scannerCropPoints = [];
+    scannerDraggingPoint = null;
+    scannerImagenRecortada = false;
 
     if(modal) modal.classList.remove("show");
   }
@@ -1481,7 +1579,6 @@
       return;
     }
 
-    // Documento blanco y negro
     const contrast = 1.35;
     const brightness = 18;
 
@@ -1506,9 +1603,123 @@
     ctx.putImageData(imageData, 0, 0);
   }
 
-  function mejorarDocumentoEnCanvas(sourceCanvas){
-    const tipoFiltro = $("scannerFiltro")?.value || "documento_bn";
-    aplicarFiltroBasicoCanvas(sourceCanvas, tipoFiltro);
+  function capturarScannerDocumento(){
+    const video = $("scannerVideo");
+    const canvas = $("scannerCanvas");
+    const cropEditor = $("cropEditor");
+    const cropImage = $("cropImage");
+    const btnRecortar = $("btnRecortarManual");
+    const btnUsar = $("btnUsarEscaneo");
+    const btnFiltro = $("btnAplicarFiltro");
+    const step = $("scannerStep");
+
+    if(!video || !canvas || !video.videoWidth){
+      toast("La cámara aún no está lista.");
+      return;
+    }
+
+    const maxWidth = 1800;
+    const scale = Math.min(1, maxWidth / video.videoWidth);
+    canvas.width = Math.round(video.videoWidth * scale);
+    canvas.height = Math.round(video.videoHeight * scale);
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    scannerOriginalDataUrl = canvas.toDataURL("image/jpeg", 0.92);
+    scannerBlob = null;
+    scannerImagenRecortada = false;
+
+    cropImage.onload = () => {
+      cropEditor.style.display = "block";
+      canvas.style.display = "none";
+
+      const rect = cropImage.getBoundingClientRect();
+      const marginX = rect.width * 0.08;
+      const marginY = rect.height * 0.08;
+
+      scannerCropPoints = [
+        { x: marginX, y: marginY },
+        { x: rect.width - marginX, y: marginY },
+        { x: rect.width - marginX, y: rect.height - marginY },
+        { x: marginX, y: rect.height - marginY }
+      ];
+
+      actualizarCropUI();
+    };
+
+    cropImage.src = scannerOriginalDataUrl;
+
+    if(btnRecortar) btnRecortar.disabled = false;
+    if(btnUsar) btnUsar.disabled = true;
+    if(btnFiltro) btnFiltro.disabled = true;
+    if(step) step.textContent = "Paso 2: mueve las cuatro esquinas azules hasta los bordes del documento y presiona Recortar.";
+
+    toast("Captura lista. Ajusta manualmente las esquinas del documento.");
+  }
+
+  function configurarEventosCropManual(){
+    for(let i = 0; i < 4; i++){
+      const point = $("cropPoint" + i);
+      if(!point || point.dataset.cropReady === "1") continue;
+
+      point.dataset.cropReady = "1";
+
+      point.addEventListener("pointerdown", (e) => {
+        scannerDraggingPoint = i;
+        point.setPointerCapture(e.pointerId);
+        e.preventDefault();
+      });
+
+      point.addEventListener("pointermove", (e) => {
+        if(scannerDraggingPoint !== i) return;
+
+        const editor = $("cropEditor");
+        const rect = editor.getBoundingClientRect();
+
+        let x = e.clientX - rect.left;
+        let y = e.clientY - rect.top;
+
+        x = Math.max(0, Math.min(rect.width, x));
+        y = Math.max(0, Math.min(rect.height, y));
+
+        scannerCropPoints[i] = { x, y };
+        actualizarCropUI();
+      });
+
+      point.addEventListener("pointerup", () => {
+        scannerDraggingPoint = null;
+      });
+
+      point.addEventListener("pointercancel", () => {
+        scannerDraggingPoint = null;
+      });
+    }
+  }
+
+  function actualizarCropUI(){
+    const overlay = $("cropOverlay");
+    const editor = $("cropEditor");
+    if(!overlay || !editor || scannerCropPoints.length !== 4) return;
+
+    const rect = editor.getBoundingClientRect();
+    overlay.setAttribute("viewBox", `0 0 ${rect.width} ${rect.height}`);
+    overlay.innerHTML = `
+      <polygon
+        points="${scannerCropPoints.map(p => `${p.x},${p.y}`).join(" ")}"
+        fill="rgba(56,189,248,.18)"
+        stroke="#38bdf8"
+        stroke-width="3"
+      ></polygon>
+    `;
+
+    scannerCropPoints.forEach((p, i) => {
+      const point = $("cropPoint" + i);
+      if(point){
+        point.style.left = `${p.x}px`;
+        point.style.top = `${p.y}px`;
+      }
+    });
   }
 
   function ordenarPuntosDocumento(points){
@@ -1528,91 +1739,32 @@
     return Math.hypot(a.x - b.x, a.y - b.y);
   }
 
-  function aplicarFiltroDocumentoOpenCV(canvas){
-    const tipoFiltro = $("scannerFiltro")?.value || "documento_bn";
+  function recortarScannerManual(){
+    const cropImage = $("cropImage");
+    const canvas = $("scannerCanvas");
+    const cropEditor = $("cropEditor");
+    const btnUsar = $("btnUsarEscaneo");
+    const btnFiltro = $("btnAplicarFiltro");
+    const step = $("scannerStep");
 
-    if(tipoFiltro === "original"){
-      return "original";
+    if(!scannerOriginalDataUrl || scannerCropPoints.length !== 4){
+      toast("Primero captura la imagen y ajusta las esquinas.");
+      return;
     }
 
-    if(!window.cv || !opencvReady){
-      aplicarFiltroBasicoCanvas(canvas, tipoFiltro);
-      return false;
-    }
+    const img = new Image();
 
-    let src = null;
-    let small = null;
-    let gray = null;
-    let blurred = null;
-    let edges = null;
-    let contours = null;
-    let hierarchy = null;
-    let warped = null;
+    img.onload = () => {
+      const editorRect = cropEditor.getBoundingClientRect();
+      const scaleX = img.naturalWidth / editorRect.width;
+      const scaleY = img.naturalHeight / editorRect.height;
 
-    try{
-      src = cv.imread(canvas);
+      const srcPoints = scannerCropPoints.map(p => ({
+        x: p.x * scaleX,
+        y: p.y * scaleY
+      }));
 
-      const maxAnalyzeWidth = 900;
-      const scale = src.cols > maxAnalyzeWidth ? maxAnalyzeWidth / src.cols : 1;
-      const analysisSize = new cv.Size(Math.round(src.cols * scale), Math.round(src.rows * scale));
-
-      small = new cv.Mat();
-      cv.resize(src, small, analysisSize, 0, 0, cv.INTER_AREA);
-
-      gray = new cv.Mat();
-      blurred = new cv.Mat();
-      edges = new cv.Mat();
-      contours = new cv.MatVector();
-      hierarchy = new cv.Mat();
-
-      cv.cvtColor(small, gray, cv.COLOR_RGBA2GRAY, 0);
-      cv.GaussianBlur(gray, blurred, new cv.Size(5, 5), 0);
-      cv.Canny(blurred, edges, 60, 180);
-
-      const kernel = cv.Mat.ones(5, 5, cv.CV_8U);
-      cv.morphologyEx(edges, edges, cv.MORPH_CLOSE, kernel);
-      kernel.delete();
-
-      cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-
-      let bestApprox = null;
-      let bestArea = 0;
-      const imageArea = small.cols * small.rows;
-
-      for(let i = 0; i < contours.size(); i++){
-        const cnt = contours.get(i);
-        const peri = cv.arcLength(cnt, true);
-        const approx = new cv.Mat();
-
-        cv.approxPolyDP(cnt, approx, 0.02 * peri, true);
-        const area = cv.contourArea(approx);
-
-        if(approx.rows === 4 && area > bestArea && area > imageArea * 0.12){
-          bestArea = area;
-          if(bestApprox) bestApprox.delete();
-          bestApprox = approx;
-        }else{
-          approx.delete();
-        }
-
-        cnt.delete();
-      }
-
-      if(!bestApprox){
-        aplicarFiltroBasicoCanvas(canvas, tipoFiltro);
-        return false;
-      }
-
-      const rawPoints = [];
-      for(let i = 0; i < 4; i++){
-        rawPoints.push({
-          x: bestApprox.intPtr(i, 0)[0] / scale,
-          y: bestApprox.intPtr(i, 0)[1] / scale
-        });
-      }
-
-      const ordered = ordenarPuntosDocumento(rawPoints);
-      const [tl, tr, br, bl] = ordered;
+      const [tl, tr, br, bl] = ordenarPuntosDocumento(srcPoints);
 
       const widthTop = distanciaPuntos(tl, tr);
       const widthBottom = distanciaPuntos(bl, br);
@@ -1622,140 +1774,107 @@
       let targetWidth = Math.round(Math.max(widthTop, widthBottom));
       let targetHeight = Math.round(Math.max(heightLeft, heightRight));
 
-      targetWidth = Math.max(500, Math.min(targetWidth, 1800));
-      targetHeight = Math.max(500, Math.min(targetHeight, 2400));
+      targetWidth = Math.max(400, Math.min(targetWidth, 1800));
+      targetHeight = Math.max(400, Math.min(targetHeight, 2400));
 
-      const srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-        tl.x, tl.y,
-        tr.x, tr.y,
-        br.x, br.y,
-        bl.x, bl.y
-      ]);
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
 
-      const dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
-        0, 0,
-        targetWidth - 1, 0,
-        targetWidth - 1, targetHeight - 1,
-        0, targetHeight - 1
-      ]);
+      if(window.cv && opencvReady){
+        let src = null, dst = null, M = null, srcTri = null, dstTri = null;
 
-      const M = cv.getPerspectiveTransform(srcTri, dstTri);
-      warped = new cv.Mat();
+        try{
+          const tempCanvas = document.createElement("canvas");
+          tempCanvas.width = img.naturalWidth;
+          tempCanvas.height = img.naturalHeight;
+          const tempCtx = tempCanvas.getContext("2d");
+          tempCtx.drawImage(img, 0, 0);
 
-      cv.warpPerspective(src, warped, M, new cv.Size(targetWidth, targetHeight), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+          src = cv.imread(tempCanvas);
+          dst = new cv.Mat();
 
-      if(tipoFiltro === "documento_bn"){
-        let warpedGray = new cv.Mat();
-        let enhanced = new cv.Mat();
+          srcTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+            tl.x, tl.y,
+            tr.x, tr.y,
+            br.x, br.y,
+            bl.x, bl.y
+          ]);
 
-        cv.cvtColor(warped, warpedGray, cv.COLOR_RGBA2GRAY, 0);
-        cv.adaptiveThreshold(
-          warpedGray,
-          enhanced,
-          255,
-          cv.ADAPTIVE_THRESH_GAUSSIAN_C,
-          cv.THRESH_BINARY,
-          21,
-          12
-        );
+          dstTri = cv.matFromArray(4, 1, cv.CV_32FC2, [
+            0, 0,
+            targetWidth - 1, 0,
+            targetWidth - 1, targetHeight - 1,
+            0, targetHeight - 1
+          ]);
 
-        cv.imshow(canvas, enhanced);
-        warpedGray.delete();
-        enhanced.delete();
+          M = cv.getPerspectiveTransform(srcTri, dstTri);
+          cv.warpPerspective(src, dst, M, new cv.Size(targetWidth, targetHeight), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+          cv.imshow(canvas, dst);
+        }catch(err){
+          console.error("Error con perspectiva manual:", err);
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        }finally{
+          if(src) src.delete();
+          if(dst) dst.delete();
+          if(M) M.delete();
+          if(srcTri) srcTri.delete();
+          if(dstTri) dstTri.delete();
+        }
       }else{
-        cv.imshow(canvas, warped);
-        aplicarFiltroBasicoCanvas(canvas, tipoFiltro);
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
       }
 
-      M.delete();
-      srcTri.delete();
-      dstTri.delete();
-      bestApprox.delete();
+      cropEditor.style.display = "none";
+      canvas.style.display = "block";
+      scannerImagenRecortada = true;
 
-      return true;
+      aplicarFiltroEscaneoActual();
 
-    }catch(err){
-      console.error("Error scanner avanzado:", err);
-      aplicarFiltroBasicoCanvas(canvas, tipoFiltro);
-      return false;
-    }finally{
-      if(src) src.delete();
-      if(small) small.delete();
-      if(gray) gray.delete();
-      if(blurred) blurred.delete();
-      if(edges) edges.delete();
-      if(contours) contours.delete();
-      if(hierarchy) hierarchy.delete();
-      if(warped) warped.delete();
-    }
+      if(btnUsar) btnUsar.disabled = false;
+      if(btnFiltro) btnFiltro.disabled = false;
+      if(step) step.textContent = "Paso 3: cambia el filtro si lo deseas y presiona Aplicar filtro. Luego usa el escaneo.";
+      toast("Documento recortado. Ahora puedes aplicar el filtro que prefieras.");
+    };
+
+    img.src = scannerOriginalDataUrl;
   }
 
-
-  function capturarScannerDocumento(){
-    const video = $("scannerVideo");
+  function aplicarFiltroEscaneoActual(){
     const canvas = $("scannerCanvas");
-    const btnUsar = $("btnUsarEscaneo");
-
-    if(!video || !canvas || !video.videoWidth){
-      toast("La cámara aún no está lista.");
+    if(!canvas || !canvas.width){
+      toast("Primero captura y recorta el documento.");
       return;
     }
 
-    const maxWidth = 1800;
-    const scale = Math.min(1, maxWidth / video.videoWidth);
-    canvas.width = Math.round(video.videoWidth * scale);
-    canvas.height = Math.round(video.videoHeight * scale);
+    const img = new Image();
+    const currentDataUrl = canvas.toDataURL("image/jpeg", 0.95);
 
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    img.onload = () => {
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    const recorteDetectado = aplicarFiltroDocumentoOpenCV(canvas);
+      const tipoFiltro = $("scannerFiltro")?.value || "documento_bn";
+      aplicarFiltroBasicoCanvas(canvas, tipoFiltro);
 
-    canvas.style.display = "block";
+      canvas.toBlob((blob) => {
+        scannerBlob = blob;
+        const btnUsar = $("btnUsarEscaneo");
+        if(btnUsar) btnUsar.disabled = !scannerBlob;
+        toast(tipoFiltro === "original" ? "Imagen original lista." : "Filtro aplicado.");
+      }, "image/jpeg", 0.9);
+    };
 
-    canvas.toBlob((blob) => {
-      scannerBlob = blob;
-      if(btnUsar) btnUsar.disabled = !scannerBlob;
-      if(recorteDetectado === "original"){
-        toast("Captura original lista para usar.");
-      }else if(recorteDetectado){
-        toast("Documento detectado, recortado y procesado con el filtro seleccionado.");
-      }else{
-        toast("No se detectaron bordes claros. Se aplicó el filtro seleccionado sin recorte.");
-      }
-    }, "image/jpeg", 0.9);
+    /*
+      Para evitar aplicar filtros sobre filtros varias veces con mala calidad,
+      si ya existe imagen recortada guardamos una copia limpia cada vez que se recorta.
+      En esta versión el filtro se aplica sobre la imagen visible actual.
+    */
+    img.src = currentDataUrl;
   }
 
-
-  function asignarArchivoAInput(input, file){
-    const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(file);
-    input.files = dataTransfer.files;
-    input.dispatchEvent(new Event("change", { bubbles: true }));
-  }
-
-  function usarEscaneoDocumento(){
-    if(!scannerBlob || !scannerDestino){
-      toast("Primero captura el documento.");
-      return;
-    }
-
-    const fileName = `escaneo_${scannerDestino}_${new Date().toISOString().replace(/[:.]/g, "-")}.jpg`;
-    const file = new File([scannerBlob], fileName, { type: "image/jpeg" });
-
-    if(scannerDestino === "factura"){
-      const input = $("facturaFile");
-      if(input) asignarArchivoAInput(input, file);
-    }
-
-    if(scannerDestino === "movimiento"){
-      const input = $("movReciboFile");
-      if(input) asignarArchivoAInput(input, file);
-    }
-
-    cerrarScannerDocumento();
-    toast("Escaneo agregado como soporte.");
-  }
 
   async function fileToBase64(file){
     return new Promise((resolve, reject) => {
@@ -2476,6 +2595,7 @@
 </script>
 </body>
 </html>
+
 
 
 
