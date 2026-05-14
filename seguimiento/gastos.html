@@ -140,9 +140,43 @@
       white-space:nowrap;
     }
 
+
+    .logout-btn{
+      border:none;
+      background:rgba(239,68,68,.12);
+      border:1px solid rgba(239,68,68,.35);
+      color:#fecaca;
+      border-radius:999px;
+      padding:8px 10px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-weight:700;
+      margin-left:8px;
+      transition:.15s ease;
+    }
+
+    .logout-btn:hover{
+      background:rgba(239,68,68,.22);
+      color:white;
+      transform:translateY(-1px);
+    }
+
+
+    .hidden-by-permission{
+      display:none !important;
+    }
+
+    .danger-note{
+      color:#fca5a5;
+      font-size:12px;
+      margin-top:6px;
+    }
+
     .grid-kpi{
       display:grid;
-      grid-template-columns:repeat(4,minmax(160px,1fr));
+      grid-template-columns:repeat(5,minmax(160px,1fr));
       gap:16px;
       margin-bottom:18px;
     }
@@ -434,6 +468,48 @@
     }
 
 
+
+    .scan-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-top:10px;
+    }
+
+    .scanner-video-wrap{
+      background:#020617;
+      border:1px solid #334155;
+      border-radius:16px;
+      overflow:hidden;
+      display:grid;
+      place-items:center;
+      min-height:260px;
+    }
+
+    #scannerVideo{
+      width:100%;
+      max-height:60vh;
+      object-fit:contain;
+      background:#020617;
+    }
+
+    #scannerCanvas{
+      display:none;
+      width:100%;
+      border-radius:14px;
+      border:1px solid #334155;
+      margin-top:12px;
+      background:#020617;
+    }
+
+    .scanner-note{
+      color:#94a3b8;
+      font-size:12px;
+      line-height:1.45;
+      margin-top:10px;
+    }
+
     .section-title{
       display:flex;
       align-items:center;
@@ -464,12 +540,80 @@
     }
 
     @media(max-width:1000px){
-      .grid-kpi{grid-template-columns:repeat(2,1fr)}
+  
+    .logout-btn{
+      border:none;
+      background:rgba(239,68,68,.12);
+      border:1px solid rgba(239,68,68,.35);
+      color:#fecaca;
+      border-radius:999px;
+      padding:8px 10px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-weight:700;
+      margin-left:8px;
+      transition:.15s ease;
+    }
+
+    .logout-btn:hover{
+      background:rgba(239,68,68,.22);
+      color:white;
+      transform:translateY(-1px);
+    }
+
+
+    .hidden-by-permission{
+      display:none !important;
+    }
+
+    .danger-note{
+      color:#fca5a5;
+      font-size:12px;
+      margin-top:6px;
+    }
+
+    .grid-kpi{grid-template-columns:repeat(2,1fr)}
       .form-grid{grid-template-columns:1fr}
     }
 
     @media(max-width:600px){
-      .grid-kpi{grid-template-columns:1fr}
+  
+    .logout-btn{
+      border:none;
+      background:rgba(239,68,68,.12);
+      border:1px solid rgba(239,68,68,.35);
+      color:#fecaca;
+      border-radius:999px;
+      padding:8px 10px;
+      cursor:pointer;
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      font-weight:700;
+      margin-left:8px;
+      transition:.15s ease;
+    }
+
+    .logout-btn:hover{
+      background:rgba(239,68,68,.22);
+      color:white;
+      transform:translateY(-1px);
+    }
+
+
+    .hidden-by-permission{
+      display:none !important;
+    }
+
+    .danger-note{
+      color:#fca5a5;
+      font-size:12px;
+      margin-top:6px;
+    }
+
+    .grid-kpi{grid-template-columns:1fr}
       .topbar{flex-direction:column}
       .filters input,.filters select{width:100%;min-width:100%}
       .toolbar{align-items:stretch}
@@ -489,24 +633,32 @@
       <div class="user-chip">
         <i data-lucide="user-round"></i>
         <span id="currentUser">Cargando usuario...</span>
+        <button class="logout-btn" onclick="cerrarSesion()" title="Cerrar sesión">
+          <i data-lucide="log-out"></i>
+          Cerrar sesión
+        </button>
       </div>
     </section>
 
     <section class="grid-kpi">
-      <div class="kpi green">
+      <div class="kpi green" id="kpiCuentaCard">
         <div class="label">Saldo en cuenta</div>
         <div class="value" id="kpiCuenta">$0</div>
       </div>
-      <div class="kpi yellow">
+      <div class="kpi yellow" id="kpiEfectivoCard">
         <div class="label">Saldo en efectivo</div>
         <div class="value" id="kpiEfectivo">$0</div>
+      </div>
+      <div class="kpi yellow" id="kpiBolsaDiegoCard">
+        <div class="label">Bolsa Diego</div>
+        <div class="value" id="kpiBolsaDiego">$0</div>
       </div>
       <div class="kpi red">
         <div class="label">Gastos del mes</div>
         <div class="value" id="kpiMes">$0</div>
       </div>
       <div class="kpi">
-        <div class="label">Registros</div>
+        <div class="label">Registros visibles</div>
         <div class="value" id="kpiRegistros">0</div>
       </div>
     </section>
@@ -526,10 +678,11 @@
           <option value="Transaccion">Transacción</option>
           <option value="Nequi">Nequi</option>
         </select>
-        <input type="month" id="filtroMes" />
+        <input type="month" id="filtroMes" title="Filtrar por mes. Déjalo vacío para ver todos los meses." />
+        <button class="btn ghost" type="button" onclick="limpiarFiltros()"><i data-lucide="filter-x"></i> Limpiar filtros</button>
       </div>
       <div class="actions">
-        <button class="btn yellow" onclick="abrirModalMovimiento()"><i data-lucide="landmark"></i> Registrar retiro/ajuste</button>
+        <button class="btn yellow" id="btnRegistrarMovimiento" onclick="abrirModalMovimiento()"><i data-lucide="landmark"></i> Registrar retiro/ajuste</button>
         <button class="btn green" onclick="exportarExcel()"><i data-lucide="file-spreadsheet"></i> Exportar Excel</button>
         <button class="btn primary" onclick="abrirModalGasto()"><i data-lucide="plus"></i> Nuevo gasto</button>
       </div>
@@ -558,14 +711,14 @@
       </div>
     </section>
 
-    <div class="section-title">
+    <div class="section-title" id="sectionTitleMovimientosCaja">
       <div>
         <h3>Movimientos de caja</h3>
         <span>Retiros de cajero, ingresos y ajustes de saldos.</span>
       </div>
     </div>
 
-    <section class="card movement-card">
+    <section class="card movement-card" id="sectionMovimientosCaja">
       <div class="table-wrap">
         <table>
           <thead>
@@ -644,8 +797,13 @@
             <label>Factura / soporte</label>
             <div class="scan-box">
               <input id="facturaFile" type="file" accept="image/*,.pdf" capture="environment" />
+              <div class="scan-actions">
+                <button type="button" class="btn ghost" onclick="abrirScannerDocumento('factura')">
+                  <i data-lucide="scan-line"></i> Escanear documento
+                </button>
+              </div>
               <p class="small">
-                Puedes tomar foto desde el celular o seleccionar una imagen/PDF. 
+                Puedes tomar foto desde el celular, seleccionar una imagen/PDF o usar el escáner básico. 
                 El soporte se enviará a n8n y se guardará en Google Drive.
               </p>
               <div class="preview" id="previewFactura">
@@ -684,11 +842,18 @@
             <label>Tipo de movimiento</label>
             <select id="movTipo" required>
               <option value="RETIRO_CAJERO">Retiro de cajero: cuenta → efectivo</option>
+              <option value="ENTREGA_DIEGO">Entrega de efectivo a Diego</option>
               <option value="INGRESO_CUENTA">Ingreso a cuenta</option>
               <option value="INGRESO_EFECTIVO">Ingreso a efectivo</option>
               <option value="AJUSTE_CUENTA">Ajuste cuenta</option>
               <option value="AJUSTE_EFECTIVO">Ajuste efectivo</option>
             </select>
+          </div>
+
+          <div class="field" id="campoDiegoEmail" style="display:none;">
+            <label>Correo de Diego</label>
+            <input type="email" id="movDiegoEmail" value="diego.garcia@libertynet.com" readonly />
+            <p class="small">Correo configurado automáticamente para calcular la bolsa de dinero entregada a Diego.</p>
           </div>
 
           <div class="field">
@@ -707,11 +872,16 @@
           </div>
 
           <div class="field full" id="campoReciboRetiro" style="display:none;">
-            <label>Foto del recibo de retiro <span style="color:#f59e0b">*</span></label>
+            <label id="labelReciboMovimiento">Foto del recibo / soporte</label>
             <div class="scan-box">
               <input id="movReciboFile" type="file" accept="image/*,.pdf" capture="environment" />
+              <div class="scan-actions">
+                <button type="button" class="btn ghost" onclick="abrirScannerDocumento('movimiento')">
+                  <i data-lucide="scan-line"></i> Escanear documento
+                </button>
+              </div>
               <p class="small">
-                Cuando el movimiento sea <b>Retiro de cajero</b>, debes adjuntar la foto o PDF del recibo.
+                <span id="textoAyudaRecibo">Puedes adjuntar una foto o PDF como soporte.</span>
               </p>
               <div class="preview" id="previewReciboMovimiento">
                 <img id="previewReciboMovimientoImg" alt="Vista previa recibo retiro" />
@@ -725,6 +895,39 @@
           <button type="submit" class="btn yellow"><i data-lucide="save"></i> Guardar movimiento</button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal scanner básico -->
+<div class="modal" id="modalScanner">
+  <div class="modal-box" style="width:min(820px,96vw)">
+    <div class="modal-head">
+      <h3>Escanear documento</h3>
+      <button class="icon-btn" onclick="cerrarScannerDocumento()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="scanner-video-wrap">
+        <video id="scannerVideo" autoplay playsinline></video>
+      </div>
+
+      <canvas id="scannerCanvas"></canvas>
+
+      <p class="scanner-note">
+        Ubica el recibo o factura sobre una superficie plana y bien iluminada. 
+        El escáner básico mejora contraste y convierte la captura a una imagen tipo documento.
+      </p>
+
+      <div class="footer-actions">
+        <button type="button" class="btn ghost" onclick="cerrarScannerDocumento()">Cancelar</button>
+        <button type="button" class="btn yellow" onclick="capturarScannerDocumento()">
+          <i data-lucide="camera"></i> Capturar
+        </button>
+        <button type="button" class="btn primary" id="btnUsarEscaneo" onclick="usarEscaneoDocumento()" disabled>
+          <i data-lucide="check"></i> Usar escaneo
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -746,6 +949,12 @@
    * Si la dejas vacía, el gasto se guarda sin subir factura a Drive.
    ***************************************************************/
   const N8N_WEBHOOK_DRIVE_URL = "https://ftth-n8n2.pzveh5.easypanel.host/webhook/6dffc669-abb7-4570-83c3-efb8a0ac3ff9";
+  const USUARIO_MOVIMIENTOS_CAJA = "camilo.carreno@libertynet.com";
+  /*
+    Configura aquí el correo real del usuario Diego.
+    Si lo dejas vacío, el sistema intentará reconocerlo por nombre/email que contenga "diego".
+  */
+  const USUARIO_DIEGO_EMAIL = "diego.garcia@libertynet.com";
 
   const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -782,6 +991,9 @@
   let sortMovAsc = false;
   let archivoFacturaSeleccionado = null;
   let archivoReciboMovimientoSeleccionado = null;
+  let scannerStream = null;
+  let scannerDestino = null;
+  let scannerBlob = null;
 
   const $ = (id) => document.getElementById(id);
 
@@ -795,9 +1007,48 @@
   }
 
   function limpiarMoneda(texto){
-    return Number(String(texto || "").replace(/[^\d.-]/g,"")) || 0;
-  }
+    /*
+      Corrige formato colombiano:
+      $ 500.000  -> 500000
+      500.000    -> 500000
+      500,000    -> 500000
+      500000     -> 500000
 
+      En este módulo manejamos pesos COP sin decimales.
+    */
+    let valor = String(texto || "").trim();
+
+    // Quitar símbolo de moneda, espacios y letras.
+    valor = valor.replace(/[^\d.,-]/g, "");
+
+    if(!valor) return 0;
+
+    const negativo = valor.startsWith("-");
+    valor = valor.replace(/-/g, "");
+
+    const tienePunto = valor.includes(".");
+    const tieneComa = valor.includes(",");
+
+    if(tienePunto && tieneComa){
+      // Ej: 1.234.567,89 -> 1234567.89
+      const ultimoPunto = valor.lastIndexOf(".");
+      const ultimaComa = valor.lastIndexOf(",");
+      if(ultimaComa > ultimoPunto){
+        valor = valor.replace(/\./g, "").replace(",", ".");
+      }else{
+        valor = valor.replace(/,/g, "");
+      }
+    }else if(tienePunto){
+      // En Colombia el punto normalmente es miles: 500.000 -> 500000
+      valor = valor.replace(/\./g, "");
+    }else if(tieneComa){
+      // En este módulo tratamos la coma como separador de miles.
+      valor = valor.replace(/,/g, "");
+    }
+
+    const numero = Math.round(Number(valor) || 0);
+    return negativo ? -numero : numero;
+  }
   function hoyISO(){
     return new Date().toISOString().slice(0,10);
   }
@@ -828,6 +1079,92 @@
     });
   }
 
+  function emailNormalizado(email){
+    return String(email || "").trim().toLowerCase();
+  }
+
+  function registroEsDelUsuarioActual(registro){
+    return String(registro?.usuario_id || "") === String(usuarioActual?.id || "");
+  }
+
+  function puedeEliminarRegistro(registro){
+    return registroEsDelUsuarioActual(registro);
+  }
+
+  function esUsuarioDiego(registro){
+    const diegoEmail = emailNormalizado(USUARIO_DIEGO_EMAIL);
+    const email = emailNormalizado(registro?.usuario_email || registro?.destinatario_email);
+    const nombre = String(registro?.usuario_nombre || registro?.destinatario_nombre || "").toLowerCase();
+
+    if(diegoEmail && email === diegoEmail) return true;
+
+    return email.includes("diego") || nombre.includes("diego");
+  }
+
+  function puedeVerBolsaDiego(){
+    return esCamiloAutorizado() || esDiegoAutorizado();
+  }
+
+  function esCamiloAutorizado(){
+    return emailNormalizado(usuarioActual?.email) === emailNormalizado(USUARIO_MOVIMIENTOS_CAJA);
+  }
+
+  function esDiegoAutorizado(){
+    return emailNormalizado(usuarioActual?.email) === emailNormalizado(USUARIO_DIEGO_EMAIL);
+  }
+
+  function puedeVerMovimientosCaja(){
+    return esCamiloAutorizado() || esDiegoAutorizado();
+  }
+
+  function aplicarPermisosMovimientosCaja(){
+    const puedeVerSeccion = puedeVerMovimientosCaja();
+
+    const btn = $("btnRegistrarMovimiento");
+    const titulo = $("sectionTitleMovimientosCaja");
+    const seccion = $("sectionMovimientosCaja");
+    const bolsaDiego = $("kpiBolsaDiegoCard");
+    const cuentaCard = $("kpiCuentaCard");
+    const efectivoCard = $("kpiEfectivoCard");
+
+    // Solo Camilo puede registrar retiros/entregas/ajustes.
+    if(btn) btn.style.display = esCamiloAutorizado() ? "inline-flex" : "none";
+
+    // Camilo y Diego pueden ver la sección; Diego solo verá sus entregas.
+    if(titulo) titulo.style.display = puedeVerSeccion ? "flex" : "none";
+    if(seccion) seccion.style.display = puedeVerSeccion ? "block" : "none";
+    if(bolsaDiego) bolsaDiego.style.display = puedeVerBolsaDiego() ? "block" : "none";
+
+    // Saldo en cuenta y efectivo son de caja general. Diego no debe verlos porque pueden ser confusos.
+    if(cuentaCard) cuentaCard.style.display = esCamiloAutorizado() ? "block" : "none";
+    if(efectivoCard) efectivoCard.style.display = esCamiloAutorizado() ? "block" : "none";
+
+    const tituloMov = $("sectionTitleMovimientosCaja");
+    if(tituloMov){
+      const span = tituloMov.querySelector("span");
+      if(span){
+        span.textContent = esDiegoAutorizado()
+          ? "Entregas de dinero realizadas a Diego."
+          : "Retiros de cajero, ingresos y ajustes de saldos.";
+      }
+    }
+  }
+
+  async function cerrarSesion(){
+    const confirmar = confirm("¿Deseas cerrar sesión?");
+    if(!confirmar) return;
+
+    const { error } = await supabaseClient.auth.signOut();
+
+    if(error){
+      console.error(error);
+      toast("Error cerrando sesión: " + error.message);
+      return;
+    }
+
+    window.location.href = "login.html";
+  }
+
   async function verificarSesion(){
     const { data, error } = await supabaseClient.auth.getUser();
 
@@ -842,6 +1179,7 @@
     $("currentUser").textContent = nombre;
     $("usuarioVisible").value = `${nombre} (${usuarioActual.email})`;
     $("movUsuarioVisible").value = `${nombre} (${usuarioActual.email})`;
+    aplicarPermisosMovimientosCaja();
     return usuarioActual;
   }
 
@@ -953,14 +1291,43 @@
     const tipo = $("movTipo")?.value || "";
     const campo = $("campoReciboRetiro");
     const input = $("movReciboFile");
+    const campoDiego = $("campoDiegoEmail");
+    const inputDiego = $("movDiegoEmail");
 
     if(!campo || !input) return;
 
     const esRetiro = tipo === "RETIRO_CAJERO";
-    campo.style.display = esRetiro ? "block" : "none";
+    const esEntregaDiego = tipo === "ENTREGA_DIEGO";
+    const debeMostrarSoporte = esRetiro || esEntregaDiego;
+
+    campo.style.display = debeMostrarSoporte ? "block" : "none";
+
+    // Obligatorio solo para retiro de cajero. Para entrega a Diego es opcional.
     input.required = esRetiro;
 
-    if(!esRetiro){
+    const label = $("labelReciboMovimiento");
+    const ayuda = $("textoAyudaRecibo");
+
+    if(label){
+      label.innerHTML = esRetiro
+        ? 'Foto del recibo de retiro <span style="color:#f59e0b">*</span>'
+        : 'Foto del soporte de entrega a Diego <span class="small">(opcional)</span>';
+    }
+
+    if(ayuda){
+      ayuda.innerHTML = esRetiro
+        ? 'Cuando el movimiento sea <b>Retiro de cajero</b>, debes adjuntar la foto o PDF del recibo.'
+        : 'Puedes adjuntar una foto o PDF como soporte de la entrega. No es obligatorio.';
+    }
+
+    if(campoDiego) campoDiego.style.display = esEntregaDiego ? "block" : "none";
+    if(inputDiego){
+      inputDiego.required = esEntregaDiego;
+      if(esEntregaDiego) inputDiego.value = USUARIO_DIEGO_EMAIL || "diego.garcia@libertynet.com";
+      if(!esEntregaDiego) inputDiego.value = "";
+    }
+
+    if(!debeMostrarSoporte){
       input.value = "";
       archivoReciboMovimientoSeleccionado = null;
       mostrarPreviewReciboMovimiento(null);
@@ -968,6 +1335,11 @@
   }
 
   function abrirModalMovimiento(){
+    if(!puedeVerMovimientosCaja()){
+      toast("No tienes permisos para registrar movimientos de caja.");
+      return;
+    }
+
     $("formMovimiento").reset();
     $("movFecha").value = hoyISO();
     $("movUsuarioVisible").value = `${usuarioActual?.user_metadata?.full_name || usuarioActual?.email} (${usuarioActual?.email})`;
@@ -981,6 +1353,156 @@
 
   function cerrarModalMovimiento(){
     $("modalMovimiento").classList.remove("show");
+  }
+
+  async function abrirScannerDocumento(destino){
+    scannerDestino = destino;
+    scannerBlob = null;
+
+    const modal = $("modalScanner");
+    const video = $("scannerVideo");
+    const canvas = $("scannerCanvas");
+    const btnUsar = $("btnUsarEscaneo");
+
+    if(canvas){
+      canvas.style.display = "none";
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    if(btnUsar) btnUsar.disabled = true;
+
+    try{
+      scannerStream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        },
+        audio: false
+      });
+
+      video.srcObject = scannerStream;
+      modal.classList.add("show");
+      lucide.createIcons();
+
+    }catch(err){
+      console.error(err);
+      toast("No se pudo abrir la cámara. Revisa permisos del navegador.");
+    }
+  }
+
+  function cerrarScannerDocumento(){
+    const modal = $("modalScanner");
+    const video = $("scannerVideo");
+
+    if(scannerStream){
+      scannerStream.getTracks().forEach(track => track.stop());
+      scannerStream = null;
+    }
+
+    if(video) video.srcObject = null;
+    scannerDestino = null;
+    scannerBlob = null;
+
+    if(modal) modal.classList.remove("show");
+  }
+
+  function mejorarDocumentoEnCanvas(sourceCanvas){
+    const ctx = sourceCanvas.getContext("2d");
+    const imageData = ctx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height);
+    const data = imageData.data;
+
+    /*
+      Mejora básica:
+      - escala de grises
+      - aumento de contraste
+      - brillo suave
+      - fondo más claro y texto más marcado
+    */
+    const contrast = 1.35;
+    const brightness = 18;
+
+    for(let i = 0; i < data.length; i += 4){
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+
+      let gray = (0.299 * r + 0.587 * g + 0.114 * b);
+
+      gray = ((gray - 128) * contrast) + 128 + brightness;
+
+      // Umbral suave para aspecto de documento.
+      if(gray > 210) gray = 255;
+      if(gray < 55) gray = 0;
+
+      gray = Math.max(0, Math.min(255, gray));
+
+      data[i] = gray;
+      data[i + 1] = gray;
+      data[i + 2] = gray;
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+  }
+
+  function capturarScannerDocumento(){
+    const video = $("scannerVideo");
+    const canvas = $("scannerCanvas");
+    const btnUsar = $("btnUsarEscaneo");
+
+    if(!video || !canvas || !video.videoWidth){
+      toast("La cámara aún no está lista.");
+      return;
+    }
+
+    const maxWidth = 1600;
+    const scale = Math.min(1, maxWidth / video.videoWidth);
+    canvas.width = Math.round(video.videoWidth * scale);
+    canvas.height = Math.round(video.videoHeight * scale);
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    mejorarDocumentoEnCanvas(canvas);
+
+    canvas.style.display = "block";
+
+    canvas.toBlob((blob) => {
+      scannerBlob = blob;
+      if(btnUsar) btnUsar.disabled = !scannerBlob;
+      toast("Escaneo capturado. Revisa la vista previa y presiona Usar escaneo.");
+    }, "image/jpeg", 0.88);
+  }
+
+  function asignarArchivoAInput(input, file){
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    input.files = dataTransfer.files;
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function usarEscaneoDocumento(){
+    if(!scannerBlob || !scannerDestino){
+      toast("Primero captura el documento.");
+      return;
+    }
+
+    const fileName = `escaneo_${scannerDestino}_${new Date().toISOString().replace(/[:.]/g, "-")}.jpg`;
+    const file = new File([scannerBlob], fileName, { type: "image/jpeg" });
+
+    if(scannerDestino === "factura"){
+      const input = $("facturaFile");
+      if(input) asignarArchivoAInput(input, file);
+    }
+
+    if(scannerDestino === "movimiento"){
+      const input = $("movReciboFile");
+      if(input) asignarArchivoAInput(input, file);
+    }
+
+    cerrarScannerDocumento();
+    toast("Escaneo agregado como soporte.");
   }
 
   async function fileToBase64(file){
@@ -1030,9 +1552,27 @@
     let result = null;
 
     try{
-      result = text ? JSON.parse(text) : null;
+      /*
+        Algunos nodos de n8n pueden devolver la respuesta con un "=" al inicio
+        cuando el Response Body queda configurado como expresión de texto.
+        Aquí limpiamos la respuesta y tomamos desde el primer { hasta el último }.
+      */
+      let cleanText = (text || "").trim();
+
+      if(cleanText.startsWith("=")){
+        cleanText = cleanText.slice(1).trim();
+      }
+
+      const firstBrace = cleanText.indexOf("{");
+      const lastBrace = cleanText.lastIndexOf("}");
+
+      if(firstBrace !== -1 && lastBrace !== -1){
+        cleanText = cleanText.slice(firstBrace, lastBrace + 1);
+      }
+
+      result = cleanText ? JSON.parse(cleanText) : null;
     }catch(e){
-      throw new Error("n8n respondió, pero no devolvió un JSON válido: " + text.slice(0, 200));
+      throw new Error("n8n respondió, pero no devolvió un JSON válido: " + text.slice(0, 300));
     }
 
     if(!response.ok){
@@ -1115,6 +1655,11 @@
   async function guardarMovimiento(e){
     e.preventDefault();
 
+    if(!puedeVerMovimientosCaja()){
+      toast("No tienes permisos para guardar movimientos de caja.");
+      return;
+    }
+
     const valor = limpiarMoneda($("movValor").value);
     if(valor <= 0){
       toast("El valor debe ser mayor a cero.");
@@ -1156,6 +1701,8 @@
       tipo_movimiento: tipoMovimiento,
       valor,
       descripcion: $("movDescripcion").value.trim(),
+      destinatario_nombre: tipoMovimiento === "ENTREGA_DIEGO" ? "Diego" : null,
+      destinatario_email: tipoMovimiento === "ENTREGA_DIEGO" ? ($("movDiegoEmail")?.value || USUARIO_DIEGO_EMAIL || "").trim() : null,
       ...soporteInfo
     };
 
@@ -1219,7 +1766,7 @@
 
     const mapaUsuarios = new Map();
 
-    gastos.forEach(g => {
+    gastos.filter(g => gastoVisibleParaUsuario(g)).forEach(g => {
       const key = g.usuario_id || g.usuario_email || g.usuario_nombre;
       if(!key) return;
       const label = g.usuario_nombre
@@ -1228,7 +1775,7 @@
       mapaUsuarios.set(key, label);
     });
 
-    movimientosCaja.forEach(m => {
+    movimientosCaja.filter(m => movimientoVisibleParaUsuario(m)).forEach(m => {
       const key = m.usuario_id || m.usuario_email || m.usuario_nombre;
       if(!key) return;
       const label = m.usuario_nombre
@@ -1258,19 +1805,28 @@
     const usuarioFiltro = $("filtroUsuario")?.value || "";
     const mesFiltro = $("filtroMes")?.value || mesActual();
 
+    const gastosVisiblesUsuario = gastos.filter(g => gastoVisibleParaUsuario(g));
+    const movimientosVisiblesUsuario = movimientosCaja.filter(m => movimientoVisibleParaUsuario(m));
+
     const gastosBase = usuarioFiltro
-      ? gastos.filter(g => (g.usuario_id || g.usuario_email || g.usuario_nombre) === usuarioFiltro)
-      : gastos;
+      ? gastosVisiblesUsuario.filter(g => (g.usuario_id || g.usuario_email || g.usuario_nombre) === usuarioFiltro)
+      : gastosVisiblesUsuario;
 
     const movimientosBase = usuarioFiltro
-      ? movimientosCaja.filter(m => (m.usuario_id || m.usuario_email || m.usuario_nombre) === usuarioFiltro)
-      : movimientosCaja;
+      ? movimientosVisiblesUsuario.filter(m => (m.usuario_id || m.usuario_email || m.usuario_nombre) === usuarioFiltro)
+      : movimientosVisiblesUsuario;
 
-    const gastosEfectivo = gastosBase
+    /*
+      Los gastos registrados por Diego NO descuentan de la caja general.
+      Esos gastos descuentan únicamente de la Bolsa Diego.
+    */
+    const gastosCajaGeneral = gastosBase.filter(g => !esUsuarioDiego(g));
+
+    const gastosEfectivo = gastosCajaGeneral
       .filter(g => g.metodo_pago === "Efectivo")
       .reduce((acc, g) => acc + Number(g.valor || 0), 0);
 
-    const gastosCuenta = gastosBase
+    const gastosCuenta = gastosCajaGeneral
       .filter(g => ["Transaccion", "Nequi"].includes(g.metodo_pago))
       .reduce((acc, g) => acc + Number(g.valor || 0), 0);
 
@@ -1294,18 +1850,56 @@
       .filter(m => m.tipo_movimiento === "AJUSTE_EFECTIVO")
       .reduce((acc, m) => acc + Number(m.valor || 0), 0);
 
+    const entregasDiego = movimientosCaja
+      .filter(m => m.tipo_movimiento === "ENTREGA_DIEGO")
+      .reduce((acc, m) => acc + Number(m.valor || 0), 0);
+
+    const gastosDiego = gastos
+      .filter(g => esUsuarioDiego(g))
+      .reduce((acc, g) => acc + Number(g.valor || 0), 0);
+
+    const saldoBolsaDiego = entregasDiego - gastosDiego;
+
     const saldoCuenta = ingresosCuenta + ajustesCuenta - retirosCajero - gastosCuenta;
-    const saldoEfectivo = ingresosEfectivo + ajustesEfectivo + retirosCajero - gastosEfectivo;
+    const saldoEfectivo = ingresosEfectivo + ajustesEfectivo + retirosCajero - gastosEfectivo - entregasDiego;
 
     $("kpiCuenta").textContent = formatCOP(saldoCuenta);
     $("kpiEfectivo").textContent = formatCOP(saldoEfectivo);
+    if($("kpiBolsaDiego")) $("kpiBolsaDiego").textContent = formatCOP(saldoBolsaDiego);
 
     const totalMes = gastosBase
       .filter(g => String(g.fecha || "").startsWith(mesFiltro))
       .reduce((acc, g) => acc + Number(g.valor || 0), 0);
 
     $("kpiMes").textContent = formatCOP(totalMes);
-    $("kpiRegistros").textContent = gastosFiltrados.length;
+    $("kpiRegistros").textContent = gastosFiltrados.length + (puedeVerMovimientosCaja() ? movimientosFiltrados.length : 0);
+  }
+
+  function gastoVisibleParaUsuario(g){
+    if(esCamiloAutorizado()) return true;
+    if(esDiegoAutorizado()) return registroEsDelUsuarioActual(g);
+    return registroEsDelUsuarioActual(g);
+  }
+
+  function movimientoVisibleParaUsuario(m){
+    if(esCamiloAutorizado()) return true;
+
+    if(esDiegoAutorizado()){
+      return m.tipo_movimiento === "ENTREGA_DIEGO"
+        && emailNormalizado(m.destinatario_email) === emailNormalizado(USUARIO_DIEGO_EMAIL);
+    }
+
+    return false;
+  }
+
+  function limpiarFiltros(){
+    $("buscar").value = "";
+    $("filtroUsuario").value = "";
+    $("filtroTipo").value = "";
+    $("filtroMetodo").value = "";
+    $("filtroMes").value = "";
+    aplicarFiltros();
+    toast("Filtros limpiados. Mostrando todos los registros.");
   }
 
   function aplicarFiltros(){
@@ -1333,7 +1927,7 @@
       const matchMetodo = !metodo || g.metodo_pago === metodo;
       const matchMes = !mes || String(g.fecha || "").startsWith(mes);
 
-      return matchQ && matchUsuario && matchTipo && matchMetodo && matchMes;
+      return gastoVisibleParaUsuario(g) && matchQ && matchUsuario && matchTipo && matchMetodo && matchMes;
     });
 
     movimientosFiltrados = movimientosCaja.filter(m => {
@@ -1351,7 +1945,7 @@
       const matchUsuario = !usuarioFiltro || usuarioKey === usuarioFiltro;
       const matchMes = !mes || String(m.fecha || "").startsWith(mes);
 
-      return matchQ && matchUsuario && matchMes;
+      return movimientoVisibleParaUsuario(m) && matchQ && matchUsuario && matchMes;
     });
 
     movimientosFiltrados.sort((a,b) => {
@@ -1437,7 +2031,10 @@
         <td>
           <div class="actions">
             <button class="icon-btn" title="Editar" onclick='editarGasto("${g.id}")'><i data-lucide="pencil"></i></button>
-            <button class="icon-btn" title="Eliminar" onclick='eliminarGasto("${g.id}")'><i data-lucide="trash-2"></i></button>
+            ${puedeEliminarRegistro(g)
+              ? `<button class="icon-btn" title="Eliminar" onclick='eliminarGasto("${g.id}")'><i data-lucide="trash-2"></i></button>`
+              : `<span class="small">No puedes eliminar</span>`
+            }
           </div>
         </td>
       </tr>
@@ -1449,6 +2046,7 @@
   function tipoMovimientoLabel(tipo){
     const labels = {
       RETIRO_CAJERO: "Retiro de cajero",
+      ENTREGA_DIEGO: "Entrega de efectivo a Diego",
       INGRESO_CUENTA: "Ingreso a cuenta",
       INGRESO_EFECTIVO: "Ingreso a efectivo",
       AJUSTE_CUENTA: "Ajuste cuenta",
@@ -1472,6 +2070,11 @@
     const tbody = $("tbodyMovimientos");
     if(!tbody) return;
 
+    if(!puedeVerMovimientosCaja()){
+      tbody.innerHTML = "";
+      return;
+    }
+
     if(!movimientosFiltrados.length){
       tbody.innerHTML = `<tr><td colspan="7" class="empty">No hay movimientos para los filtros seleccionados.</td></tr>`;
       return;
@@ -1490,7 +2093,7 @@
           </td>
           <td><span class="movement-type">${tipoMovimientoLabel(m.tipo_movimiento)}</span></td>
           <td><b>${formatCOP(m.valor)}</b></td>
-          <td>${m.descripcion || ""}</td>
+          <td>${m.descripcion || ""}${m.destinatario_nombre ? `<br><span class="small">Para: ${m.destinatario_nombre}${m.destinatario_email ? " - " + m.destinatario_email : ""}</span>` : ""}</td>
           <td>
             ${soporteUrl
               ? `<a href="${soporteUrl}" target="_blank" class="btn ghost" style="padding:8px 10px"><i data-lucide="external-link"></i> ${soporteNombre}</a>`
@@ -1499,7 +2102,10 @@
           </td>
           <td>
             <div class="actions">
-              <button class="icon-btn" title="Eliminar movimiento" onclick='eliminarMovimiento("${m.id}")'><i data-lucide="trash-2"></i></button>
+              ${puedeEliminarRegistro(m)
+                ? `<button class="icon-btn" title="Eliminar movimiento" onclick='eliminarMovimiento("${m.id}")'><i data-lucide="trash-2"></i></button>`
+                : `<span class="small">No puedes eliminar</span>`
+              }
             </div>
           </td>
         </tr>
@@ -1511,6 +2117,12 @@
 
   async function eliminarMovimiento(id){
     const mov = movimientosCaja.find(m => m.id === id);
+
+    if(!puedeEliminarRegistro(mov)){
+      toast("No puedes eliminar este movimiento porque fue creado por otro usuario.");
+      return;
+    }
+
     const ok = confirm(`¿Seguro que deseas eliminar el movimiento ${tipoMovimientoLabel(mov?.tipo_movimiento)} por ${formatCOP(mov?.valor || 0)}?`);
     if(!ok) return;
 
@@ -1533,6 +2145,12 @@
 
   async function eliminarGasto(id){
     const gasto = gastos.find(g => g.id === id);
+
+    if(!puedeEliminarRegistro(gasto)){
+      toast("No puedes eliminar este gasto porque fue creado por otro usuario.");
+      return;
+    }
+
     const ok = confirm(`¿Seguro que deseas eliminar el gasto ${gasto?.numero_factura || ""} por ${formatCOP(gasto?.valor || 0)}?`);
     if(!ok) return;
 
@@ -1569,7 +2187,9 @@
       Valor: Number(m.valor || 0),
       Descripción: m.descripcion,
       "URL Recibo Drive": m.soporte_drive_url || "",
-      "Nombre soporte": m.soporte_nombre || ""
+      "Nombre soporte": m.soporte_nombre || "",
+      "Destinatario": m.destinatario_nombre || "",
+      "Email destinatario": m.destinatario_email || ""
     }));
 
     const wb = XLSX.utils.book_new();
@@ -1577,7 +2197,9 @@
     const wsMovimientos = XLSX.utils.json_to_sheet(dataMovimientos);
 
     XLSX.utils.book_append_sheet(wb, wsGastos, "Gastos");
-    XLSX.utils.book_append_sheet(wb, wsMovimientos, "Movimientos Caja");
+    if(puedeVerMovimientosCaja()){
+      XLSX.utils.book_append_sheet(wb, wsMovimientos, "Movimientos Caja");
+    }
 
     XLSX.writeFile(wb, `gastos_movimientos_${new Date().toISOString().slice(0,10)}.xlsx`);
   }
@@ -1588,7 +2210,8 @@
 
     $("fecha").value = hoyISO();
     $("movFecha").value = hoyISO();
-    $("filtroMes").value = mesActual();
+    // El filtro de mes queda vacío por defecto para mostrar todos los gastos y movimientos.
+    $("filtroMes").value = "";
 
     configurarEventos();
     const user = await verificarSesion();
@@ -1601,5 +2224,6 @@
 </script>
 </body>
 </html>
+
 
 
