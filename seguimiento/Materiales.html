@@ -6,14 +6,16 @@
   <title>Materiales O&M</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="app.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root{--border:rgba(255,255,255,.10);--text:#eef4ff;--muted:#9ab0d0;--shadow:0 18px 40px rgba(0,0,0,.28)}
     *{box-sizing:border-box}
     body{margin:0;background:linear-gradient(180deg,#04101f,#07152a);color:var(--text);font-family:Arial,Helvetica,sans-serif}
     .page{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
     .sidebar{background:linear-gradient(180deg,#08142a,#081126);border-right:1px solid var(--border);padding:18px 16px;position:sticky;top:0;height:100vh;overflow:auto}
-    .brand{font-size:18px;font-weight:800;margin-bottom:4px}.subbrand{font-size:12px;color:var(--muted);margin-bottom:24px}
+    .brand{font-size:15px;font-weight:800;margin-bottom:4px}.subbrand{font-size:12px;color:var(--muted);margin-bottom:24px}
     .nav a{display:block;padding:12px;border-radius:12px;color:#fff;text-decoration:none;margin-bottom:8px;border:1px solid transparent}
     .nav a:hover,.nav a.active{background:rgba(255,255,255,.05);border-color:var(--border)}
     .session-box{margin-top:24px;padding:14px;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.03)}
@@ -48,8 +50,215 @@
     .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.field label{display:block;margin-bottom:6px;font-size:13px;color:#cfe0ff}
     .field input,.field select,.field textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}.field textarea{min-height:90px;resize:vertical}
     .span-2{grid-column:span 2}.span-4{grid-column:1/-1}.muted-note{font-size:12px;color:var(--muted)}
+
+
+    .material-lines table{min-width:1180px}
+    .material-lines th,.material-lines td{vertical-align:top}
+    .line-bodega-stock{min-width:210px}
+    .line-serial{min-width:150px}
+    .line-material{min-width:320px}
+
+    .sap-warning{
+      margin-top:6px;
+      color:#fca5a5;
+      font-size:12px;
+      font-weight:700;
+      display:none;
+    }
+    .sap-not-found{
+      border-color:#ef4444 !important;
+      box-shadow:0 0 0 2px rgba(239,68,68,.18);
+    }
+
+
+    .pdf-acta{
+      background:#fff;
+      color:#111827;
+      width:216mm;
+      min-height:279mm;
+      padding:9mm 10mm;
+      box-sizing:border-box;
+      font-family:Arial, Helvetica, sans-serif;
+      font-size:9px;
+      line-height:1.18;
+      overflow:visible;
+    }
+    .pdf-acta *{box-sizing:border-box}
+    .pdf-header{
+      display:grid;
+      grid-template-columns:1.2fr 2.2fr 1.1fr;
+      border:1.5px solid #111827;
+      margin-bottom:6px;
+      align-items:stretch;
+    }
+    .pdf-logo{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-right:1px solid #111827;
+      padding:6px;
+      font-weight:800;
+      font-size:15px;
+      letter-spacing:.5px;
+      color:#0f172a;
+    }
+    .pdf-title{
+      text-align:center;
+      padding:6px 6px;
+      border-right:1px solid #111827;
+    }
+    .pdf-title h1{
+      margin:0;
+      font-size:15px;
+      letter-spacing:.3px;
+      text-transform:uppercase;
+    }
+    .pdf-title p{
+      margin:4px 0 0;
+      font-size:9px;
+      color:#374151;
+    }
+    .pdf-meta{
+      display:grid;
+      grid-template-rows:repeat(3,1fr);
+      font-size:9.5px;
+    }
+    .pdf-meta div{
+      padding:4px 5px;
+      border-bottom:1px solid #111827;
+    }
+    .pdf-meta div:last-child{border-bottom:0}
+    .pdf-section-title{
+      background:#0f172a;
+      color:#fff;
+      font-weight:800;
+      text-transform:uppercase;
+      padding:4px 6px;
+      border:1px solid #0f172a;
+      margin-top:6px;
+      font-size:11px;
+      letter-spacing:.2px;
+    }
+    .pdf-grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      border-left:1px solid #111827;
+      border-top:1px solid #111827;
+    }
+    .pdf-cell{
+      min-height:22px;
+      border-right:1px solid #111827;
+      border-bottom:1px solid #111827;
+      padding:4px 5px;
+    }
+    .pdf-label{
+      font-size:8.5px;
+      color:#4b5563;
+      text-transform:uppercase;
+      font-weight:700;
+      margin-bottom:2px;
+    }
+    .pdf-value{
+      font-size:11px;
+      font-weight:700;
+      color:#111827;
+      word-break:break-word;
+    }
+    .pdf-table{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:0;
+      font-size:9.8px;
+    }
+    .pdf-table th{
+      background:#e5e7eb;
+      color:#111827;
+      border:1px solid #111827;
+      padding:4px 4px;
+      text-transform:uppercase;
+      font-size:8.7px;
+      text-align:left;
+    }
+    .pdf-table td{
+      border:1px solid #111827;
+      padding:4px 4px;
+      vertical-align:top;
+    }
+    .pdf-table .num{text-align:right;font-weight:700}
+    .pdf-observaciones{
+      border:1px solid #111827;
+      min-height:34px;
+      padding:8px;
+      white-space:pre-wrap;
+    }
+    .pdf-firmas{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:18px;
+      margin-top:14px;
+    }
+    .pdf-firma-box{
+      border:1px solid #111827;
+      min-height:82px;
+      padding:6px;
+      position:relative;
+    }
+    .pdf-firma-title{
+      font-weight:800;
+      text-transform:uppercase;
+      font-size:11px;
+      margin-bottom:26px;
+    }
+    .pdf-line{
+      border-top:1px solid #111827;
+      margin-top:10px;
+      padding-top:4px;
+      font-size:9px;
+    }
+    .pdf-footer{
+      margin-top:7px;
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      font-size:8.5px;
+      color:#4b5563;
+      border-top:1px solid #9ca3af;
+      padding-top:6px;
+    }
+    
+    
+    .pdf-compact .pdf-table{font-size:8.3px}
+    .pdf-compact .pdf-table th{font-size:7.6px;padding:3px}
+    .pdf-compact .pdf-table td{padding:3px}
+    .pdf-compact .pdf-section-title{padding:3px 5px;margin-top:5px}
+    .pdf-compact .pdf-firma-box{min-height:72px}
+
+    .pdf-table tr{page-break-inside:avoid;break-inside:avoid}
+    .pdf-firmas{page-break-inside:avoid;break-inside:avoid}
+    .pdf-firma-box{page-break-inside:avoid;break-inside:avoid}
+
+    .pdf-hidden{
+      position:fixed;
+      left:-99999px;
+      top:0;
+      width:216mm;
+      background:#fff;
+      z-index:-1;
+    }
+
     .section-title{margin:18px 0 10px;font-size:16px;font-weight:800;color:#dbeafe;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.03)}
     .empty{padding:26px;text-align:center;color:var(--muted);display:none}
+
+    .material-lines{border:1px solid var(--border);border-radius:16px;overflow:auto;background:rgba(255,255,255,.025)}
+    .material-lines table{min-width:900px}
+    .material-lines th{position:static;background:rgba(255,255,255,.04)}
+    .line-actions{display:flex;gap:8px;align-items:center}
+    .support-box{border:1px dashed rgba(159,208,255,.35);border-radius:16px;padding:14px;background:rgba(255,255,255,.025)}
+    .support-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .support-preview{margin-top:10px;display:none}
+    .support-preview img{max-width:260px;max-height:180px;border-radius:12px;border:1px solid var(--border);object-fit:contain;background:#020617}
+    .link-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid var(--border);border-radius:10px;color:#bfdbfe;text-decoration:none;background:rgba(255,255,255,.04);font-weight:700}
+
     @media (max-width:1300px){.summary{grid-template-columns:repeat(3,1fr)}.toolbar{grid-template-columns:1fr 1fr}.grid{grid-template-columns:repeat(2,1fr)}}
     @media (max-width:900px){.page{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.summary,.toolbar,.grid{grid-template-columns:1fr}}
   </style>
@@ -85,13 +294,29 @@
           <select name="estado"><option>RECIBIDO</option><option>PENDIENTE</option><option>ENTREGADO</option><option>CONSUMIDO</option><option>ANULADO</option></select>
         </div>
 
-        <div class="field"><label>Código SAP</label><input name="codigo_sap" id="codigoSapInput" list="sapList" onchange="syncMaterialBySap()"></div>
-        <div class="field span-2"><label>Material</label><input name="material_nombre" id="materialInput" list="materialList" required onchange="syncMaterialByName()"></div>
-        <div class="field"><label>Unidad</label>
-          <select name="unidad" required><option>Metros</option><option>Unidades</option><option>Rollos</option><option>Cajas</option><option>Patchcord</option><option>SFP</option><option>Otros</option></select>
+        <div class="span-4">
+          <div class="section-title" style="margin-top:4px">Materiales del movimiento</div>
+          <div class="material-lines">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:170px">Código SAP</th>
+                  <th>Material</th>
+                  <th style="width:130px">Cantidad</th>
+                  <th style="width:150px">Unidad</th>
+                  <th style="width:230px">Bodega origen</th>
+                  <th style="width:170px">Cod serial</th>
+                  <th style="width:90px">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="materialLinesBody"></tbody>
+            </table>
+          </div>
+          <div style="margin-top:10px">
+            <button type="button" class="small-btn" onclick="addMaterialLine()">+ Agregar material</button>
+          </div>
+          <div class="muted-note" style="margin-top:8px">Ingresa el código SAP y se cargará automáticamente la descripción y unidad desde STOCK SAP Villavicencio.</div>
         </div>
-
-        <div class="field"><label>Cantidad</label><input type="number" step="0.01" min="0.01" name="cantidad" required></div>
         <div class="field"><label>Bodega origen</label><select name="bodega_origen_id" id="bodegaOrigen"></select></div>
         <div class="field"><label>Bodega destino</label><select name="bodega_destino_id" id="bodegaDestino"></select></div>
         <div class="field"><label>Transportadora</label><input name="transportadora"></div>
@@ -102,7 +327,7 @@
         <div class="field"><label>Responsable</label><input name="responsable"></div>
 
         <div class="field"><label>Recibido por</label><input name="recibido_por"></div>
-        <div class="field"><label>Entregado a</label><input name="entregado_a"></div>
+        <div class="field"><label>Entregado por</label><input name="entregado_a"></div>
         <div class="field"><label>ID cambio instalación</label><input name="id_cambio" id="idCambioInput" placeholder="Opcional"></div>
         <div class="field"><label>ID cliente</label><input name="id_cliente" id="idClienteInput"></div>
 
@@ -113,10 +338,23 @@
       <datalist id="sapList"></datalist>
       <datalist id="materialList"></datalist>
 
-      <div id="movMsg" style="margin-top:12px;color:#86efac"></div>
+      <div class="section-title">Soporte acta de entrega</div>
+      <div class="support-box">
+        <div class="support-row">
+          <input id="soporteActaFile" type="file" accept="image/*,.pdf" capture="environment">
+          <span class="muted-note">Puedes tomar foto o cargar imagen/PDF del acta de entrega.</span>
+        </div>
+        <div class="support-preview" id="soportePreview">
+          <img id="soportePreviewImg" alt="Vista previa soporte">
+        </div>
+      </div>
+
+      <div id="movMsg" style="margin-top:7px;color:#86efac"></div>
 
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
         <button type="button" class="small-btn" onclick="closeMovModal()">Cancelar</button>
+        <button type="button" class="small-btn" onclick="descargarActaPDF()">Descargar acta PDF</button>
+        <button type="button" class="small-btn" onclick="enviarCorreoActa()">Enviar correo</button>
         <button type="submit" class="btn">Guardar movimiento</button>
       </div>
     </form>
@@ -141,7 +379,7 @@
         <div class="field"><label>Stock mínimo</label><input type="number" step="0.01" min="0" name="stock_minimo" value="0"></div>
         <div class="field span-2"><label>Descripción</label><input name="descripcion"></div>
       </div>
-      <div id="matMsg" style="margin-top:12px;color:#86efac"></div>
+      <div id="matMsg" style="margin-top:7px;color:#86efac"></div>
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
         <button type="button" class="small-btn" onclick="closeMatModal()">Cancelar</button>
         <button class="btn" type="submit">Guardar material</button>
@@ -151,6 +389,7 @@
 </div>
 
 <script>
+const N8N_WEBHOOK_MATERIALES_URL = 'https://ftth-n8n2.pzveh5.easypanel.host/webhook/d9151e2f-0083-4bb7-89df-b5e2153b6cfd';
 function renderShell(){
   const email = localStorage.getItem('user_email') || '';
   document.getElementById('root').innerHTML = `
@@ -230,7 +469,7 @@ function renderShell(){
                 <th><div class="th-filter"><span>Destino</span><select id="filterMovDestino" onchange="setMovimientoColumnFilter('destino', this.value)"><option value="">Todos</option></select></div></th>
                 <th><div class="th-filter"><span>Guía</span><select id="filterMovGuia" onchange="setMovimientoColumnFilter('guia', this.value)"><option value="">Todas</option></select></div></th>
                 <th><div class="th-filter"><span>Cliente / Instalación</span><select id="filterMovCliente" onchange="setMovimientoColumnFilter('cliente', this.value)"><option value="">Todos</option></select></div></th>
-                <th><div class="th-filter"><span>Responsable</span><select id="filterMovResponsable" onchange="setMovimientoColumnFilter('responsable', this.value)"><option value="">Todos</option></select></div></th>
+                <th><div class="th-filter"><span>Responsable</span><select id="filterMovResponsable" onchange="setMovimientoColumnFilter('responsable', this.value)"><option value="">Todos</option></select></div></th><th>Soporte</th>
               </tr>
             </thead>
             <tbody id="movimientosBody"></tbody>
@@ -267,9 +506,13 @@ let materiales = [];
 let resumen = [];
 let movimientos = [];
 let consumos = [];
+let sapStock = [];
+let materialLineCounter = 0;
+let soporteActaFile = null;
 let activeTab = 'inventario';
 let activeKpi = null;
 let currentMovimientoId = null;
+let currentGrupoMovimientoId = null;
 let movimientosSortField = 'fecha';
 let movimientosSortDir = 'desc';
 let movimientoColumnFilters = { tipo:'', material:'', cantidad:'', origen:'', destino:'', guia:'', cliente:'', responsable:'' };
@@ -475,7 +718,7 @@ function renderMovimientos(){
     const matchText = !txt || [
       r.codigo_sap, r.om_materiales_catalogo?.material, r.guia, r.transportadora,
       r.cliente, r.id_cambio, r.id_cliente, r.responsable,
-      r.origen_nombre, r.destino_nombre
+      r.origen_nombre, r.destino_nombre, r.bodega_origen_stock, r.codigo_serial
     ].map(x=>String(x||'').toLowerCase()).some(x=>x.includes(txt));
     const matchTipo = !tipo || r.tipo_movimiento === tipo;
     const matchBodega = !bodega || r.origen_nombre === bodega || r.destino_nombre === bodega;
@@ -512,13 +755,14 @@ function renderMovimientos(){
     <tr onclick="openMovModalById('${esc(r.id)}')" style="cursor:pointer" title="Clic para ver o editar el movimiento">
       <td>${fmtDate(r.fecha)}<div class="desc">${esc(r.hora || '')}</div></td>
       <td>${badge(r.tipo_movimiento)}</td>
-      <td><div class="title">${esc(r.codigo_sap || '')}</div><div class="desc">${esc(r.om_materiales_catalogo?.material || '')}</div></td>
+      <td><div class="title">${esc(r.codigo_sap || '')}</div><div class="desc">${esc(r.material_descripcion || r.om_materiales_catalogo?.material || '')}</div>${r.codigo_serial ? `<div class="desc"><b>Serial:</b> ${esc(r.codigo_serial)}</div>` : ''}</td>
       <td><b>${fmtNum(r.cantidad)}</b><div class="desc">${esc(r.unidad)}</div></td>
-      <td>${esc(r.origen_nombre || '')}</td>
+      <td>${esc(r.origen_nombre || '')}${r.bodega_origen_stock ? `<div class="desc">Stock SAP: ${esc(r.bodega_origen_stock)}</div>` : ''}</td>
       <td>${esc(r.destino_nombre || '')}</td>
       <td>${esc(r.guia || '')}<div class="desc">${esc(r.transportadora || '')}</div></td>
       <td><div class="title">${esc(r.cliente || '')}</div><div class="desc">${esc(r.id_cambio || '')} ${esc(r.id_cliente || '')}</div></td>
       <td>${esc(r.responsable || r.created_by_email || '')}</td>
+      <td>${r.soporte_acta_url ? `<a class="link-btn" href="${esc(r.soporte_acta_url)}" target="_blank">Ver acta</a>` : '<span class="desc">Sin soporte</span>'}</td>
     </tr>
   `).join('');
 }
@@ -545,6 +789,7 @@ function renderConsumos(){
       <td><b>${fmtNum(r.cantidad)}</b><div class="desc">${esc(r.unidad)}</div></td>
       <td>${esc(r.bodega_origen || '')}</td>
       <td>${esc(r.responsable || r.created_by_email || '')}</td>
+      <td>${r.soporte_acta_url ? `<a class="link-btn" href="${esc(r.soporte_acta_url)}" target="_blank">Ver acta</a>` : '<span class="desc">Sin soporte</span>'}</td>
     </tr>
   `).join('');
 }
@@ -560,12 +805,13 @@ async function loadAll(){
   try{
     const client = await resolveClient();
 
-    const [bodegasRes, materialesRes, resumenRes, movRes, consRes] = await Promise.all([
+    const [bodegasRes, materialesRes, resumenRes, movRes, consRes, sapRes] = await Promise.all([
       client.from('om_bodegas').select('*').order('nombre'),
       client.from('om_materiales_catalogo').select('*').order('material'),
       client.from('om_v_materiales_resumen').select('*').order('material'),
       client.from('om_materiales_movimientos').select('*, om_materiales_catalogo(material)').order('created_at',{ascending:false}),
-      client.from('om_v_consumo_instalaciones').select('*').order('fecha',{ascending:false})
+      client.from('om_v_consumo_instalaciones').select('*').order('fecha',{ascending:false}),
+      client.from('stock_sap_villao').select('*').order('material_description')
     ]);
 
     if(bodegasRes.error) throw bodegasRes.error;
@@ -573,11 +819,13 @@ async function loadAll(){
     if(resumenRes.error) throw resumenRes.error;
     if(movRes.error) throw movRes.error;
     if(consRes.error) throw consRes.error;
+    if(sapRes.error) throw sapRes.error;
 
     bodegas = bodegasRes.data || [];
     materiales = materialesRes.data || [];
     resumen = resumenRes.data || [];
     consumos = consRes.data || [];
+    sapStock = sapRes?.data || [];
 
     const bodegaMap = new Map(bodegas.map(b => [b.id, b.nombre]));
     movimientos = (movRes.data || []).map(m => ({
@@ -606,8 +854,460 @@ function hydrateSelects(){
   if(origen) origen.innerHTML = `<option value="">No aplica</option>${optsId}`;
   if(destino) destino.innerHTML = `<option value="">No aplica</option>${optsId}`;
 
-  document.getElementById('sapList').innerHTML = materiales.map(m => `<option value="${esc(m.codigo_sap || '')}">${esc(m.material)}</option>`).join('');
-  document.getElementById('materialList').innerHTML = materiales.map(m => `<option value="${esc(m.material)}">${esc(m.codigo_sap || '')}</option>`).join('');
+  const catalogoSAP = mergeCatalogoSap();
+  document.getElementById('sapList').innerHTML = catalogoSAP.map(m => `<option value="${esc(m.codigo_sap || '')}">${esc(m.material)}</option>`).join('');
+  document.getElementById('materialList').innerHTML = catalogoSAP.map(m => `<option value="${esc(m.material)}">${esc(m.codigo_sap || '')}</option>`).join('');
+}
+
+
+function normalizarUnidadSap(unidad){
+  const u = String(unidad || '').trim().toUpperCase();
+  if(['M','MT','MTR','MTS','METRO','METROS'].includes(u)) return 'Metros';
+  if(['EA','UN','UND','UNIDAD','UNIDADES'].includes(u)) return 'Unidades';
+  if(['ROLLO','ROLLOS'].includes(u)) return 'Rollos';
+  if(['CAJA','CAJAS'].includes(u)) return 'Cajas';
+  return unidad || 'Unidades';
+}
+
+function parseStockSap(stock){
+  const txt = String(stock || '').trim();
+  const match = txt.match(/^([\d.,]+)\s*(.*)$/);
+  if(!match) return { cantidad: 0, unidad: 'Unidades' };
+  const cantidad = Number(match[1].replace(/\./g,'').replace(',','.')) || 0;
+  const unidad = normalizarUnidadSap(match[2] || 'EA');
+  return { cantidad, unidad };
+}
+
+function mergeCatalogoSap(){
+  const map = new Map();
+
+  sapStock.forEach(s => {
+    const parsed = parseStockSap(s.unrestricted_stock);
+    const codigo = String(s.codigo_sap || '').trim();
+    if(!codigo) return;
+    map.set(codigo, {
+      codigo_sap: codigo,
+      material: s.material_description || s.descripcion_gp_antiguo || '',
+      unidad: parsed.unidad,
+      fuente: 'sap'
+    });
+  });
+
+  materiales.forEach(m => {
+    const codigo = String(m.codigo_sap || '').trim();
+    if(!codigo) return;
+    if(!map.has(codigo)){
+      map.set(codigo, {
+        codigo_sap: codigo,
+        material: m.material || '',
+        unidad: m.unidad || 'Unidades',
+        fuente: 'catalogo'
+      });
+    }
+  });
+
+  return Array.from(map.values());
+}
+
+function normalizarCodigoSap(v){
+  return String(v || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "");
+}
+
+function buscarMaterialPorSap(codigo){
+  const codigoNorm = normalizarCodigoSap(codigo);
+  if(!codigoNorm) return null;
+
+  /*
+    Primero buscamos en stock_sap_villao porque ahí está la descripción SAP real.
+    En tu tabla las columnas son:
+    codigo_sap, material_description, unidad_sap, unidad, cantidad, unrestricted_stock.
+  */
+  const sap = sapStock.find(s => normalizarCodigoSap(s.codigo_sap) === codigoNorm);
+  if(sap){
+    const parsed = parseStockSap(sap.unrestricted_stock, sap);
+    return {
+      codigo_sap: sap.codigo_sap || codigoNorm,
+      material: sap.material_description || sap.descripcion_gp_antiguo || '',
+      unidad: sap.unidad || sap.unidad_sap || parsed.unidad || 'Unidades',
+      categoria: sap.description_storage_location || sap.plant_name || null,
+      fuente: 'stock_sap_villao'
+    };
+  }
+
+  const matCatalogo = materiales.find(m => normalizarCodigoSap(m.codigo_sap) === codigoNorm);
+  if(matCatalogo){
+    return {
+      codigo_sap: matCatalogo.codigo_sap || codigoNorm,
+      material: matCatalogo.material || '',
+      unidad: matCatalogo.unidad || 'Unidades',
+      categoria: matCatalogo.categoria || null,
+      fuente: 'catalogo'
+    };
+  }
+
+  return null;
+}
+
+function buscarMaterialPorNombre(nombre){
+  const name = String(nombre || '').trim().toLowerCase();
+  if(!name) return null;
+
+  const sap = sapStock.find(s => String(s.material_description || '').trim().toLowerCase() === name);
+  if(sap){
+    const parsed = parseStockSap(sap.unrestricted_stock, sap);
+    return {
+      codigo_sap: sap.codigo_sap || '',
+      material: sap.material_description || sap.descripcion_gp_antiguo || '',
+      unidad: sap.unidad || sap.unidad_sap || parsed.unidad || 'Unidades',
+      categoria: sap.description_storage_location || sap.plant_name || null,
+      fuente: 'stock_sap_villao'
+    };
+  }
+
+  const matCatalogo = materiales.find(m => String(m.material || '').trim().toLowerCase() === name);
+  if(matCatalogo){
+    return {
+      codigo_sap: matCatalogo.codigo_sap || '',
+      material: matCatalogo.material || '',
+      unidad: matCatalogo.unidad || 'Unidades',
+      categoria: matCatalogo.categoria || null,
+      fuente: 'catalogo'
+    };
+  }
+
+  return null;
+}
+
+
+function addMaterialLine(data = {}){
+  const body = document.getElementById('materialLinesBody');
+  if(!body) return;
+
+  const rowId = `matline_${++materialLineCounter}`;
+  const tr = document.createElement('tr');
+  tr.dataset.lineId = rowId;
+  tr.innerHTML = `
+    <td>
+      <input class="control line-sap" list="sapList" value="${esc(data.codigo_sap || '')}" oninput="syncMaterialLineBySap(this)" onchange="syncMaterialLineBySap(this)">
+      <div class="sap-warning">Este material no se encuentra relacionado en STOCK SAP</div>
+    </td>
+    <td><input class="control line-material" list="materialList" value="${esc(data.material_nombre || data.material || '')}" required oninput="syncMaterialLineByName(this)" onchange="syncMaterialLineByName(this)"></td>
+    <td><input class="control line-cantidad" type="number" step="0.01" min="0.01" value="${esc(data.cantidad || '')}" required></td>
+    <td>
+      <select class="control line-unidad" required>
+        ${['Metros','Unidades','Rollos','Cajas','Patchcord','SFP','Otros'].map(u => `<option ${String(data.unidad || '').toLowerCase() === u.toLowerCase() ? 'selected' : ''}>${u}</option>`).join('')}
+      </select>
+    </td>
+    <td>
+      <select class="control line-bodega-stock" required>
+        <option value="">Selecciona bodega</option>
+      </select>
+    </td>
+    <td><input class="control line-serial" value="${esc(data.codigo_serial || data.cod_serial || '')}" placeholder="Serial"></td>
+    <td><button type="button" class="small-btn" onclick="removeMaterialLine(this)">✕</button></td>
+  `;
+  body.appendChild(tr);
+
+  if(data.codigo_sap){
+    syncMaterialLineBySap(tr.querySelector('.line-sap'));
+    setBodegaStockValue(tr.querySelector('.line-bodega-stock'), data.bodega_origen_stock || data.bodega_stock || '');
+  }else{
+    cargarBodegasStockEnLinea(tr, []);
+  }
+}
+
+function removeMaterialLine(btn){
+  const body = document.getElementById('materialLinesBody');
+  const tr = btn.closest('tr');
+  if(tr) tr.remove();
+  if(body && !body.children.length) addMaterialLine();
+}
+
+function getStockRowsPorSap(codigo){
+  const codigoNorm = normalizarCodigoSap(codigo);
+  if(!codigoNorm) return [];
+  return sapStock.filter(s => normalizarCodigoSap(s.codigo_sap) === codigoNorm);
+}
+
+function getBodegasStockPorSap(codigo){
+  const rows = getStockRowsPorSap(codigo);
+  return Array.from(new Set(rows.map(s => String(s.description_storage_location || s.storage_location || '').trim()).filter(Boolean)))
+    .sort((a,b) => a.localeCompare(b, 'es', {numeric:true}));
+}
+
+function cargarBodegasStockEnLinea(tr, bodegasOpciones){
+  const select = tr?.querySelector('.line-bodega-stock');
+  if(!select) return;
+
+  const current = select.value;
+  select.innerHTML = '<option value="">Selecciona bodega</option>' +
+    (bodegasOpciones || []).map(b => `<option value="${esc(b)}">${esc(b)}</option>`).join('');
+
+  if(current && (bodegasOpciones || []).includes(current)) select.value = current;
+  else if((bodegasOpciones || []).length === 1) select.value = bodegasOpciones[0];
+}
+
+function setBodegaStockValue(select, value){
+  if(!select || !value) return;
+  const exists = Array.from(select.options).some(o => o.value === value);
+  if(!exists){
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = value;
+    select.appendChild(opt);
+  }
+  select.value = value;
+}
+
+function setUnidadSelectValue(select, unidad){
+  if(!select) return;
+  const valor = String(unidad || 'Unidades').trim();
+
+  const opciones = Array.from(select.options).map(o => o.value || o.textContent);
+  const exacta = opciones.find(o => String(o).toLowerCase() === valor.toLowerCase());
+
+  if(exacta){
+    select.value = exacta;
+    return;
+  }
+
+  // Si la unidad SAP no está en opciones, agregamos la opción para no perder el dato.
+  const opt = document.createElement('option');
+  opt.value = valor;
+  opt.textContent = valor;
+  select.appendChild(opt);
+  select.value = valor;
+}
+
+function syncMaterialLineBySap(input){
+  const tr = input.closest('tr');
+  if(!tr) return;
+
+  const warning = tr.querySelector('.sap-warning');
+  const codigo = String(input.value || '').trim();
+
+  input.classList.remove('sap-not-found');
+  if(warning) warning.style.display = 'none';
+
+  if(!codigo){
+    tr.querySelector('.line-material').value = '';
+    setUnidadSelectValue(tr.querySelector('.line-unidad'), 'Unidades');
+    cargarBodegasStockEnLinea(tr, []);
+    return;
+  }
+
+  const item = buscarMaterialPorSap(codigo);
+  const bodegasOpciones = getBodegasStockPorSap(codigo);
+  cargarBodegasStockEnLinea(tr, bodegasOpciones);
+
+  if(item){
+    tr.querySelector('.line-material').value = item.material || '';
+    setUnidadSelectValue(tr.querySelector('.line-unidad'), item.unidad || 'Unidades');
+  }else{
+    tr.querySelector('.line-material').value = '';
+    setUnidadSelectValue(tr.querySelector('.line-unidad'), 'Unidades');
+    input.classList.add('sap-not-found');
+    if(warning) warning.style.display = 'block';
+  }
+}
+
+function syncMaterialLineByName(input){
+  const tr = input.closest('tr');
+  const item = buscarMaterialPorNombre(input.value);
+
+  if(item && tr){
+    tr.querySelector('.line-sap').value = item.codigo_sap || '';
+    setUnidadSelectValue(tr.querySelector('.line-unidad'), item.unidad || 'Unidades');
+    cargarBodegasStockEnLinea(tr, getBodegasStockPorSap(item.codigo_sap));
+  }
+}
+
+
+function getMaterialLineItems(){
+  const rows = Array.from(document.querySelectorAll('#materialLinesBody tr'));
+  const items = rows.map(tr => ({
+    codigo_sap: tr.querySelector('.line-sap')?.value.trim() || '',
+    material_nombre: tr.querySelector('.line-material')?.value.trim() || '',
+    cantidad: Number(tr.querySelector('.line-cantidad')?.value || 0),
+    unidad: tr.querySelector('.line-unidad')?.value || 'Unidades',
+    bodega_origen_stock: tr.querySelector('.line-bodega-stock')?.value || '',
+    codigo_serial: tr.querySelector('.line-serial')?.value.trim() || ''
+  })).filter(x => x.material_nombre || x.codigo_sap || x.cantidad || x.codigo_serial);
+
+  if(!items.length) throw new Error('Debes agregar al menos un material.');
+  const invalid = items.find(x => !x.material_nombre || !x.cantidad || x.cantidad <= 0);
+  if(invalid) throw new Error('Cada material debe tener descripción y cantidad mayor a cero.');
+
+  const sinBodega = items.find(x => x.codigo_sap && !x.bodega_origen_stock);
+  if(sinBodega) throw new Error(`Debes seleccionar la bodega origen del código SAP ${sinBodega.codigo_sap}.`);
+
+  return items;
+}
+
+function getActaFormData(){
+  const form = document.getElementById('movForm');
+  return {
+    fecha: form.elements['fecha'].value,
+    hora: form.elements['hora'].value || '',
+    tipo_movimiento: form.elements['tipo_movimiento'].value,
+    estado: form.elements['estado'].value,
+    transportadora: form.elements['transportadora'].value.trim(),
+    guia: form.elements['guia'].value.trim(),
+    proveedor: form.elements['proveedor'].value.trim(),
+    contratista: form.elements['contratista'].value.trim(),
+    responsable: form.elements['responsable'].value.trim(),
+    recibido_por: form.elements['recibido_por'].value.trim(),
+    entregado_a: form.elements['entregado_a'].value.trim(),
+    id_cambio: form.elements['id_cambio'].value.trim(),
+    id_cliente: form.elements['id_cliente'].value.trim(),
+    cliente: form.elements['cliente'].value.trim(),
+    observaciones: form.elements['observaciones'].value.trim()
+  };
+}
+
+function descargarActaPDF(){
+  try{
+    if(!window.XLSX){
+      alert('No se cargó la librería para generar Excel. Verifica la conexión a internet.');
+      return;
+    }
+
+    const info = getActaFormData();
+    const items = getMaterialLineItems();
+
+    const aoa = [
+      ['ACTA DE ENTREGA DE MATERIALES', '', '', '', '', ''],
+      ['Fecha', info.fecha, 'Hora', info.hora, 'Tipo movimiento', info.tipo_movimiento],
+      ['Estado', info.estado, 'Responsable', info.responsable, 'Guía', info.guia],
+      ['Entregado por', info.entregado_a, 'Recibido por', info.recibido_por, 'Cliente', info.cliente],
+      ['ID Cambio', info.id_cambio, 'ID Cliente', info.id_cliente, 'Contratista', info.contratista],
+      [],
+      ['Código SAP', 'Cant', 'Und', 'Descripción', 'Bodega origen', 'Número de serial'],
+      ...items.map(i => [i.codigo_sap, i.cantidad, i.unidad, i.material_nombre, i.bodega_origen_stock, i.codigo_serial]),
+      [],
+      ['Observaciones', info.observaciones, '', '', '', ''],
+      [],
+      ['ENTREGA', '', '', 'RECIBE', '', ''],
+      ['', '', '', '', '', ''],
+      ['Firma:', '', '', 'Firma:', '', ''],
+      ['Nombre:', info.entregado_a || '', '', 'Nombre:', info.recibido_por || '', ''],
+      ['Cédula:', '', '', 'Cédula:', '', '']
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!merges'] = [
+      {s:{r:0,c:0}, e:{r:0,c:5}},
+      {s:{r:9,c:1}, e:{r:9,c:5}},
+      {s:{r:11,c:0}, e:{r:11,c:2}},
+      {s:{r:11,c:3}, e:{r:11,c:5}}
+    ];
+    ws['!cols'] = [
+      {wch:18}, {wch:10}, {wch:12}, {wch:42}, {wch:28}, {wch:24}
+    ];
+
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    for(let R = range.s.r; R <= range.e.r; ++R){
+      for(let C = range.s.c; C <= range.e.c; ++C){
+        const addr = XLSX.utils.encode_cell({r:R,c:C});
+        if(!ws[addr]) continue;
+        ws[addr].s = ws[addr].s || {};
+      }
+    }
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Acta entrega');
+    const fecha = info.fecha || new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb, `Acta_entrega_materiales_${fecha}.xlsx`);
+  }catch(err){
+    console.error(err);
+    alert('No se pudo generar el acta: ' + (err.message || err));
+  }
+}
+
+
+function mostrarPreviewSoporte(file){
+  const box = document.getElementById('soportePreview');
+  const img = document.getElementById('soportePreviewImg');
+  if(!box || !img) return;
+  box.style.display = 'none';
+  img.src = '';
+
+  if(file && file.type && file.type.startsWith('image/')){
+    const reader = new FileReader();
+    reader.onload = () => {
+      img.src = reader.result;
+      box.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+async function subirSoporteActaDrive(file){
+  if(!file) return {};
+
+  const nombreArchivo = `${Date.now()}_${file.name}`;
+  const formData = new FormData();
+  formData.append('data', file, nombreArchivo);
+  formData.append('fileName', nombreArchivo);
+  formData.append('originalName', file.name);
+  formData.append('mimeType', file.type || 'application/octet-stream');
+  formData.append('origen', 'modulo_materiales_acta_entrega');
+  formData.append('usuario', localStorage.getItem('user_email') || '');
+
+  const response = await fetch(N8N_WEBHOOK_MATERIALES_URL, {
+    method: 'POST',
+    body: formData
+  });
+
+  const text = await response.text();
+  let cleanText = (text || '').trim();
+  if(cleanText.startsWith('=')) cleanText = cleanText.slice(1).trim();
+
+  const firstBrace = cleanText.indexOf('{');
+  const lastBrace = cleanText.lastIndexOf('}');
+  if(firstBrace !== -1 && lastBrace !== -1){
+    cleanText = cleanText.slice(firstBrace, lastBrace + 1);
+  }
+
+  let result = null;
+  try{
+    result = cleanText ? JSON.parse(cleanText) : null;
+  }catch(e){
+    throw new Error('n8n respondió, pero no devolvió JSON válido: ' + text.slice(0, 250));
+  }
+
+  if(!response.ok || !result?.ok){
+    throw new Error(result?.error || 'No se pudo subir el soporte del acta a Drive.');
+  }
+
+  return {
+    soporte_acta_url: result.url || result.webViewLink || result.webContentLink || '',
+    soporte_acta_file_id: result.fileId || result.id || '',
+    soporte_acta_nombre: result.name || nombreArchivo
+  };
+}
+
+
+function obtenerGrupoMovimiento(row){
+  if(!row) return [];
+
+  // Primero usamos grupo_movimiento_id, que es la forma correcta de agrupar un acta con varios materiales.
+  if(row.grupo_movimiento_id){
+    return movimientos.filter(x => String(x.grupo_movimiento_id || '') === String(row.grupo_movimiento_id));
+  }
+
+  /*
+    Respaldo para registros antiguos que tal vez no tengan grupo_movimiento_id:
+    agrupamos por datos comunes del acta/soporte.
+  */
+  if(row.soporte_acta_file_id){
+    return movimientos.filter(x => String(x.soporte_acta_file_id || '') === String(row.soporte_acta_file_id));
+  }
+
+  return [row];
 }
 
 function openMovModalById(id){
@@ -619,45 +1319,66 @@ function openMovModal(row = null){
   const form = document.getElementById('movForm');
   form.reset();
   currentMovimientoId = row?.id || null;
+  currentGrupoMovimientoId = row?.grupo_movimiento_id || null;
+  soporteActaFile = null;
+  const soporteInput = document.getElementById('soporteActaFile');
+  if(soporteInput) soporteInput.value = '';
+  mostrarPreviewSoporte(null);
+  const linesBody = document.getElementById('materialLinesBody');
+  if(linesBody) linesBody.innerHTML = '';
 
-  document.getElementById('movTitle').textContent = currentMovimientoId ? 'Editar movimiento de material' : 'Nuevo movimiento de material';
+  document.getElementById('movTitle').textContent = currentMovimientoId ? 'Editar acta / movimiento de material' : 'Nuevo movimiento de material';
   const submitBtn = form.querySelector('button[type="submit"]');
   if(submitBtn) submitBtn.textContent = currentMovimientoId ? 'Actualizar movimiento' : 'Guardar movimiento';
 
   if(row){
-    form.elements['tipo_movimiento'].value = row.tipo_movimiento || 'ENTRADA';
-    form.elements['fecha'].value = row.fecha || new Date().toISOString().slice(0,10);
-    form.elements['hora'].value = row.hora ? String(row.hora).slice(0,5) : '';
-    form.elements['estado'].value = row.estado || 'RECIBIDO';
-    form.elements['codigo_sap'].value = row.codigo_sap || '';
-    form.elements['material_nombre'].value = row.om_materiales_catalogo?.material || '';
-    form.elements['unidad'].value = row.unidad || 'Unidades';
-    form.elements['cantidad'].value = row.cantidad ?? '';
-    form.elements['bodega_origen_id'].value = row.bodega_origen_id || '';
-    form.elements['bodega_destino_id'].value = row.bodega_destino_id || '';
-    form.elements['transportadora'].value = row.transportadora || '';
-    form.elements['guia'].value = row.guia || '';
-    form.elements['proveedor'].value = row.proveedor || '';
-    form.elements['contratista'].value = row.contratista || '';
-    form.elements['responsable'].value = row.responsable || '';
-    form.elements['recibido_por'].value = row.recibido_por || '';
-    form.elements['entregado_a'].value = row.entregado_a || '';
-    form.elements['id_cambio'].value = row.id_cambio || '';
-    form.elements['id_cliente'].value = row.id_cliente || '';
-    form.elements['cliente'].value = row.cliente || '';
-    form.elements['observaciones'].value = row.observaciones || '';
+    const grupoRows = obtenerGrupoMovimiento(row);
+    const principal = grupoRows[0] || row;
+
+    form.elements['tipo_movimiento'].value = principal.tipo_movimiento || 'ENTRADA';
+    form.elements['fecha'].value = principal.fecha || new Date().toISOString().slice(0,10);
+    form.elements['hora'].value = principal.hora ? String(principal.hora).slice(0,5) : '';
+    form.elements['estado'].value = principal.estado || 'RECIBIDO';
+
+    grupoRows.forEach(r => {
+      addMaterialLine({
+        codigo_sap: r.codigo_sap || '',
+        material_nombre: r.material_descripcion || r.om_materiales_catalogo?.material || '',
+        unidad: r.unidad || 'Unidades',
+        cantidad: r.cantidad ?? '',
+        bodega_origen_stock: r.bodega_origen_stock || '',
+        codigo_serial: r.codigo_serial || ''
+      });
+    });
+
+    form.elements['bodega_origen_id'].value = principal.bodega_origen_id || '';
+    form.elements['bodega_destino_id'].value = principal.bodega_destino_id || '';
+    form.elements['transportadora'].value = principal.transportadora || '';
+    form.elements['guia'].value = principal.guia || '';
+    form.elements['proveedor'].value = principal.proveedor || '';
+    form.elements['contratista'].value = principal.contratista || '';
+    form.elements['responsable'].value = principal.responsable || '';
+    form.elements['recibido_por'].value = principal.recibido_por || '';
+    form.elements['entregado_a'].value = principal.entregado_a || '';
+    form.elements['id_cambio'].value = principal.id_cambio || '';
+    form.elements['id_cliente'].value = principal.id_cliente || '';
+    form.elements['cliente'].value = principal.cliente || '';
+    form.elements['observaciones'].value = principal.observaciones || '';
   }else{
     form.elements['fecha'].value = new Date().toISOString().slice(0,10);
     form.elements['hora'].value = new Date().toTimeString().slice(0,5);
+    addMaterialLine();
   }
 
-  document.getElementById('movMsg').textContent = '';
+  const movMsg = document.getElementById('movMsg');
+  movMsg.innerHTML = row?.soporte_acta_url ? `<a class="link-btn" target="_blank" href="${esc(row.soporte_acta_url)}">Ver soporte actual</a>` : '';
   toggleMovementFields();
   document.getElementById('movModal').classList.add('show');
 }
 function closeMovModal(){
   document.getElementById('movModal').classList.remove('show');
   currentMovimientoId = null;
+  currentGrupoMovimientoId = null;
 }
 
 function openMatModal(){
@@ -682,22 +1403,49 @@ function toggleMovementFields(){
 
 function syncMaterialBySap(){
   const form = document.getElementById('movForm');
-  const sap = form.elements['codigo_sap'].value.trim();
-  const mat = materiales.find(m => String(m.codigo_sap || '').trim() === sap);
-  if(mat){
-    form.elements['material_nombre'].value = mat.material;
-    form.elements['unidad'].value = mat.unidad;
+  const sapInput = form.elements['codigo_sap'];
+  const sap = sapInput?.value?.trim() || "";
+  const item = buscarMaterialPorSap(sap);
+
+  let legacyWarning = document.getElementById('sapWarningLegacy');
+  if(sapInput && !legacyWarning){
+    legacyWarning = document.createElement('div');
+    legacyWarning.id = 'sapWarningLegacy';
+    legacyWarning.className = 'sap-warning';
+    legacyWarning.textContent = 'Este material no se encuentra relacionado en STOCK SAP';
+    sapInput.insertAdjacentElement('afterend', legacyWarning);
+  }
+
+  sapInput?.classList.remove('sap-not-found');
+  if(legacyWarning) legacyWarning.style.display = 'none';
+
+  if(!sap){
+    return;
+  }
+
+  if(item){
+    form.elements['material_nombre'].value = item.material || '';
+    setUnidadSelectValue(form.elements['unidad'], item.unidad || 'Unidades');
+  }else{
+    form.elements['material_nombre'].value = '';
+    setUnidadSelectValue(form.elements['unidad'], 'Unidades');
+    sapInput?.classList.add('sap-not-found');
+    if(legacyWarning) legacyWarning.style.display = 'block';
   }
 }
+
+
 function syncMaterialByName(){
   const form = document.getElementById('movForm');
-  const name = form.elements['material_nombre'].value.trim();
-  const mat = materiales.find(m => String(m.material || '').trim() === name);
-  if(mat){
-    form.elements['codigo_sap'].value = mat.codigo_sap || '';
-    form.elements['unidad'].value = mat.unidad;
+  const name = form.elements['material_nombre']?.value?.trim() || "";
+  const item = buscarMaterialPorNombre(name);
+
+  if(item){
+    form.elements['codigo_sap'].value = item.codigo_sap || '';
+    setUnidadSelectValue(form.elements['unidad'], item.unidad || 'Unidades');
   }
 }
+
 
 async function getOrCreateMaterial(payload){
   const client = await resolveClient();
@@ -727,6 +1475,321 @@ async function getOrCreateMaterial(payload){
   return ins.data;
 }
 
+
+
+function getMaterialLineItemsParaActa(){
+  const rows = Array.from(document.querySelectorAll('#materialLinesBody tr'));
+  return rows.map(tr => ({
+    codigo_sap: tr.querySelector('.line-sap')?.value.trim() || '',
+    material_nombre: tr.querySelector('.line-material')?.value.trim() || '',
+    cantidad: Number(tr.querySelector('.line-cantidad')?.value || 0),
+    unidad: tr.querySelector('.line-unidad')?.value || '',
+    bodega_origen_stock: tr.querySelector('.line-bodega-stock')?.value || '',
+    codigo_serial: tr.querySelector('.line-serial')?.value.trim() || ''
+  })).filter(x => x.codigo_sap || x.material_nombre || x.cantidad || x.codigo_serial);
+}
+
+function getActaItemsFromForm(){
+  return getMaterialLineItemsParaActa().map(item => {
+    const info = buscarMaterialPorSap(item.codigo_sap) || buscarMaterialPorNombre(item.material_nombre) || {};
+    return {
+      codigo_sap: item.codigo_sap || info.codigo_sap || '',
+      cantidad: item.cantidad || 0,
+      unidad: item.unidad || info.unidad || '',
+      material_nombre: item.material_nombre || info.material || '',
+      bodega_origen_nombre: item.bodega_origen_stock || '',
+      serial: item.codigo_serial || ''
+    };
+  }).filter(x => x.codigo_sap || x.material_nombre || x.cantidad);
+}
+
+
+function getMovFormValue(name){
+  const form = document.getElementById('movForm');
+  return form?.elements?.[name]?.value || '';
+}
+
+function crearHTMLActaEntrega(){
+  const form = document.getElementById('movForm');
+  const items = getActaItemsFromForm();
+
+  const fecha = getMovFormValue('fecha') || new Date().toISOString().slice(0,10);
+  const hora = getMovFormValue('hora') || new Date().toTimeString().slice(0,5);
+  const tipo = getMovFormValue('tipo_movimiento');
+  const estado = getMovFormValue('estado');
+  const guia = getMovFormValue('guia');
+  const entregadoA = getMovFormValue('entregado_a');
+  const recibidoPor = getMovFormValue('recibido_por');
+  const cliente = getMovFormValue('cliente');
+  const idCambio = getMovFormValue('id_cambio');
+  const idCliente = getMovFormValue('id_cliente');
+  const contratista = getMovFormValue('contratista');
+  const observaciones = getMovFormValue('observaciones');
+
+  const rows = items.length ? items.map((it, index) => `
+    <tr>
+      <td>${index + 1}</td>
+      <td>${esc(it.codigo_sap || '')}</td>
+      <td>${esc(it.material_nombre || '')}</td>
+      <td class="num">${fmtNum(it.cantidad || 0)}</td>
+      <td>${esc(it.unidad || '')}</td>
+      <td>${esc(it.bodega_origen_nombre || '')}</td>
+      <td>${esc(it.serial || '')}</td>
+    </tr>
+  `).join('') : `
+    <tr>
+      <td colspan="7" style="text-align:center;color:#6b7280;">Sin materiales relacionados</td>
+    </tr>
+  `;
+
+  return `
+    <div class="pdf-acta ${items.length > 8 ? 'pdf-compact' : ''}">
+      <div class="pdf-header">
+        <div class="pdf-logo">O&amp;M</div>
+        <div class="pdf-title">
+          <h1>Acta de entrega de materiales</h1>
+          <p>Control de entrega, recepción y trazabilidad de materiales de operación y mantenimiento</p>
+        </div>
+        <div class="pdf-meta">
+          <div><b>Fecha:</b> ${esc(fecha)}</div>
+          <div><b>Hora:</b> ${esc(hora)}</div>
+          <div><b>Estado:</b> ${esc(estado)}</div>
+        </div>
+      </div>
+
+      <div class="pdf-section-title">Información general</div>
+      <div class="pdf-grid">
+        <div class="pdf-cell"><div class="pdf-label">Tipo movimiento</div><div class="pdf-value">${esc(tipo)}</div></div>
+        <div class="pdf-cell"><div class="pdf-label">Estado</div><div class="pdf-value">${esc(estado || 'N/A')}</div></div>
+        <div class="pdf-cell"><div class="pdf-label">Guía</div><div class="pdf-value">${esc(guia || 'N/A')}</div></div>
+        <div class="pdf-cell"><div class="pdf-label">Contratista</div><div class="pdf-value">${esc(contratista || 'N/A')}</div></div>
+
+        <div class="pdf-cell"><div class="pdf-label">Cliente</div><div class="pdf-value">${esc(cliente || 'N/A')}</div></div>
+        <div class="pdf-cell"><div class="pdf-label">ID Cliente</div><div class="pdf-value">${esc(idCliente || 'N/A')}</div></div>
+        <div class="pdf-cell" style="grid-column:span 2;"><div class="pdf-label">ID Cambio / Instalación</div><div class="pdf-value">${esc(idCambio || 'N/A')}</div></div>
+      </div>
+
+      <div class="pdf-section-title">Detalle de materiales entregados</div>
+      <table class="pdf-table">
+        <thead>
+          <tr>
+            <th style="width:32px;">#</th>
+            <th style="width:90px;">Código SAP</th>
+            <th>Descripción</th>
+            <th style="width:70px;">Cant.</th>
+            <th style="width:60px;">Und</th>
+            <th style="width:120px;">Bodega origen</th>
+            <th style="width:120px;">Número serial</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+
+      <div class="pdf-section-title">Observaciones</div>
+      <div class="pdf-observaciones">${esc(observaciones || 'Sin observaciones.')}</div>
+
+      <div class="pdf-firmas">
+        <div class="pdf-firma-box">
+          <div class="pdf-firma-title">Entregado por</div>
+          <div class="pdf-line"><b>Firma:</b></div>
+          <div class="pdf-line"><b>Nombre:</b> ${esc(entregadoA || '')}</div>
+          <div class="pdf-line"><b>Cédula:</b></div>
+        </div>
+        <div class="pdf-firma-box">
+          <div class="pdf-firma-title">Recibido por</div>
+          <div class="pdf-line"><b>Firma:</b></div>
+          <div class="pdf-line"><b>Nombre:</b> ${esc(recibidoPor || '')}</div>
+          <div class="pdf-line"><b>Cédula:</b></div>
+        </div>
+      </div>
+
+      <div class="pdf-footer">
+        <span>Documento generado desde el módulo de Materiales O&amp;M.</span>
+        <span>Impresión: ${new Date().toLocaleString('es-CO')}</span>
+      </div>
+    </div>
+  `;
+}
+
+
+function crearAsuntoCorreoActa(){
+  const fecha = getMovFormValue('fecha') || new Date().toISOString().slice(0,10);
+  const cliente = getMovFormValue('cliente') || 'Cliente';
+  const idCambio = getMovFormValue('id_cambio') || 'Sin ID cambio';
+  return `Acta de entrega de materiales - ${cliente} - ${idCambio} - ${fecha}`;
+}
+
+
+function getActaDriveLinkActual(){
+  /*
+    Busca el enlace del acta guardado en la fila actual o en cualquier fila del mismo grupo.
+    Esto aplica cuando ya guardaste el movimiento y adjuntaste el soporte/acta en Drive.
+  */
+  const rowActual = movimientos.find(x => String(x.id) === String(currentMovimientoId || '')) || null;
+  const grupo = rowActual ? obtenerGrupoMovimiento(rowActual) : [];
+
+  const candidatos = [
+    rowActual,
+    ...grupo
+  ].filter(Boolean);
+
+  const conLink = candidatos.find(r => r.soporte_acta_url || r.soporte_drive_url || r.soporte_acta_file_id || r.soporte_file_id);
+
+  if(!conLink) return '';
+
+  if(conLink.soporte_acta_url) return conLink.soporte_acta_url;
+  if(conLink.soporte_drive_url) return conLink.soporte_drive_url;
+
+  const fileId = conLink.soporte_acta_file_id || conLink.soporte_file_id;
+  return fileId ? `https://drive.google.com/file/d/${fileId}/view` : '';
+}
+
+function getNombreActaActual(){
+  const rowActual = movimientos.find(x => String(x.id) === String(currentMovimientoId || '')) || null;
+  const grupo = rowActual ? obtenerGrupoMovimiento(rowActual) : [];
+
+  const candidatos = [
+    rowActual,
+    ...grupo
+  ].filter(Boolean);
+
+  const conNombre = candidatos.find(r => r.soporte_acta_nombre || r.soporte_nombre);
+  return conNombre ? (conNombre.soporte_acta_nombre || conNombre.soporte_nombre || '') : '';
+}
+
+
+
+function escHtml(v){
+  return String(v ?? '')
+    .replaceAll('&','&amp;')
+    .replaceAll('<','&lt;')
+    .replaceAll('>','&gt;')
+    .replaceAll('"','&quot;')
+    .replaceAll("'","&#039;");
+}
+
+function crearCuerpoCorreoActa(){
+  const fecha = getMovFormValue('fecha') || '';
+  const hora = getMovFormValue('hora') || '';
+  const cliente = getMovFormValue('cliente') || '';
+  const idCliente = getMovFormValue('id_cliente') || '';
+  const idCambio = getMovFormValue('id_cambio') || '';
+  const contratista = getMovFormValue('contratista') || '';
+  const entregadoPor = getMovFormValue('entregado_a') || '';
+  const recibidoPor = getMovFormValue('recibido_por') || '';
+  const observaciones = getMovFormValue('observaciones') || '';
+  const linkActa = getActaDriveLinkActual();
+  const nombreActa = getNombreActaActual();
+  const items = getActaItemsFromForm();
+
+  const resumenMateriales = items.map((item, index) => {
+    return `${index + 1}. ${item.codigo_sap || 'S/C'} - ${item.material_nombre || ''} - Cant: ${fmtNum(item.cantidad || 0)} ${item.unidad || ''} - Bodega: ${item.bodega_origen_nombre || 'N/A'}${item.serial ? ' - Serial: ' + item.serial : ''}`;
+  }).join('\n');
+
+  const bloqueLink = linkActa
+    ? `${nombreActa ? nombreActa + '\n' : ''}${linkActa}`
+    : 'El acta aún no tiene link de Drive relacionado. Primero guarda el movimiento con el soporte del acta y luego usa Enviar correo.';
+
+  return `Buen día,
+
+Se relaciona el acta de entrega de materiales correspondiente al movimiento registrado en el módulo de Materiales O&M.
+
+𝗜𝗡𝗙𝗢𝗥𝗠𝗔𝗖𝗜Ó𝗡 𝗚𝗘𝗡𝗘𝗥𝗔𝗟:
+𝗙𝗲𝗰𝗵𝗮: ${fecha}
+𝗛𝗼𝗿𝗮: ${hora}
+𝗖𝗹𝗶𝗲𝗻𝘁𝗲: ${cliente || 'N/A'}
+𝗜𝗗 𝗖𝗹𝗶𝗲𝗻𝘁𝗲: ${idCliente || 'N/A'}
+𝗜𝗗 𝗖𝗮𝗺𝗯𝗶𝗼 / 𝗜𝗻𝘀𝘁𝗮𝗹𝗮𝗰𝗶ó𝗻: ${idCambio || 'N/A'}
+𝗖𝗼𝗻𝘁𝗿𝗮𝘁𝗶𝘀𝘁𝗮: ${contratista || 'N/A'}
+𝗘𝗻𝘁𝗿𝗲𝗴𝗮𝗱𝗼 𝗽𝗼𝗿: ${entregadoPor || 'N/A'}
+𝗥𝗲𝗰𝗶𝗯𝗶𝗱𝗼 𝗽𝗼𝗿: ${recibidoPor || 'N/A'}
+
+𝗗𝗘𝗧𝗔𝗟𝗟𝗘 𝗗𝗘 𝗠𝗔𝗧𝗘𝗥𝗜𝗔𝗟𝗘𝗦:
+${resumenMateriales || 'Sin materiales relacionados.'}
+
+𝗢𝗕𝗦𝗘𝗥𝗩𝗔𝗖𝗜𝗢𝗡𝗘𝗦:
+${observaciones || 'Sin observaciones.'}
+
+𝗟𝗜𝗡𝗞 𝗗𝗘𝗟 𝗔𝗖𝗧𝗔 𝗗𝗘 𝗘𝗡𝗧𝗥𝗘𝗚𝗔:
+${bloqueLink}
+
+Cordialmente,`;
+}
+
+
+function enviarCorreoActa(){
+  try{
+    const items = getActaItemsFromForm();
+    if(!items.length){
+      alert('Debes agregar al menos un material para preparar el correo.');
+      return;
+    }
+
+    const subject = crearAsuntoCorreoActa();
+    const body = crearCuerpoCorreoActa();
+
+    /*
+      Nota técnica:
+      mailto/Outlook deeplink permite diligenciar asunto y cuerpo,
+      pero los navegadores no permiten adjuntar automáticamente archivos locales o de Drive.
+      Para adjuntar el PDF automáticamente habría que hacerlo con n8n, Microsoft Graph o Power Automate.
+    */
+    const outlookUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+
+    window.open(outlookUrl, '_blank');
+  }catch(err){
+    console.error(err);
+    alert('No se pudo preparar el correo: ' + (err.message || err));
+  }
+}
+
+
+async function descargarActaPDF(){
+  const items = getActaItemsFromForm();
+  if(!items.length){
+    alert('Debes agregar al menos un material con código SAP, descripción o cantidad para generar el acta.');
+    return;
+  }
+
+  const cont = document.createElement('div');
+  cont.className = 'pdf-hidden';
+  cont.innerHTML = crearHTMLActaEntrega();
+  document.body.appendChild(cont);
+
+  const fecha = getMovFormValue('fecha') || new Date().toISOString().slice(0,10);
+  const cliente = (getMovFormValue('cliente') || 'materiales').replace(/[^\w\-]+/g, '_');
+  const filename = `Acta_entrega_materiales_${fecha}_${cliente}.pdf`;
+
+  try{
+    if(typeof html2pdf === 'undefined'){
+      const win = window.open('', '_blank');
+      win.document.write(`<!doctype html><html><head><title>${filename}</title></head><body>${crearHTMLActaEntrega()}</body></html>`);
+      win.document.close();
+      win.focus();
+      win.print();
+      return;
+    }
+
+    await html2pdf()
+      .set({
+        margin: 0,
+        filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 1.6, useCORS: true, backgroundColor: '#ffffff', scrollY: 0 },
+        jsPDF: { unit: 'mm', format: 'letter', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
+      })
+      .from(cont.querySelector('.pdf-acta'))
+      .save();
+  }catch(err){
+    console.error(err);
+    alert('Error generando el PDF: ' + (err.message || err));
+  }finally{
+    cont.remove();
+  }
+}
+
+
 document.getElementById('movForm').addEventListener('submit', async function(e){
   e.preventDefault();
   const form = e.target;
@@ -737,24 +1800,24 @@ document.getElementById('movForm').addEventListener('submit', async function(e){
   try{
     const client = await resolveClient();
     const userEmail = localStorage.getItem('user_email') || null;
+    const items = getMaterialLineItems();
 
-    const mat = await getOrCreateMaterial({
-      codigo_sap: form.elements['codigo_sap'].value,
-      material: form.elements['material_nombre'].value,
-      unidad: form.elements['unidad'].value
-    });
+    let soporteInfo = {};
+    if(soporteActaFile){
+      msg.textContent = 'Subiendo soporte del acta...';
+      soporteInfo = await subirSoporteActaDrive(soporteActaFile);
+    }
 
-    const payload = {
+    const grupoMovimientoId = currentGrupoMovimientoId 
+      || (currentMovimientoId ? (movimientos.find(x => String(x.id) === String(currentMovimientoId))?.grupo_movimiento_id || (crypto.randomUUID ? crypto.randomUUID() : null)) : (crypto.randomUUID ? crypto.randomUUID() : null));
+
+    const basePayload = {
       fecha: form.elements['fecha'].value,
       hora: form.elements['hora'].value || null,
       tipo_movimiento: form.elements['tipo_movimiento'].value,
-      material_id: mat.id,
       bodega_origen_id: form.elements['bodega_origen_id'].value || null,
       bodega_destino_id: form.elements['bodega_destino_id'].value || null,
-      cantidad: Number(form.elements['cantidad'].value),
-      unidad: form.elements['unidad'].value,
       estado: form.elements['estado'].value,
-      codigo_sap: form.elements['codigo_sap'].value.trim() || mat.codigo_sap || null,
       guia: form.elements['guia'].value.trim() || null,
       transportadora: form.elements['transportadora'].value.trim() || null,
       proveedor: form.elements['proveedor'].value.trim() || null,
@@ -766,19 +1829,63 @@ document.getElementById('movForm').addEventListener('submit', async function(e){
       id_cliente: form.elements['id_cliente'].value.trim() || null,
       cliente: form.elements['cliente'].value.trim() || null,
       observaciones: form.elements['observaciones'].value.trim() || null,
-      created_by_email: userEmail
+      created_by_email: userEmail,
+      ...(grupoMovimientoId ? { grupo_movimiento_id: grupoMovimientoId } : {}),
+      ...soporteInfo
     };
 
+    const payloads = [];
+    for(const item of items){
+      const mat = await getOrCreateMaterial({
+        codigo_sap: item.codigo_sap,
+        material: item.material_nombre,
+        unidad: item.unidad
+      });
+
+      payloads.push({
+        ...basePayload,
+        material_id: mat.id,
+        cantidad: Number(item.cantidad),
+        unidad: item.unidad,
+        codigo_sap: item.codigo_sap.trim() || mat.codigo_sap || null,
+        material_descripcion: item.material_nombre || null,
+        unidad_sap: item.unidad || null,
+        bodega_origen_stock: item.bodega_origen_stock || null,
+        codigo_serial: item.codigo_serial || null
+      });
+    }
+
     let result;
+
     if(currentMovimientoId){
-      result = await client.from('om_materiales_movimientos').update(payload).eq('id', currentMovimientoId);
+      /*
+        Cuando editas una acta con varios materiales:
+        - eliminamos las líneas anteriores del mismo grupo
+        - insertamos nuevamente todas las líneas del formulario
+        Así vuelve a quedar el acta completa, no solo una fila.
+      */
+      if(currentGrupoMovimientoId){
+        const del = await client
+          .from('om_materiales_movimientos')
+          .delete()
+          .eq('grupo_movimiento_id', currentGrupoMovimientoId);
+        if(del.error) throw del.error;
+      }else{
+        const del = await client
+          .from('om_materiales_movimientos')
+          .delete()
+          .eq('id', currentMovimientoId);
+        if(del.error) throw del.error;
+      }
+
+      result = await client.from('om_materiales_movimientos').insert(payloads);
     }else{
-      result = await client.from('om_materiales_movimientos').insert(payload);
+      result = await client.from('om_materiales_movimientos').insert(payloads);
     }
 
     if(result.error) throw result.error;
 
-    msg.textContent = currentMovimientoId ? 'Movimiento actualizado correctamente' : 'Movimiento guardado correctamente';
+    msg.textContent = currentMovimientoId ? `Acta actualizada correctamente (${payloads.length} material(es))` : `Movimiento guardado correctamente (${payloads.length} material(es))`;
     closeMovModal();
     await loadAll();
   }catch(err){
@@ -817,6 +1924,11 @@ document.getElementById('matForm').addEventListener('submit', async function(e){
     msg.style.color = '#fecaca';
     msg.textContent = 'Error creando material: ' + (err.message || err);
   }
+});
+
+document.getElementById('soporteActaFile')?.addEventListener('change', e => {
+  soporteActaFile = e.target.files?.[0] || null;
+  mostrarPreviewSoporte(soporteActaFile);
 });
 
 ['searchBox','filterBodega','filterTipo'].forEach(id => {
