@@ -13,8 +13,12 @@
     :root{--border:rgba(255,255,255,.10);--text:#eef4ff;--muted:#9ab0d0;--shadow:0 18px 40px rgba(0,0,0,.28)}
     *{box-sizing:border-box}
     body{margin:0;background:linear-gradient(180deg,#04101f,#07152a);color:var(--text);font-family:Arial,Helvetica,sans-serif}
-    .page{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
-    .sidebar{background:linear-gradient(180deg,#08142a,#081126);border-right:1px solid var(--border);padding:18px 16px;position:sticky;top:0;height:100vh;overflow:auto}
+    .page{display:grid;grid-template-columns:240px 1fr;min-height:100vh;transition:grid-template-columns .25s ease}
+    .page.sidebar-hidden{grid-template-columns:0 1fr}
+    .sidebar{background:linear-gradient(180deg,#08142a,#081126);border-right:1px solid var(--border);padding:18px 16px;position:sticky;top:0;height:100vh;overflow:auto;transition:transform .25s ease,opacity .25s ease;z-index:30}
+    .page.sidebar-hidden .sidebar{transform:translateX(-100%);opacity:0;pointer-events:none;padding-left:0;padding-right:0;border-right:0}
+    .sidebar-toggle-tab{position:fixed;left:240px;top:50%;transform:translateY(-50%);width:28px;height:72px;border:1px solid var(--border);border-left:0;border-radius:0 14px 14px 0;background:linear-gradient(135deg,#1d4ed8,#0f766e);color:#fff;font-weight:900;cursor:pointer;z-index:80;box-shadow:var(--shadow);transition:left .25s ease}
+    .page.sidebar-hidden .sidebar-toggle-tab{left:0}
     .brand{font-size:15px;font-weight:800;margin-bottom:4px}.subbrand{font-size:10px;color:var(--muted);margin-bottom:24px}
     .nav a{display:block;padding:12px;border-radius:12px;color:#fff;text-decoration:none;margin-bottom:8px;border:1px solid transparent}
     .nav a:hover,.nav a.active{background:rgba(255,255,255,.05);border-color:var(--border)}
@@ -23,9 +27,20 @@
     .btn{border:none;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#2563eb,#22c55e);color:#fff}
     .btn.secondary{background:#1f3d79}.btn.ghost{background:rgba(255,255,255,.04);border:1px solid var(--border)}.btn.red{background:#ef4444}
     .small-btn{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:#fff;cursor:pointer;font-weight:700}
+
+    .hidden-global-bodega{display:none!important}
+    .material-lines table{min-width:1280px}
+    .material-lines select.control,
+    .material-lines input.control{min-width:0}
+
+
+    #summary{
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr)) !important;
+    }
+
     .main{padding:26px 28px}
     .header h1{margin:0 0 6px;font-size:28px}.header p{margin:0 0 20px;color:var(--muted)}
-    .toolbar{display:grid;grid-template-columns:minmax(260px,1fr) minmax(180px,240px) minmax(180px,240px) auto auto auto;gap:12px;margin-bottom:18px;align-items:center}
+    .toolbar{display:grid;grid-template-columns:minmax(260px,1fr) minmax(180px,240px) minmax(180px,240px) auto auto auto auto;gap:12px;margin-bottom:18px;align-items:center}
     .control{min-width:0;width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}
     .summary{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:12px;margin-bottom:18px}
     .stat{border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));padding:16px;box-shadow:var(--shadow);min-height:110px;cursor:pointer;transition:.15s}
@@ -323,13 +338,15 @@
             <table>
               <thead>
                 <tr>
-                  <th style="width:170px">Código SAP</th>
-                  <th>Material</th>
-                  <th style="width:130px">Cantidad</th>
-                  <th style="width:150px">Unidad</th>
-                  <th style="width:230px">Bodega origen</th>
-                  <th style="width:170px">Cod serial</th>
-                  <th style="width:90px">Acción</th>
+                  <th style="width:135px">Código SAP</th>
+                  <th style="min-width:260px">Material</th>
+                  <th style="width:105px">Cantidad</th>
+                  <th style="width:105px">Unidad</th>
+                  <th style="width:190px">Bodega origen</th>
+                  <th style="width:190px">Bodega destino</th>
+                  <th style="width:170px">Stock SAP</th>
+                  <th style="width:150px">Cod serial</th>
+                  <th style="width:80px">Acción</th>
                 </tr>
               </thead>
               <tbody id="materialLinesBody"></tbody>
@@ -340,8 +357,8 @@
           </div>
           <div class="muted-note" style="margin-top:8px">Ingresa el código SAP y se cargará automáticamente la descripción y unidad desde STOCK SAP Villavicencio.</div>
         </div>
-        <div class="field"><label>Bodega origen</label><select name="bodega_origen_id" id="bodegaOrigen"></select></div>
-        <div class="field"><label>Bodega destino</label><select name="bodega_destino_id" id="bodegaDestino"></select></div>
+        <div class="field hidden-global-bodega"><label>Bodega origen</label><select name="bodega_origen_id" id="bodegaOrigen"></select></div>
+        <div class="field hidden-global-bodega"><label>Bodega destino</label><select name="bodega_destino_id" id="bodegaDestino"></select></div>
         <div class="field"><label>Transportadora</label><input name="transportadora"></div>
 
         <div class="field"><label>Guía</label><input name="guia"></div>
@@ -351,7 +368,7 @@
 
         <div class="field"><label>Recibido por</label><input name="recibido_por"></div>
         <div class="field"><label>Entregado por</label><input name="entregado_a"></div>
-        <div class="field"><label>ID cambio instalación</label><input name="id_cambio" id="idCambioInput" placeholder="Opcional"></div>
+        <div class="field"><label>ID cambio instalación</label><input name="id_cambio" id="idCambioInput" placeholder="Opcional" oninput="debouncedBuscarInstalacionPorCambio(this.value)" onchange="buscarInstalacionPorCambio(this.value)"><div id="instalacionLookupMsg" class="muted-note" style="margin-top:6px"></div></div>
         <div class="field"><label>ID cliente</label><input name="id_cliente" id="idClienteInput"></div>
 
         <div class="field span-2"><label>Cliente</label><input name="cliente" id="clienteInput"></div>
@@ -377,6 +394,7 @@
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
         <button type="button" class="small-btn" onclick="closeMovModal()">Cancelar</button>
         <button type="button" class="small-btn" onclick="descargarActaPDF()">Descargar acta PDF</button>
+        <button type="button" class="small-btn" onclick="exportarActaExcel()">Exportar Excel</button>
         <button type="button" class="small-btn" onclick="enviarCorreoActa()">Enviar correo</button>
         <button type="submit" class="btn">Guardar movimiento</button>
       </div>
@@ -388,24 +406,36 @@
   <div class="modal">
     <div class="modal-header">
       <div>
-        <h3 style="margin:0 0 6px 0;">Crear material</h3>
-        <div class="muted-note">Registra el material en el catálogo para usarlo en entradas, salidas y consumos.</div>
+        <h3 style="margin:0 0 6px 0;">Crear material nuevo</h3>
+        <div class="muted-note">Agrega un material que no existe en STOCK SAP Villavicencio y registra su inventario inicial.</div>
       </div>
       <button class="close-btn" onclick="closeMatModal()">✕</button>
     </div>
     <form id="matForm" action="javascript:void(0)">
       <div class="grid">
-        <div class="field"><label>Código SAP</label><input name="codigo_sap"></div>
-        <div class="field span-2"><label>Material</label><input name="material" required></div>
-        <div class="field"><label>Unidad</label><select name="unidad"><option>Metros</option><option>Unidades</option><option>Rollos</option><option>Cajas</option><option>Patchcord</option><option>SFP</option><option>Otros</option></select></div>
-        <div class="field"><label>Categoría</label><input name="categoria"></div>
-        <div class="field"><label>Stock mínimo</label><input type="number" step="0.01" min="0" name="stock_minimo" value="0"></div>
-        <div class="field span-2"><label>Descripción</label><input name="descripcion"></div>
+        <div class="field"><label>Código SAP *</label><input name="codigo_sap" required placeholder="Ej: 529999"></div>
+        <div class="field span-2"><label>Material / descripción *</label><input name="material" required placeholder="Descripción del material"></div>
+        <div class="field"><label>Unidad *</label>
+          <select name="unidad" required>
+            <option value="EA">EA - Unidad</option>
+            <option value="M">M - Metro</option>
+            <option value="Rollos">Rollos</option>
+            <option value="Cajas">Cajas</option>
+            <option value="Patchcord">Patchcord</option>
+            <option value="SFP">SFP</option>
+            <option value="Otros">Otros</option>
+          </select>
+        </div>
+        <div class="field"><label>Bodega inicial *</label><select name="bodega_inicial_id" id="matBodegaInicial" required></select></div>
+        <div class="field"><label>Cantidad inicial *</label><input type="number" step="0.01" min="0.01" name="cantidad_inicial" required placeholder="0"></div>
+        <div class="field"><label>Categoría / GP antiguo</label><input name="categoria" placeholder="Opcional"></div>
+        <div class="field"><label>Storage location SAP</label><input name="storage_location" placeholder="Opcional, ej: 0141"></div>
+        <div class="field span-2"><label>Observación</label><input name="descripcion" placeholder="Ej: creación inicial desde módulo de materiales"></div>
       </div>
       <div id="matMsg" style="margin-top:7px;color:#86efac"></div>
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
         <button type="button" class="small-btn" onclick="closeMatModal()">Cancelar</button>
-        <button class="btn" type="submit">Guardar material</button>
+        <button class="btn" type="submit">Crear material e inventario inicial</button>
       </div>
     </form>
   </div>
@@ -417,7 +447,7 @@ function renderShell(){
   const email = localStorage.getItem('user_email') || '';
   document.getElementById('root').innerHTML = `
   <div class="page">
-    <aside class="sidebar">
+    <aside class="sidebar" ondblclick="toggleSidebar()">
       <div class="brand">Nodo O&M</div>
       <div class="subbrand">Control y seguimiento</div>
       <nav class="nav">
@@ -439,6 +469,7 @@ function renderShell(){
         <button class="btn secondary" style="width:100%" onclick="safeLogout()">Cerrar sesión</button>
       </div>
     </aside>
+    <button id="sidebarToggleTab" class="sidebar-toggle-tab" title="Ocultar / mostrar barra lateral" onclick="toggleSidebar()">‹</button>
     <main class="main">
       <div class="header">
         <h1>Materiales</h1>
@@ -457,8 +488,9 @@ function renderShell(){
         <select id="filterTipo" class="control">
           <option value="">Todos los movimientos</option>
           <option>ENTRADA</option><option>SALIDA</option><option>TRANSFERENCIA</option><option>CONSUMO_INSTALACION</option><option>AJUSTE_POSITIVO</option><option>AJUSTE_NEGATIVO</option>
-        </select>
+        <option>AJUSTE_INICIAL</option></select>
         <button class="btn ghost" onclick="openMatModal()">Crear material</button>
+        <button class="btn ghost" onclick="exportarTodosMovimientosExcel()">Exportar movimientos Excel</button>
         <button class="btn ghost" onclick="loadAll()">Actualizar</button>
         <button class="btn" onclick="openMovModal()">Nuevo movimiento</button>
       </div>
@@ -523,6 +555,26 @@ function renderShell(){
 function safeLogout(){ try{ if(typeof logout==='function'){ logout(); return; } }catch(e){} localStorage.removeItem('user_email'); location.href='index.html'; }
 renderShell();
 
+function toggleSidebar(){
+  const page = document.querySelector('.page');
+  const tab = document.getElementById('sidebarToggleTab');
+  if(!page) return;
+  page.classList.toggle('sidebar-hidden');
+  const hidden = page.classList.contains('sidebar-hidden');
+  localStorage.setItem('om_sidebar_hidden', hidden ? '1' : '0');
+  if(tab) tab.textContent = hidden ? '›' : '‹';
+}
+function restoreSidebarState(){
+  const page = document.querySelector('.page');
+  const tab = document.getElementById('sidebarToggleTab');
+  if(!page) return;
+  const hidden = localStorage.getItem('om_sidebar_hidden') === '1';
+  page.classList.toggle('sidebar-hidden', hidden);
+  if(tab) tab.textContent = hidden ? '›' : '‹';
+}
+restoreSidebarState();
+
+
 let clientRef = null;
 let bodegas = [];
 let materiales = [];
@@ -568,6 +620,169 @@ function getSearch(){ return (document.getElementById('searchBox')?.value || '')
 function getBodega(){ return document.getElementById('filterBodega')?.value || ''; }
 function getTipo(){ return document.getElementById('filterTipo')?.value || ''; }
 
+function normalizarTextoInventario(v){
+  return String(v || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .trim().toUpperCase();
+}
+
+function bodegaKeyInventario(nombre){
+  const n = normalizarTextoInventario(nombre);
+  if(n.includes('ALMAGRARIO')) return 'almagrario';
+  if(n.includes('NODO')) return 'nodo';
+  if(n.includes('CONTRATISTA')) return 'contratista';
+  if(n.includes('WOM')) return 'wom';
+  return 'otros';
+}
+
+function getFechaCorteStockSap(){
+  const fechas = sapStock
+    .map(r => r.created_at ? new Date(r.created_at).getTime() : 0)
+    .filter(t => t && !Number.isNaN(t));
+
+  if(!fechas.length) return 0;
+
+  /*
+    Se usa la fecha más antigua de la carga SAP como corte base.
+    Importante: si luego se crea un material nuevo desde el módulo, ese registro
+    no debe mover el corte global, porque ocultaría movimientos ya registrados.
+    Si algún día actualizas todo el STOCK SAP real, lo ideal es truncar/reimportar
+    la tabla completa; así este corte vuelve a quedar en la nueva fecha de carga.
+  */
+  return Math.min(...fechas);
+}
+
+const USAR_STOCK_SAP_COMO_CORTE = true;
+
+function movimientoAplicaParaInventario(mov){
+  if(!USAR_STOCK_SAP_COMO_CORTE) return true;
+  const corte = getFechaCorteStockSap();
+  if(!corte) return true;
+
+  const creado = mov.created_at ? new Date(mov.created_at).getTime() : 0;
+
+  // Si no hay created_at se incluye para no ocultar movimientos antiguos migrados.
+  if(!creado || Number.isNaN(creado)) return true;
+
+  // Como stock_sap_villao es el inventario real de arranque,
+  // solo se suman/restan movimientos registrados después de la última carga SAP.
+  return creado > corte;
+}
+
+function crearFilaResumenDesdeSap(s){
+  const parsed = parseStockSap(s.unrestricted_stock, s);
+  return {
+    codigo_sap: String(s.codigo_sap || '').trim(),
+    material: s.material_description || s.descripcion_gp_antiguo || '',
+    unidad: s.unidad || s.unidad_sap || parsed.unidad || 'EA',
+    categoria: s.descripcion_gp_antiguo || s.plant_name || '',
+    almagrario: 0,
+    nodo: 0,
+    contratista: 0,
+    wom: 0,
+    otros: 0,
+    total: 0,
+    fuente: 'stock_sap_villao'
+  };
+}
+
+function asegurarFilaResumen(map, data){
+  const codigo = String(data.codigo_sap || '').trim();
+  const nombre = data.material || data.material_descripcion || data.om_materiales_catalogo?.material || '';
+  const key = codigo || normalizarTextoInventario(nombre);
+  if(!key) return null;
+
+  if(!map.has(key)){
+    map.set(key, {
+      codigo_sap: codigo,
+      material: nombre,
+      unidad: data.unidad || data.unidad_sap || 'EA',
+      categoria: data.categoria || '',
+      almagrario: 0,
+      nodo: 0,
+      contratista: 0,
+      wom: 0,
+      otros: 0,
+      total: 0,
+      fuente: 'movimientos'
+    });
+  }
+
+  const row = map.get(key);
+  if(!row.material && nombre) row.material = nombre;
+  if(!row.codigo_sap && codigo) row.codigo_sap = codigo;
+  if(!row.unidad && data.unidad) row.unidad = data.unidad;
+  return row;
+}
+
+function aplicarDeltaInventario(row, nombreBodega, delta){
+  if(!row || !nombreBodega || !Number(delta)) return;
+  const key = bodegaKeyInventario(nombreBodega);
+  row[key] = Number(row[key] || 0) + Number(delta || 0);
+  row.total = Number(row.total || 0) + Number(delta || 0);
+}
+
+function calcularInventarioDesdeStockSap(){
+  const map = new Map();
+
+  // 1. Base real desde stock_sap_villao.
+  sapStock.forEach(s => {
+    const codigo = String(s.codigo_sap || '').trim();
+    if(!codigo) return;
+
+    const row = asegurarFilaResumen(map, crearFilaResumenDesdeSap(s));
+    const parsed = parseStockSap(s.unrestricted_stock, s);
+    const bodegaSap = s.description_storage_location || s.storage_location || '';
+
+    aplicarDeltaInventario(row, bodegaSap, parsed.cantidad || 0);
+  });
+
+  // 2. Movimientos creados en el módulo después de la carga real de SAP.
+  movimientos
+    .filter(m => String(m.estado || '').toUpperCase() !== 'ANULADO')
+    .filter(movimientoAplicaParaInventario)
+    .forEach(m => {
+      const row = asegurarFilaResumen(map, {
+        codigo_sap: m.codigo_sap,
+        material: m.material_descripcion || m.om_materiales_catalogo?.material || '',
+        unidad: m.unidad || m.unidad_sap || 'EA'
+      });
+      if(!row) return;
+
+      const qty = Number(m.cantidad || 0);
+      const tipo = String(m.tipo_movimiento || '').toUpperCase();
+
+      const origen = m.origen_nombre || m.bodega_origen_stock || '';
+      const destino = m.destino_nombre || '';
+
+      if(tipo === 'AJUSTE_INICIAL'){
+        // Solo deja trazabilidad. No afecta inventario porque la cantidad inicial
+        // ya fue registrada directamente en stock_sap_villao.
+        return;
+      }else if(['ENTRADA','AJUSTE_POSITIVO'].includes(tipo)){
+        aplicarDeltaInventario(row, destino, qty);
+      }else if(['SALIDA','CONSUMO_INSTALACION','AJUSTE_NEGATIVO'].includes(tipo)){
+        aplicarDeltaInventario(row, origen, -qty);
+      }else if(tipo === 'TRANSFERENCIA'){
+        aplicarDeltaInventario(row, origen, -qty);
+        aplicarDeltaInventario(row, destino, qty);
+      }
+    });
+
+  return Array.from(map.values())
+    .map(r => ({
+      ...r,
+      almagrario: Number(r.almagrario || 0),
+      nodo: Number(r.nodo || 0),
+      contratista: Number(r.contratista || 0),
+      wom: Number(r.wom || 0),
+      otros: Number(r.otros || 0),
+      total: Number(r.total || 0)
+    }))
+    .sort((a,b) => String(a.material || '').localeCompare(String(b.material || ''), 'es', {numeric:true}));
+}
+
+
 function materialMatches(row, terms){
   const nombre = String(row.material || row.om_materiales_catalogo?.material || '').toUpperCase();
   return terms.every(t => nombre.includes(String(t).toUpperCase()));
@@ -577,9 +792,12 @@ function applyKpi(rows, mode){
   if(!activeKpi) return rows;
   if(mode === 'inventario'){
     if(activeKpi === 'FIBRA_12H') return rows.filter(r => materialMatches(r, ['FIBRA', '12 H']));
-    if(activeKpi === 'FIBRA_4H') return rows.filter(r => materialMatches(r, ['FIBRA', '4']));
-    if(activeKpi === 'HERRAJE_RET_117_128') return rows.filter(r => materialMatches(r, ['HERRAJE RETENCION', '117-128']));
-    if(activeKpi === 'HERRAJE_S_12_48') return rows.filter(r => materialMatches(r, ['HERRAJE S 12-48']));
+    if(activeKpi === 'FIBRA_4H') return rows.filter(r => String(r.codigo_sap || '').trim() === '522171');
+    if(activeKpi === 'HERRAJE_RET_117_128') return rows.filter(r => String(r.codigo_sap || '').trim() === '523098');
+    if(activeKpi === 'HERRAJE_S_12_48') return rows.filter(r => String(r.codigo_sap || '').trim() === '523102');
+    if(activeKpi === 'CAJAS_OB') return rows.filter(r => String(r.codigo_sap || '').trim() === '522897');
+    if(activeKpi === 'SFPS') return rows.filter(r => String(r.codigo_sap || '').trim() === '522588');
+    if(activeKpi === 'PATCHCORD_LC_SC') return rows.filter(r => String(r.codigo_sap || '').trim() === '523024');
     if(activeKpi === 'BAJO_STOCK') return rows.filter(r => Number(r.total || 0) <= 0);
     if(['ALMAGRARIO','NODO','CONTRATISTA','WOM'].includes(activeKpi)) return rows.filter(r => Number(r[activeKpi.toLowerCase()] || 0) > 0);
   }
@@ -588,6 +806,7 @@ function applyKpi(rows, mode){
   }
   return rows;
 }
+
 
 function totalPorMaterialNombre(terminos){
   const terms = Array.isArray(terminos) ? terminos : [terminos];
@@ -599,18 +818,32 @@ function totalPorMaterialNombre(terminos){
     .reduce((sum, r) => sum + Number(r.total || 0), 0);
 }
 
+function totalPorCodigoSap(codigoSap){
+  const codigo = String(codigoSap || '').trim();
+  return resumen
+    .filter(r => String(r.codigo_sap || '').trim() === codigo)
+    .reduce((sum, r) => sum + Number(r.total || 0), 0);
+}
+
+
 function renderSummary(){
   const fibra12h = totalPorMaterialNombre(['FIBRA', '12 H']);
-  const fibra4h = totalPorMaterialNombre(['FIBRA', '4']);
-  const herrajeRet117128 = totalPorMaterialNombre(['HERRAJE RETENCION', '117-128']);
-  const herrajeS1248 = totalPorMaterialNombre(['HERRAJE S 12-48']);
+  const fibra4h = totalPorCodigoSap('522171');
+  const herrajeRet117128 = totalPorCodigoSap('523098');
+  const herrajeS1248 = totalPorCodigoSap('523102');
+  const cajasOb = totalPorCodigoSap('522897');
+  const sfps = totalPorCodigoSap('522588');
+  const patchcordLcSc = totalPorCodigoSap('523024');
   const consumido = movimientos.filter(x => x.tipo_movimiento === 'CONSUMO_INSTALACION').reduce((a,b)=>a+Number(b.cantidad||0),0);
 
   document.getElementById('summary').innerHTML = `
     <div class="stat ${activeKpi==='FIBRA_12H'?'active':''}" onclick="toggleKpi('FIBRA_12H')"><div class="label">Fibra 12 hilos</div><div class="value">${fmtNum(fibra12h)}</div><div class="sub">Total en todas las bodegas</div></div>
-    <div class="stat ${activeKpi==='FIBRA_4H'?'active':''}" onclick="toggleKpi('FIBRA_4H')"><div class="label">Fibra 4 hilos</div><div class="value">${fmtNum(fibra4h)}</div><div class="sub">Total en todas las bodegas</div></div>
-    <div class="stat ${activeKpi==='HERRAJE_RET_117_128'?'active':''}" onclick="toggleKpi('HERRAJE_RET_117_128')"><div class="label">Herraje retención 117-128</div><div class="value">${fmtNum(herrajeRet117128)}</div><div class="sub">Total en todas las bodegas</div></div>
-    <div class="stat ${activeKpi==='HERRAJE_S_12_48'?'active':''}" onclick="toggleKpi('HERRAJE_S_12_48')"><div class="label">Herraje S 12-48 ADSS</div><div class="value">${fmtNum(herrajeS1248)}</div><div class="sub">Total en todas las bodegas</div></div>
+    <div class="stat ${activeKpi==='FIBRA_4H'?'active':''}" onclick="toggleKpi('FIBRA_4H')"><div class="label">Fibra 4 hilos</div><div class="value">${fmtNum(fibra4h)}</div><div class="sub">Disponible SAP 522171</div></div>
+    <div class="stat ${activeKpi==='HERRAJE_RET_117_128'?'active':''}" onclick="toggleKpi('HERRAJE_RET_117_128')"><div class="label">Herraje retención</div><div class="value">${fmtNum(herrajeRet117128)}</div><div class="sub">Disponible SAP 523098</div></div>
+    <div class="stat ${activeKpi==='HERRAJE_S_12_48'?'active':''}" onclick="toggleKpi('HERRAJE_S_12_48')"><div class="label">Herraje suspensión</div><div class="value">${fmtNum(herrajeS1248)}</div><div class="sub">Disponible SAP 523102</div></div>
+    <div class="stat ${activeKpi==='CAJAS_OB'?'active':''}" onclick="toggleKpi('CAJAS_OB')"><div class="label">Cajas OB</div><div class="value">${fmtNum(cajasOb)}</div><div class="sub">Disponible SAP 522897</div></div>
+    <div class="stat ${activeKpi==='SFPS'?'active':''}" onclick="toggleKpi('SFPS')"><div class="label">SFPs</div><div class="value">${fmtNum(sfps)}</div><div class="sub">Disponible SAP 522588</div></div>
+    <div class="stat ${activeKpi==='PATCHCORD_LC_SC'?'active':''}" onclick="toggleKpi('PATCHCORD_LC_SC')"><div class="label">Patchcord LC-SC</div><div class="value">${fmtNum(patchcordLcSc)}</div><div class="sub">Disponible SAP 523024</div></div>
     <div class="stat ${activeKpi==='SALIDAS'?'active':''}" onclick="toggleKpi('SALIDAS')"><div class="label">Consumido / salidas</div><div class="value">${fmtNum(consumido)}</div><div class="sub">Instalaciones y salidas</div></div>
   `;
 }
@@ -625,7 +858,7 @@ function renderInventario(){
 
   let rows = resumen.filter(r => {
     const matchText = !txt || [r.codigo_sap,r.material,r.unidad,r.categoria].map(x=>String(x||'').toLowerCase()).some(x=>x.includes(txt));
-    const matchBodega = !bodega || Number(r[bodega.toLowerCase()] || 0) > 0;
+    const matchBodega = !bodega || Number(r[bodegaKeyInventario(bodega)] || 0) > 0;
     return matchText && matchBodega;
   });
 
@@ -646,7 +879,7 @@ function renderInventario(){
       <td>${fmtNum(r.nodo)}</td>
       <td>${fmtNum(r.contratista)}</td>
       <td>${fmtNum(r.wom)}</td>
-      <td><b>${fmtNum(r.total)}</b></td>
+      <td><b>${fmtNum(r.total)}</b>${Number(r.otros||0) ? `<div class="desc">Otros: ${fmtNum(r.otros)}</div>` : ''}</td>
     </tr>
   `).join('');
 }
@@ -817,6 +1050,69 @@ function renderConsumos(){
   `).join('');
 }
 
+function exportarTodosMovimientosExcel(){
+  try{
+    if(!window.XLSX){
+      alert('No se cargó la librería XLSX. Verifica la conexión a internet.');
+      return;
+    }
+
+    const rows = movimientos.map(r => ({
+      'Fecha': r.fecha || '',
+      'Hora': r.hora || '',
+      'Tipo movimiento': r.tipo_movimiento || '',
+      'Estado': r.estado || '',
+      'Código SAP': r.codigo_sap || '',
+      'Material': r.material_descripcion || r.om_materiales_catalogo?.material || '',
+      'Cantidad': Number(r.cantidad || 0),
+      'Unidad': r.unidad || '',
+      'Bodega origen': r.origen_nombre || '',
+      'Bodega origen stock SAP': r.bodega_origen_stock || '',
+      'Bodega destino': r.destino_nombre || '',
+      'No. serial': r.codigo_serial || '',
+      'Guía': r.guia || '',
+      'Transportadora': r.transportadora || '',
+      'Proveedor': r.proveedor || '',
+      'Contratista': r.contratista || '',
+      'Responsable': r.responsable || r.created_by_email || '',
+      'Entregado por': r.entregado_a || '',
+      'Recibido por': r.recibido_por || '',
+      'ID Cambio': r.id_cambio || '',
+      'ID Cliente': r.id_cliente || '',
+      'Cliente': r.cliente || '',
+      'Observaciones': r.observaciones || '',
+      'Soporte acta URL': r.soporte_acta_url || '',
+      'Soporte acta nombre': r.soporte_acta_nombre || '',
+      'Grupo movimiento ID': r.grupo_movimiento_id || '',
+      'Creado por': r.created_by_email || '',
+      'Fecha creación': r.created_at || ''
+    }));
+
+    if(!rows.length){
+      alert('No hay movimientos para exportar.');
+      return;
+    }
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [
+      {wch:12},{wch:10},{wch:20},{wch:14},{wch:14},{wch:42},{wch:12},{wch:10},
+      {wch:20},{wch:22},{wch:20},{wch:18},{wch:18},{wch:20},{wch:20},{wch:18},
+      {wch:28},{wch:20},{wch:20},{wch:16},{wch:16},{wch:30},{wch:45},{wch:55},
+      {wch:35},{wch:38},{wch:28},{wch:22}
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Movimientos');
+
+    const fecha = new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb, `Movimientos_materiales_${fecha}.xlsx`);
+  }catch(err){
+    console.error(err);
+    alert('Error exportando movimientos: ' + (err.message || err));
+  }
+}
+
+
 function renderAll(){
   renderSummary();
   renderInventario();
@@ -828,10 +1124,9 @@ async function loadAll(){
   try{
     const client = await resolveClient();
 
-    const [bodegasRes, materialesRes, resumenRes, movRes, consRes, sapRes] = await Promise.all([
+    const [bodegasRes, materialesRes, movRes, consRes, sapRes] = await Promise.all([
       client.from('om_bodegas').select('*').order('nombre'),
       client.from('om_materiales_catalogo').select('*').order('material'),
-      client.from('om_v_materiales_resumen').select('*').order('material'),
       client.from('om_materiales_movimientos').select('*, om_materiales_catalogo(material)').order('created_at',{ascending:false}),
       client.from('om_v_consumo_instalaciones').select('*').order('fecha',{ascending:false}),
       client.from('stock_sap_villao').select('*').order('material_description')
@@ -839,14 +1134,12 @@ async function loadAll(){
 
     if(bodegasRes.error) throw bodegasRes.error;
     if(materialesRes.error) throw materialesRes.error;
-    if(resumenRes.error) throw resumenRes.error;
     if(movRes.error) throw movRes.error;
     if(consRes.error) throw consRes.error;
     if(sapRes.error) throw sapRes.error;
 
     bodegas = bodegasRes.data || [];
     materiales = materialesRes.data || [];
-    resumen = resumenRes.data || [];
     consumos = consRes.data || [];
     sapStock = sapRes?.data || [];
 
@@ -857,6 +1150,10 @@ async function loadAll(){
       destino_nombre: bodegaMap.get(m.bodega_destino_id) || ''
     }));
 
+    // El resumen ya no depende de om_v_materiales_resumen.
+    // Se calcula desde stock_sap_villao + movimientos posteriores a la carga SAP.
+    resumen = calcularInventarioDesdeStockSap();
+
     hydrateSelects();
     renderAll();
   }catch(err){
@@ -864,6 +1161,7 @@ async function loadAll(){
     alert('Error cargando materiales: ' + (err.message || err));
   }
 }
+
 
 function hydrateSelects(){
   const filterBodega = document.getElementById('filterBodega');
@@ -876,6 +1174,15 @@ function hydrateSelects(){
   const optsId = bodegas.map(b => `<option value="${esc(b.id)}">${esc(b.nombre)}</option>`).join('');
   if(origen) origen.innerHTML = `<option value="">No aplica</option>${optsId}`;
   if(destino) destino.innerHTML = `<option value="">No aplica</option>${optsId}`;
+
+  const matBodegaInicial = document.getElementById('matBodegaInicial');
+  if(matBodegaInicial) matBodegaInicial.innerHTML = `<option value="">Selecciona bodega</option>${optsId}`;
+
+  document.querySelectorAll('.line-bodega-origen-id,.line-bodega-destino-id').forEach(sel => {
+    const current = sel.value;
+    sel.innerHTML = getBodegaOptionsHtml(current);
+  });
+  actualizarRequeridosBodegasPorLinea();
 
   const catalogoSAP = mergeCatalogoSap();
   document.getElementById('sapList').innerHTML = catalogoSAP.map(m => `<option value="${esc(m.codigo_sap || '')}">${esc(m.material)}</option>`).join('');
@@ -892,28 +1199,58 @@ function normalizarUnidadSap(unidad){
   return unidad || 'Unidades';
 }
 
-function parseStockSap(stock){
+function parseStockSap(stock, row = null){
+  /*
+    STOCK SAP Villavicencio es la base real del inventario.
+    En la tabla stock_sap_villao se usa principalmente:
+    - cantidad
+    - unidad / unidad_sap
+    - description_storage_location
+    - material_description
+  */
+  const cantidadDirecta = row && row.cantidad !== undefined && row.cantidad !== null && row.cantidad !== ''
+    ? Number(row.cantidad)
+    : NaN;
+
+  if(!Number.isNaN(cantidadDirecta)){
+    return {
+      cantidad: cantidadDirecta,
+      unidad: normalizarUnidadSap(row.unidad || row.unidad_sap || 'EA')
+    };
+  }
+
   const txt = String(stock || '').trim();
   const match = txt.match(/^([\d.,]+)\s*(.*)$/);
-  if(!match) return { cantidad: 0, unidad: 'Unidades' };
+  if(!match) return { cantidad: 0, unidad: normalizarUnidadSap(row?.unidad || row?.unidad_sap || 'EA') };
+
   const cantidad = Number(match[1].replace(/\./g,'').replace(',','.')) || 0;
-  const unidad = normalizarUnidadSap(match[2] || 'EA');
+  const unidad = normalizarUnidadSap(row?.unidad || row?.unidad_sap || match[2] || 'EA');
   return { cantidad, unidad };
 }
 
+
 function mergeCatalogoSap(){
+  /*
+    El catálogo operativo se arma desde stock_sap_villao.
+    om_materiales_catalogo queda solo como respaldo para materiales creados
+    manualmente o para relacionar material_id en los movimientos.
+  */
   const map = new Map();
 
   sapStock.forEach(s => {
-    const parsed = parseStockSap(s.unrestricted_stock);
+    const parsed = parseStockSap(s.unrestricted_stock, s);
     const codigo = String(s.codigo_sap || '').trim();
     if(!codigo) return;
-    map.set(codigo, {
-      codigo_sap: codigo,
-      material: s.material_description || s.descripcion_gp_antiguo || '',
-      unidad: parsed.unidad,
-      fuente: 'sap'
-    });
+
+    if(!map.has(codigo)){
+      map.set(codigo, {
+        codigo_sap: codigo,
+        material: s.material_description || s.descripcion_gp_antiguo || '',
+        unidad: s.unidad || s.unidad_sap || parsed.unidad || 'EA',
+        categoria: s.descripcion_gp_antiguo || s.plant_name || '',
+        fuente: 'stock_sap_villao'
+      });
+    }
   });
 
   materiales.forEach(m => {
@@ -923,14 +1260,18 @@ function mergeCatalogoSap(){
       map.set(codigo, {
         codigo_sap: codigo,
         material: m.material || '',
-        unidad: m.unidad || 'Unidades',
+        unidad: m.unidad || 'EA',
+        categoria: m.categoria || null,
         fuente: 'catalogo'
       });
     }
   });
 
-  return Array.from(map.values());
+  return Array.from(map.values()).sort((a,b) =>
+    String(a.material || '').localeCompare(String(b.material || ''), 'es', {numeric:true})
+  );
 }
+
 
 function normalizarCodigoSap(v){
   return String(v || "")
@@ -1005,6 +1346,48 @@ function buscarMaterialPorNombre(nombre){
 }
 
 
+function getBodegaNombreById(id){
+  return bodegas.find(b => String(b.id) === String(id))?.nombre || '';
+}
+
+function getBodegaOptionsHtml(selected = ''){
+  return '<option value="">No aplica</option>' + bodegas.map(b => {
+    const sel = String(selected || '') === String(b.id) ? 'selected' : '';
+    return `<option value="${esc(b.id)}" ${sel}>${esc(b.nombre)}</option>`;
+  }).join('');
+}
+
+function getTipoMovimientoActual(){
+  return document.getElementById('movForm')?.elements?.['tipo_movimiento']?.value || 'ENTRADA';
+}
+
+function lineRequiresOrigen(tipo = getTipoMovimientoActual()){
+  return ['SALIDA','TRANSFERENCIA','CONSUMO_INSTALACION','AJUSTE_NEGATIVO'].includes(tipo);
+}
+
+function lineRequiresDestino(tipo = getTipoMovimientoActual()){
+  return ['ENTRADA','TRANSFERENCIA','AJUSTE_POSITIVO'].includes(tipo);
+}
+
+function actualizarRequeridosBodegasPorLinea(){
+  const tipo = getTipoMovimientoActual();
+  document.querySelectorAll('#materialLinesBody tr').forEach(tr => {
+    const origen = tr.querySelector('.line-bodega-origen-id');
+    const destino = tr.querySelector('.line-bodega-destino-id');
+    if(origen) origen.required = lineRequiresOrigen(tipo);
+    if(destino) destino.required = lineRequiresDestino(tipo);
+
+    // Limpieza visual por tipo. No borra en TRANSFERENCIA.
+    if(tipo === 'ENTRADA' || tipo === 'AJUSTE_POSITIVO'){
+      if(origen) origen.value = '';
+    }
+    if(['SALIDA','CONSUMO_INSTALACION','AJUSTE_NEGATIVO'].includes(tipo)){
+      if(destino) destino.value = '';
+    }
+  });
+}
+
+
 function addMaterialLine(data = {}){
   const body = document.getElementById('materialLinesBody');
   if(!body) return;
@@ -1012,6 +1395,10 @@ function addMaterialLine(data = {}){
   const rowId = `matline_${++materialLineCounter}`;
   const tr = document.createElement('tr');
   tr.dataset.lineId = rowId;
+
+  const selectedOrigen = data.bodega_origen_id || data.origen_id || '';
+  const selectedDestino = data.bodega_destino_id || data.destino_id || '';
+
   tr.innerHTML = `
     <td>
       <input class="control line-sap" list="sapList" value="${esc(data.codigo_sap || '')}" oninput="syncMaterialLineBySap(this)" onchange="syncMaterialLineBySap(this)">
@@ -1021,12 +1408,22 @@ function addMaterialLine(data = {}){
     <td><input class="control line-cantidad" type="number" step="0.01" min="0.01" value="${esc(data.cantidad || '')}" required></td>
     <td>
       <select class="control line-unidad" required>
-        ${['Metros','Unidades','Rollos','Cajas','Patchcord','SFP','Otros'].map(u => `<option ${String(data.unidad || '').toLowerCase() === u.toLowerCase() ? 'selected' : ''}>${u}</option>`).join('')}
+        ${['M','EA','Metros','Unidades','Rollos','Cajas','Patchcord','SFP','Otros'].map(u => `<option ${String(data.unidad || '').toLowerCase() === u.toLowerCase() ? 'selected' : ''}>${u}</option>`).join('')}
       </select>
     </td>
     <td>
-      <select class="control line-bodega-stock" required>
-        <option value="">Selecciona bodega</option>
+      <select class="control line-bodega-origen-id">
+        ${getBodegaOptionsHtml(selectedOrigen)}
+      </select>
+    </td>
+    <td>
+      <select class="control line-bodega-destino-id">
+        ${getBodegaOptionsHtml(selectedDestino)}
+      </select>
+    </td>
+    <td>
+      <select class="control line-bodega-stock">
+        <option value="">Selecciona stock</option>
       </select>
     </td>
     <td><input class="control line-serial" value="${esc(data.codigo_serial || data.cod_serial || '')}" placeholder="Serial"></td>
@@ -1040,7 +1437,10 @@ function addMaterialLine(data = {}){
   }else{
     cargarBodegasStockEnLinea(tr, []);
   }
+
+  actualizarRequeridosBodegasPorLinea();
 }
+
 
 function removeMaterialLine(btn){
   const body = document.getElementById('materialLinesBody');
@@ -1150,25 +1550,44 @@ function syncMaterialLineByName(input){
 
 
 function getMaterialLineItems(){
+  const tipo = getTipoMovimientoActual();
   const rows = Array.from(document.querySelectorAll('#materialLinesBody tr'));
-  const items = rows.map(tr => ({
-    codigo_sap: tr.querySelector('.line-sap')?.value.trim() || '',
-    material_nombre: tr.querySelector('.line-material')?.value.trim() || '',
-    cantidad: Number(tr.querySelector('.line-cantidad')?.value || 0),
-    unidad: tr.querySelector('.line-unidad')?.value || 'Unidades',
-    bodega_origen_stock: tr.querySelector('.line-bodega-stock')?.value || '',
-    codigo_serial: tr.querySelector('.line-serial')?.value.trim() || ''
-  })).filter(x => x.material_nombre || x.codigo_sap || x.cantidad || x.codigo_serial);
+  const items = rows.map(tr => {
+    const bodegaOrigenId = tr.querySelector('.line-bodega-origen-id')?.value || '';
+    const bodegaDestinoId = tr.querySelector('.line-bodega-destino-id')?.value || '';
+    return {
+      codigo_sap: tr.querySelector('.line-sap')?.value.trim() || '',
+      material_nombre: tr.querySelector('.line-material')?.value.trim() || '',
+      cantidad: Number(tr.querySelector('.line-cantidad')?.value || 0),
+      unidad: tr.querySelector('.line-unidad')?.value || 'Unidades',
+      bodega_origen_id: bodegaOrigenId || null,
+      bodega_destino_id: bodegaDestinoId || null,
+      bodega_origen_nombre: getBodegaNombreById(bodegaOrigenId),
+      bodega_destino_nombre: getBodegaNombreById(bodegaDestinoId),
+      bodega_origen_stock: tr.querySelector('.line-bodega-stock')?.value || '',
+      codigo_serial: tr.querySelector('.line-serial')?.value.trim() || ''
+    };
+  }).filter(x => x.material_nombre || x.codigo_sap || x.cantidad || x.codigo_serial);
 
   if(!items.length) throw new Error('Debes agregar al menos un material.');
   const invalid = items.find(x => !x.material_nombre || !x.cantidad || x.cantidad <= 0);
   if(invalid) throw new Error('Cada material debe tener descripción y cantidad mayor a cero.');
 
-  const sinBodega = items.find(x => x.codigo_sap && !x.bodega_origen_stock);
-  if(sinBodega) throw new Error(`Debes seleccionar la bodega origen del código SAP ${sinBodega.codigo_sap}.`);
+  const sinStock = items.find(x => x.codigo_sap && !x.bodega_origen_stock);
+  if(sinStock) throw new Error(`Debes seleccionar el Stock SAP del código ${sinStock.codigo_sap}.`);
+
+  const sinOrigen = items.find(x => lineRequiresOrigen(tipo) && !x.bodega_origen_id);
+  if(sinOrigen) throw new Error(`Debes seleccionar Bodega origen para el material ${sinOrigen.codigo_sap || sinOrigen.material_nombre}.`);
+
+  const sinDestino = items.find(x => lineRequiresDestino(tipo) && !x.bodega_destino_id);
+  if(sinDestino) throw new Error(`Debes seleccionar Bodega destino para el material ${sinDestino.codigo_sap || sinDestino.material_nombre}.`);
+
+  const mismoOrigenDestino = items.find(x => tipo === 'TRANSFERENCIA' && x.bodega_origen_id && x.bodega_destino_id && String(x.bodega_origen_id) === String(x.bodega_destino_id));
+  if(mismoOrigenDestino) throw new Error(`En una transferencia, origen y destino no pueden ser iguales para ${mismoOrigenDestino.codigo_sap || mismoOrigenDestino.material_nombre}.`);
 
   return items;
 }
+
 
 function getActaFormData(){
   const form = document.getElementById('movForm');
@@ -1369,6 +1788,8 @@ function openMovModal(row = null){
         material_nombre: r.material_descripcion || r.om_materiales_catalogo?.material || '',
         unidad: r.unidad || 'Unidades',
         cantidad: r.cantidad ?? '',
+        bodega_origen_id: r.bodega_origen_id || '',
+        bodega_destino_id: r.bodega_destino_id || '',
         bodega_origen_stock: r.bodega_origen_stock || '',
         codigo_serial: r.codigo_serial || ''
       });
@@ -1396,6 +1817,7 @@ function openMovModal(row = null){
   const movMsg = document.getElementById('movMsg');
   movMsg.innerHTML = row?.soporte_acta_url ? `<a class="link-btn" target="_blank" href="${esc(row.soporte_acta_url)}">Ver soporte actual</a>` : '';
   toggleMovementFields();
+  if(form?.elements?.['id_cambio']?.value && (!form.elements['cliente']?.value || !form.elements['id_cliente']?.value)) buscarInstalacionPorCambio(form.elements['id_cambio'].value);
   document.getElementById('movModal').classList.add('show');
 }
 function closeMovModal(){
@@ -1411,18 +1833,87 @@ function openMatModal(){
 }
 function closeMatModal(){ document.getElementById('matModal').classList.remove('show'); }
 
+let instalacionLookupTimer = null;
+
+function setInstalacionLookupMsg(text, type = 'info'){
+  const el = document.getElementById('instalacionLookupMsg');
+  if(!el) return;
+  el.textContent = text || '';
+  if(type === 'error') el.style.color = '#fecaca';
+  else if(type === 'ok') el.style.color = '#86efac';
+  else el.style.color = '#bfdbfe';
+}
+
+function debouncedBuscarInstalacionPorCambio(value){
+  clearTimeout(instalacionLookupTimer);
+  instalacionLookupTimer = setTimeout(() => buscarInstalacionPorCambio(value), 650);
+}
+
+async function buscarInstalacionPorCambio(value){
+  const idCambio = String(value || '').trim();
+  const form = document.getElementById('movForm');
+  if(!form) return;
+
+  if(!idCambio){
+    setInstalacionLookupMsg('');
+    return;
+  }
+
+  try{
+    const client = await resolveClient();
+    setInstalacionLookupMsg('Buscando instalación...');
+
+    const { data, error } = await client
+      .from('instalaciones')
+      .select('id_cambio,id_cliente,cliente')
+      .ilike('id_cambio', idCambio)
+      .limit(2);
+
+    if(error) throw error;
+
+    if(!data || !data.length){
+      setInstalacionLookupMsg(`No se encontró instalación con ID cambio ${idCambio}.`, 'error');
+      return;
+    }
+
+    let inst = data[0];
+    if(data.length > 1){
+      const exacta = data.find(r => String(r.id_cambio || '').trim().toLowerCase() === idCambio.toLowerCase());
+      if(exacta){
+        inst = exacta;
+      }else{
+        setInstalacionLookupMsg(`Hay más de una coincidencia para ${idCambio}. Digita el ID cambio completo.`, 'error');
+        return;
+      }
+    }
+
+    if(form.elements['id_cliente']) form.elements['id_cliente'].value = inst.id_cliente || '';
+    if(form.elements['cliente']) form.elements['cliente'].value = inst.cliente || '';
+
+    setInstalacionLookupMsg(`Instalación encontrada: ${inst.cliente || 'Sin cliente'} ${inst.id_cliente ? '(' + inst.id_cliente + ')' : ''}`, 'ok');
+  }catch(err){
+    console.error(err);
+    setInstalacionLookupMsg('Error consultando instalaciones: ' + (err.message || err), 'error');
+  }
+}
+
+
 function toggleMovementFields(){
   const form = document.getElementById('movForm');
+  if(!form) return;
   const tipo = form.elements['tipo_movimiento'].value;
+
+  // Los campos globales se conservan ocultos solo como compatibilidad,
+  // pero la afectación de inventario ahora se toma por cada línea de material.
   const origen = form.elements['bodega_origen_id'];
   const destino = form.elements['bodega_destino_id'];
-  origen.required = ['SALIDA','TRANSFERENCIA','CONSUMO_INSTALACION','AJUSTE_NEGATIVO'].includes(tipo);
-  destino.required = ['ENTRADA','TRANSFERENCIA','AJUSTE_POSITIVO'].includes(tipo);
+  if(origen) origen.required = false;
+  if(destino) destino.required = false;
 
-  if(tipo === 'ENTRADA' || tipo === 'AJUSTE_POSITIVO') origen.value = '';
-  if(['SALIDA','CONSUMO_INSTALACION','AJUSTE_NEGATIVO'].includes(tipo)) destino.value = '';
   if(tipo === 'CONSUMO_INSTALACION') form.elements['estado'].value = 'CONSUMIDO';
+  actualizarRequeridosBodegasPorLinea();
 }
+
 
 function syncMaterialBySap(){
   const form = document.getElementById('movForm');
@@ -1502,15 +1993,24 @@ async function getOrCreateMaterial(payload){
 
 function getMaterialLineItemsParaActa(){
   const rows = Array.from(document.querySelectorAll('#materialLinesBody tr'));
-  return rows.map(tr => ({
-    codigo_sap: tr.querySelector('.line-sap')?.value.trim() || '',
-    material_nombre: tr.querySelector('.line-material')?.value.trim() || '',
-    cantidad: Number(tr.querySelector('.line-cantidad')?.value || 0),
-    unidad: tr.querySelector('.line-unidad')?.value || '',
-    bodega_origen_stock: tr.querySelector('.line-bodega-stock')?.value || '',
-    codigo_serial: tr.querySelector('.line-serial')?.value.trim() || ''
-  })).filter(x => x.codigo_sap || x.material_nombre || x.cantidad || x.codigo_serial);
+  return rows.map(tr => {
+    const bodegaOrigenId = tr.querySelector('.line-bodega-origen-id')?.value || '';
+    const bodegaDestinoId = tr.querySelector('.line-bodega-destino-id')?.value || '';
+    return {
+      codigo_sap: tr.querySelector('.line-sap')?.value.trim() || '',
+      material_nombre: tr.querySelector('.line-material')?.value.trim() || '',
+      cantidad: Number(tr.querySelector('.line-cantidad')?.value || 0),
+      unidad: tr.querySelector('.line-unidad')?.value || '',
+      bodega_origen_id: bodegaOrigenId || null,
+      bodega_destino_id: bodegaDestinoId || null,
+      bodega_origen_nombre: getBodegaNombreById(bodegaOrigenId),
+      bodega_destino_nombre: getBodegaNombreById(bodegaDestinoId),
+      bodega_origen_stock: tr.querySelector('.line-bodega-stock')?.value || '',
+      codigo_serial: tr.querySelector('.line-serial')?.value.trim() || ''
+    };
+  }).filter(x => x.codigo_sap || x.material_nombre || x.cantidad || x.codigo_serial);
 }
+
 
 function getActaItemsFromForm(){
   return getMaterialLineItemsParaActa().map(item => {
@@ -1520,11 +2020,13 @@ function getActaItemsFromForm(){
       cantidad: item.cantidad || 0,
       unidad: item.unidad || info.unidad || '',
       material_nombre: item.material_nombre || info.material || '',
-      bodega_origen_nombre: item.bodega_origen_stock || '',
+      bodega_origen_nombre: item.bodega_origen_stock || item.bodega_origen_nombre || '',
+      bodega_destino_nombre: item.bodega_destino_nombre || '',
       serial: item.codigo_serial || ''
     };
   }).filter(x => x.codigo_sap || x.material_nombre || x.cantidad);
 }
+
 
 
 function getMovFormValue(name){
@@ -1564,7 +2066,7 @@ function crearHTMLActaEntrega(){
       <td class="center storage-text">${esc(it.bodega_origen_nombre || '')}</td>
       <td class="center">${esc(it.serial || '')}</td>
       <td class="center"></td>
-      <td class="center storage-text">${esc(destinoText && destinoText !== 'No aplica' ? destinoText : '')}</td>
+      <td class="center storage-text">${esc(it.bodega_destino_nombre || '')}</td>
       <td class="center"></td>
     </tr>`).join('');
 
@@ -1624,6 +2126,104 @@ function crearHTMLActaEntrega(){
         </div>
       </div>
     </div>`;
+}
+
+
+function descargarBlobExcel(nombreArchivo, contenidoHtml){
+  const blob = new Blob(['\ufeff' + contenidoHtml], {
+    type: 'application/vnd.ms-excel;charset=utf-8;'
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nombreArchivo;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+    a.remove();
+  }, 150);
+}
+
+function crearHTMLActaExcel(){
+  /*
+    Exporta solamente los datos de la tabla de materiales.
+    No incluye logo, imagen, encabezado visual ni formato PDF.
+  */
+  const info = getActaFormData();
+  const items = getActaItemsFromForm();
+
+  const rows = [
+    ['Fecha', info.fecha || ''],
+    ['Hora', info.hora || ''],
+    ['Tipo movimiento', info.tipo_movimiento || ''],
+    ['Consecutivo / ID Cambio', info.id_cambio || ''],
+    ['Cliente', info.cliente || ''],
+    ['ID Cliente', info.id_cliente || ''],
+    ['Contratista', info.contratista || ''],
+    ['Entregado por', info.entregado_a || ''],
+    ['Recibido por', info.recibido_por || ''],
+    ['Observaciones', info.observaciones || ''],
+    [],
+    ['Código SAP', 'Cantidad', 'Und', 'Descripción', 'Planta de Origen', 'Storage Location Origen', 'No de Serial', 'Planta de Destino', 'Storage Location Destino', 'No WBS/Proyecto'],
+    ...items.map(i => [
+      i.codigo_sap || '',
+      i.cantidad || '',
+      i.unidad || '',
+      i.material_nombre || '',
+      'CO29 LN Villavicencio',
+      i.bodega_origen_nombre || '',
+      i.serial || '',
+      '',
+      i.bodega_destino_nombre || '',
+      ''
+    ])
+  ];
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [
+    { wch: 16 },
+    { wch: 10 },
+    { wch: 8 },
+    { wch: 45 },
+    { wch: 22 },
+    { wch: 24 },
+    { wch: 18 },
+    { wch: 22 },
+    { wch: 24 },
+    { wch: 18 }
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Acta materiales');
+
+  return wb;
+}
+
+
+function exportarActaExcel(){
+  try{
+    if(!window.XLSX){
+      alert('No se cargó la librería XLSX. Verifica la conexión a internet.');
+      return;
+    }
+
+    const items = getActaItemsFromForm();
+    if(!items.length){
+      alert('Debes agregar al menos un material con código SAP, descripción o cantidad para exportar el Excel.');
+      return;
+    }
+
+    const fecha = getMovFormValue('fecha') || new Date().toISOString().slice(0,10);
+    const cliente = (getMovFormValue('cliente') || 'materiales').replace(/[^\w\-]+/g, '_');
+    const filename = `Acta_materiales_tabla_${fecha}_${cliente}.xlsx`;
+
+    const wb = crearHTMLActaExcel();
+    XLSX.writeFile(wb, filename);
+  }catch(err){
+    console.error(err);
+    alert('Error exportando Excel: ' + (err.message || err));
+  }
 }
 
 
@@ -1698,8 +2298,9 @@ document.getElementById('movForm').addEventListener('submit', async function(e){
       fecha: form.elements['fecha'].value,
       hora: form.elements['hora'].value || null,
       tipo_movimiento: form.elements['tipo_movimiento'].value,
-      bodega_origen_id: form.elements['bodega_origen_id'].value || null,
-      bodega_destino_id: form.elements['bodega_destino_id'].value || null,
+      // Bodegas globales quedan en null porque ahora se definen por cada material.
+      bodega_origen_id: null,
+      bodega_destino_id: null,
       estado: form.elements['estado'].value,
       guia: form.elements['guia'].value.trim() || null,
       transportadora: form.elements['transportadora'].value.trim() || null,
@@ -1733,6 +2334,8 @@ document.getElementById('movForm').addEventListener('submit', async function(e){
         codigo_sap: item.codigo_sap.trim() || mat.codigo_sap || null,
         material_descripcion: item.material_nombre || null,
         unidad_sap: item.unidad || null,
+        bodega_origen_id: item.bodega_origen_id || null,
+        bodega_destino_id: item.bodega_destino_id || null,
         bodega_origen_stock: item.bodega_origen_stock || null,
         codigo_serial: item.codigo_serial || null
       });
@@ -1778,6 +2381,55 @@ document.getElementById('movForm').addEventListener('submit', async function(e){
   }
 });
 
+function unidadSapRaw(unidad){
+  const u = String(unidad || '').trim().toUpperCase();
+  if(['METROS','METRO','MTS','MT','M'].includes(u)) return 'M';
+  if(['UNIDADES','UNIDAD','UND','UN','EA'].includes(u)) return 'EA';
+  return unidad || 'EA';
+}
+
+function getBodegaById(id){
+  return bodegas.find(b => String(b.id) === String(id)) || null;
+}
+
+function getStockSapRowByCodigo(codigo){
+  const code = normalizarCodigoSap(codigo);
+  if(!code) return null;
+  return sapStock.find(s => normalizarCodigoSap(s.codigo_sap) === code) || null;
+}
+
+async function crearMovimientoAjusteInicial(client, data){
+  const userEmail = localStorage.getItem('user_email') || null;
+  const mat = await getOrCreateMaterial({
+    codigo_sap: data.codigo_sap,
+    material: data.material,
+    unidad: normalizarUnidadSap(data.unidad_sap || data.unidad),
+    categoria: data.categoria || null
+  });
+
+  const payload = {
+    fecha: new Date().toISOString().slice(0,10),
+    hora: new Date().toTimeString().slice(0,5),
+    tipo_movimiento: 'AJUSTE_INICIAL',
+    estado: 'RECIBIDO',
+    material_id: mat.id,
+    cantidad: Number(data.cantidad || 0),
+    unidad: normalizarUnidadSap(data.unidad_sap || data.unidad),
+    unidad_sap: data.unidad_sap || null,
+    codigo_sap: data.codigo_sap,
+    material_descripcion: data.material,
+    bodega_origen_id: null,
+    bodega_destino_id: data.bodega_id || null,
+    bodega_origen_stock: data.bodega_nombre || null,
+    observaciones: data.observaciones || 'Creación de material nuevo e inventario inicial desde módulo de materiales',
+    created_by_email: userEmail
+  };
+
+  const res = await client.from('om_materiales_movimientos').insert(payload);
+  if(res.error) throw res.error;
+}
+
+
 document.getElementById('matForm').addEventListener('submit', async function(e){
   e.preventDefault();
   const form = e.target;
@@ -1787,25 +2439,74 @@ document.getElementById('matForm').addEventListener('submit', async function(e){
 
   try{
     const client = await resolveClient();
-    const payload = {
-      codigo_sap: form.elements['codigo_sap'].value.trim() || null,
-      material: form.elements['material'].value.trim(),
-      unidad: form.elements['unidad'].value,
-      categoria: form.elements['categoria'].value.trim() || null,
-      stock_minimo: Number(form.elements['stock_minimo'].value || 0),
-      descripcion: form.elements['descripcion'].value.trim() || null
+
+    const codigoSap = normalizarCodigoSap(form.elements['codigo_sap'].value);
+    const material = form.elements['material'].value.trim();
+    const unidadRaw = unidadSapRaw(form.elements['unidad'].value);
+    const unidadVisible = normalizarUnidadSap(unidadRaw);
+    const bodegaId = form.elements['bodega_inicial_id'].value;
+    const bodega = getBodegaById(bodegaId);
+    const cantidadInicial = Number(form.elements['cantidad_inicial'].value || 0);
+    const categoria = form.elements['categoria'].value.trim() || null;
+    const storageLocation = form.elements['storage_location'].value.trim() || null;
+    const observacion = form.elements['descripcion'].value.trim() || 'Creación de material nuevo desde módulo de materiales';
+
+    if(!codigoSap) throw new Error('Debes diligenciar el código SAP.');
+    if(!material) throw new Error('Debes diligenciar la descripción del material.');
+    if(!bodegaId || !bodega) throw new Error('Debes seleccionar la bodega inicial.');
+    if(!cantidadInicial || cantidadInicial <= 0) throw new Error('La cantidad inicial debe ser mayor a cero.');
+
+    const existeSap = getStockSapRowByCodigo(codigoSap);
+    if(existeSap){
+      throw new Error(`El código SAP ${codigoSap} ya existe en STOCK SAP. Para aumentar inventario usa ENTRADA o AJUSTE_POSITIVO, no Crear material.`);
+    }
+
+    msg.textContent = 'Creando material en STOCK SAP...';
+
+    const stockPayload = {
+      codigo_sap: codigoSap,
+      material_description: material,
+      descripcion_gp_antiguo: categoria || material,
+      plant: 'C029',
+      plant_name: 'LN Villavicencio',
+      storage_location: storageLocation,
+      description_storage_location: bodega.nombre,
+      unrestricted_stock: `${cantidadInicial} ${unidadRaw}`,
+      cantidad: cantidadInicial,
+      unidad_sap: unidadRaw,
+      unidad: unidadVisible,
+      wbs_element: null
     };
 
-    const { error } = await client.from('om_materiales_catalogo').insert(payload);
-    if(error) throw error;
+    const stockInsert = await client
+      .from('stock_sap_villao')
+      .insert(stockPayload)
+      .select('*')
+      .single();
 
-    msg.textContent = 'Material creado correctamente';
+    if(stockInsert.error) throw stockInsert.error;
+
+    msg.textContent = 'Registrando trazabilidad AJUSTE_INICIAL...';
+
+    await crearMovimientoAjusteInicial(client, {
+      codigo_sap: codigoSap,
+      material,
+      unidad_sap: unidadRaw,
+      unidad: unidadVisible,
+      cantidad: cantidadInicial,
+      bodega_id: bodegaId,
+      bodega_nombre: bodega.nombre,
+      categoria,
+      observaciones: observacion
+    });
+
+    msg.textContent = 'Material nuevo creado correctamente.';
     closeMatModal();
     await loadAll();
   }catch(err){
     console.error(err);
     msg.style.color = '#fecaca';
-    msg.textContent = 'Error creando material: ' + (err.message || err);
+    msg.textContent = 'Error creando material nuevo: ' + (err.message || err);
   }
 });
 
