@@ -312,6 +312,35 @@
     let lastScan = "";
     let bloqueoLectura = false;
 
+    let audioCtx = null;
+
+    function reproducirBeep() {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(1200, audioCtx.currentTime);
+
+        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.2);
+
+      } catch (e) {
+        console.log("No se pudo reproducir sonido", e);
+      }
+    }
+
+
     const statusEl = document.getElementById("status");
     const tabla = document.getElementById("tablaSeriales");
 
@@ -364,6 +393,7 @@
       statusEl.textContent = "Serial agregado: " + serial;
       statusEl.style.color = "#22c55e";
       vibrar(120);
+      reproducirBeep();
     }
 
     function vibrar(pattern) {
@@ -581,3 +611,4 @@
   </script>
 </body>
 </html>
+
