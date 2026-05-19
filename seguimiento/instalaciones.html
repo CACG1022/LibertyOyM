@@ -213,6 +213,10 @@
             <div class="field"><label>Días hábiles transcurridos</label><input name="dias_habiles_radicacion_emsa" readonly></div>
             <div class="field"><label>Tiempo muerto radicación</label><input name="tiempo_muerto_radicacion_emsa" readonly></div>
           </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:12px;flex-wrap:wrap">
+            <button type="button" class="btn ghost" onclick="redactarCorreoRadicacionEmsa()">Redactar correo EMSA</button>
+            <button type="button" class="btn ghost" onclick="descargarOficioRadicacionEmsa()">Descargar oficio EMSA Word</button>
+          </div>
         </div>
       </div>
 
@@ -1327,6 +1331,155 @@ async function saveInstallTemplate(){
     if(msg){ msg.style.color = '#86efac'; msg.textContent = 'Plantilla guardada correctamente en Supabase.'; }
   }catch(err){ console.error(err); if(msg){ msg.style.color = '#fecaca'; msg.textContent = 'Error guardando plantilla en Supabase: ' + (err.message || err); } }
 }
+function getCurrentFormRowForEmail(){
+  const form = document.getElementById('instalacionForm');
+  if(!form) return {};
+  const el = form.elements;
+  return {
+    cliente: (el['cliente']?.value || '').trim(),
+    id_cliente: (el['id_cliente']?.value || '').trim(),
+    id_cambio: (el['id_cambio']?.value || '').trim(),
+    id_tarea: (el['id_tarea']?.value || '').trim(),
+    direccion: (el['direccion']?.value || '').trim(),
+    operador: (el['operador']?.value || '').trim(),
+    contratista: (el['contratista']?.value || '').trim(),
+    responsable: (el['responsable']?.value || '').trim(),
+    numero_radicado_emsa: (el['numero_radicado_emsa']?.value || '').trim(),
+    fecha_radicacion_emsa: el['fecha_radicacion_emsa']?.value || '',
+    estado_radicacion_emsa: el['estado_radicacion_emsa']?.value || ''
+  };
+}
+function redactarCorreoRadicacionEmsa(){
+  const row = getCurrentFormRowForEmail();
+  const idCliente = row.id_cliente || 'ID_CLIENTE';
+  const idCambio = row.id_cambio || 'ID_CAMBIO';
+  const cliente = row.cliente || 'CLIENTE';
+  const datosProyecto = [
+    `ID Cliente: ${row.id_cliente || ''}`,
+    `ID Cambio: ${row.id_cambio || ''}`,
+    `Cliente: ${row.cliente || ''}`,
+    row.direccion ? `Dirección: ${row.direccion}` : '',
+    row.operador ? `Operador: ${row.operador}` : ''
+  ].filter(Boolean).join('\n');
+
+  const subject = `Solicitud de arrendamiento de infraestructura eléctrica para el servicio de telecomunicaciones para el proyecto ${idCliente} ${idCambio} ${cliente}`;
+  const body = `Cordial saludo.
+
+Señores ELECTRIFICADORA DEL META S.A. E.S.P
+Villavicencio - Meta
+
+Reciba un cordial saludo,
+
+Solicito de su amable colaboración ya que la compañía Liberty Networks de Colombia S.A.S está interesada en realizar un proyecto de red de fibra óptica a través de la infraestructura eléctrica de EMSA en el municipio de Villavicencio. Con miras a oficializar el requerimiento, relacionamos los siguientes documentos con el fin de obtener la autorización para realizar este tendido:
+
+${datosProyecto ? 'Datos del proyecto:\n' + datosProyecto + '\n\n' : ''}Documentos relacionados:
+- Oficio remisorio debidamente diligenciado.
+- Archivo en formato (.kmz) con el trazado de la infraestructura a evaluar.
+- Plano de la localización de proyecto (.dwg y PDF).
+- Archivo (cartera) en formato Excel con la información de la infraestructura a solicitar.
+
+Gracias, quedo atento a sus comentarios.`;
+
+  window.open(buildOutlookComposeUrl({
+    to: 'factibilidades@emsa-esp.com.co',
+    cc: '',
+    subject,
+    body
+  }), '_blank');
+}
+
+function fechaLargaColombia(value){
+  const d = value ? new Date(value + 'T00:00:00') : new Date();
+  if(isNaN(d)) return '';
+  return d.toLocaleDateString('es-CO', { year:'numeric', month:'long', day:'numeric' });
+}
+function limpiarNombreArchivo(value){
+  return String(value || 'oficio_emsa').replace(/[^a-zA-Z0-9_\-ÁÉÍÓÚÑáéíóúñ]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 90) || 'oficio_emsa';
+}
+function descargarOficioRadicacionEmsa(){
+  const row = getCurrentFormRowForEmail();
+  const idCliente = row.id_cliente || 'ID_CLIENTE';
+  const idCambio = row.id_cambio || 'ID_CAMBIO';
+  const cliente = row.cliente || 'NOMBRE_PROYECTO';
+  const proyecto = `${idCliente} ${idCambio} ${cliente}`.trim();
+  const direccion = row.direccion || '____________________________';
+  const municipio = 'Villavicencio';
+  const empresaSolicitante = 'Liberty Networks de Colombia S.A.S';
+  const fecha = fechaLargaColombia();
+
+  const oficioHtml = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Oficio EMSA</title>
+<style>
+  @page { size: Letter; margin: 2.5cm 2.5cm 2.2cm 2.5cm; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 11.5pt; color:#111; line-height:1.35; }
+  .bold { font-weight:bold; }
+  .asunto { margin-top: 24px; text-align: justify; }
+  .parrafo { text-align: justify; margin-top: 18px; }
+  table.tabla-postes { border-collapse: collapse; margin: 16px auto 24px auto; width: 42%; table-layout: fixed; }
+  table.tabla-postes th, table.tabla-postes td { border: 1px solid #111; padding: 3px 5px; text-align: center; font-size: 8.8pt; line-height: 1.05; }
+  table.tabla-postes th { font-weight: bold; }
+  .firma { margin-top: 42px; }
+  .datos { margin-top: 6px; line-height: 1.25; }
+</style>
+</head>
+<body>
+  <p>${esc(municipio)}, ${esc(fecha)}</p>
+
+  <p class="bold" style="margin-top:32px;">
+    Señores<br>
+    ELECTRIFICADORA DEL META S.A. E.S.P<br>
+    Villavicencio - Meta
+  </p>
+
+  <p class="asunto"><span class="bold">Asunto:</span>&nbsp;&nbsp; Solicitud de Arrendamiento de infraestructura eléctrica para servicio de telecomunicaciones para el proyecto <span class="bold">${esc(proyecto)}</span></p>
+
+  <p>Cordial saludo,</p>
+
+  <p class="parrafo">De acuerdo con el contrato de arrendamiento de infraestructura entre la empresa <span class="bold">${esc(empresaSolicitante)}</span> y la Electrificadora del Meta S.A. E.S.P - EMSA, solicitamos el uso de <span class="bold">____</span> postes ubicados en <span class="bold">${esc(direccion)}</span>, en el municipio de <span class="bold">${esc(municipio)}</span>.</p>
+
+  <table class="tabla-postes" align="center">
+    <tr>
+      <th>TIPO DE<br>POSTERÍA</th>
+      <th>CANTIDAD<br>DE POSTES</th>
+      <th>CANTIDAD DE<br>CABLES POR<br>POSTE</th>
+    </tr>
+    <tr><td>8 MTS</td><td></td><td></td></tr>
+    <tr><td>10 MTS</td><td></td><td></td></tr>
+    <tr><td>12 MTS</td><td></td><td></td></tr>
+    <tr><td class="bold">Total. POSTES</td><td></td><td></td></tr>
+  </table>
+
+  <p>Agradecemos su amable atención y colaboración con esta diligencia.</p>
+
+  <p>Cordialmente,</p>
+
+  <div class="firma">
+    <p class="bold">Camilo Andrés Carreño González</p>
+    <div class="datos">
+      <div><span class="bold">Cargo:</span> Ingeniero de operación y mantenimiento</div>
+      <div><span class="bold">Empresa:</span> Liberty Network</div>
+      <div><span class="bold">E-mail:</span> Camilo.carreno@libertynet.com</div>
+      <div><span class="bold">Dirección:</span> carrera 38 # 25-83 piso 1</div>
+      <div><span class="bold">Teléfono:</span> 3108594836</div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const blob = new Blob(['﻿', oficioHtml], { type: 'application/msword;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = limpiarNombreArchivo(`Oficio_EMSA_${idCliente}_${idCambio}_${cliente}`) + '.doc';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function buildOutlookComposeUrl({to, cc, subject, body}){
   const params = [];
   if(to) params.push('to=' + encodeURIComponent(to));
@@ -1821,3 +1974,4 @@ loadInstalaciones();
 
 </body>
 </html>
+
