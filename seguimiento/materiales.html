@@ -2201,6 +2201,63 @@ function crearHTMLActaExcel(){
 }
 
 
+function crearCuerpoCorreoActaTexto(){
+  const info = getActaFormData();
+  const items = getActaItemsFromForm();
+
+  const detalle = items.map((i, idx) => {
+    return `${idx + 1}. ${i.codigo_sap || ''} - ${i.material_nombre || ''} - Cant: ${fmtNum(i.cantidad || 0)} ${i.unidad || ''} - Bodega: ${i.bodega_origen_nombre || ''}`;
+  }).join('\n');
+
+  const soporteUrl = document.getElementById('soporteActaUrl')?.value || '';
+  const soporteNombre = document.getElementById('soporteActaNombre')?.value || '';
+
+  return [
+    'Buen día,',
+    '',
+    'Se relaciona el acta de entrega de materiales correspondiente al movimiento registrado en el módulo de Materiales O&M.',
+    '',
+    'Información general:',
+    `Fecha: ${info.fecha || ''}`,
+    `Hora: ${info.hora || ''}`,
+    `Cliente: ${info.cliente || ''}`,
+    `ID Cliente: ${info.id_cliente || ''}`,
+    `ID Cambio / Instalación: ${info.id_cambio || ''}`,
+    `Contratista: ${info.contratista || ''}`,
+    `Entregado por: ${info.entregado_a || ''}`,
+    `Recibido por: ${info.recibido_por || ''}`,
+    '',
+    'Detalle de materiales:',
+    detalle || 'Sin materiales relacionados.',
+    '',
+    'Observaciones:',
+    info.observaciones || 'Sin observaciones.',
+    '',
+    soporteUrl ? `Link del acta de entrega:\n${soporteNombre || 'Acta de entrega'}\n${soporteUrl}` : 'El acta de entrega no tiene link de soporte relacionado.',
+    '',
+    'Cordialmente,'
+  ].join('\n');
+}
+
+function enviarCorreoActa(){
+  try{
+    const info = getActaFormData();
+    const cliente = info.cliente || 'Cliente';
+    const idCambio = info.id_cambio || 'Sin cambio';
+    const fecha = info.fecha || new Date().toISOString().slice(0,10);
+
+    const subject = `Acta de entrega de materiales - ${cliente} - ${idCambio} - ${fecha}`;
+    const body = crearCuerpoCorreoActaTexto();
+
+    const url = `https://outlook.office.com/mail/deeplink/compose?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(url, '_blank');
+  }catch(err){
+    console.error(err);
+    alert('No se pudo abrir el correo: ' + (err.message || err));
+  }
+}
+
+
 function exportarActaExcel(){
   try{
     if(!window.XLSX){
