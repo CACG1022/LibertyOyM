@@ -166,7 +166,7 @@
             <div class="modal-kpi dead">
               <div class="k-label">Tiempo muerto</div>
               <div class="k-value" id="kpiTiempoMuertoInst">0 días</div>
-              <div class="k-sub">Permisos + radicación EMSA</div>
+              <div class="k-sub">Permisos + radicación EMSA + Telefónica</div>
             </div>
             <div class="modal-kpi effective">
               <div class="k-label">Duración efectiva</div>
@@ -184,6 +184,7 @@
         <label class="check-item"><input type="checkbox" name="enrutamiento_aprobado"> Enrutamiento aprobado</label>
         <label class="check-item"><input type="checkbox" name="agenda_aprovisionamiento"> Agenda de aprovisionamiento</label>
         <label class="check-item"><input type="checkbox" name="checklist_radicacion_emsa" onchange="toggleRadicacionEmsaSection()"> Radicación EMSA</label>
+        <label class="check-item"><input type="checkbox" name="checklist_radicacion_telefonica" onchange="toggleRadicacionTelefonicaSection()"> Radicación Telefónica</label>
       </div>
 
       <div id="radicacionEmsaSection" class="materials-section hidden" style="margin-top:16px">
@@ -216,6 +217,40 @@
           <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:12px;flex-wrap:wrap">
             <button type="button" class="btn ghost" onclick="redactarCorreoRadicacionEmsa()">Redactar correo EMSA</button>
             <button type="button" class="btn ghost" onclick="descargarOficioRadicacionEmsa()">Descargar oficio EMSA Word</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="radicacionTelefonicaSection" class="materials-section hidden" style="margin-top:16px">
+        <div class="materials-header" onclick="toggleRadicacionTelefonicaSection(true)">
+          <div>
+            <div class="materials-title">Radicación Telefónica</div>
+            <div class="materials-sub">Control de tiempos muertos por radicación, respuesta y aprobación ante Telefónica.</div>
+          </div>
+          <div id="radicacionTelefonicaToggleIcon" class="materials-sub">▼</div>
+        </div>
+        <div id="radicacionTelefonicaContent" style="margin-top:14px;">
+          <div class="grid">
+            <div class="field"><label>Fecha de radicación</label><input type="date" name="fecha_radicacion_telefonica" onchange="actualizarIndicadoresRadicacionTelefonica(); calcularTiemposMuertosInstalacion()"></div>
+            <div class="field"><label>Número de radicado</label><input name="numero_radicado_telefonica" placeholder="Ej. RAD-TELEFONICA"></div>
+            <div class="field"><label>Fecha respuesta radicación</label><input type="date" name="fecha_respuesta_telefonica" onchange="calcularTiemposMuertosInstalacion()"></div>
+            <div class="field"><label>Estado de radicación</label>
+              <select name="estado_radicacion_telefonica">
+                <option>PENDIENTE</option>
+                <option>RADICADO</option>
+                <option>EN_GESTION</option>
+                <option>APROBADO</option>
+                <option>RECHAZADO</option>
+                <option>NO_REQUIERE</option>
+              </select>
+            </div>
+            <div class="field"><label>Días transcurridos</label><input name="dias_transcurridos_radicacion_telefonica" readonly></div>
+            <div class="field"><label>Días hábiles transcurridos</label><input name="dias_habiles_radicacion_telefonica" readonly></div>
+            <div class="field"><label>Tiempo muerto radicación</label><input name="tiempo_muerto_radicacion_telefonica" readonly></div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:12px;flex-wrap:wrap">
+            <button type="button" class="btn ghost" onclick="redactarCorreoRadicacionTelefonica()">Redactar correo Telefónica</button>
+            <button type="button" class="btn ghost" onclick="descargarOficioRadicacionTelefonica()">Descargar oficio Telefónica Word</button>
           </div>
         </div>
       </div>
@@ -884,6 +919,27 @@ function toggleRadicacionEmsaSection(fromHeader=false){
     });
   }
 }
+function toggleRadicacionTelefonicaSection(fromHeader=false){
+  const form = document.getElementById('instalacionForm');
+  const section = document.getElementById('radicacionTelefonicaSection');
+  const content = document.getElementById('radicacionTelefonicaContent');
+  const icon = document.getElementById('radicacionTelefonicaToggleIcon');
+  if(!form || !section || !content) return;
+
+  const chk = form.elements['checklist_radicacion_telefonica'];
+  if(fromHeader && chk) chk.checked = !chk.checked;
+
+  const show = !!chk?.checked;
+  section.classList.toggle('hidden', !show);
+  content.style.display = show ? '' : 'none';
+  if(icon) icon.textContent = show ? '▲' : '▼';
+
+  if(!show){
+    ['fecha_radicacion_telefonica','numero_radicado_telefonica','fecha_respuesta_telefonica','dias_transcurridos_radicacion_telefonica','dias_habiles_radicacion_telefonica','tiempo_muerto_radicacion_telefonica'].forEach(n => {
+      if(form.elements[n]) form.elements[n].value = '';
+    });
+  }
+}
 function diasDesdeFechaInstalacion(fecha){
   if(!fecha) return '';
   const inicio = new Date(fecha + 'T00:00:00');
@@ -899,6 +955,13 @@ function actualizarIndicadoresRadicacionEmsa(){
   if(form.elements['dias_transcurridos_radicacion_emsa']) form.elements['dias_transcurridos_radicacion_emsa'].value = fecha ? diasDesdeFechaInstalacion(fecha) : '';
   if(form.elements['dias_habiles_radicacion_emsa']) form.elements['dias_habiles_radicacion_emsa'].value = fecha ? diasHabilesEntreFechasInstalacion(fecha) : '';
 }
+function actualizarIndicadoresRadicacionTelefonica(){
+  const form = document.getElementById('instalacionForm');
+  if(!form) return;
+  const fecha = form.elements['fecha_radicacion_telefonica']?.value || '';
+  if(form.elements['dias_transcurridos_radicacion_telefonica']) form.elements['dias_transcurridos_radicacion_telefonica'].value = fecha ? diasDesdeFechaInstalacion(fecha) : '';
+  if(form.elements['dias_habiles_radicacion_telefonica']) form.elements['dias_habiles_radicacion_telefonica'].value = fecha ? diasHabilesEntreFechasInstalacion(fecha) : '';
+}
 function calcularTiemposMuertosInstalacion(){
   const form = document.getElementById('instalacionForm');
   if(!form) return;
@@ -913,27 +976,35 @@ function calcularTiemposMuertosInstalacion(){
   const fechaRadicacionEmsa = radicacionActiva ? (el['fecha_radicacion_emsa']?.value || '') : '';
   const fechaRespuestaEmsa = radicacionActiva ? (el['fecha_respuesta_emsa']?.value || '') : '';
 
+  const telefonicaActiva = !!el['checklist_radicacion_telefonica']?.checked;
+  const fechaRadicacionTelefonica = telefonicaActiva ? (el['fecha_radicacion_telefonica']?.value || '') : '';
+  const fechaRespuestaTelefonica = telefonicaActiva ? (el['fecha_respuesta_telefonica']?.value || '') : '';
+
   const muertoPermisos = diasCalendarioEntre(fechaSolicitudPermisos, finPermisos);
   const muertoRadicacion = diasCalendarioEntre(fechaRadicacionEmsa, fechaRespuestaEmsa);
+  const muertoRadicacionTelefonica = diasCalendarioEntre(fechaRadicacionTelefonica, fechaRespuestaTelefonica);
   const totalInstalacion = diasCalendarioEntre(el['fecha_ingreso']?.value, fechaFinCalculoInstalacion(el['fecha_entrega']?.value));
 
   let efectivo = '';
   if(totalInstalacion !== ''){
     const mp = muertoPermisos === '' ? 0 : Number(muertoPermisos);
     const mr = muertoRadicacion === '' ? 0 : Number(muertoRadicacion);
-    efectivo = Math.max(0, Number(totalInstalacion) - mp - mr);
+    const mt = muertoRadicacionTelefonica === '' ? 0 : Number(muertoRadicacionTelefonica);
+    efectivo = Math.max(0, Number(totalInstalacion) - mp - mr - mt);
   }
 
   if(el['tiempo_muerto_permisos']) el['tiempo_muerto_permisos'].value = muertoPermisos === '' ? '' : `${muertoPermisos} días`;
   actualizarIndicadoresRadicacionEmsa();
   if(el['tiempo_muerto_radicacion_emsa']) el['tiempo_muerto_radicacion_emsa'].value = muertoRadicacion === '' ? '' : `${muertoRadicacion} días`;
+  actualizarIndicadoresRadicacionTelefonica();
+  if(el['tiempo_muerto_radicacion_telefonica']) el['tiempo_muerto_radicacion_telefonica'].value = muertoRadicacionTelefonica === '' ? '' : `${muertoRadicacionTelefonica} días`;
   if(el['tiempo_total_instalacion']) el['tiempo_total_instalacion'].value = totalInstalacion === '' ? '' : `${totalInstalacion} días`;
   if(el['tiempo_efectivo_instalacion']) el['tiempo_efectivo_instalacion'].value = efectivo === '' ? '' : `${efectivo} días`;
 
   const totalKpi = document.getElementById('kpiDuracionTotalInst');
   const muertoKpi = document.getElementById('kpiTiempoMuertoInst');
   const efectivaKpi = document.getElementById('kpiDuracionEfectivaInst');
-  const tiempoMuertoTotal = (muertoPermisos === '' ? 0 : Number(muertoPermisos)) + (muertoRadicacion === '' ? 0 : Number(muertoRadicacion));
+  const tiempoMuertoTotal = (muertoPermisos === '' ? 0 : Number(muertoPermisos)) + (muertoRadicacion === '' ? 0 : Number(muertoRadicacion)) + (muertoRadicacionTelefonica === '' ? 0 : Number(muertoRadicacionTelefonica));
 
   if(totalKpi) totalKpi.textContent = totalInstalacion === '' ? '0 días' : `${totalInstalacion} días`;
   if(muertoKpi) muertoKpi.textContent = `${tiempoMuertoTotal} días`;
@@ -975,12 +1046,17 @@ function calcularTiempoMuertoRadicacionRow(row){
   const dias = diasCalendarioEntre(row?.fecha_radicacion_emsa, row?.fecha_respuesta_emsa);
   return dias === '' ? parseDiasTexto(row?.tiempo_muerto_radicacion_emsa) : Number(dias);
 }
+function calcularTiempoMuertoRadicacionTelefonicaRow(row){
+  if(!row?.checklist_radicacion_telefonica) return 0;
+  const dias = diasCalendarioEntre(row?.fecha_radicacion_telefonica, row?.fecha_respuesta_telefonica);
+  return dias === '' ? parseDiasTexto(row?.tiempo_muerto_radicacion_telefonica) : Number(dias);
+}
 function calcularDuracionTotalInstRow(row){
   const total = diasCalendarioEntre(row?.fecha_ingreso, fechaFinCalculoInstalacion(row?.fecha_entrega));
   return total === '' ? '0 días' : `${total} días`;
 }
 function calcularTiempoMuertoInstRow(row){
-  const total = calcularTiempoMuertoPermisosRow(row) + calcularTiempoMuertoRadicacionRow(row);
+  const total = calcularTiempoMuertoPermisosRow(row) + calcularTiempoMuertoRadicacionRow(row) + calcularTiempoMuertoRadicacionTelefonicaRow(row);
   return `${total} días`;
 }
 function calcularDuracionEfectivaInstRow(row){
@@ -1346,7 +1422,10 @@ function getCurrentFormRowForEmail(){
     responsable: (el['responsable']?.value || '').trim(),
     numero_radicado_emsa: (el['numero_radicado_emsa']?.value || '').trim(),
     fecha_radicacion_emsa: el['fecha_radicacion_emsa']?.value || '',
-    estado_radicacion_emsa: el['estado_radicacion_emsa']?.value || ''
+    estado_radicacion_emsa: el['estado_radicacion_emsa']?.value || '',
+    numero_radicado_telefonica: (el['numero_radicado_telefonica']?.value || '').trim(),
+    fecha_radicacion_telefonica: el['fecha_radicacion_telefonica']?.value || '',
+    estado_radicacion_telefonica: el['estado_radicacion_telefonica']?.value || ''
   };
 }
 function redactarCorreoRadicacionEmsa(){
@@ -1382,6 +1461,36 @@ Gracias, quedo atento a sus comentarios.`;
 
   window.open(buildOutlookComposeUrl({
     to: 'factibilidades@emsa-esp.com.co',
+    cc: '',
+    subject,
+    body
+  }), '_blank');
+}
+
+function redactarCorreoRadicacionTelefonica(){
+  const row = getCurrentFormRowForEmail();
+  const idCliente = row.id_cliente || 'ID_CLIENTE';
+  const idCambio = row.id_cambio || 'ID_CAMBIO';
+  const cliente = row.cliente || 'CLIENTE';
+  const proyecto = `${idCliente} ${idCambio} ${cliente}`.trim();
+
+  const subject = `Solicitud viabilidad técnica Proyecto ${proyecto}`;
+  const body = `Cordial saludo.
+
+Señores:
+COLOMBIA TELECOMUNICACIONES S.A ESP
+
+Solicito amablemente el estudio de viabilidad técnica para el proyecto ${proyecto} de la empresa LIBERTY NETWORKS, ubicado en el municipio de Villavicencio.
+
+Documentos anexos:
+- Carta de solicitud.
+- Excel carteras proyecto.
+- Plano en KMZ, AutoCAD y PDF.
+
+Gracias, quedo atento a sus comentarios.`;
+
+  window.open(buildOutlookComposeUrl({
+    to: 'viabilidades.infraestructura@telefonica.com',
     cc: '',
     subject,
     body
@@ -1480,6 +1589,116 @@ function descargarOficioRadicacionEmsa(){
   URL.revokeObjectURL(url);
 }
 
+function descargarOficioRadicacionTelefonica(){
+  const row = getCurrentFormRowForEmail();
+  const idCliente = row.id_cliente || 'ID_CLIENTE';
+  const idCambio = row.id_cambio || 'ID_CAMBIO';
+  const cliente = row.cliente || 'NOMBRE_PROYECTO';
+  const proyecto = `${idCliente} ${idCambio} ${cliente}`.trim();
+  const direccion = row.direccion || '____________________________';
+  const municipio = 'Villavicencio';
+  const fecha = fechaLargaColombia();
+  const logoUrl_unused = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQQAAACMCAYAAACanNcLAAAL10lEQVR4nO3de6xcRQHH8e/0XgpVnkIReYpUClJeIgrohUI0aJQiNChSUaFKfIBMq2IgQcVCAkkjo6IghBoRpaCCGFAwCpSCbQWtUCrgA6ogD2uoPGpbuGX8Y86ZnT13t7vt3ec9v0/SdM9z5t6757dzHjtjvPeIiACM63YFRKR3KBBEJFIgiEikQBCRSIEgIpECQUQiBYKIRAoEEYkUCCISKRBEJFIgiEikQBCRSIEgIpECQUSiwa6Uak3rv3PtvGn5Pjutnb+Xduy7XlntovdN23W+hdCuN2Yn3vDt1O7fSyfe+O38G+h90xE6ZSiTfg8FaTsFgohECoSyUStBNkCBUEYKBalDgVBWCgWpQYEgIpECoczUSpACBULZKRQkoUAQhYJECgQRiRQIEqiVICgQJKVQKD0FglRTKJSaAkFEIgWCjKRWQmkpEKQ2hUIpKRCkPoVC6SgQZMMUCqWiQBCRSIEgjamVUBoKBGmOQqEUFAjSPIXCmKdAEJFIgSAbR62EMU2BIBtPoTBmKRBk0ygUxiQFgohECgTZdGoljDkKBBkdhcKYokCQ0dOQ6mOGAkFEIgWCtIZaCWOCAkFaR6HQ9wa7XYGW6sWLT2U7SJw3Pfl3kKaohdBuOjikjygQpPXK1ioaQxQI0h4Khb6kQJD2USj0HQWCtJdCoa8oEEQkUiBI+6mV0DcUCNIZCoW+oECQzlEo9DwFgohECgTpLLUSepoCQTpPodCzFAjSHQqFnqRAEJFIgSDdo1ZCz1EgSHcpFHqKAkG6T6HQMxQIIhIpEKQ3qJXQEzofCGX7wzf787br99JPv+9u1LWffj8dYLxXl38iEuiUQUQiBYKIRAoEEYkUCCISKRBEJFIgiEikQBCRSIEgIpECQUQiBYKIRAoEEYkGu10BrBkGBpI5++L8I6PebuTy3HrgJeCfwBLgapxf3GQZG3Iwzv+piW1fBV4EVgALgctx/s/Jdk8CuzRZZuopYDXw5mTePJyfWXNta34JvC+Zcz9wGM6v34SyZYwoYwthANgG2B/4JLAIa87vYPnjsvIPBM4EHsCaj7Rgvx6Ymf2fOx1rjhmxpjUzqA6Dl4HTFAbS/RZC54QWhDWbAycAP6ISiBdgzU04/1BT+xhd+TsBs4BzsvmDwPew5jacX4Xzu47Y0hoHnJ3M+Q7On1mzFGsuA85K5lyJNfvj/Jps+fbApYWtLmziZ5cSKF8Lwfl1OD8f+HUy11D9idnO8p8BziWcsuS2AkZ+km+ac4HHk+m9gAvSGgATk+kHgItbVLb0ufIFQsU/CtM7dKxk518FHi7M3blF+17NyFOH2VjzVqw5FvhoMn+YcKrwSkvKlr5X5kDYvTD9RIfLL/7u/9OyPTt/J3BlMmcAuBq4orDmxTi/tGXlSt8r0zWEIFxDOB44Npn7PHBDB+swDtgnmbMeWNTiUr5EOA3Kg++gwvLlwJwWlyl9rkyB8DC2Zvd5fwVOxfl/j2If9+L8u5qqRbio+EVgt2Tut3B+RVPbN8v5F7HmDOC2GkvXE04VXm5pmdL3ynzKkNuDcHtufJvLeRhrPPA08IVs3jPALJyf3ZYSnb8dmFdjyVycv68tZUpfK1MLIb/tNwBMIlxtfy8wHjiDcKfhjKb20TqbA9tijcG1rbfbC4HTC/MualNZ0ufK10Jwfj3OPwp8vLDkNKzZqo0l7wtsARxF5ZbjdsBXgbltLLfWHQTdVZCayhcIuXDN4IVkziCwZ5vLXIfzdwPTCY8w52ZhzTvbWrZIE8obCOHi3taFuS/UWrXlnL8fuC6ZYwhNe5GuKl8gWDOANZOBHxSWPNjyK/0bdiHVrYSpWHNUB8sXGaEXLyrWu7UHcBbOX9aG/a4EPjHKfWxc3cIFzuuB9ItNXwOObnofIi1WvhZC8DLwLLCA8Oz/5C49sTeHka2EqV2ohwigsR1FJFHWFoKI1KBAEJFIgSAikQJBRCIFgohECgQRiRQIIhJ190lFa06m+pn+W3D+uMI69wOHZFOfwfkr6mxbyxKcPwxrngFevxE1Oxh4C6FnZoCncL56rARrlgFTsqkbcX56smxr4Dkq4zIcgPPLkuVbEJ6MnE7ojn1bwpgKfyd0/noZzj9VKK/ez7uOMCbDIkI/B0sbbDcB59dmywyhW7X8a9/DhM5i5mfLJxD6bphOGO9hPPBfQndvjwC/wfnv1qiT9KleayF8AGua63mo/e5OXu+MNXvFKWu2A/ZLlg8Vtj2CShisAipdnFuzN7AUuBx4N6EH5M0IoXAI4cnJR7HmxCbruTnhW5qnEMaYOKyprUI3bvOohMErwMlJGGxB+B3MIXS/9tqsnhMJX+U+AfhYk3WUPtGL32W4BNiUrwJXPvmKnN+patqauVR6LVqO81NGbBPWe5zKV6KPJHyCk9Uv/VLDRKyZnPWzkK+buzd2fmLNtoQuzfJ9LgM+DfyBMFrTHMKBvSUwH2uOxvl7a9YNJhA+0d8G3Aq8jhAOs4EP1dkm/7kGgGuysiA8yn0Szv8iWWtmtm8IrY9PAX/LypkETKPdXxeXjuvFQDgCa6YV3pzdspDKm34I+H7yGkJ/jLsSDs4h4NHC8nwfudnJ/oaB43A+7w7+Maw5lXCqchDh0/hS4O11a+f8MLAYa24iHMAAb2rwMw0SwuCkbHotcCLO/6qwXtpS+yHOL89eP539W4iMOb10yvAkla7QL8qatN2WnjYM1Xj9W+D3VfNCr86HJuumB87JyeubkzAIwngN307mHIo1b2yinmlr5dkG695AJQzWANNqhAFU96p0NtZMw5otm6iL9LFeaiGsI/T1N49wse5URvZZsCFranw1eRbOu1HUKT2YJ2HNGwgX1Q5Jlq8kdIuWh8Q7CE33UKdwOpCfk6cDsdYbOm1ZYfpAwsCwI1kzSGjWfzCZW6tT1VQ+QtVq4P04v6DOeosIfwOAycDNwHqsWU74uefj/D0NypI+0wufwqlrgHwk5K9nn7bd4/xfqP7EHSIc8HkPzQuptCL2xJpdqG5JLEm6Ot+msPeVdUotdgdf3C63hvApvohwXv8vYCbO/6zO+kUrGBk+qauA4gE/ABwAfA5YiDXXNlmW9IneCoQw+vB52dTuwGc3YusJOG8K/1wLapW2EoaoHPArcP4JwgE5XGN5cdvnC/udSG07FqaL29WzGWGY+Uby77vvB9yBNbWHsAvXJ44h3IVYQLjwWDQDaz7cZP2kD/RWIAA4fzPwu2zqPMJAqN2UXkc4ksoBHw72MJbiH7N5Uwm3HKlaJ6y3lnARMpfetkwV73g8WGe9CcD2QP4cwI7Aj7Hm0Drr52ZSCbADgTuxphhCeZ1fwfmrcH4qoaVyNOFC53CyljqHHUN6LxCCL2f/7wDs3c2KUP0pP4XKAbCwxjozqARYreHZrk9eH481u1UtDQ8KpUO534fzj1OP888Bn6fS9B8Evll3/eA6Qrdt+UE9Bbgr63S2PufX4vxd2aAy6R2gXroOJaPUm4EQLlbd0u1qZB6k0mwfB7wme50GQt6KSK/CL8X5lwr7+gaVUac3A27BmsOxZjzW7Em4hnJwtnyYyrMS9YXTrHS498Ox5j0Ntvkp4U5DfhqwLyEUKiNQW3MJ1lyPNTOwZn+s2Q5rJmQdwaatgsUN6yh9ozcDITiX6v4GG1mDNb7wb7jxZg2EW4HFh4NWFkZwuofq4deh1n1651cRRovKTx0OIJwerQMeozJU+2rgFJxv9l7/jVQuxgKc33AL538OnJiVDeFOwoKk1bIN4QGnawmh+BzwP+AuKo+BL6bx4+PSR3o3EJx/iPBm7AV3F6arr76HpvvyDa5TWfcRwrn7mcAdhO8FDBPGhFhKeFJzH5z/SdO1C09CpsOzDWFN496bnb+VMBJ2/oTnJEJLYQ/CtYmvALcTnlBcRTgNeh5YApwDHIPzGgVqDFEnqyIS9W4LQUQ6ToEgIpECQUQiBYKIRAoEEYkUCCISKRBEJFIgiEikQBCRSIEgIpECQUQiBYKIRAoEEYkUCCISKRBEJFIgiEikQBCRSIEgIpECQUSi/wO78h7Tr6SxHgAAAABJRU5ErkJggg==';
+
+  const oficioHtml = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Oficio Telefónica</title>
+<style>
+  @page { size: Letter; margin: 2.2cm 2.5cm 2.2cm 2.5cm; }
+  body { font-family: "Times New Roman", Times, serif; font-size: 11.5pt; color:#111; line-height:1.22; }
+  .logo-box { width: 82px; margin-bottom: 28px; text-align:left; font-family: Arial, Helvetica, sans-serif; }
+  .logo-ln { font-size: 28pt; line-height: .78; font-weight: 900; color: #ff7900; letter-spacing: -3px; }
+  .logo-text { font-size: 6.5pt; line-height: .9; font-weight: 800; color: #ff7900; letter-spacing: .2px; }
+  .bold { font-weight:bold; }
+  .ref { margin-top: 18px; }
+  .parrafo { text-align: justify; margin-top: 16px; }
+  .anexo { margin-top: 16px; }
+  .checks { margin-left: 58px; margin-top: 6px; }
+  .checks div { margin: 2px 0; }
+  .tabla-wrap { margin-top: 16px; }
+  .tabla-title { font-weight:bold; font-size: 10.5pt; margin-bottom: 2px; }
+  table.resumen { border-collapse: collapse; width: 76%; table-layout: fixed; font-size: 9pt; }
+  table.resumen th, table.resumen td { border: 1px solid #111; padding: 2px 5px; text-align: center; line-height: 1.05; }
+  table.resumen th { background: #e6e6e6; font-weight: bold; }
+  table.resumen td:first-child { text-align: left; }
+  .firma { margin-top: 30px; }
+  .datos { margin-top: 6px; line-height: 1.25; }
+</style>
+</head>
+<body>
+  <div class="logo-box">
+    <div class="logo-ln">LN</div>
+    <div class="logo-text">LIBERTY<br>NETWORKS</div>
+  </div>
+
+  <p>${esc(municipio)}, ${esc(fecha)}</p>
+
+  <p style="margin-top:20px;">
+    Señores:<br>
+    <span class="bold">COLOMBIA TELECOMUNICACIONES S.A ESP</span>
+  </p>
+
+  <p class="ref"><span class="bold">REF:</span> Solicitud viabilidad técnica Proyecto&nbsp; <span class="bold">${esc(proyecto)}</span></p>
+
+  <p class="parrafo">Por medio de la presente carta, se hace solicitud amablemente al estudio de la viabilidad para el proyecto <span class="bold">${esc(proyecto)}</span> de la empresa LIBERTY NETWORKS.</p>
+
+  <p class="parrafo">Adjunto plano y cartera que componen el proyecto para el diseño y construcción de redes de Fibra Óptica Mono modo tipo G 652-D en el territorio nacional y en este proyecto en especial en el Departamento del Meta, municipio ${esc(municipio)}. Bajo los siguientes anexos para su estudio, viabilidad y aprobación.</p>
+
+  <div class="anexo">Anexo:</div>
+  <div class="checks">
+    <div>✓&nbsp;&nbsp; Carta de solicitud</div>
+    <div>✓&nbsp;&nbsp; Excel carteras proyecto</div>
+    <div>✓&nbsp;&nbsp; Plano en KMZ, AutoCAD y PDF</div>
+  </div>
+
+  <div class="tabla-wrap">
+    <div class="tabla-title">RESUMEN INFRAESTRUCTURA A INSTALAR</div>
+    <table class="resumen">
+      <tr>
+        <th style="width:48%">POSTES</th>
+        <th style="width:17%">CANTIDAD</th>
+        <th style="width:20%">CANTIDAD CAMARAS</th>
+        <th style="width:15%">LONGITUD (m)</th>
+      </tr>
+      <tr><td>Postes 8m</td><td></td><td rowspan="6"></td><td rowspan="6"></td></tr>
+      <tr><td>Postes 10m</td><td></td></tr>
+      <tr><td>Postes 12m</td><td></td></tr>
+      <tr><td>Postes 14m</td><td></td></tr>
+      <tr><td>Postes 16m</td><td></td></tr>
+      <tr><td class="bold">TOTAL POSTES</td><td></td></tr>
+    </table>
+  </div>
+
+  <p class="parrafo">Con el fin del alquiler y uso de ductos solicitados para paso de cable de fibra óptica, de acuerdo con los cánones establecidos en lo acordado por las partes Telefónica y Liberty Network de Colombia.</p>
+
+  <p>Cordialmente,</p>
+
+  <div class="firma">
+    <p class="bold">Camilo Andrés Carreño González</p>
+    <div class="datos">
+      <div><span class="bold">Cargo:</span> Ingeniero de operación y mantenimiento</div>
+      <div><span class="bold">Empresa:</span> Liberty Network</div>
+      <div><span class="bold">E-mail:</span> Camilo.carreno@libertynet.com</div>
+      <div><span class="bold">Dirección:</span> carrera 38 # 25-83 piso 1</div>
+      <div><span class="bold">Teléfono:</span> 3108594836</div>
+    </div>
+  </div>
+</body>
+</html>`;
+
+  const blob = new Blob(['﻿', oficioHtml], { type: 'application/msword;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = limpiarNombreArchivo(`Oficio_Telefonica_${idCliente}_${idCambio}_${cliente}`) + '.doc';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function buildOutlookComposeUrl({to, cc, subject, body}){
   const params = [];
   if(to) params.push('to=' + encodeURIComponent(to));
@@ -1545,6 +1764,7 @@ window.openFormModal = function(row=null){
 
   actualizarFoTotal();
   toggleRadicacionEmsaSection();
+  toggleRadicacionTelefonicaSection();
   calcularTiemposMuertosInstalacion();
   actualizarRequeridoFechaEntrega();
   setMaterialsVisibility();
@@ -1625,6 +1845,9 @@ window.showDetail = function(id){
       <div class="detail-card"><div class="detail-title">Enrutamiento aprobado</div><div class="detail-value">${row.enrutamiento_aprobado ? 'Sí' : 'No'}</div></div>
 
       <div class="detail-card"><div class="detail-title">Agenda aprovisionamiento</div><div class="detail-value">${row.agenda_aprovisionamiento ? 'Sí' : 'No'}</div></div>
+      <div class="detail-card"><div class="detail-title">Radicación Telefónica</div><div class="detail-value">${row.checklist_radicacion_telefonica ? 'Sí' : 'No'}</div></div>
+      <div class="detail-card"><div class="detail-title">Radicado / Estado Telefónica</div><div class="detail-value">${esc((row.numero_radicado_telefonica || '') + ' / ' + (row.estado_radicacion_telefonica || ''))}</div></div>
+      <div class="detail-card"><div class="detail-title">Fechas Telefónica</div><div class="detail-value">Radicación: ${esc(fmtDate(row.fecha_radicacion_telefonica))}\nRespuesta: ${esc(fmtDate(row.fecha_respuesta_telefonica))}</div></div>
       <div class="detail-card"><div class="detail-title">Lista para agendar</div><div class="detail-value">${calcularListaParaAgendar(row) ? 'Sí' : 'No'}</div></div>
       <div class="detail-card"><div class="detail-title">Observaciones</div><div class="detail-value">${esc(row.observaciones || '')}</div></div>
     </div>
@@ -1786,6 +2009,14 @@ document.getElementById('instalacionForm').addEventListener('submit', async func
       dias_transcurridos_radicacion_emsa: el['checklist_radicacion_emsa']?.checked ? (el['dias_transcurridos_radicacion_emsa']?.value || null) : null,
       dias_habiles_radicacion_emsa: el['checklist_radicacion_emsa']?.checked ? (el['dias_habiles_radicacion_emsa']?.value || null) : null,
       tiempo_muerto_radicacion_emsa: el['checklist_radicacion_emsa']?.checked ? (el['tiempo_muerto_radicacion_emsa']?.value || null) : null,
+      checklist_radicacion_telefonica: el['checklist_radicacion_telefonica']?.checked || false,
+      fecha_radicacion_telefonica: el['checklist_radicacion_telefonica']?.checked ? (el['fecha_radicacion_telefonica']?.value || null) : null,
+      numero_radicado_telefonica: el['checklist_radicacion_telefonica']?.checked ? ((el['numero_radicado_telefonica']?.value || '').trim() || null) : null,
+      fecha_respuesta_telefonica: el['checklist_radicacion_telefonica']?.checked ? (el['fecha_respuesta_telefonica']?.value || null) : null,
+      estado_radicacion_telefonica: el['checklist_radicacion_telefonica']?.checked ? (el['estado_radicacion_telefonica']?.value || null) : null,
+      dias_transcurridos_radicacion_telefonica: el['checklist_radicacion_telefonica']?.checked ? (el['dias_transcurridos_radicacion_telefonica']?.value || null) : null,
+      dias_habiles_radicacion_telefonica: el['checklist_radicacion_telefonica']?.checked ? (el['dias_habiles_radicacion_telefonica']?.value || null) : null,
+      tiempo_muerto_radicacion_telefonica: el['checklist_radicacion_telefonica']?.checked ? (el['tiempo_muerto_radicacion_telefonica']?.value || null) : null,
       tiempo_total_instalacion: el['tiempo_total_instalacion']?.value || null,
       tiempo_efectivo_instalacion: el['tiempo_efectivo_instalacion']?.value || null,
       estado_permisos: el['estado_permisos'].value || null,
@@ -1868,9 +2099,10 @@ document.querySelectorAll('#estadoMultiMenu input[type="checkbox"]').forEach(el 
 });
 
 document.addEventListener('change', function(e){
-  if(e.target && ['fecha_ingreso','fecha_solicitud_permisos','fecha_respuesta_permisos','fecha_aprobacion_permisos','fecha_radicacion_emsa','fecha_respuesta_emsa','fecha_entrega'].includes(e.target.name)){ calcularTiemposMuertosInstalacion(); }
+  if(e.target && ['fecha_ingreso','fecha_solicitud_permisos','fecha_respuesta_permisos','fecha_aprobacion_permisos','fecha_radicacion_emsa','fecha_respuesta_emsa','fecha_radicacion_telefonica','fecha_respuesta_telefonica','fecha_entrega'].includes(e.target.name)){ calcularTiemposMuertosInstalacion(); }
   if(e.target && e.target.name === 'estado_general'){ actualizarRequeridoFechaEntrega(); setMaterialsVisibility(); calcularTiemposMuertosInstalacion(); }
   if(e.target && e.target.name === 'checklist_radicacion_emsa'){ toggleRadicacionEmsaSection(); calcularTiemposMuertosInstalacion(); }
+  if(e.target && e.target.name === 'checklist_radicacion_telefonica'){ toggleRadicacionTelefonicaSection(); calcularTiemposMuertosInstalacion(); }
 });
 
 document.getElementById('plantillaInput')?.addEventListener('change', async function(e){
@@ -1974,4 +2206,5 @@ loadInstalaciones();
 
 </body>
 </html>
+
 
