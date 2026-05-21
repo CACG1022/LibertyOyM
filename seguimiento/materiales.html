@@ -29,7 +29,7 @@
     .small-btn{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:#fff;cursor:pointer;font-weight:700}
 
     .hidden-global-bodega{display:none!important}
-    .material-lines table{min-width:1280px}
+    .material-lines table{min-width:1430px}
     .material-lines select.control,
     .material-lines input.control{min-width:0}
 
@@ -153,6 +153,29 @@
       padding-bottom:28px !important;
     }
 
+
+    .line-unidad[readonly]{
+      background:rgba(15,23,42,.75) !important;
+      cursor:not-allowed !important;
+      color:#e5f0ff !important;
+      font-weight:900 !important;
+      text-align:center !important;
+    }
+
+
+    .row-reserva-ok{
+      background:rgba(34,197,94,.13) !important;
+      box-shadow:inset 4px 0 0 rgba(34,197,94,.85);
+    }
+    .row-reserva-ok:hover{background:rgba(34,197,94,.18) !important}
+    .reserva-input{min-width:120px;padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:#0c1830;color:#fff;font-weight:700}
+    .reserva-input[disabled], .line-reserva[disabled]{opacity:.55;cursor:not-allowed;background:rgba(15,23,42,.65)!important}
+    .reserva-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+    .reserva-bulk-box{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.025)}
+    .reserva-bulk-box input{max-width:260px}
+    .mov-select{width:18px;height:18px;accent-color:#22c55e;cursor:pointer}
+    .cod-reserva-pill{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.45);color:#bbf7d0;font-weight:800;font-size:11px;margin-top:4px}
+
     .main{padding:26px 28px}
     .header h1{margin:0 0 6px;font-size:28px}.header p{margin:0 0 20px;color:var(--muted)}
     .toolbar{display:grid;grid-template-columns:minmax(260px,1fr) minmax(180px,240px) minmax(180px,240px) auto auto auto auto;gap:12px;margin-bottom:18px;align-items:center}
@@ -182,7 +205,7 @@
     .span-2{grid-column:span 2}.span-4{grid-column:1/-1}.muted-note{font-size:10px;color:var(--muted)}
 
 
-    .material-lines table{min-width:1180px}
+    .material-lines table{min-width:1430px}
     .material-lines th,.material-lines td{vertical-align:top}
     .line-bodega-stock{min-width:210px}
     .line-serial{min-width:150px}
@@ -403,7 +426,7 @@
     .empty{padding:26px;text-align:center;color:var(--muted);display:none}
 
     .material-lines{border:1px solid var(--border);border-radius:16px;overflow:auto;background:rgba(255,255,255,.025)}
-    .material-lines table{min-width:900px}
+    .material-lines table{min-width:1430px}
     .material-lines th{position:static;background:rgba(255,255,255,.04)}
     .line-actions{display:flex;gap:8px;align-items:center}
     .support-box{border:1px dashed rgba(159,208,255,.35);border-radius:16px;padding:14px;background:rgba(255,255,255,.025)}
@@ -710,6 +733,8 @@
             <option>SALIDA</option>
             <option>TRANSFERENCIA</option>
             <option>CONSUMO_INSTALACION</option>
+            <option>CONSUMO_MTO_CORRECTIVO</option>
+            <option>CONSUMO_MTO_PREVENTIVO</option>
             <option>AJUSTE_POSITIVO</option>
             <option>AJUSTE_NEGATIVO</option>
           </select>
@@ -717,7 +742,7 @@
         <div class="field"><label>Fecha</label><input type="date" name="fecha" required></div>
         <div class="field"><label>Hora</label><input type="time" name="hora"></div>
         <div class="field"><label>Estado</label>
-          <select name="estado"><option>RECIBIDO</option><option>PENDIENTE</option><option>ENTREGADO</option><option>CONSUMIDO</option><option>ANULADO</option></select>
+          <select name="estado" onchange="actualizarReservaInputs()"><option>RECIBIDO</option><option>PENDIENTE</option><option>ENTREGADO</option><option>CONSUMIDO</option><option>ANULADO</option></select>
         </div>
 
         <div class="span-4">
@@ -734,6 +759,7 @@
                   <th style="width:190px">Bodega destino</th>
                   <th style="width:170px">Stock SAP</th>
                   <th style="width:150px">Cod serial</th>
+                  <th style="width:150px">Cod reserva</th>
                   <th style="width:80px">Acción</th>
                 </tr>
               </thead>
@@ -876,7 +902,8 @@ function renderShell(){
         <select id="filterTipo" class="control">
           <option value="">Todos los movimientos</option>
           <option>ENTRADA</option><option>SALIDA</option><option>TRANSFERENCIA</option><option>CONSUMO_INSTALACION</option><option>AJUSTE_POSITIVO</option><option>AJUSTE_NEGATIVO</option>
-        <option>AJUSTE_INICIAL</option></select>
+        <option>AJUSTE_INICIAL</option>
+<option>CONSUMO_MTO_CORRECTIVO</option><option>CONSUMO_MTO_PREVENTIVO</option></select>
         <button class="btn ghost" onclick="openMatModal()">Crear material</button>
         <button class="btn ghost" onclick="exportarTodosMovimientosExcel()">Exportar movimientos Excel</button>
         <button class="btn ghost" onclick="loadAll()">Actualizar</button>
@@ -900,10 +927,17 @@ function renderShell(){
       </section>
 
       <section id="movimientosView" class="card" style="display:none">
+        <div class="reserva-bulk-box">
+          <input id="bulkReservaCode" class="control" placeholder="Cod_reserva para materiales seleccionados">
+          <button class="small-btn" onclick="aplicarReservaSeleccionados()">Copiar código a seleccionados</button>
+          <button class="small-btn" onclick="limpiarSeleccionMovimientos()">Limpiar selección</button>
+          <span id="bulkReservaMsg" class="muted-note"></span>
+        </div>
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
+                <th style="width:42px"><input type="checkbox" class="mov-select" onclick="toggleSelectAllMovimientos(this)"></th>
                 <th class="sortable" onclick="sortMovimientosBy('fecha')">Fecha <span id="sortFechaIcon" class="sort-indicator">▼</span></th>
                 <th><div class="th-filter"><span>Tipo</span><select id="filterMovTipo" onchange="setMovimientoColumnFilter('tipo', this.value)"><option value="">Todos</option></select></div></th>
                 <th><div class="th-filter"><span>SAP / Material</span><select id="filterMovMaterial" onchange="setMovimientoColumnFilter('material', this.value)"><option value="">Todos</option></select></div></th>
@@ -912,7 +946,7 @@ function renderShell(){
                 <th><div class="th-filter"><span>Destino</span><select id="filterMovDestino" onchange="setMovimientoColumnFilter('destino', this.value)"><option value="">Todos</option></select></div></th>
                 <th><div class="th-filter"><span>Guía</span><select id="filterMovGuia" onchange="setMovimientoColumnFilter('guia', this.value)"><option value="">Todas</option></select></div></th>
                 <th><div class="th-filter"><span>Cliente / Instalación</span><select id="filterMovCliente" onchange="setMovimientoColumnFilter('cliente', this.value)"><option value="">Todos</option></select></div></th>
-                <th><div class="th-filter"><span>Responsable</span><select id="filterMovResponsable" onchange="setMovimientoColumnFilter('responsable', this.value)"><option value="">Todos</option></select></div></th><th>Soporte</th>
+                <th><div class="th-filter"><span>Responsable</span><select id="filterMovResponsable" onchange="setMovimientoColumnFilter('responsable', this.value)"><option value="">Todos</option></select></div></th><th>Cod_reserva</th><th>Soporte</th>
               </tr>
             </thead>
             <tbody id="movimientosBody"></tbody>
@@ -1150,7 +1184,7 @@ function calcularInventarioDesdeStockSap(){
         return;
       }else if(['ENTRADA','AJUSTE_POSITIVO'].includes(tipo)){
         aplicarDeltaInventario(row, destino, qty);
-      }else if(['SALIDA','CONSUMO_INSTALACION','AJUSTE_NEGATIVO'].includes(tipo)){
+      }else if(['SALIDA','CONSUMO_INSTALACION','CONSUMO_MTO_CORRECTIVO','CONSUMO_MTO_PREVENTIVO','AJUSTE_NEGATIVO'].includes(tipo)){
         aplicarDeltaInventario(row, origen, -qty);
       }else if(tipo === 'TRANSFERENCIA'){
         aplicarDeltaInventario(row, origen, -qty);
@@ -1191,7 +1225,7 @@ function applyKpi(rows, mode){
     if(['ALMAGRARIO','NODO','CONTRATISTA','WOM'].includes(activeKpi)) return rows.filter(r => Number(r[activeKpi.toLowerCase()] || 0) > 0);
   }
   if(mode === 'movimientos'){
-    if(activeKpi === 'SALIDAS') return rows.filter(r => ['SALIDA','CONSUMO_INSTALACION'].includes(r.tipo_movimiento));
+    if(activeKpi === 'SALIDAS') return rows.filter(r => ['SALIDA','CONSUMO_INSTALACION','CONSUMO_MTO_CORRECTIVO','CONSUMO_MTO_PREVENTIVO'].includes(r.tipo_movimiento));
   }
   return rows;
 }
@@ -1223,7 +1257,7 @@ function renderSummary(){
   const cajasOb = totalPorCodigoSap('522897');
   const sfps = totalPorCodigoSap('522588');
   const patchcordLcSc = totalPorCodigoSap('523024');
-  const consumido = movimientos.filter(x => x.tipo_movimiento === 'CONSUMO_INSTALACION').reduce((a,b)=>a+Number(b.cantidad||0),0);
+  const consumido = movimientos.filter(x => ['CONSUMO_INSTALACION','CONSUMO_MTO_CORRECTIVO','CONSUMO_MTO_PREVENTIVO'].includes(x.tipo_movimiento)).reduce((a,b)=>a+Number(b.cantidad||0),0);
 
   document.getElementById('summary').innerHTML = `
     <div class="stat ${activeKpi==='FIBRA_12H'?'active':''}" onclick="toggleKpi('FIBRA_12H')"><div class="label">Fibra 12 hilos</div><div class="value">${fmtNum(fibra12h)}</div><div class="sub">Total en todas las bodegas</div></div>
@@ -1354,6 +1388,100 @@ function applyMovimientoColumnFilters(rows){
   });
 }
 
+function movimientoEstaConsumido(row){
+  return String(row?.estado || '').toUpperCase() === 'CONSUMIDO';
+}
+
+function actualizarReservaInputs(){
+  const estado = String(document.getElementById('movForm')?.elements?.['estado']?.value || '').toUpperCase();
+  const habilitar = estado === 'CONSUMIDO';
+  document.querySelectorAll('#materialLinesBody .line-reserva').forEach(input => {
+    input.disabled = !habilitar;
+    input.title = habilitar ? 'Código de reserva SAP' : 'Disponible solo cuando el estado sea CONSUMIDO';
+    if(!habilitar) input.value = '';
+  });
+}
+
+function onMovimientoRowClick(event, id){
+  if(event.target.closest('a,button,input,select,textarea,label')) return;
+  openMovModalById(id);
+}
+
+function toggleSelectMovimiento(event, id){
+  event.stopPropagation();
+}
+
+function toggleSelectAllMovimientos(cb){
+  document.querySelectorAll('.mov-row-select:not(:disabled)').forEach(x => { x.checked = cb.checked; });
+}
+
+function limpiarSeleccionMovimientos(){
+  document.querySelectorAll('.mov-row-select').forEach(x => x.checked = false);
+  const all = document.querySelector('thead .mov-select');
+  if(all) all.checked = false;
+  const msg = document.getElementById('bulkReservaMsg');
+  if(msg) msg.textContent = '';
+}
+
+async function actualizarCodigoReservaMovimiento(id, codigo){
+  const client = await resolveClient();
+  const value = String(codigo || '').trim() || null;
+  const { error } = await client
+    .from('om_materiales_movimientos')
+    .update({ cod_reserva: value })
+    .eq('id', id);
+  if(error) throw error;
+}
+
+async function guardarReservaInline(id, input){
+  try{
+    input.disabled = true;
+    await actualizarCodigoReservaMovimiento(id, input.value);
+    await loadAll();
+  }catch(err){
+    console.error(err);
+    alert('Error actualizando Cod_reserva: ' + (err.message || err));
+  }finally{
+    input.disabled = false;
+  }
+}
+
+async function aplicarReservaSeleccionados(){
+  const msg = document.getElementById('bulkReservaMsg');
+  if(msg){ msg.textContent = ''; msg.style.color = '#bfdbfe'; }
+  const codigo = String(document.getElementById('bulkReservaCode')?.value || '').trim();
+  if(!codigo){ alert('Digite el Cod_reserva que desea copiar.'); return; }
+
+  const ids = Array.from(document.querySelectorAll('.mov-row-select:checked')).map(x => x.value);
+  if(!ids.length){ alert('Seleccione al menos un material consumido.'); return; }
+
+  try{
+    const client = await resolveClient();
+    const { error } = await client
+      .from('om_materiales_movimientos')
+      .update({ cod_reserva: codigo })
+      .in('id', ids);
+    if(error) throw error;
+    if(msg){ msg.textContent = `Cod_reserva aplicado a ${ids.length} material(es).`; msg.style.color = '#86efac'; }
+    await loadAll();
+  }catch(err){
+    console.error(err);
+    if(msg){ msg.textContent = 'Error: ' + (err.message || err); msg.style.color = '#fecaca'; }
+    else alert('Error actualizando Cod_reserva: ' + (err.message || err));
+  }
+}
+
+function renderReservaCell(row){
+  if(!movimientoEstaConsumido(row)){
+    return '<span class="desc">Solo CONSUMIDO</span>';
+  }
+  const val = esc(row.cod_reserva || '');
+  return `<div class="reserva-actions">
+    <input class="reserva-input" value="${val}" placeholder="Cod_reserva" onclick="event.stopPropagation()" onchange="guardarReservaInline('${esc(row.id)}', this)">
+    <button class="small-btn" onclick="event.stopPropagation(); guardarReservaInline('${esc(row.id)}', this.previousElementSibling)">Guardar</button>
+  </div>`;
+}
+
 function renderMovimientos(){
   const txt = getSearch();
   const bodega = getBodega();
@@ -1397,7 +1525,8 @@ function renderMovimientos(){
   empty.style.display='none';
 
   body.innerHTML = rows.map(r => `
-    <tr onclick="openMovModalById('${esc(r.id)}')" style="cursor:pointer" title="Clic para ver o editar el movimiento">
+    <tr class="${r.cod_reserva ? 'row-reserva-ok' : ''}" onclick="onMovimientoRowClick(event, '${esc(r.id)}')" style="cursor:pointer" title="Clic para ver o editar el movimiento">
+      <td><input type="checkbox" class="mov-select mov-row-select" value="${esc(r.id)}" ${movimientoEstaConsumido(r) ? '' : 'disabled'} onclick="toggleSelectMovimiento(event, '${esc(r.id)}')"></td>
       <td>${fmtDate(r.fecha)}<div class="desc">${esc(r.hora || '')}</div></td>
       <td>${badge(r.tipo_movimiento)}</td>
       <td><div class="title">${esc(r.codigo_sap || '')}</div><div class="desc">${esc(r.material_descripcion || r.om_materiales_catalogo?.material || '')}</div>${r.codigo_serial ? `<div class="desc"><b>Serial:</b> ${esc(r.codigo_serial)}</div>` : ''}</td>
@@ -1407,6 +1536,7 @@ function renderMovimientos(){
       <td>${esc(r.guia || '')}<div class="desc">${esc(r.transportadora || '')}</div></td>
       <td><div class="title">${esc(r.cliente || '')}</div><div class="desc">${esc(r.id_cambio || '')} ${esc(r.id_cliente || '')}</div></td>
       <td>${esc(r.responsable || r.created_by_email || '')}</td>
+      <td>${renderReservaCell(r)}${r.cod_reserva ? `<div class="cod-reserva-pill">SAP descargado</div>` : ''}</td>
       <td>${r.soporte_acta_url ? `<a class="link-btn" href="${esc(r.soporte_acta_url)}" target="_blank">Ver acta</a>` : '<span class="desc">Sin soporte</span>'}</td>
     </tr>
   `).join('');
@@ -1470,6 +1600,7 @@ function exportarTodosMovimientosExcel(){
       'ID Cliente': r.id_cliente || '',
       'Cliente': r.cliente || '',
       'Observaciones': r.observaciones || '',
+      'Cod_reserva': r.cod_reserva || '',
       'Soporte acta URL': r.soporte_acta_url || '',
       'Soporte acta nombre': r.soporte_acta_nombre || '',
       'Grupo movimiento ID': r.grupo_movimiento_id || '',
@@ -1581,11 +1712,13 @@ function hydrateSelects(){
 
 function normalizarUnidadSap(unidad){
   const u = String(unidad || '').trim().toUpperCase();
-  if(['M','MT','MTR','MTS','METRO','METROS'].includes(u)) return 'Metros';
-  if(['EA','UN','UND','UNIDAD','UNIDADES'].includes(u)) return 'Unidades';
-  if(['ROLLO','ROLLOS'].includes(u)) return 'Rollos';
-  if(['CAJA','CAJAS'].includes(u)) return 'Cajas';
-  return unidad || 'Unidades';
+
+  // En stock_sap_villao las unidades válidas son EA y M.
+  // Se muestran exactamente así para evitar que aparezca "Unidad" o "Metros".
+  if(['EA','UN','UND','UNIDAD','UNIDADES'].includes(u)) return 'EA';
+  if(['M','MT','MTR','MTS','METRO','METROS'].includes(u)) return 'M';
+
+  return u || '';
 }
 
 function parseStockSap(stock, row = null){
@@ -1604,7 +1737,7 @@ function parseStockSap(stock, row = null){
   if(!Number.isNaN(cantidadDirecta)){
     return {
       cantidad: cantidadDirecta,
-      unidad: normalizarUnidadSap(row.unidad || row.unidad_sap || 'EA')
+      unidad: normalizarUnidadSap(row.unidad_sap || row.unidad || 'EA')
     };
   }
 
@@ -1684,7 +1817,7 @@ function buscarMaterialPorSap(codigo){
     return {
       codigo_sap: sap.codigo_sap || codigoNorm,
       material: sap.material_description || sap.descripcion_gp_antiguo || '',
-      unidad: sap.unidad || sap.unidad_sap || parsed.unidad || 'Unidades',
+      unidad: sap.unidad_sap || sap.unidad || parsed.unidad || '',
       categoria: sap.description_storage_location || sap.plant_name || null,
       fuente: 'stock_sap_villao'
     };
@@ -1714,7 +1847,7 @@ function buscarMaterialPorNombre(nombre){
     return {
       codigo_sap: sap.codigo_sap || '',
       material: sap.material_description || sap.descripcion_gp_antiguo || '',
-      unidad: sap.unidad || sap.unidad_sap || parsed.unidad || 'Unidades',
+      unidad: sap.unidad_sap || sap.unidad || parsed.unidad || '',
       categoria: sap.description_storage_location || sap.plant_name || null,
       fuente: 'stock_sap_villao'
     };
@@ -1751,7 +1884,7 @@ function getTipoMovimientoActual(){
 }
 
 function lineRequiresOrigen(tipo = getTipoMovimientoActual()){
-  return ['SALIDA','TRANSFERENCIA','CONSUMO_INSTALACION','AJUSTE_NEGATIVO'].includes(tipo);
+  return ['SALIDA','TRANSFERENCIA','CONSUMO_INSTALACION','CONSUMO_MTO_CORRECTIVO','CONSUMO_MTO_PREVENTIVO','AJUSTE_NEGATIVO'].includes(tipo);
 }
 
 function lineRequiresDestino(tipo = getTipoMovimientoActual()){
@@ -1770,7 +1903,7 @@ function actualizarRequeridosBodegasPorLinea(){
     if(tipo === 'ENTRADA' || tipo === 'AJUSTE_POSITIVO'){
       if(origen) origen.value = '';
     }
-    if(['SALIDA','CONSUMO_INSTALACION','AJUSTE_NEGATIVO'].includes(tipo)){
+    if(['SALIDA','CONSUMO_INSTALACION','CONSUMO_MTO_CORRECTIVO','CONSUMO_MTO_PREVENTIVO','AJUSTE_NEGATIVO'].includes(tipo)){
       if(destino) destino.value = '';
     }
   });
@@ -1796,9 +1929,7 @@ function addMaterialLine(data = {}){
     <td><input class="control line-material" list="materialList" value="${esc(data.material_nombre || data.material || '')}" required oninput="syncMaterialLineByName(this)" onchange="syncMaterialLineByName(this)"></td>
     <td><input class="control line-cantidad" type="number" step="0.01" min="0.01" value="${esc(data.cantidad || '')}" required></td>
     <td>
-      <select class="control line-unidad" required>
-        ${['M','EA','Metros','Unidades','Rollos','Cajas','Patchcord','SFP','Otros'].map(u => `<option ${String(data.unidad || '').toLowerCase() === u.toLowerCase() ? 'selected' : ''}>${u}</option>`).join('')}
-      </select>
+      <input class="control line-unidad" value="${esc(normalizarUnidadSap(data.unidad || ''))}" readonly placeholder="Unidad">
     </td>
     <td>
       <select class="control line-bodega-origen-id">
@@ -1816,6 +1947,7 @@ function addMaterialLine(data = {}){
       </select>
     </td>
     <td><div class="serial-cell"><input class="control line-serial" value="${esc(data.codigo_serial || data.cod_serial || '')}" placeholder="Serial"><button type="button" class="scan-serial-btn" onclick="abrirEscanerSerial(this)" title="Escanear serial con cámara">📷</button></div></td>
+    <td><input class="control line-reserva" value="${esc(data.cod_reserva || data.codigo_reserva || '')}" placeholder="Cod reserva"></td>
     <td><button type="button" class="small-btn" onclick="removeMaterialLine(this)">✕</button></td>
   `;
   body.appendChild(tr);
@@ -1828,6 +1960,7 @@ function addMaterialLine(data = {}){
   }
 
   actualizarRequeridosBodegasPorLinea();
+  actualizarReservaInputs();
 }
 
 
@@ -1874,24 +2007,33 @@ function setBodegaStockValue(select, value){
   select.value = value;
 }
 
-function setUnidadSelectValue(select, unidad){
-  if(!select) return;
-  const valor = String(unidad || 'Unidades').trim();
+function setUnidadSelectValue(el, unidad){
+  if(!el) return;
 
-  const opciones = Array.from(select.options).map(o => o.value || o.textContent);
-  const exacta = opciones.find(o => String(o).toLowerCase() === valor.toLowerCase());
+  const valor = unidad ? normalizarUnidadSap(unidad) : '';
 
-  if(exacta){
-    select.value = exacta;
+  // La unidad no es editable: se muestra exactamente como EA o M.
+  if(el.tagName === 'INPUT'){
+    el.value = valor || '';
+    el.title = valor || '';
     return;
   }
 
-  // Si la unidad SAP no está en opciones, agregamos la opción para no perder el dato.
+  // Compatibilidad con versiones anteriores donde era select.
+  const valorSelect = valor || '';
+  const opciones = Array.from(el.options || []).map(o => o.value || o.textContent);
+  const exacta = opciones.find(o => String(o).toLowerCase() === valorSelect.toLowerCase());
+
+  if(exacta){
+    el.value = exacta;
+    return;
+  }
+
   const opt = document.createElement('option');
-  opt.value = valor;
-  opt.textContent = valor;
-  select.appendChild(opt);
-  select.value = valor;
+  opt.value = valorSelect;
+  opt.textContent = valorSelect;
+  el.appendChild(opt);
+  el.value = valorSelect;
 }
 
 function syncMaterialLineBySap(input){
@@ -1906,7 +2048,7 @@ function syncMaterialLineBySap(input){
 
   if(!codigo){
     tr.querySelector('.line-material').value = '';
-    setUnidadSelectValue(tr.querySelector('.line-unidad'), 'Unidades');
+    setUnidadSelectValue(tr.querySelector('.line-unidad'), '');
     cargarBodegasStockEnLinea(tr, []);
     return;
   }
@@ -1920,7 +2062,7 @@ function syncMaterialLineBySap(input){
     setUnidadSelectValue(tr.querySelector('.line-unidad'), item.unidad || 'Unidades');
   }else{
     tr.querySelector('.line-material').value = '';
-    setUnidadSelectValue(tr.querySelector('.line-unidad'), 'Unidades');
+    setUnidadSelectValue(tr.querySelector('.line-unidad'), '');
     input.classList.add('sap-not-found');
     if(warning) warning.style.display = 'block';
   }
@@ -1954,7 +2096,8 @@ function getMaterialLineItems(){
       bodega_origen_nombre: getBodegaNombreById(bodegaOrigenId),
       bodega_destino_nombre: getBodegaNombreById(bodegaDestinoId),
       bodega_origen_stock: tr.querySelector('.line-bodega-stock')?.value || '',
-      codigo_serial: tr.querySelector('.line-serial')?.value.trim() || ''
+      codigo_serial: tr.querySelector('.line-serial')?.value.trim() || '',
+      cod_reserva: tr.querySelector('.line-reserva')?.value.trim() || ''
     };
   }).filter(x => x.material_nombre || x.codigo_sap || x.cantidad || x.codigo_serial);
 
@@ -2180,7 +2323,8 @@ function openMovModal(row = null){
         bodega_origen_id: r.bodega_origen_id || '',
         bodega_destino_id: r.bodega_destino_id || '',
         bodega_origen_stock: r.bodega_origen_stock || '',
-        codigo_serial: r.codigo_serial || ''
+        codigo_serial: r.codigo_serial || '',
+        cod_reserva: r.cod_reserva || ''
       });
     });
 
@@ -2206,6 +2350,7 @@ function openMovModal(row = null){
   const movMsg = document.getElementById('movMsg');
   movMsg.innerHTML = row?.soporte_acta_url ? `<a class="link-btn" target="_blank" href="${esc(row.soporte_acta_url)}">Ver soporte actual</a>` : '';
   toggleMovementFields();
+  actualizarReservaInputs();
   if(form?.elements?.['id_cambio']?.value && (!form.elements['cliente']?.value || !form.elements['id_cliente']?.value)) buscarInstalacionPorCambio(form.elements['id_cambio'].value);
   document.getElementById('movModal').classList.add('show');
 }
@@ -2423,8 +2568,9 @@ function toggleMovementFields(){
   if(origen) origen.required = false;
   if(destino) destino.required = false;
 
-  if(tipo === 'CONSUMO_INSTALACION') form.elements['estado'].value = 'CONSUMIDO';
+  if(['CONSUMO_INSTALACION','CONSUMO_MTO_CORRECTIVO','CONSUMO_MTO_PREVENTIVO'].includes(tipo)) form.elements['estado'].value = 'CONSUMIDO';
   actualizarRequeridosBodegasPorLinea();
+  actualizarReservaInputs();
 }
 
 
@@ -2519,7 +2665,8 @@ function getMaterialLineItemsParaActa(){
       bodega_origen_nombre: getBodegaNombreById(bodegaOrigenId),
       bodega_destino_nombre: getBodegaNombreById(bodegaDestinoId),
       bodega_origen_stock: tr.querySelector('.line-bodega-stock')?.value || '',
-      codigo_serial: tr.querySelector('.line-serial')?.value.trim() || ''
+      codigo_serial: tr.querySelector('.line-serial')?.value.trim() || '',
+      cod_reserva: tr.querySelector('.line-reserva')?.value.trim() || ''
     };
   }).filter(x => x.codigo_sap || x.material_nombre || x.cantidad || x.codigo_serial);
 }
@@ -2921,7 +3068,8 @@ document.getElementById('movForm').addEventListener('submit', async function(e){
         bodega_origen_id: item.bodega_origen_id || null,
         bodega_destino_id: item.bodega_destino_id || null,
         bodega_origen_stock: item.bodega_origen_stock || null,
-        codigo_serial: item.codigo_serial || null
+        codigo_serial: item.codigo_serial || null,
+        cod_reserva: item.cod_reserva || null
       });
     }
 
@@ -3143,3 +3291,4 @@ document.addEventListener('keydown', function(e){
 
 </body>
 </html>
+
