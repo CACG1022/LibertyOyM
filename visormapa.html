@@ -357,6 +357,55 @@
       box-shadow: 0 0 16px rgba(34,211,238,.20);
     }
 
+
+    .gps-demo {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff 0%, #38bdf8 35%, #1d4ed8 85%);
+      box-shadow: 0 0 0 2px rgba(56,189,248,.25), 0 0 12px rgba(56,189,248,.9);
+    }
+
+    .gps-marker-wrap {
+      position: relative;
+      width: 58px;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+    .gps-marker-wrap::before {
+      content: '';
+      position: absolute;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 2px solid rgba(56,189,248,.55);
+      animation: gpsPulse 2s ease-out infinite;
+    }
+    .gps-core {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+      background: radial-gradient(circle at 35% 35%, #fff 0%, #38bdf8 35%, #1d4ed8 100%);
+      box-shadow: 0 0 16px rgba(56,189,248,.95), 0 0 32px rgba(37,99,235,.55);
+    }
+    .gps-heading {
+      position: absolute;
+      top: 0;
+      width: 0;
+      height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-bottom: 16px solid #38bdf8;
+      filter: drop-shadow(0 0 8px rgba(56,189,248,.65));
+    }
+    @keyframes gpsPulse {
+      0% { transform: scale(.75); opacity: .9; }
+      80% { transform: scale(1.7); opacity: 0; }
+      100% { transform: scale(1.7); opacity: 0; }
+    }
+
     ::-webkit-scrollbar { width: 10px; height: 10px; }
     ::-webkit-scrollbar-track { background: rgba(3, 7, 18, 0.75); }
     ::-webkit-scrollbar-thumb { background: rgba(68, 102, 155, 0.65); border-radius: 999px; }
@@ -452,6 +501,20 @@
       </div>
 
       <div class="block">
+        <label>Ubicación GPS / navegación</label>
+        <button id="gpsToggleBtn" class="secondary">Activar GPS</button>
+        <div class="row" style="margin-top:8px;">
+          <button id="centerGpsBtn" class="secondary">Ir a mi ubicación</button>
+          <button id="goFaultBtn" class="success">Ir a falla</button>
+        </div>
+        <button id="openMapsBtn" class="secondary" style="margin-top:8px;">Abrir ruta en Google Maps</button>
+        <div id="gpsInfo" class="result" style="margin-top:10px;">
+          <strong>GPS:</strong> Inactivo<br>
+          <span class="small">Activa la ubicación para orientarte y navegar hacia el punto de falla.</span>
+        </div>
+      </div>
+
+      <div class="block">
         <label>Herramienta de medición manual</label>
         <button id="measureToggleBtn" class="secondary">Activar medición</button>
         <button id="measureUndoBtn" class="secondary" style="margin-top:8px;">Deshacer último punto</button>
@@ -487,6 +550,7 @@
         <div style="margin-top:6px;"><span class="route-demo"></span> Ruta OTDR ordenada</div>
         <div style="margin-top:6px;"><span class="selected-demo"></span> Tramo seleccionado</div>
         <div style="margin-top:6px;"><span class="measure-demo"></span> Medición manual</div>
+        <div style="margin-top:6px;"><span class="gps-demo"></span> Mi ubicación GPS</div>
         <div style="margin-top:6px;"><span class="point-demo"></span> Punto falla</div>
       </div>
     </main>
@@ -528,11 +592,13 @@
     map.createPane('nodePane'); map.getPane('nodePane').style.zIndex = 650;
     map.createPane('routePane'); map.getPane('routePane').style.zIndex = 620;
     map.createPane('faultPane'); map.getPane('faultPane').style.zIndex = 700;
+    const gpsLayer = L.layerGroup().addTo(map);
 
     let rawGeoJSON = null, filteredGeoJSON = null, orderedRoute = null, lastFault = null;
     let allLayer = null, filteredLayer = null, orderedRouteLayer = null, pointLayer = null, nodoLayer = null;
     let candidateNameFields = [], layerControl = null, highlightedLayer = null, nodeCoord = null;
     let measureMode = false, measurePoints = [], measureLine = null, measureMarkers = [], measureTooltipMarker = null;
+    let gpsActive = false, userLatLng = null, userAccuracy = null, userHeading = null, userMarker = null, userAccuracyCircle = null;
 
     const $ = id => document.getElementById(id);
     const fileInput = $('fileInput'), nameField = $('nameField'), clientSearch = $('clientSearch'), clientList = $('clientList');
@@ -540,6 +606,7 @@
     const statusBox = $('status'), resultBox = $('result'), matchInfo = $('matchInfo'), searchAllFields = $('searchAllFields');
     const startMode = $('startMode'), otdrDirection = $('otdrDirection'), rebuildRouteBtn = $('rebuildRouteBtn'), reverseRouteBtn = $('reverseRouteBtn'), copyBtn = $('copyBtn'), loadDefaultKmzBtn = $('loadDefaultKmzBtn');
     const measureToggleBtn = $('measureToggleBtn'), measureUndoBtn = $('measureUndoBtn'), measureClearBtn = $('measureClearBtn'), measureInfo = $('measureInfo');
+    const gpsToggleBtn = $('gpsToggleBtn'), centerGpsBtn = $('centerGpsBtn'), goFaultBtn = $('goFaultBtn'), openMapsBtn = $('openMapsBtn'), gpsInfo = $('gpsInfo');
     const appEl = document.querySelector('.app'), sidebarToggle = $('sidebarToggle');
 
     function setStatus(msg, isError = false) { statusBox.textContent = msg; statusBox.className = isError ? 'status warn' : 'status'; }
@@ -620,7 +687,8 @@
       if (orderedRouteLayer) overlays['Ruta OTDR ordenada'] = orderedRouteLayer;
       if (pointLayer) overlays['Punto de falla'] = pointLayer;
       if (measureLine) overlays['Medición manual'] = measureLine;
-      layerControl = L.control.layers(baseMaps, overlays, { collapsed: false, position: 'topright' }).addTo(map);
+      if (gpsLayer && gpsLayer.getLayers().length) overlays['Mi ubicación GPS'] = gpsLayer;
+      layerControl = L.control.layers(baseMaps, overlays, { collapsed: true, position: 'topright' }).addTo(map);
     }
 
     function clearNetworkLayers() {
@@ -1074,6 +1142,118 @@
       } catch (error) { console.warn(error); setStatus(`Aviso: ${error.message}. Puedes seguir cargando la red.`, true); }
     }
 
+
+    function createGpsIcon() {
+      return L.divIcon({
+        html: `<div class="gps-marker-wrap"><div class="gps-heading"></div><div class="gps-core"></div></div>`,
+        className: 'gps-marker-icon',
+        iconSize: [58, 58],
+        iconAnchor: [29, 29],
+        popupAnchor: [0, -22]
+      });
+    }
+
+    function updateGpsInfo() {
+      if (!gpsInfo) return;
+      if (!gpsActive && !userLatLng) {
+        gpsInfo.innerHTML = `<strong>GPS:</strong> Inactivo<br><span class="small">Activa la ubicación para orientarte y navegar hacia el punto de falla.</span>`;
+      } else if (userLatLng) {
+        gpsInfo.innerHTML = `
+          <strong>GPS:</strong> ${gpsActive ? 'Activo' : 'Última ubicación'}<br>
+          <strong>Latitud:</strong> ${userLatLng.lat.toFixed(6)}<br>
+          <strong>Longitud:</strong> ${userLatLng.lng.toFixed(6)}<br>
+          <strong>Precisión:</strong> ${userAccuracy ? userAccuracy.toFixed(0) + ' m' : 'N/D'}
+        `;
+      } else {
+        gpsInfo.innerHTML = `<strong>GPS:</strong> Buscando ubicación...`;
+      }
+      if (gpsToggleBtn) {
+        gpsToggleBtn.textContent = gpsActive ? 'Desactivar GPS' : 'Activar GPS';
+        gpsToggleBtn.className = gpsActive ? 'active-tool' : 'secondary';
+      }
+    }
+
+    function renderUserLocation(e) {
+      userLatLng = e.latlng;
+      userAccuracy = e.accuracy;
+      gpsLayer.clearLayers();
+      userAccuracyCircle = L.circle(userLatLng, {
+        radius: Math.max(userAccuracy || 0, 8),
+        color: '#38bdf8',
+        weight: 1,
+        opacity: 0.45,
+        fillColor: '#38bdf8',
+        fillOpacity: 0.10
+      }).addTo(gpsLayer);
+      userMarker = L.marker(userLatLng, { icon: createGpsIcon() }).addTo(gpsLayer);
+      userMarker.bindPopup(`
+        <strong>Mi ubicación GPS</strong><br>
+        Lat: ${userLatLng.lat.toFixed(6)}<br>
+        Lon: ${userLatLng.lng.toFixed(6)}<br>
+        Precisión: ${userAccuracy ? userAccuracy.toFixed(0) + ' m' : 'N/D'}
+      `);
+      updateGpsInfo();
+      refreshLayerControl();
+    }
+
+    function gpsError(e) {
+      gpsActive = false;
+      updateGpsInfo();
+      const msg = e && e.message ? e.message : 'No fue posible obtener la ubicación.';
+      setStatus(`GPS no disponible: ${msg}. En Chrome normalmente requiere HTTPS o localhost.`, true);
+    }
+
+    function toggleGps() {
+      if (!navigator.geolocation) {
+        setStatus('Este navegador no soporta geolocalización GPS.', true);
+        return;
+      }
+      if (gpsActive) {
+        gpsActive = false;
+        map.stopLocate();
+        setStatus('GPS desactivado. La última ubicación queda visible en el mapa.');
+        updateGpsInfo();
+        return;
+      }
+      gpsActive = true;
+      updateGpsInfo();
+      setStatus('Buscando ubicación GPS...');
+      map.locate({ watch: true, enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 });
+    }
+
+    function centerOnGps() {
+      if (!userLatLng) {
+        setStatus('Primero activa el GPS y espera a que el navegador entregue tu ubicación.', true);
+        return;
+      }
+      map.setView(userLatLng, 19);
+      if (userMarker) userMarker.openPopup();
+    }
+
+    function centerOnFault() {
+      if (!lastFault) {
+        setStatus('Primero calcula el punto de falla.', true);
+        return;
+      }
+      map.setView([lastFault.lat, lastFault.lng], 19);
+      if (pointLayer && pointLayer.eachLayer) {
+        pointLayer.eachLayer(layer => { if (layer.openPopup) layer.openPopup(); });
+      }
+    }
+
+    function openGoogleMapsRoute() {
+      if (!lastFault) {
+        setStatus('Primero calcula el punto de falla para abrir la ruta.', true);
+        return;
+      }
+      const destination = `${lastFault.lat.toFixed(6)},${lastFault.lng.toFixed(6)}`;
+      const origin = userLatLng ? `${userLatLng.lat.toFixed(6)},${userLatLng.lng.toFixed(6)}` : '';
+      const url = origin
+        ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&travelmode=driving`
+        : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(destination)}`;
+      window.open(url, '_blank');
+    }
+
     function getMeasureTotalMeters() {
       if (measurePoints.length < 2) return 0;
       let total = 0;
@@ -1106,6 +1286,8 @@
     function toggleMeasureMode() { measureMode = !measureMode; updateMeasureInfo(); setStatus(measureMode ? 'Modo de medición activado.' : 'Modo de medición desactivado.'); }
 
     map.on('click', e => { if (measureMode) addMeasurePoint(e.latlng); else clearHighlight(); });
+    map.on('locationfound', renderUserLocation);
+    map.on('locationerror', gpsError);
     fileInput.addEventListener('change', e => { const file = e.target.files[0]; if (file) loadFile(file); });
     loadDefaultKmzBtn.addEventListener('click', loadDefaultKmz);
     filterBtn.addEventListener('click', filterClient); clearBtn.addEventListener('click', showAllNetwork); locateBtn.addEventListener('click', locateFault);
@@ -1128,8 +1310,12 @@
     distanceInput.addEventListener('keydown', e => { if (e.key === 'Enter') locateFault(); });
     measureToggleBtn.addEventListener('click', toggleMeasureMode); measureUndoBtn.addEventListener('click', undoMeasurePoint); measureClearBtn.addEventListener('click', clearMeasure);
     if (sidebarToggle) sidebarToggle.addEventListener('click', toggleSidebar);
+    if (gpsToggleBtn) gpsToggleBtn.addEventListener('click', toggleGps);
+    if (centerGpsBtn) centerGpsBtn.addEventListener('click', centerOnGps);
+    if (goFaultBtn) goFaultBtn.addEventListener('click', centerOnFault);
+    if (openMapsBtn) openMapsBtn.addEventListener('click', openGoogleMapsRoute);
 
-    updateMeasureInfo(); refreshLayerControl(); updateSidebarButton(); cargarNodo();
+    updateMeasureInfo(); updateGpsInfo(); refreshLayerControl(); updateSidebarButton(); cargarNodo();
   </script>
 </body>
 </html>
