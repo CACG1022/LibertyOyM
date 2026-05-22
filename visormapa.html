@@ -6,127 +6,171 @@
   <title>Visor OTDR - Red Villavicencio</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    * { box-sizing: border-box; }
+    :root {
+      --bg: #050b16;
+      --bg-2: #091324;
+      --panel: rgba(7, 18, 38, 0.86);
+      --panel-2: rgba(11, 24, 48, 0.92);
+      --line: rgba(91, 148, 255, 0.28);
+      --line-2: rgba(34, 211, 238, 0.38);
+      --text: #e6f2ff;
+      --muted: #9bb4d1;
+      --cyan: #38bdf8;
+      --cyan-2: #22d3ee;
+      --blue: #2563eb;
+      --green: #22c55e;
+      --yellow: #facc15;
+      --red: #f43f5e;
+      --purple: #8b5cf6;
+      --shadow: 0 14px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.03);
+      --radius: 16px;
+    }
 
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      color: #1f2937;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(37,99,235,0.20), transparent 26%),
+        radial-gradient(circle at top right, rgba(34,211,238,0.10), transparent 22%),
+        linear-gradient(135deg, #040914 0%, #07111f 40%, #09182a 100%);
+      overflow: hidden;
     }
 
     .app {
       display: grid;
-      grid-template-columns: 380px 1fr;
+      grid-template-columns: 390px minmax(0, 1fr);
       height: 100vh;
+      transition: grid-template-columns .35s ease;
     }
+    .app.sidebar-collapsed { grid-template-columns: 0 minmax(0, 1fr); }
 
     .sidebar {
-      background: #ffffff;
-      border-right: 1px solid #d1d5db;
+      background: linear-gradient(180deg, rgba(8,18,35,0.96), rgba(6,14,28,0.92));
+      border-right: 1px solid var(--line);
       padding: 16px;
       overflow-y: auto;
+      overflow-x: hidden;
+      backdrop-filter: blur(16px);
+      box-shadow: var(--shadow);
+      transition: transform .35s ease, opacity .28s ease;
+      position: relative;
+      z-index: 1100;
+    }
+    .sidebar::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(56,189,248,0.06), transparent 26%, transparent 75%, rgba(139,92,246,0.06));
+      pointer-events: none;
+    }
+    .app.sidebar-collapsed .sidebar {
+      transform: translateX(-105%);
+      opacity: 0;
+      pointer-events: none;
     }
 
     .sidebar h1 {
-      font-size: 22px;
+      font-size: 24px;
       margin: 0 0 8px;
+      letter-spacing: .4px;
+      color: #ffffff;
+      text-shadow: 0 0 14px rgba(56,189,248,.22);
     }
-
     .sidebar p {
       margin: 0 0 16px;
-      line-height: 1.4;
-      color: #4b5563;
+      line-height: 1.45;
+      color: var(--muted);
     }
-
     .block {
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
       padding: 14px;
       margin-bottom: 14px;
-      background: #fff;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+      background: linear-gradient(180deg, rgba(11,24,48,0.95), rgba(8,18,35,0.93));
+      box-shadow: var(--shadow);
+      position: relative;
     }
-
+    .block strong { color: #ffffff; }
     label {
       display: block;
       font-size: 13px;
       font-weight: bold;
       margin-bottom: 6px;
+      color: #d9e9ff;
+      letter-spacing: .15px;
     }
-
     input, select, button {
       width: 100%;
       padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid #cbd5e1;
+      border-radius: 12px;
+      border: 1px solid rgba(120, 151, 198, 0.25);
       font-size: 14px;
+      transition: .2s ease;
     }
-
     input, select {
       margin-bottom: 10px;
+      background: rgba(4, 10, 22, 0.85);
+      color: var(--text);
+      outline: none;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
     }
-
+    input::placeholder { color: #6f8aa8; }
+    input:focus, select:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(56,189,248,0.14), 0 0 18px rgba(56,189,248,0.12);
+    }
     button {
-      background: #111827;
+      background: linear-gradient(135deg, #1e40af, #2563eb 60%, #38bdf8);
       color: white;
       cursor: pointer;
-      border: none;
+      border: 1px solid rgba(147, 197, 253, 0.25);
       font-weight: bold;
+      letter-spacing: .2px;
+      box-shadow: 0 10px 25px rgba(37,99,235,.22);
     }
+    button:hover { transform: translateY(-1px); filter: brightness(1.05); }
+    button:active { transform: translateY(0); }
+    .secondary { background: linear-gradient(135deg, #0f172a, #1e293b); }
+    .danger { background: linear-gradient(135deg, #7f1d1d, #dc2626); }
+    .success { background: linear-gradient(135deg, #065f46, #10b981); }
+    .active-tool { background: linear-gradient(135deg, #0f766e, #14b8a6); }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .checkrow { display:flex; gap:8px; align-items:center; margin: 2px 0 10px; }
+    .checkrow input { width:auto; margin:0; accent-color: var(--cyan); }
+    .checkrow label { margin:0; font-weight:normal; color: var(--muted); }
 
-    button:hover {
-      opacity: 0.95;
-    }
-
-    .secondary {
-      background: #374151;
-    }
-
-    .danger {
-      background: #991b1b;
-    }
-
-    .active-tool {
-      background: #0f766e;
-    }
-
-    .map-wrap {
-      position: relative;
-    }
-
+    .map-wrap { position: relative; min-width: 0; }
     #map {
       height: 100vh;
       width: 100%;
+      background: #020817;
     }
 
-    .status {
-      font-size: 13px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      background: #eff6ff;
-      color: #1d4ed8;
-      border: 1px solid #bfdbfe;
-    }
-
-    .result {
+    .status, .result {
       font-size: 14px;
-      line-height: 1.5;
-      background: #f8fafc;
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid #e2e8f0;
+      line-height: 1.55;
+      padding: 11px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(56,189,248,0.25);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
     }
-
-    .small {
-      font-size: 12px;
-      color: #6b7280;
+    .status {
+      background: rgba(14, 28, 56, 0.92);
+      color: #8fd6ff;
     }
-
+    .result {
+      background: rgba(7, 14, 28, 0.86);
+      color: #ecf7ff;
+    }
+    .small { font-size: 12px; color: var(--muted); }
     .tag {
       display: inline-block;
-      background: #e5e7eb;
-      color: #111827;
+      background: rgba(34,211,238,0.10);
+      color: #dff7ff;
+      border: 1px solid rgba(34,211,238,0.22);
       border-radius: 999px;
       padding: 4px 8px;
       margin: 2px 4px 2px 0;
@@ -138,239 +182,298 @@
       right: 12px;
       bottom: 12px;
       z-index: 900;
-      background: rgba(255,255,255,0.95);
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid #d1d5db;
+      background: rgba(6, 14, 28, 0.88);
+      backdrop-filter: blur(14px);
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
       font-size: 12px;
+      color: #dbeafe;
+      box-shadow: var(--shadow);
+      max-width: 240px;
     }
-
-    .line-demo,
-    .point-demo,
-    .node-demo,
-    .network-demo,
-    .selected-demo,
-    .measure-demo {
-      display: inline-block;
-      vertical-align: middle;
-      margin-right: 8px;
-    }
-
-    .node-demo {
-      width: 22px;
-      height: 0;
-      border-top: 4px solid #16a34a;
-    }
-
-    .network-demo {
-      width: 22px;
-      height: 0;
-      border-top: 4px solid #facc15;
-    }
-
-    .line-demo {
-      width: 22px;
-      height: 0;
-      border-top: 4px solid #2563eb;
-    }
-
-    .selected-demo {
-      width: 22px;
-      height: 0;
-      border-top: 4px solid #dc2626;
-    }
-
-    .measure-demo {
-      width: 22px;
-      height: 0;
-      border-top: 4px dashed #7c3aed;
-    }
-
+    .legend span { display: inline-block; vertical-align: middle; margin-right: 8px; }
+    .node-demo { width: 22px; height: 0; border-top: 4px solid #22c55e; }
+    .network-demo { width: 22px; height: 0; border-top: 4px solid #facc15; }
+    .line-demo { width: 22px; height: 0; border-top: 4px solid #3b82f6; }
+    .route-demo { width: 22px; height: 0; border-top: 4px dashed #22d3ee; }
+    .selected-demo { width: 22px; height: 0; border-top: 4px solid #f43f5e; }
+    .measure-demo { width: 22px; height: 0; border-top: 4px dashed #8b5cf6; }
     .point-demo {
-      width: 10px;
-      height: 10px;
-      background: #dc2626;
-      border-radius: 50%;
+      width: 14px; height: 14px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff 0%, #fb7185 30%, #e11d48 70%);
+      box-shadow: 0 0 0 2px rgba(244,63,94,.35), 0 0 12px rgba(244,63,94,.9);
     }
 
-    ul {
-      margin: 8px 0 0 16px;
-      padding: 0;
-    }
-
+    ul { margin: 8px 0 0 16px; padding: 0; }
     .warn {
-      color: #92400e;
-      background: #fffbeb;
-      border-color: #fde68a;
+      color: #fde68a;
+      background: linear-gradient(180deg, rgba(68, 48, 4, 0.92), rgba(52, 36, 3, 0.88));
+      border-color: rgba(250, 204, 21, 0.28);
     }
+    .popup-attrs { max-height: 320px; overflow: auto; min-width: 320px; color: #0f172a; }
+    .popup-title { font-weight: bold; font-size: 15px; margin-bottom: 8px; }
+    .attr-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .attr-table td { border: 1px solid #cbd5e1; padding: 4px 6px; vertical-align: top; word-break: break-word; }
+    .attr-key { font-weight: bold; background: #eff6ff; width: 42%; }
+    .attr-value { background: #ffffff; width: 58%; }
 
-    .popup-attrs {
-      max-height: 320px;
-      overflow: auto;
-      min-width: 320px;
-    }
-
-    .popup-title {
-      font-weight: bold;
-      font-size: 15px;
-      margin-bottom: 8px;
-    }
-
-    .attr-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-    }
-
-    .attr-table td {
-      border: 1px solid #9ca3af;
-      padding: 4px 6px;
-      vertical-align: top;
-      word-break: break-word;
-    }
-
-    .attr-key {
-      font-weight: bold;
-      background: #f3f4f6;
-      width: 42%;
-    }
-
-    .attr-value {
-      background: #ffffff;
-      width: 58%;
-    }
-
-    .leaflet-top.leaflet-right .leaflet-control-layers {
-      margin-top: 12px;
-      margin-right: 12px;
-      border-radius: 10px;
+    .leaflet-top.leaflet-right .leaflet-control-layers,
+    .leaflet-bar {
+      border-radius: 14px !important;
       overflow: hidden;
-      border: 1px solid #d1d5db;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      border: 1px solid var(--line) !important;
+      box-shadow: var(--shadow) !important;
     }
-
+    .leaflet-control-layers {
+      background: rgba(7, 18, 38, 0.88) !important;
+      color: #e5f3ff !important;
+      backdrop-filter: blur(12px);
+    }
     .leaflet-control-layers-expanded {
-      padding: 10px 12px;
+      padding: 12px 14px;
       font-size: 13px;
-      min-width: 170px;
+      min-width: 220px;
+      max-height: 70vh;
+      overflow: auto;
     }
+    .leaflet-control-layers-base label,
+    .leaflet-control-layers-overlays label { margin-bottom: 8px; color: #e5f3ff; }
+    .leaflet-control-zoom a,
+    .leaflet-bar a {
+      background: rgba(7,18,38,0.92) !important;
+      color: #e8f3ff !important;
+      border-bottom-color: var(--line) !important;
+    }
+    .leaflet-control-zoom a:hover,
+    .leaflet-bar a:hover { background: rgba(15, 35, 68, 0.98) !important; }
 
     .node-icon-wrapper {
-      width: 42px;
-      height: 42px;
+      width: 46px; height: 46px; display: flex; align-items: center; justify-content: center;
+      filter: drop-shadow(0 0 10px rgba(34,197,94,.45));
+    }
+    .node-icon-svg { width: 46px; height: 46px; display: block; }
+    .leaflet-tooltip.node-label, .leaflet-tooltip.route-label, .leaflet-tooltip.measure-label {
+      color:#fff; border-radius: 10px; box-shadow: 0 4px 18px rgba(0,0,0,0.24); padding: 5px 9px; font-size: 12px; font-weight: bold;
+    }
+    .leaflet-tooltip.node-label { background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(34,197,94,.32); }
+    .leaflet-tooltip.route-label { background: rgba(8, 145, 178, 0.96); border: 1px solid rgba(34,211,238,.30); }
+    .leaflet-tooltip.measure-label { background: rgba(91, 33, 182, 0.96); border: 1px solid rgba(167,139,250,.40); }
+
+    .sidebar-toggle {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      z-index: 2000;
+      width: auto;
+      min-width: 54px;
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: rgba(7, 18, 38, 0.88);
+      color: #eff6ff;
+      border: 1px solid var(--line-2);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+      font-size: 14px;
+    }
+
+    .fault-marker-wrap {
+      position: relative;
+      width: 124px;
+      height: 124px;
       display: flex;
       align-items: center;
       justify-content: center;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+      pointer-events: none;
+    }
+    .fault-crosshair {
+      position: absolute;
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      border: 2px dashed rgba(56,189,248,.8);
+      box-shadow: 0 0 18px rgba(34,211,238,.30);
+      animation: faultSpin 8s linear infinite;
+    }
+    .fault-crosshair::before,
+    .fault-crosshair::after {
+      content: '';
+      position: absolute;
+      background: rgba(56,189,248,.9);
+      left: 50%; top: 50%; transform: translate(-50%, -50%);
+      box-shadow: 0 0 10px rgba(56,189,248,.55);
+    }
+    .fault-crosshair::before { width: 58px; height: 2px; }
+    .fault-crosshair::after { width: 2px; height: 58px; }
+    .fault-pulse-ring {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid rgba(244,63,94,.85);
+      box-shadow: 0 0 16px rgba(244,63,94,.55);
+      animation: faultPulse 2.4s ease-out infinite;
+    }
+    .fault-pulse-ring.ring2 { animation-delay: .8s; }
+    .fault-pulse-ring.ring3 { animation-delay: 1.6s; }
+    .fault-core {
+      position: relative;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.95);
+      background: radial-gradient(circle at 35% 35%, #fff 0%, #fb7185 22%, #e11d48 62%, #4c0519 100%);
+      box-shadow: 0 0 0 5px rgba(244,63,94,.22), 0 0 24px rgba(244,63,94,.95), 0 0 44px rgba(34,211,238,.30);
+      animation: faultGlow 1.8s ease-in-out infinite alternate;
+    }
+    .fault-label,
+    .fault-distance {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      border-radius: 999px;
+      backdrop-filter: blur(10px);
+      letter-spacing: .35px;
+    }
+    .fault-label {
+      top: -12px;
+      padding: 5px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #fff1f2;
+      background: rgba(127, 29, 29, 0.88);
+      border: 1px solid rgba(244,63,94,.35);
+      box-shadow: 0 0 18px rgba(244,63,94,.25);
+    }
+    .fault-distance {
+      bottom: -16px;
+      padding: 4px 10px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #dff7ff;
+      background: rgba(8, 145, 178, 0.9);
+      border: 1px solid rgba(34,211,238,.36);
+      box-shadow: 0 0 16px rgba(34,211,238,.20);
     }
 
-    .node-icon-svg {
-      width: 42px;
-      height: 42px;
-      display: block;
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: rgba(3, 7, 18, 0.75); }
+    ::-webkit-scrollbar-thumb { background: rgba(68, 102, 155, 0.65); border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(91, 148, 255, 0.75); }
+
+    @keyframes faultPulse {
+      0% { transform: scale(.7); opacity: .95; }
+      70% { transform: scale(3.25); opacity: 0; }
+      100% { transform: scale(3.25); opacity: 0; }
+    }
+    @keyframes faultGlow {
+      0% { box-shadow: 0 0 0 5px rgba(244,63,94,.22), 0 0 24px rgba(244,63,94,.85), 0 0 40px rgba(34,211,238,.22); }
+      100% { box-shadow: 0 0 0 7px rgba(244,63,94,.30), 0 0 30px rgba(244,63,94,1), 0 0 52px rgba(34,211,238,.34); }
+    }
+    @keyframes faultSpin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
 
-    .leaflet-tooltip.node-label {
-      background: rgba(17, 24, 39, 0.9);
-      color: #fff;
-      border: 1px solid #111827;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      padding: 4px 8px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .leaflet-tooltip.node-label:before {
-      border-top-color: #111827;
-    }
-
-    .leaflet-tooltip.measure-label {
-      background: rgba(124, 58, 237, 0.95);
-      color: #fff;
-      border: 1px solid #6d28d9;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      padding: 4px 8px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .leaflet-tooltip.measure-label:before {
-      border-top-color: #6d28d9;
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; height:auto; }
+      .app.sidebar-collapsed { grid-template-columns: 1fr; }
+      .sidebar { position: absolute; width: min(92vw, 390px); height: calc(100vh - 20px); margin: 10px; border-radius: 18px; }
+      .app.sidebar-collapsed .sidebar { transform: translateX(-115%); }
+      #map { height: 100vh; }
+      .legend { max-width: 170px; }
+      .sidebar-toggle { top: 12px; left: 12px; }
     }
   </style>
 </head>
 <body>
+  <button id="sidebarToggle" class="sidebar-toggle" title="Ocultar / mostrar panel">✕ Panel</button>
   <div class="app">
     <aside class="sidebar">
       <h1>Visor OTDR - Villavicencio</h1>
-      <p>Filtra la red de un cliente, ingresa una distancia OTDR y ubica el punto estimado de falla sobre el mapa.</p>
+      <p>Carga un KMZ/KML/GeoJSON, filtra un cliente y ubica el punto estimado de falla según la distancia OTDR desde el ODF o Nodo.</p>
 
       <div class="block">
-        <label for="fileInput">Cargar archivo</label>
+        <label for="fileInput">Cargar archivo de red</label>
         <input type="file" id="fileInput" accept=".geojson,.json,.kml,.kmz" />
-        <div class="small">Soporta GeoJSON, KML y KMZ. Para mejores resultados, se recomienda usar GeoJSON.</div>
+        <button id="loadDefaultKmzBtn" class="secondary" style="margin-top:8px;">Cargar KMZ predeterminado</button>
+        <div class="small" style="margin-top:8px;">Soporta GeoJSON, KML y KMZ. El KMZ debe estar en la misma carpeta del HTML si quieres cargarlo automáticamente.</div>
       </div>
 
       <div class="block">
-        <label for="nameField">Campo del nombre del cliente</label>
+        <label for="nameField">Campo para filtrar: usa _kmz_cliente</label>
         <select id="nameField"></select>
 
-        <label for="clientSearch">Buscar cliente</label>
-        <input type="text" id="clientSearch" placeholder="Ej: CLARO / BANCO / CLIENTE XYZ" />
+        <div class="checkrow">
+          <input type="checkbox" id="searchAllFields" checked />
+          <label for="searchAllFields">Buscar también en nombres de tramos y atributos</label>
+        </div>
 
-        <button id="filterBtn">Filtrar cliente</button>
+        <label for="clientSearch">Buscar cliente del KMZ</label>
+        <input type="text" id="clientSearch" list="clientList" placeholder="Ej: Almacenes Exito / CI1024819 / Séptima" />
+        <datalist id="clientList"></datalist>
+
+        <button id="filterBtn">Filtrar cliente KMZ</button>
         <button id="clearBtn" class="secondary" style="margin-top:8px;">Mostrar toda la red</button>
-
         <div id="matchInfo" class="small" style="margin-top:10px;"></div>
       </div>
 
       <div class="block">
-        <label for="distanceInput">Distancia OTDR desde el ODF</label>
-        <input type="number" id="distanceInput" min="0" step="0.1" placeholder="Ej: 1250" />
-        <select id="distanceUnit">
-          <option value="meters">Metros</option>
-          <option value="kilometers">Kilómetros</option>
+        <label>Ruta OTDR</label>
+        <select id="startMode">
+          <option value="node">Ordenar ruta tomando como referencia el Nodo/ODF</option>
+          <option value="first">Ordenar desde primer tramo filtrado</option>
+          <option value="last" selected>Ordenar desde el extremo contrario</option>
         </select>
-        <button id="locateBtn">Ubicar punto de falla</button>
-        <div class="small">La distancia se traza sobre la geometría filtrada del cliente.</div>
+
+        <label for="otdrDirection" style="margin-top:10px;">Sentido de medición OTDR</label>
+        <select id="otdrDirection">
+          <option value="node_to_client" selected>Desde Nodo/ODF hacia el cliente</option>
+          <option value="client_to_node">Desde cliente hacia Nodo/ODF</option>
+        </select>
+
+        <button id="rebuildRouteBtn" class="secondary">Recalcular / ordenar ruta filtrada</button>
+        <button id="reverseRouteBtn" class="secondary" style="margin-top:8px;">Invertir sentido de ruta</button>
+        <div class="small" style="margin-top:8px;">La distancia OTDR se calcula sobre la ruta ordenada con todos los tramos filtrados y según el sentido seleccionado.</div>
       </div>
 
       <div class="block">
-        <label>Herramienta de medición</label>
+        <label for="distanceInput">Distancia OTDR desde el ODF</label>
+        <div class="row">
+          <input type="number" id="distanceInput" min="0" step="0.1" placeholder="Ej: 1250" />
+          <select id="distanceUnit">
+            <option value="meters">Metros</option>
+            <option value="kilometers">Kilómetros</option>
+          </select>
+        </div>
+        <button id="locateBtn" class="success">Ubicar punto de falla</button>
+        <button id="copyBtn" class="secondary" style="margin-top:8px;">Copiar coordenadas</button>
+      </div>
+
+      <div class="block">
+        <label>Herramienta de medición manual</label>
         <button id="measureToggleBtn" class="secondary">Activar medición</button>
         <button id="measureUndoBtn" class="secondary" style="margin-top:8px;">Deshacer último punto</button>
         <button id="measureClearBtn" class="danger" style="margin-top:8px;">Limpiar medición</button>
-        <div id="measureInfo" class="result" style="margin-top:10px;">
-          <strong>Estado:</strong> Inactiva<br>
-          <strong>Longitud acumulada:</strong> 0 m<br>
-          <strong>Puntos:</strong> 0
-        </div>
+        <div id="measureInfo" class="result" style="margin-top:10px;"></div>
       </div>
 
-      <div class="block">
-        <div id="status" class="status">Cargando capa Nodo...</div>
-      </div>
+      <div class="block"><div id="status" class="status">Inicializando visor...</div></div>
 
       <div class="block">
         <strong>Resultado</strong>
-        <div id="result" class="result" style="margin-top:10px;">
-          Aún no se ha calculado un punto de falla.
-        </div>
+        <div id="result" class="result" style="margin-top:10px;">Aún no se ha calculado un punto de falla.</div>
       </div>
 
       <div class="block warn">
         <strong>Importante</strong>
         <ul>
-          <li>1 clic sobre un tramo: lo resalta en rojo.</li>
-          <li>Doble clic sobre un tramo: muestra la tabla de atributos.</li>
-          <li>Activa la medición para marcar una ruta con clics sobre el mapa o sobre la red.</li>
-          <li>La capa <b>NODO_VVC.geojson</b> se carga automáticamente.</li>
-          <li>La red cargada manualmente se dibuja en amarillo.</li>
-          <li>La red filtrada se muestra en azul.</li>
-          <li>En la esquina superior derecha puedes cambiar el mapa base.</li>
-          <li>El nodo se muestra con ícono grande y etiqueta permanente.</li>
+          <li>La red filtrada se muestra en azul.</li><li><b>CLIENTE1/CLIENTE2 se toma del contenedor padre del KMZ</b>, no del nombre de cada Fiber Cable.</li>
+          <li>La ruta ordenada usada por el OTDR se muestra en cian punteado.</li>
+          <li>Si el punto cae al lado contrario, usa <b>Invertir sentido de ruta</b>.</li>
+          <li>Doble clic sobre un tramo muestra sus atributos.</li>
+          <li>El cálculo es estimado y depende del orden/continuidad de los tramos del KMZ.</li>
         </ul>
       </div>
     </aside>
@@ -378,12 +481,13 @@
     <main class="map-wrap">
       <div id="map"></div>
       <div class="legend">
-        <div><span class="node-demo"></span> Capa Nodo</div>
+        <div><span class="node-demo"></span> Nodo/ODF</div>
         <div style="margin-top:6px;"><span class="network-demo"></span> Red cargada</div>
-        <div style="margin-top:6px;"><span class="line-demo"></span> Red filtrada</div>
+        <div style="margin-top:6px;"><span class="line-demo"></span> Tramos filtrados</div>
+        <div style="margin-top:6px;"><span class="route-demo"></span> Ruta OTDR ordenada</div>
         <div style="margin-top:6px;"><span class="selected-demo"></span> Tramo seleccionado</div>
-        <div style="margin-top:6px;"><span class="measure-demo"></span> Medición</div>
-        <div style="margin-top:6px;"><span class="point-demo"></span> Punto estimado de falla</div>
+        <div style="margin-top:6px;"><span class="measure-demo"></span> Medición manual</div>
+        <div style="margin-top:6px;"><span class="point-demo"></span> Punto falla</div>
       </div>
     </main>
   </div>
@@ -394,607 +498,505 @@
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 
   <script>
+    const DEFAULT_KMZ = './RED VILLAVICENCIO-V2.kmz';
+    const DEFAULT_NODO = './NODO_VVC.geojson';
+
     const map = L.map('map', { doubleClickZoom: false }).setView([4.142, -73.6266], 12);
-
-    const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 20,
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(map);
-
-    const baseEsri = L.tileLayer(
-      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-      {
-        maxZoom: 20,
-        attribution: '&copy; Esri'
-      }
-    );
-
+    const cartoAttr = '&copy; OpenStreetMap contributors &copy; CARTO';
+    const esriAttr = '&copy; Esri';
+    const baseDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { subdomains:'abcd', maxZoom: 20, attribution: cartoAttr }).addTo(map);
+    const baseOSM = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '&copy; OpenStreetMap contributors' });
+    const baseHot = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', { maxZoom: 20, attribution: '&copy; OpenStreetMap contributors, HOT' });
+    const baseLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { subdomains:'abcd', maxZoom: 20, attribution: cartoAttr });
+    const baseVoyager = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { subdomains:'abcd', maxZoom: 20, attribution: cartoAttr });
+    const baseEsri = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20, attribution: esriAttr });
+    const baseEsriStreet = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20, attribution: esriAttr });
+    const baseEsriGray = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', { maxZoom: 20, attribution: esriAttr });
+    const baseTopo = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{y}/{x}.png', { maxZoom: 17, attribution: '&copy; OpenTopoMap' });
     const baseMaps = {
-      "OpenStreetMap": baseOSM,
-      "Satélite Esri": baseEsri
+      'Oscuro futurista': baseDark,
+      'OpenStreetMap': baseOSM,
+      'OpenStreetMap HOT': baseHot,
+      'Claro / Positron': baseLight,
+      'Voyager': baseVoyager,
+      'Satélite Esri': baseEsri,
+      'Calles Esri': baseEsriStreet,
+      'Gris claro Esri': baseEsriGray,
+      'Relieve / Topográfico': baseTopo
     };
 
-    map.createPane('nodePane');
-    map.getPane('nodePane').style.zIndex = 650;
+    map.createPane('nodePane'); map.getPane('nodePane').style.zIndex = 650;
+    map.createPane('routePane'); map.getPane('routePane').style.zIndex = 620;
+    map.createPane('faultPane'); map.getPane('faultPane').style.zIndex = 700;
 
-    let rawGeoJSON = null;
-    let filteredGeoJSON = null;
-    let allLayer = null;
-    let filteredLayer = null;
-    let pointLayer = null;
-    let nodoLayer = null;
-    let candidateNameFields = [];
-    let layerControl = null;
-    let highlightedLayer = null;
+    let rawGeoJSON = null, filteredGeoJSON = null, orderedRoute = null, lastFault = null;
+    let allLayer = null, filteredLayer = null, orderedRouteLayer = null, pointLayer = null, nodoLayer = null;
+    let candidateNameFields = [], layerControl = null, highlightedLayer = null, nodeCoord = null;
+    let measureMode = false, measurePoints = [], measureLine = null, measureMarkers = [], measureTooltipMarker = null;
 
-    let measureMode = false;
-    let measurePoints = [];
-    let measureLine = null;
-    let measureMarkers = [];
-    let measureTooltipMarker = null;
+    const $ = id => document.getElementById(id);
+    const fileInput = $('fileInput'), nameField = $('nameField'), clientSearch = $('clientSearch'), clientList = $('clientList');
+    const filterBtn = $('filterBtn'), clearBtn = $('clearBtn'), locateBtn = $('locateBtn'), distanceInput = $('distanceInput'), distanceUnit = $('distanceUnit');
+    const statusBox = $('status'), resultBox = $('result'), matchInfo = $('matchInfo'), searchAllFields = $('searchAllFields');
+    const startMode = $('startMode'), otdrDirection = $('otdrDirection'), rebuildRouteBtn = $('rebuildRouteBtn'), reverseRouteBtn = $('reverseRouteBtn'), copyBtn = $('copyBtn'), loadDefaultKmzBtn = $('loadDefaultKmzBtn');
+    const measureToggleBtn = $('measureToggleBtn'), measureUndoBtn = $('measureUndoBtn'), measureClearBtn = $('measureClearBtn'), measureInfo = $('measureInfo');
+    const appEl = document.querySelector('.app'), sidebarToggle = $('sidebarToggle');
 
-    const fileInput = document.getElementById('fileInput');
-    const nameField = document.getElementById('nameField');
-    const clientSearch = document.getElementById('clientSearch');
-    const filterBtn = document.getElementById('filterBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const locateBtn = document.getElementById('locateBtn');
-    const distanceInput = document.getElementById('distanceInput');
-    const distanceUnit = document.getElementById('distanceUnit');
-    const statusBox = document.getElementById('status');
-    const resultBox = document.getElementById('result');
-    const matchInfo = document.getElementById('matchInfo');
+    function setStatus(msg, isError = false) { statusBox.textContent = msg; statusBox.className = isError ? 'status warn' : 'status'; }
+    function normalizeText(value) { return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(); }
+    function safeValue(value) { if (value === null || value === undefined || value === '') return ''; if (typeof value === 'object') return JSON.stringify(value); return String(value); }
+    function escapeHtml(value) { return safeValue(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+    function formatMeters(meters) { return meters >= 1000 ? `${meters.toFixed(2)} m (${(meters / 1000).toFixed(3)} km)` : `${meters.toFixed(2)} m`; }
+    function coordKey(c) { return `${Number(c[0]).toFixed(7)},${Number(c[1]).toFixed(7)}`; }
 
-    const measureToggleBtn = document.getElementById('measureToggleBtn');
-    const measureUndoBtn = document.getElementById('measureUndoBtn');
-    const measureClearBtn = document.getElementById('measureClearBtn');
-    const measureInfo = document.getElementById('measureInfo');
-
-    function setStatus(msg, isError = false) {
-      statusBox.textContent = msg;
-      statusBox.className = isError ? 'status warn' : 'status';
-    }
-
-    function clearNetworkLayers() {
-      if (allLayer) map.removeLayer(allLayer);
-      if (filteredLayer) map.removeLayer(filteredLayer);
-      if (pointLayer) map.removeLayer(pointLayer);
-      allLayer = null;
-      filteredLayer = null;
-      pointLayer = null;
-      clearHighlight();
-    }
-
-    function normalizeText(value) {
-      return String(value || '')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
+    function cleanClientContainerName(value) {
+      return safeValue(value)
+        .replace(/\.kml$/i, '')
+        .replace(/\.kmz$/i, '')
         .trim();
     }
 
-    function safeValue(value) {
-      if (value === null || value === undefined || value === '') return '';
-      if (typeof value === 'object') return JSON.stringify(value);
-      return String(value);
+    function enrichFeature(feature) {
+      feature.properties = feature.properties || {};
+      const p = feature.properties;
+      const originalName = p.name || p.Name || p.NOMBRE || p.nombre || p.title || '';
+
+      /*
+        MUY IMPORTANTE:
+        En este KMZ el cliente real NO es el nombre de cada línea Fiber Cable.
+        El cliente real viene del contenedor padre del KML/KMZ, por ejemplo:
+        RED VILLAVICENCIO > CLIENTE1.kml > Fiber Cable: Cable Troncal Calle 1.
+        Por eso filtramos principalmente por _kmz_cliente = CLIENTE1 / CLIENTE2.
+      */
+      const kmzClient = cleanClientContainerName(p._kmz_cliente || p._kmz_documento || '');
+      const kmzPath = p._kmz_ruta || '';
+
+      let tramoName = originalName;
+      tramoName = tramoName.replace(/^Fiber\s*Cable:\s*/i, '').replace(/\s*\(\d+\)\s*$/i, '').trim();
+
+      p._cliente = kmzClient || tramoName || originalName || 'Sin nombre';
+      p._tramo_nombre = tramoName || originalName || '';
+      p._search = Object.values(p).map(v => typeof v === 'object' ? JSON.stringify(v) : String(v || '')).join(' ');
+      return feature;
     }
 
     function buildAttributesPopup(feature) {
       const props = feature.properties || {};
-      const title =
-        props.name ||
-        props.Name ||
-        props.nombre ||
-        props.cliente ||
-        props.id ||
-        'Elemento de red';
+      const title = props._cliente || props.name || props.Name || props.nombre || props.id || 'Elemento de red';
+      const rows = Object.entries(props).filter(([k]) => k !== '_search').map(([key, value]) => `<tr><td class="attr-key">${escapeHtml(key)}</td><td class="attr-value">${escapeHtml(value)}</td></tr>`).join('');
+      return `<div class="popup-attrs"><div class="popup-title">${escapeHtml(title)}</div><table class="attr-table"><tbody>${rows || '<tr><td class="attr-key">Info</td><td class="attr-value">Sin atributos</td></tr>'}</tbody></table></div>`;
+    }
 
-      const rows = Object.entries(props).map(([key, value]) => {
-        return `
-          <tr>
-            <td class="attr-key">${key}</td>
-            <td class="attr-value">${safeValue(value)}</td>
-          </tr>
-        `;
-      }).join('');
+    function clearHighlight() {
+      if (highlightedLayer && highlightedLayer._originalStyle) highlightedLayer.setStyle(highlightedLayer._originalStyle);
+      highlightedLayer = null;
+    }
+    function highlightFeature(layer) {
+      if (highlightedLayer === layer || typeof layer.setStyle !== 'function') return;
+      clearHighlight();
+      layer._originalStyle = { color: layer.options.color, weight: layer.options.weight, opacity: layer.options.opacity, fillColor: layer.options.fillColor, fillOpacity: layer.options.fillOpacity };
+      layer.setStyle({ color: '#dc2626', weight: Math.max((layer.options.weight || 4) + 2, 6), opacity: 1 });
+      highlightedLayer = layer;
+    }
 
-      return `
-        <div class="popup-attrs">
-          <div class="popup-title">${title}</div>
-          <table class="attr-table">
-            <tbody>
-              ${rows || '<tr><td class="attr-key">Info</td><td class="attr-value">Sin atributos</td></tr>'}
-            </tbody>
-          </table>
-        </div>
-      `;
+    function bindInteractiveFeature(feature, layer) {
+      const popupContent = buildAttributesPopup(feature);
+      layer.on('click', e => {
+        if (measureMode) { addMeasurePoint(e.latlng); L.DomEvent.stopPropagation(e); return; }
+        highlightFeature(layer); L.DomEvent.stopPropagation(e);
+      });
+      layer.on('dblclick', e => {
+        if (measureMode) { L.DomEvent.stopPropagation(e); return; }
+        highlightFeature(layer); layer.bindPopup(popupContent).openPopup(); L.DomEvent.stopPropagation(e);
+      });
+    }
+
+    function refreshLayerControl() {
+      if (layerControl) map.removeControl(layerControl);
+      const overlays = {};
+      if (nodoLayer) overlays['Nodo/ODF'] = nodoLayer;
+      if (allLayer) overlays['Red cargada'] = allLayer;
+      if (filteredLayer) overlays['Tramos filtrados'] = filteredLayer;
+      if (orderedRouteLayer) overlays['Ruta OTDR ordenada'] = orderedRouteLayer;
+      if (pointLayer) overlays['Punto de falla'] = pointLayer;
+      if (measureLine) overlays['Medición manual'] = measureLine;
+      layerControl = L.control.layers(baseMaps, overlays, { collapsed: false, position: 'topright' }).addTo(map);
+    }
+
+    function clearNetworkLayers() {
+      [allLayer, filteredLayer, orderedRouteLayer, pointLayer].forEach(l => { if (l) map.removeLayer(l); });
+      allLayer = filteredLayer = orderedRouteLayer = pointLayer = null;
+      filteredGeoJSON = orderedRoute = lastFault = null;
+      clearHighlight(); refreshLayerControl();
     }
 
     function detectNameFields(geojson) {
       const fields = new Map();
-
-      for (const feature of geojson.features || []) {
-        const props = feature.properties || {};
-        for (const key of Object.keys(props)) {
-          fields.set(key, (fields.get(key) || 0) + 1);
-        }
-      }
-
-      const preferred = ['name', 'nombre', 'cliente', 'customer', 'id_cliente', 'razon_social', 'empresa'];
-      const keys = Array.from(fields.keys());
-
-      keys.sort((a, b) => {
-        const ai = preferred.indexOf(a.toLowerCase());
-        const bi = preferred.indexOf(b.toLowerCase());
+      for (const feature of geojson.features || []) Object.keys(feature.properties || {}).forEach(k => fields.set(k, (fields.get(k) || 0) + 1));
+      const preferred = ['_cliente', '_kmz_cliente', '_kmz_documento', '_kmz_ruta', '_tramo_nombre', 'name', 'Name', 'nombre', 'cliente', 'customer', 'id_cliente', 'razon_social', 'empresa', 'id'];
+      return Array.from(fields.keys()).filter(k => k !== '_search').sort((a,b) => {
+        const ai = preferred.findIndex(x => x.toLowerCase() === a.toLowerCase());
+        const bi = preferred.findIndex(x => x.toLowerCase() === b.toLowerCase());
         if (ai !== -1 && bi !== -1) return ai - bi;
         if (ai !== -1) return -1;
         if (bi !== -1) return 1;
         return a.localeCompare(b);
       });
-
-      return keys;
     }
 
     function renderNameFieldOptions(fields) {
-      nameField.innerHTML = '';
-
-      fields.forEach(field => {
-        const option = document.createElement('option');
-        option.value = field;
-        option.textContent = field;
-        nameField.appendChild(option);
-      });
+      nameField.innerHTML = fields.map(f => `<option value="${escapeHtml(f)}">${escapeHtml(f)}</option>`).join('');
+      if (fields.includes('_cliente')) nameField.value = '_cliente';
+      if (fields.includes('_kmz_cliente')) nameField.value = '_kmz_cliente';
+      renderClientList();
     }
 
-    function refreshLayerControl() {
-      if (layerControl) {
-        map.removeControl(layerControl);
-      }
-
-      const overlays = {};
-      if (nodoLayer) overlays["Nodo"] = nodoLayer;
-      if (allLayer) overlays["Red cargada"] = allLayer;
-      if (filteredLayer) overlays["Red filtrada"] = filteredLayer;
-      if (pointLayer) overlays["Punto de falla"] = pointLayer;
-      if (measureLine) overlays["Medición"] = measureLine;
-
-      layerControl = L.control.layers(baseMaps, overlays, {
-        collapsed: false,
-        position: 'topright'
-      }).addTo(map);
-    }
-
-    function clearHighlight() {
-      if (highlightedLayer) {
-        if (highlightedLayer._originalStyle) {
-          highlightedLayer.setStyle(highlightedLayer._originalStyle);
-        }
-        highlightedLayer = null;
-      }
-    }
-
-    function highlightFeature(layer) {
-      if (highlightedLayer === layer) return;
-
-      clearHighlight();
-
-      if (typeof layer.setStyle === 'function') {
-        layer._originalStyle = {
-          color: layer.options.color,
-          weight: layer.options.weight,
-          opacity: layer.options.opacity,
-          fillColor: layer.options.fillColor,
-          fillOpacity: layer.options.fillOpacity
-        };
-
-        layer.setStyle({
-          color: '#dc2626',
-          weight: Math.max((layer.options.weight || 4) + 2, 6),
-          opacity: 1
-        });
-
-        highlightedLayer = layer;
-      }
-    }
-
-    function formatMeters(meters) {
-      if (meters >= 1000) {
-        return `${meters.toFixed(2)} m (${(meters / 1000).toFixed(3)} km)`;
-      }
-      return `${meters.toFixed(2)} m`;
-    }
-
-    function updateMeasureInfo() {
-      const total = getMeasureTotalMeters();
-      measureInfo.innerHTML = `
-        <strong>Estado:</strong> ${measureMode ? 'Activa' : 'Inactiva'}<br>
-        <strong>Longitud acumulada:</strong> ${formatMeters(total)}<br>
-        <strong>Puntos:</strong> ${measurePoints.length}
-      `;
-
-      if (measureMode) {
-        measureToggleBtn.textContent = 'Desactivar medición';
-        measureToggleBtn.className = 'active-tool';
-      } else {
-        measureToggleBtn.textContent = 'Activar medición';
-        measureToggleBtn.className = 'secondary';
-      }
-    }
-
-    function getMeasureTotalMeters() {
-      if (measurePoints.length < 2) return 0;
-
-      let total = 0;
-      for (let i = 1; i < measurePoints.length; i++) {
-        const from = turf.point([measurePoints[i - 1].lng, measurePoints[i - 1].lat]);
-        const to = turf.point([measurePoints[i].lng, measurePoints[i].lat]);
-        total += turf.distance(from, to, { units: 'kilometers' }) * 1000;
-      }
-      return total;
-    }
-
-    function redrawMeasure() {
-      if (measureLine) {
-        map.removeLayer(measureLine);
-        measureLine = null;
-      }
-
-      measureMarkers.forEach(marker => map.removeLayer(marker));
-      measureMarkers = [];
-
-      if (measureTooltipMarker) {
-        map.removeLayer(measureTooltipMarker);
-        measureTooltipMarker = null;
-      }
-
-      if (measurePoints.length > 0) {
-        measurePoints.forEach((pt, index) => {
-          const marker = L.circleMarker(pt, {
-            radius: 5,
-            color: '#6d28d9',
-            weight: 2,
-            fillColor: '#a78bfa',
-            fillOpacity: 1
-          }).addTo(map);
-
-          marker.bindTooltip(`${index + 1}`, {
-            permanent: true,
-            direction: 'top',
-            offset: [0, -6],
-            className: 'measure-label'
-          });
-
-          measureMarkers.push(marker);
-        });
-      }
-
-      if (measurePoints.length >= 2) {
-        measureLine = L.polyline(measurePoints, {
-          color: '#7c3aed',
-          weight: 4,
-          opacity: 1,
-          dashArray: '10, 8'
-        }).addTo(map);
-
-        const totalMeters = getMeasureTotalMeters();
-        const lastPoint = measurePoints[measurePoints.length - 1];
-
-        measureTooltipMarker = L.marker(lastPoint, {
-          icon: L.divIcon({
-            html: `<div style="background:rgba(124,58,237,0.95);color:#fff;border:1px solid #6d28d9;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:bold;white-space:nowrap;">${formatMeters(totalMeters)}</div>`,
-            className: '',
-            iconSize: [140, 24],
-            iconAnchor: [0, 30]
-          }),
-          interactive: false
-        }).addTo(map);
-      }
-
-      updateMeasureInfo();
-      refreshLayerControl();
-    }
-
-    function addMeasurePoint(latlng) {
-      measurePoints.push(L.latLng(latlng.lat, latlng.lng));
-      redrawMeasure();
-    }
-
-    function clearMeasure() {
-      measurePoints = [];
-      redrawMeasure();
-    }
-
-    function undoMeasurePoint() {
-      if (measurePoints.length > 0) {
-        measurePoints.pop();
-        redrawMeasure();
-      }
-    }
-
-    function toggleMeasureMode() {
-      measureMode = !measureMode;
-      updateMeasureInfo();
-      setStatus(measureMode ? 'Modo de medición activado.' : 'Modo de medición desactivado.');
-    }
-
-    function bindInteractiveFeature(feature, layer) {
-      const popupContent = buildAttributesPopup(feature);
-
-      layer.on('click', function (e) {
-        if (measureMode) {
-          addMeasurePoint(e.latlng);
-          L.DomEvent.stopPropagation(e);
-          return;
-        }
-
-        if (typeof layer.setStyle === 'function') {
-          highlightFeature(layer);
-        }
-        L.DomEvent.stopPropagation(e);
-      });
-
-      layer.on('dblclick', function (e) {
-        if (measureMode) {
-          L.DomEvent.stopPropagation(e);
-          return;
-        }
-
-        if (typeof layer.setStyle === 'function') {
-          highlightFeature(layer);
-        }
-        layer.bindPopup(popupContent).openPopup();
-        L.DomEvent.stopPropagation(e);
-      });
-    }
-
-    function createNodeIcon() {
-      const svg = `
-        <div class="node-icon-wrapper">
-          <svg class="node-icon-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 30 L32 12 L54 30" fill="none" stroke="#14532d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-            <rect x="16" y="28" width="32" height="24" rx="4" fill="#22c55e" stroke="#14532d" stroke-width="4"/>
-            <rect x="28" y="36" width="8" height="16" rx="2" fill="#14532d"/>
-            <path d="M44 14 C52 20, 54 26, 54 32" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/>
-            <path d="M48 10 C58 18, 60 26, 60 34" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/>
-            <circle cx="42" cy="22" r="3" fill="#2563eb"/>
-          </svg>
-        </div>
-      `;
-
-      return L.divIcon({
-        html: svg,
-        className: '',
-        iconSize: [42, 42],
-        iconAnchor: [21, 38],
-        popupAnchor: [0, -34],
-        tooltipAnchor: [0, -34]
-      });
-    }
-
-    function drawAllNetwork() {
-      if (!rawGeoJSON) return;
-
-      if (allLayer) map.removeLayer(allLayer);
-
-      allLayer = L.geoJSON(rawGeoJSON, {
-        style: {
-          color: '#facc15',
-          weight: 4,
-          opacity: 0.95
-        },
-        onEachFeature: bindInteractiveFeature
-      }).addTo(map);
-
-      refreshLayerControl();
-
-      try {
-        const group = L.featureGroup([allLayer, nodoLayer].filter(Boolean));
-        map.fitBounds(group.getBounds(), { padding: [20, 20] });
-      } catch (e) {}
+    function renderClientList() {
+      if (!rawGeoJSON || !nameField.value) return;
+      const field = nameField.value;
+      const values = [...new Set(rawGeoJSON.features.map(f => safeValue((f.properties || {})[field])).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+      clientList.innerHTML = values.slice(0, 500).map(v => `<option value="${escapeHtml(v)}"></option>`).join('');
     }
 
     function extractLineFeatures(featureCollection) {
       const lines = [];
-
       for (const feature of featureCollection.features || []) {
         if (!feature.geometry) continue;
         const type = feature.geometry.type;
-        if (type === 'LineString' || type === 'MultiLineString') {
-          lines.push(feature);
+        if (type === 'LineString') lines.push(enrichFeature(feature));
+        if (type === 'MultiLineString') {
+          (feature.geometry.coordinates || []).forEach((coords, idx) => {
+            lines.push(enrichFeature({ type:'Feature', properties:{ ...(feature.properties || {}), _parte: idx + 1 }, geometry:{ type:'LineString', coordinates:coords } }));
+          });
         }
       }
-
       return { type: 'FeatureCollection', features: lines };
     }
 
+    function drawAllNetwork() {
+      if (!rawGeoJSON) return;
+      if (allLayer) map.removeLayer(allLayer);
+      allLayer = L.geoJSON(rawGeoJSON, { style: { color: '#facc15', weight: 4, opacity: 0.9 }, onEachFeature: bindInteractiveFeature }).addTo(map);
+      refreshLayerControl();
+      try { map.fitBounds(L.featureGroup([allLayer, nodoLayer].filter(Boolean)).getBounds(), { padding: [20, 20] }); } catch(e) {}
+    }
+
     function showAllNetwork() {
-      if (!rawGeoJSON) {
-        setStatus('Primero debes cargar una red.', true);
-        return;
-      }
-
-      if (filteredLayer) map.removeLayer(filteredLayer);
-      if (pointLayer) map.removeLayer(pointLayer);
-      filteredLayer = null;
-      pointLayer = null;
-      filteredGeoJSON = null;
-      clearHighlight();
-
-      drawAllNetwork();
-      matchInfo.textContent = '';
-      resultBox.innerHTML = 'Mostrando toda la red cargada.';
-      setStatus('Mostrando toda la red.');
+      if (!rawGeoJSON) { setStatus('Primero debes cargar una red.', true); return; }
+      [filteredLayer, orderedRouteLayer, pointLayer].forEach(l => { if (l) map.removeLayer(l); });
+      filteredLayer = orderedRouteLayer = pointLayer = null; filteredGeoJSON = orderedRoute = lastFault = null; clearHighlight();
+      drawAllNetwork(); matchInfo.textContent = ''; resultBox.innerHTML = 'Mostrando toda la red cargada.'; setStatus('Mostrando toda la red.');
     }
 
     function filterClient() {
-      if (!rawGeoJSON) {
-        setStatus('Primero debes cargar un archivo.', true);
-        return;
-      }
-
+      if (!rawGeoJSON) { setStatus('Primero debes cargar un archivo.', true); return; }
       const field = nameField.value;
       const term = normalizeText(clientSearch.value);
-
-      if (!field) {
-        setStatus('No se encontró un campo para el nombre del cliente.', true);
-        return;
-      }
+      if (!field) { setStatus('No se encontró un campo para filtrar.', true); return; }
 
       const matched = rawGeoJSON.features.filter(f => {
-        const value = normalizeText((f.properties || {})[field]);
-        return term ? value.includes(term) : true;
+        const props = f.properties || {};
+        const mainValue = normalizeText(props[field]);
+        const allValue = normalizeText(props._search);
+        return term ? (mainValue.includes(term) || (searchAllFields.checked && allValue.includes(term))) : true;
       });
 
-      filteredGeoJSON = extractLineFeatures({ type: 'FeatureCollection', features: matched });
-
-      if (filteredLayer) map.removeLayer(filteredLayer);
-      if (pointLayer) map.removeLayer(pointLayer);
-      pointLayer = null;
-      clearHighlight();
+      filteredGeoJSON = extractLineFeatures({ type:'FeatureCollection', features: matched });
+      [filteredLayer, orderedRouteLayer, pointLayer].forEach(l => { if (l) map.removeLayer(l); });
+      filteredLayer = orderedRouteLayer = pointLayer = null; orderedRoute = lastFault = null; clearHighlight();
 
       if (!filteredGeoJSON.features.length) {
         matchInfo.textContent = 'No se encontraron líneas para ese criterio.';
         resultBox.innerHTML = 'No hay resultados para el cliente buscado.';
-        setStatus('Sin coincidencias. Revisa el campo o el texto de búsqueda.', true);
-        refreshLayerControl();
-        return;
+        setStatus('Sin coincidencias. Revisa el campo o el texto de búsqueda.', true); refreshLayerControl(); return;
       }
 
-      filteredLayer = L.geoJSON(filteredGeoJSON, {
-        style: {
-          color: '#2563eb',
-          weight: 5,
-          opacity: 1
-        },
-        onEachFeature: bindInteractiveFeature
+      filteredLayer = L.geoJSON(filteredGeoJSON, { style: { color: '#2563eb', weight: 5, opacity: 1 }, onEachFeature: bindInteractiveFeature }).addTo(map);
+      const names = [...new Set(matched.map(f => safeValue((f.properties || {})[field] || (f.properties || {})._cliente)).filter(Boolean))];
+      matchInfo.innerHTML = `Coincidencias: <strong>${matched.length}</strong><br>${names.slice(0, 12).map(n => `<span class="tag">${escapeHtml(n)}</span>`).join('')}`;
+      rebuildOrderedRoute();
+      try { map.fitBounds(L.featureGroup([filteredLayer, orderedRouteLayer, nodoLayer].filter(Boolean)).getBounds(), { padding: [30, 30] }); } catch(e) {}
+      setStatus('Cliente filtrado correctamente. Ingresa la distancia OTDR.');
+    }
+
+    function distanceCoordKm(a, b) {
+      return turf.distance(turf.point(a), turf.point(b), { units:'kilometers' });
+    }
+
+    function getFeatureSegments(featureCollection) {
+      return (featureCollection.features || []).map((f, index) => {
+        const coords = (f.geometry && f.geometry.coordinates || []).filter(c => Array.isArray(c) && c.length >= 2 && isFinite(c[0]) && isFinite(c[1]));
+        return { index, feature:f, coords, start:coords[0], end:coords[coords.length - 1] };
+      }).filter(s => s.coords.length >= 2);
+    }
+
+    function getRouteStartCoord(segments) {
+      if (!segments.length) return null;
+      if (startMode.value === 'first') return segments[0].start;
+      if (startMode.value === 'last') return segments[segments.length - 1].end;
+      if (nodeCoord) return nodeCoord;
+      return segments[0].start;
+    }
+
+    function orderSegmentsByNearest(segments, startCoord) {
+      const remaining = segments.map(s => ({ ...s }));
+      const orderedCoords = [];
+      let current = startCoord;
+      let totalGapKm = 0;
+      const orderedIndexes = [];
+
+      while (remaining.length) {
+        let bestPos = 0, bestReverse = false, bestDistance = Infinity;
+        for (let i = 0; i < remaining.length; i++) {
+          const s = remaining[i];
+          const dStart = distanceCoordKm(current, s.start);
+          const dEnd = distanceCoordKm(current, s.end);
+          if (dStart < bestDistance) { bestDistance = dStart; bestPos = i; bestReverse = false; }
+          if (dEnd < bestDistance) { bestDistance = dEnd; bestPos = i; bestReverse = true; }
+        }
+
+        const chosen = remaining.splice(bestPos, 1)[0];
+        const coords = bestReverse ? [...chosen.coords].reverse() : chosen.coords;
+        if (orderedCoords.length && bestDistance > 0.005) totalGapKm += bestDistance;
+        coords.forEach((c, idx) => {
+          if (orderedCoords.length && idx === 0 && coordKey(orderedCoords[orderedCoords.length - 1]) === coordKey(c)) return;
+          orderedCoords.push(c);
+        });
+        current = orderedCoords[orderedCoords.length - 1];
+        orderedIndexes.push(chosen.index + 1);
+      }
+      return { coords: orderedCoords, totalGapKm, orderedIndexes };
+    }
+
+    function reverseFeatureLine(feature) {
+      return {
+        type: 'Feature',
+        properties: { ...(feature.properties || {}), sentido_invertido: true },
+        geometry: { type: 'LineString', coordinates: [...feature.geometry.coordinates].reverse() }
+      };
+    }
+
+    function orientBaseRouteFromNodeToClient() {
+      if (!orderedRoute || !nodeCoord || startMode.value !== 'node') return;
+      const coords = orderedRoute.geometry.coordinates || [];
+      if (coords.length < 2) return;
+      const dStart = distanceCoordKm(nodeCoord, coords[0]);
+      const dEnd = distanceCoordKm(nodeCoord, coords[coords.length - 1]);
+      // La ruta base debe quedar Nodo/ODF -> Cliente. Si el último punto está más cerca del Nodo, se invierte.
+      if (dEnd < dStart) {
+        orderedRoute.geometry.coordinates.reverse();
+        orderedRoute.properties.orientacion_automatica = 'Invertida para iniciar desde Nodo/ODF';
+      } else {
+        orderedRoute.properties.orientacion_automatica = 'Inicia desde Nodo/ODF';
+      }
+    }
+
+    function getMeasurementRoute() {
+      if (!orderedRoute) return null;
+      if (otdrDirection.value === 'client_to_node') return reverseFeatureLine(orderedRoute);
+      return orderedRoute;
+    }
+
+    function selectedDirectionLabel() {
+      return otdrDirection.value === 'client_to_node' ? 'Cliente → Nodo/ODF' : 'Nodo/ODF → Cliente';
+    }
+
+
+    function formatDistanceShort(value, unit) {
+      return `${value} ${unit === 'meters' ? 'm' : 'km'}`;
+    }
+
+    function createFaultIcon(distanceText) {
+      return L.divIcon({
+        html: `
+          <div class="fault-marker-wrap">
+            <div class="fault-label">FALLA ESTIMADA</div>
+            <div class="fault-crosshair"></div>
+            <div class="fault-pulse-ring ring1"></div>
+            <div class="fault-pulse-ring ring2"></div>
+            <div class="fault-pulse-ring ring3"></div>
+            <div class="fault-core"></div>
+            <div class="fault-distance">OTDR ${distanceText}</div>
+          </div>
+        `,
+        className: 'fault-marker-icon',
+        iconSize: [124, 124],
+        iconAnchor: [62, 62],
+        popupAnchor: [0, -42]
+      });
+    }
+
+    function updateSidebarButton() {
+      if (!sidebarToggle || !appEl) return;
+      const collapsed = appEl.classList.contains('sidebar-collapsed');
+      sidebarToggle.textContent = collapsed ? '☰ Panel' : '✕ Panel';
+      sidebarToggle.title = collapsed ? 'Mostrar panel lateral' : 'Ocultar panel lateral';
+    }
+
+    function toggleSidebar() {
+      if (!appEl) return;
+      appEl.classList.toggle('sidebar-collapsed');
+      updateSidebarButton();
+      setTimeout(() => map.invalidateSize(), 380);
+    }
+
+
+    function rebuildOrderedRoute() {
+      if (!filteredGeoJSON || !filteredGeoJSON.features.length) { setStatus('Primero filtra un cliente.', true); return; }
+      if (orderedRouteLayer) map.removeLayer(orderedRouteLayer);
+      orderedRouteLayer = null; orderedRoute = null;
+
+      const segments = getFeatureSegments(filteredGeoJSON);
+      const start = getRouteStartCoord(segments);
+      if (!segments.length || !start) { setStatus('No fue posible construir la ruta filtrada.', true); return; }
+      const route = orderSegmentsByNearest(segments, start);
+      if (route.coords.length < 2) { setStatus('La ruta filtrada no tiene coordenadas suficientes.', true); return; }
+
+      orderedRoute = { type:'Feature', properties:{ segmentos: segments.length, salto_estimado_km: route.totalGapKm, orden: route.orderedIndexes.join(', ') }, geometry:{ type:'LineString', coordinates: route.coords } };
+      orientBaseRouteFromNodeToClient();
+      const routeKm = turf.length(orderedRoute, { units:'kilometers' });
+
+      orderedRouteLayer = L.geoJSON(orderedRoute, {
+        pane:'routePane',
+        style:{ color:'#06b6d4', weight:5, opacity:1, dashArray:'10, 8' },
+        onEachFeature:(feature, layer) => {
+          layer.bindTooltip(`Ruta OTDR: ${formatMeters(routeKm * 1000)}`, { permanent:false, sticky:true, className:'route-label' });
+        }
       }).addTo(map);
 
       refreshLayerControl();
-
-      try {
-        const group = L.featureGroup([filteredLayer, nodoLayer].filter(Boolean));
-        map.fitBounds(group.getBounds(), { padding: [30, 30] });
-      } catch (e) {}
-
-      const names = [...new Set(matched.map(f => (f.properties || {})[field]).filter(Boolean))];
-      matchInfo.innerHTML = `Coincidencias: <strong>${matched.length}</strong><br>${names.slice(0, 10).map(n => `<span class="tag">${n}</span>`).join('')}`;
-      resultBox.innerHTML = 'Cliente filtrado correctamente. Ahora ingresa la distancia OTDR.';
-      setStatus('Cliente filtrado correctamente.');
+      resultBox.innerHTML = `
+        <strong>Ruta OTDR lista.</strong><br>
+        <strong>Tramos usados:</strong> ${segments.length}<br>
+        <strong>Longitud estimada de ruta:</strong> ${formatMeters(routeKm * 1000)}<br>
+        <strong>Saltos entre tramos:</strong> ${formatMeters(route.totalGapKm * 1000)}<br>
+        <strong>Sentido de medición seleccionado:</strong> ${selectedDirectionLabel()}<br>
+        <span class="small">Puedes cambiar el sentido a Nodo/ODF → Cliente o Cliente → Nodo/ODF antes de calcular la falla.</span>
+      `;
+      setStatus('Ruta OTDR ordenada correctamente.');
     }
 
-    function getLongestLine(featureCollection) {
-      let selected = null;
-      let maxLen = -1;
-
-      for (const feature of featureCollection.features) {
-        try {
-          const len = turf.length(feature, { units: 'kilometers' });
-          if (len > maxLen) {
-            maxLen = len;
-            selected = feature;
-          }
-        } catch (e) {}
-      }
-
-      return selected;
+    function reverseOrderedRoute() {
+      if (!orderedRoute) { rebuildOrderedRoute(); if (!orderedRoute) return; }
+      orderedRoute.geometry.coordinates.reverse();
+      if (orderedRouteLayer) map.removeLayer(orderedRouteLayer);
+      orderedRouteLayer = L.geoJSON(orderedRoute, { pane:'routePane', style:{ color:'#06b6d4', weight:5, opacity:1, dashArray:'10, 8' } }).addTo(map);
+      if (pointLayer) { map.removeLayer(pointLayer); pointLayer = null; lastFault = null; }
+      refreshLayerControl(); setStatus('Ruta visual invertida. También puedes escoger el sentido de medición OTDR en la lista.');
     }
 
     function locateFault() {
-      if (!filteredGeoJSON || !filteredGeoJSON.features.length) {
-        setStatus('Primero filtra un cliente.', true);
-        return;
-      }
+      if (!filteredGeoJSON || !filteredGeoJSON.features.length) { setStatus('Primero filtra un cliente.', true); return; }
+      if (!orderedRoute) rebuildOrderedRoute();
+      if (!orderedRoute) return;
 
       const distanceValue = Number(distanceInput.value);
-      const unit = distanceUnit.value;
-
-      if (Number.isNaN(distanceValue) || distanceValue < 0) {
-        setStatus('Ingresa una distancia válida.', true);
-        return;
-      }
-
-      const mainLine = getLongestLine(filteredGeoJSON);
-      if (!mainLine) {
-        setStatus('No fue posible obtener una línea válida.', true);
-        return;
-      }
-
-      let totalLenKm;
-      try {
-        totalLenKm = turf.length(mainLine, { units: 'kilometers' });
-      } catch (e) {
-        setStatus('No fue posible medir la línea.', true);
-        return;
-      }
-
-      const distanceKm = unit === 'meters' ? distanceValue / 1000 : distanceValue;
-
+      if (Number.isNaN(distanceValue) || distanceValue < 0) { setStatus('Ingresa una distancia válida.', true); return; }
+      const distanceKm = distanceUnit.value === 'meters' ? distanceValue / 1000 : distanceValue;
+      const measurementRoute = getMeasurementRoute();
+      const totalLenKm = turf.length(measurementRoute, { units:'kilometers' });
       if (distanceKm > totalLenKm) {
-        setStatus(`La distancia excede la longitud de la línea (${totalLenKm.toFixed(3)} km).`, true);
-        resultBox.innerHTML = `La distancia ingresada es mayor que la longitud disponible de la línea seleccionada.<br><br><strong>Longitud línea:</strong> ${totalLenKm.toFixed(3)} km`;
+        setStatus(`La distancia excede la longitud de la ruta (${totalLenKm.toFixed(3)} km).`, true);
+        resultBox.innerHTML = `La distancia ingresada es mayor que la longitud disponible de la ruta filtrada.<br><br><strong>Longitud ruta:</strong> ${totalLenKm.toFixed(3)} km`;
         return;
       }
 
-      let point;
-      try {
-        point = turf.along(mainLine, distanceKm, { units: 'kilometers' });
-      } catch (e) {
-        setStatus('No fue posible calcular el punto.', true);
-        return;
-      }
-
+      const point = turf.along(measurementRoute, distanceKm, { units:'kilometers' });
       const [lng, lat] = point.geometry.coordinates;
-
+      lastFault = { lat, lng, distanceValue, unit: distanceUnit.value, totalLenKm, direction: selectedDirectionLabel() };
       if (pointLayer) map.removeLayer(pointLayer);
-
-      pointLayer = L.geoJSON(point, {
-        pointToLayer: (_, latlng) => L.circleMarker(latlng, {
-          radius: 8,
-          color: '#991b1b',
-          weight: 2,
-          fillColor: '#dc2626',
-          fillOpacity: 1
-        })
-      }).addTo(map);
-
-      pointLayer.bindPopup(`
-        <strong>Punto estimado de falla</strong><br>
-        Lat: ${lat.toFixed(6)}<br>
-        Lon: ${lng.toFixed(6)}<br>
-        Distancia: ${distanceValue} ${unit === 'meters' ? 'm' : 'km'}
-      `).openPopup();
-
-      refreshLayerControl();
-      map.setView([lat, lng], 18);
+      pointLayer = L.layerGroup([], { pane:'faultPane' }).addTo(map);
+      const faultMarker = L.marker([lat, lng], { pane:'faultPane', icon: createFaultIcon(formatDistanceShort(distanceValue, distanceUnit.value)) }).addTo(pointLayer);
+      const halo = L.circleMarker([lat, lng], { pane:'faultPane', radius: 16, color: '#22d3ee', weight: 2, fillColor: '#f43f5e', fillOpacity: 0.08, opacity: 0.95 }).addTo(pointLayer);
+      faultMarker.bindPopup(`<strong>Punto estimado de falla</strong><br>Lat: ${lat.toFixed(6)}<br>Lon: ${lng.toFixed(6)}<br>Sentido: ${selectedDirectionLabel()}<br>Distancia: ${distanceValue} ${distanceUnit.value === 'meters' ? 'm' : 'km'}`).openPopup();
+      refreshLayerControl(); map.setView([lat, lng], 19);
 
       const clientField = nameField.value;
-      const names = [...new Set(filteredGeoJSON.features.map(f => (f.properties || {})[clientField]).filter(Boolean))];
-
+      const names = [...new Set(filteredGeoJSON.features.map(f => safeValue((f.properties || {})[clientField] || (f.properties || {})._cliente)).filter(Boolean))];
       resultBox.innerHTML = `
-        <strong>Cliente filtrado:</strong> ${names.join(', ') || 'No identificado'}<br>
-        <strong>Distancia OTDR:</strong> ${distanceValue} ${unit === 'meters' ? 'm' : 'km'}<br>
+        <strong>Cliente / tramo filtrado:</strong> ${escapeHtml(names.slice(0,5).join(', ') || 'No identificado')}<br>
+        <strong>Sentido OTDR:</strong> ${selectedDirectionLabel()}<br>
+        <strong>Distancia OTDR:</strong> ${distanceValue} ${distanceUnit.value === 'meters' ? 'm' : 'km'}<br>
         <strong>Latitud:</strong> ${lat.toFixed(6)}<br>
         <strong>Longitud:</strong> ${lng.toFixed(6)}<br>
-        <strong>Longitud de línea analizada:</strong> ${totalLenKm.toFixed(3)} km
+        <strong>Longitud total ruta:</strong> ${totalLenKm.toFixed(3)} km<br>
+        <strong>Coordenadas:</strong> ${lat.toFixed(6)}, ${lng.toFixed(6)}
       `;
-
       setStatus('Punto de falla calculado correctamente.');
+    }
+
+    async function copyFault() {
+      if (!lastFault) { setStatus('Primero calcula un punto de falla.', true); return; }
+      const text = `${lastFault.lat.toFixed(6)}, ${lastFault.lng.toFixed(6)}`;
+      try { await navigator.clipboard.writeText(text); setStatus(`Coordenadas copiadas: ${text}`); }
+      catch(e) { prompt('Copia las coordenadas:', text); }
+    }
+
+    function directChildTextByLocalName(node, localName) {
+      for (const child of Array.from(node.children || [])) {
+        if (child.localName === localName) return (child.textContent || '').trim();
+      }
+      return '';
+    }
+
+    function getPlacemarkHierarchy(placemark) {
+      const names = [];
+      let node = placemark.parentElement;
+      while (node) {
+        if (node.localName === 'Document' || node.localName === 'Folder') {
+          const n = directChildTextByLocalName(node, 'name');
+          if (n) names.push(n);
+        }
+        node = node.parentElement;
+      }
+      return names; // desde el padre inmediato hasta la raíz
+    }
+
+    function chooseKmzClientFromHierarchy(names) {
+      const cleaned = names.map(cleanClientContainerName).filter(Boolean);
+      // Preferir contenedores llamados CLIENTE1, CLIENTE2, etc.
+      const explicit = cleaned.find(n => /^cliente\s*\d*/i.test(n));
+      if (explicit) return explicit;
+      // Si no hay CLIENTE, tomar el contenedor inmediato, evitando el nombre general de la red.
+      return cleaned.find(n => !/^red\s+/i.test(n)) || cleaned[0] || '';
     }
 
     async function parseKMLText(kmlText) {
       const parser = new DOMParser();
       const xml = parser.parseFromString(kmlText, 'text/xml');
-      return toGeoJSON.kml(xml);
+      const error = xml.querySelector('parsererror');
+      if (error) throw new Error('El KML no se pudo interpretar.');
+
+      const placemarks = Array.from(xml.getElementsByTagNameNS('*', 'Placemark'));
+      const hierarchyByPlacemark = placemarks.map(pm => {
+        const hierarchy = getPlacemarkHierarchy(pm);
+        const client = chooseKmzClientFromHierarchy(hierarchy);
+        return {
+          client,
+          document: hierarchy[0] || '',
+          path: hierarchy.slice().reverse().map(cleanClientContainerName).join(' > ')
+        };
+      });
+
+      const geojson = toGeoJSON.kml(xml);
+
+      // toGeoJSON normalmente conserva el orden de los Placemark. Aquí copiamos el
+      // contenedor padre a cada elemento para poder filtrar por CLIENTE1/CLIENTE2.
+      (geojson.features || []).forEach((feature, index) => {
+        feature.properties = feature.properties || {};
+        const info = hierarchyByPlacemark[index] || {};
+        feature.properties._kmz_cliente = cleanClientContainerName(info.client || '');
+        feature.properties._kmz_documento = cleanClientContainerName(info.document || '');
+        feature.properties._kmz_ruta = info.path || '';
+      });
+
+      return geojson;
     }
 
-    async function parseKMZ(file) {
-      const zip = await JSZip.loadAsync(file);
+    async function parseKMZBlob(blob) {
+      const zip = await JSZip.loadAsync(blob);
       const kmlFileName = Object.keys(zip.files).find(name => name.toLowerCase().endsWith('.kml'));
-
-      if (!kmlFileName) {
-        throw new Error('El KMZ no contiene un archivo KML.');
-      }
-
+      if (!kmlFileName) throw new Error('El KMZ no contiene un archivo KML.');
       const kmlText = await zip.files[kmlFileName].async('string');
       return await parseKMLText(kmlText);
     }
@@ -1002,153 +1004,133 @@
     async function loadFile(file) {
       const ext = file.name.split('.').pop().toLowerCase();
       setStatus(`Cargando archivo ${file.name}...`);
-
       try {
         let data;
+        if (ext === 'geojson' || ext === 'json') data = JSON.parse(await file.text());
+        else if (ext === 'kml') data = await parseKMLText(await file.text());
+        else if (ext === 'kmz') data = await parseKMZBlob(file);
+        else throw new Error('Formato no soportado.');
 
-        if (ext === 'geojson' || ext === 'json') {
-          const text = await file.text();
-          data = JSON.parse(text);
-        } else if (ext === 'kml') {
-          const text = await file.text();
-          data = await parseKMLText(text);
-        } else if (ext === 'kmz') {
-          data = await parseKMZ(file);
-        } else {
-          throw new Error('Formato no soportado.');
-        }
-
-        if (!data || !data.features) {
-          throw new Error('No se pudo leer la geometría del archivo.');
-        }
-
+        if (!data || !data.features) throw new Error('No se pudo leer la geometría del archivo.');
         rawGeoJSON = extractLineFeatures(data);
-
-        if (!rawGeoJSON.features.length) {
-          throw new Error('El archivo no contiene líneas de red.');
-        }
-
+        if (!rawGeoJSON.features.length) throw new Error('El archivo no contiene líneas de red.');
         candidateNameFields = detectNameFields(rawGeoJSON);
         renderNameFieldOptions(candidateNameFields);
+        clearNetworkLayers(); drawAllNetwork();
+        setStatus(`Archivo cargado correctamente. Tramos detectados: ${rawGeoJSON.features.length}`);
+        resultBox.innerHTML = 'Ahora puedes buscar un cliente/tramo y luego calcular la falla por distancia OTDR.';
+      } catch (error) { console.error(error); setStatus(`Error al cargar archivo: ${error.message}`, true); }
+    }
 
-        clearNetworkLayers();
-        filteredGeoJSON = null;
-        drawAllNetwork();
+    async function loadDefaultKmz() {
+      try {
+        setStatus('Cargando KMZ predeterminado...');
+        const response = await fetch(DEFAULT_KMZ);
+        if (!response.ok) throw new Error(`No se encontró ${DEFAULT_KMZ}. Verifica que esté en la misma carpeta del HTML.`);
+        const blob = await response.blob();
+        await loadFile(new File([blob], 'RED VILLAVICENCIO-V2.kmz', { type:'application/vnd.google-earth.kmz' }));
+      } catch(error) { console.error(error); setStatus(error.message, true); }
+    }
 
-        setStatus(`Archivo cargado correctamente. Líneas detectadas: ${rawGeoJSON.features.length}`);
-        matchInfo.textContent = '';
-        resultBox.innerHTML = 'Ahora puedes buscar un cliente y luego calcular la falla.';
-      } catch (error) {
-        console.error(error);
-        setStatus(`Error al cargar archivo: ${error.message}`, true);
+    function firstCoordinateFromGeoJSON(data) {
+      let found = null;
+      function walk(coords) {
+        if (found) return;
+        if (Array.isArray(coords) && typeof coords[0] === 'number' && typeof coords[1] === 'number') { found = [coords[0], coords[1]]; return; }
+        if (Array.isArray(coords)) coords.forEach(walk);
       }
+      (data.features || []).some(f => { walk(f.geometry && f.geometry.coordinates); return !!found; });
+      return found;
+    }
+
+    function createNodeIcon() {
+      const svg = `<div class="node-icon-wrapper"><svg class="node-icon-svg" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path d="M10 30 L32 12 L54 30" fill="none" stroke="#14532d" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="16" y="28" width="32" height="24" rx="4" fill="#22c55e" stroke="#14532d" stroke-width="4"/><rect x="28" y="36" width="8" height="16" rx="2" fill="#14532d"/><path d="M44 14 C52 20, 54 26, 54 32" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/><path d="M48 10 C58 18, 60 26, 60 34" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/><circle cx="42" cy="22" r="3" fill="#2563eb"/></svg></div>`;
+      return L.divIcon({ html: svg, className: '', iconSize: [42, 42], iconAnchor: [21, 38], popupAnchor: [0, -34], tooltipAnchor: [0, -34] });
     }
 
     async function cargarNodo() {
       try {
-        const response = await fetch('./NODO_VVC.geojson');
-
-        if (!response.ok) {
-          throw new Error('No se pudo cargar la capa NODO_VVC.geojson');
-        }
-
+        const response = await fetch(DEFAULT_NODO);
+        if (!response.ok) throw new Error('No se pudo cargar la capa NODO_VVC.geojson');
         const data = await response.json();
-
+        nodeCoord = firstCoordinateFromGeoJSON(data);
         nodoLayer = L.geoJSON(data, {
-          pane: 'nodePane',
-          style: {
-            color: '#16a34a',
-            weight: 3,
-            opacity: 1
-          },
+          pane:'nodePane', style:{ color:'#16a34a', weight:3, opacity:1 },
           pointToLayer: (feature, latlng) => {
-            const marker = L.marker(latlng, {
-              icon: createNodeIcon(),
-              pane: 'nodePane',
-              keyboard: false
-            });
-
-            const nodeName =
-              feature.properties?.Name ||
-              feature.properties?.name ||
-              feature.properties?.NOMBRE ||
-              'Nodo';
-
-            marker.bindTooltip(nodeName, {
-              permanent: true,
-              direction: 'top',
-              offset: [0, -30],
-              className: 'node-label',
-              pane: 'nodePane'
-            });
-
+            const marker = L.marker(latlng, { icon:createNodeIcon(), pane:'nodePane', keyboard:false });
+            const nodeName = feature.properties?.Name || feature.properties?.name || feature.properties?.NOMBRE || 'Nodo/ODF';
+            marker.bindTooltip(nodeName, { permanent:true, direction:'top', offset:[0,-30], className:'node-label', pane:'nodePane' });
             return marker;
           },
           onEachFeature: (feature, layer) => {
             const popupContent = buildAttributesPopup(feature);
-            layer.on('dblclick', function (e) {
-              if (measureMode) {
-                L.DomEvent.stopPropagation(e);
-                return;
-              }
-              layer.bindPopup(popupContent).openPopup();
-              L.DomEvent.stopPropagation(e);
-            });
-
-            layer.on('click', function(e) {
-              if (measureMode) {
-                addMeasurePoint(e.latlng);
-                L.DomEvent.stopPropagation(e);
-              }
-            });
+            layer.on('dblclick', e => { if (!measureMode) layer.bindPopup(popupContent).openPopup(); L.DomEvent.stopPropagation(e); });
+            layer.on('click', e => { if (measureMode) { addMeasurePoint(e.latlng); L.DomEvent.stopPropagation(e); } });
           }
         }).addTo(map);
-
         refreshLayerControl();
-
-        try {
-          map.fitBounds(nodoLayer.getBounds(), { padding: [20, 20] });
-        } catch (e) {}
-
-        setStatus('Capa Nodo cargada correctamente. Ahora puedes cargar la red.');
-      } catch (error) {
-        console.error(error);
-        setStatus(`Error cargando NODO_VVC.geojson: ${error.message}`, true);
-      }
+        try { map.fitBounds(nodoLayer.getBounds(), { padding:[20,20] }); } catch(e) {}
+        setStatus('Capa Nodo cargada. Puedes cargar el KMZ de red.');
+      } catch (error) { console.warn(error); setStatus(`Aviso: ${error.message}. Puedes seguir cargando la red.`, true); }
     }
 
-    map.on('click', function (e) {
-      if (measureMode) {
-        addMeasurePoint(e.latlng);
-        return;
+    function getMeasureTotalMeters() {
+      if (measurePoints.length < 2) return 0;
+      let total = 0;
+      for (let i = 1; i < measurePoints.length; i++) total += turf.distance(turf.point([measurePoints[i-1].lng, measurePoints[i-1].lat]), turf.point([measurePoints[i].lng, measurePoints[i].lat]), { units:'kilometers' }) * 1000;
+      return total;
+    }
+    function updateMeasureInfo() {
+      measureInfo.innerHTML = `<strong>Estado:</strong> ${measureMode ? 'Activa' : 'Inactiva'}<br><strong>Longitud acumulada:</strong> ${formatMeters(getMeasureTotalMeters())}<br><strong>Puntos:</strong> ${measurePoints.length}`;
+      measureToggleBtn.textContent = measureMode ? 'Desactivar medición' : 'Activar medición';
+      measureToggleBtn.className = measureMode ? 'active-tool' : 'secondary';
+    }
+    function redrawMeasure() {
+      if (measureLine) map.removeLayer(measureLine); measureLine = null;
+      measureMarkers.forEach(m => map.removeLayer(m)); measureMarkers = [];
+      if (measureTooltipMarker) map.removeLayer(measureTooltipMarker); measureTooltipMarker = null;
+      measurePoints.forEach((pt, index) => {
+        const marker = L.circleMarker(pt, { radius:5, color:'#6d28d9', weight:2, fillColor:'#a78bfa', fillOpacity:1 }).addTo(map);
+        marker.bindTooltip(`${index + 1}`, { permanent:true, direction:'top', offset:[0,-6], className:'measure-label' }); measureMarkers.push(marker);
+      });
+      if (measurePoints.length >= 2) {
+        measureLine = L.polyline(measurePoints, { color:'#7c3aed', weight:4, opacity:1, dashArray:'10, 8' }).addTo(map);
+        const totalMeters = getMeasureTotalMeters(); const lastPoint = measurePoints[measurePoints.length - 1];
+        measureTooltipMarker = L.marker(lastPoint, { icon:L.divIcon({ html:`<div style="background:rgba(124,58,237,0.95);color:#fff;border:1px solid #6d28d9;border-radius:8px;padding:4px 8px;font-size:12px;font-weight:bold;white-space:nowrap;">${formatMeters(totalMeters)}</div>`, className:'', iconSize:[160,24], iconAnchor:[0,30] }), interactive:false }).addTo(map);
       }
-      clearHighlight();
+      updateMeasureInfo(); refreshLayerControl();
+    }
+    function addMeasurePoint(latlng) { measurePoints.push(L.latLng(latlng.lat, latlng.lng)); redrawMeasure(); }
+    function clearMeasure() { measurePoints = []; redrawMeasure(); }
+    function undoMeasurePoint() { if (measurePoints.length) { measurePoints.pop(); redrawMeasure(); } }
+    function toggleMeasureMode() { measureMode = !measureMode; updateMeasureInfo(); setStatus(measureMode ? 'Modo de medición activado.' : 'Modo de medición desactivado.'); }
+
+    map.on('click', e => { if (measureMode) addMeasurePoint(e.latlng); else clearHighlight(); });
+    fileInput.addEventListener('change', e => { const file = e.target.files[0]; if (file) loadFile(file); });
+    loadDefaultKmzBtn.addEventListener('click', loadDefaultKmz);
+    filterBtn.addEventListener('click', filterClient); clearBtn.addEventListener('click', showAllNetwork); locateBtn.addEventListener('click', locateFault);
+    rebuildRouteBtn.addEventListener('click', rebuildOrderedRoute); reverseRouteBtn.addEventListener('click', reverseOrderedRoute); copyBtn.addEventListener('click', copyFault);
+    otdrDirection.addEventListener('change', () => {
+      if (pointLayer) { map.removeLayer(pointLayer); pointLayer = null; lastFault = null; refreshLayerControl(); }
+      setStatus(`Sentido OTDR seleccionado: ${selectedDirectionLabel()}. Calcula nuevamente la distancia.`);
+      if (orderedRoute) {
+        const routeKm = turf.length(orderedRoute, { units:'kilometers' });
+        resultBox.innerHTML = `
+          <strong>Ruta OTDR lista.</strong><br>
+          <strong>Longitud estimada de ruta:</strong> ${formatMeters(routeKm * 1000)}<br>
+          <strong>Sentido de medición seleccionado:</strong> ${selectedDirectionLabel()}<br>
+          <span class="small">Ingresa la distancia OTDR para ubicar el punto de falla.</span>
+        `;
+      }
     });
+    nameField.addEventListener('change', renderClientList);
+    clientSearch.addEventListener('keydown', e => { if (e.key === 'Enter') filterClient(); });
+    distanceInput.addEventListener('keydown', e => { if (e.key === 'Enter') locateFault(); });
+    measureToggleBtn.addEventListener('click', toggleMeasureMode); measureUndoBtn.addEventListener('click', undoMeasurePoint); measureClearBtn.addEventListener('click', clearMeasure);
+    if (sidebarToggle) sidebarToggle.addEventListener('click', toggleSidebar);
 
-    fileInput.addEventListener('change', event => {
-      const file = event.target.files[0];
-      if (file) loadFile(file);
-    });
-
-    filterBtn.addEventListener('click', filterClient);
-    clearBtn.addEventListener('click', showAllNetwork);
-    locateBtn.addEventListener('click', locateFault);
-
-    measureToggleBtn.addEventListener('click', toggleMeasureMode);
-    measureUndoBtn.addEventListener('click', undoMeasurePoint);
-    measureClearBtn.addEventListener('click', clearMeasure);
-
-    clientSearch.addEventListener('keydown', e => {
-      if (e.key === 'Enter') filterClient();
-    });
-
-    distanceInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') locateFault();
-    });
-
-    updateMeasureInfo();
-    refreshLayerControl();
-    cargarNodo();
+    updateMeasureInfo(); refreshLayerControl(); updateSidebarButton(); cargarNodo();
   </script>
 </body>
 </html>
+
