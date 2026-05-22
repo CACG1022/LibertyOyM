@@ -6,6 +6,9 @@
   <title>Dashboard Ejecutivo O&M</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
   <script src="app.js"></script>
   <style>
     :root{
@@ -43,6 +46,25 @@
     .fullscreen-card{width:96vw;height:92vh;border:1px solid rgba(34,211,238,.32);border-radius:24px;background:linear-gradient(180deg,rgba(10,24,48,.98),rgba(5,12,25,.98));box-shadow:0 30px 90px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden}
     .fullscreen-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 18px;border-bottom:1px solid var(--line)}
     .fullscreen-head h3{margin:0;font-size:18px}.fullscreen-chartbox{flex:1;min-height:0;padding:18px}.fullscreen-chartbox canvas{width:100%!important;height:100%!important}
+
+    .mapbox{height:430px;width:100%;border-radius:20px;overflow:hidden;border:1px solid var(--line);background:#071426;position:relative;isolation:isolate}.mapbox .leaflet-container,.mapbox.leaflet-container{width:100%!important;height:100%!important;background:#071426}.mapbox .leaflet-control-attribution{background:rgba(5,11,24,.72);color:#cbd5e1}.mapbox .leaflet-popup-content-wrapper,.mapbox .leaflet-popup-tip{background:#08152c;color:#eef6ff;border:1px solid rgba(34,211,238,.22)}
+    .map-expand-btn{position:absolute;top:12px;right:14px;z-index:402;border:1px solid rgba(34,211,238,.35);background:rgba(15,23,42,.86);color:#dbeafe;border-radius:11px;padding:7px 10px;font-weight:900;font-size:12px;cursor:pointer;box-shadow:0 10px 24px rgba(0,0,0,.22)}.map-expand-btn:hover{background:rgba(34,211,238,.16);color:#fff}
+    .map-fullscreen-backdrop{position:fixed;inset:0;display:none;background:rgba(2,6,23,.88);backdrop-filter:blur(12px);z-index:2000;padding:20px}.map-fullscreen-backdrop.show{display:flex;align-items:center;justify-content:center}.map-fullscreen-card{width:96vw;height:92vh;border:1px solid rgba(34,211,238,.32);border-radius:24px;background:linear-gradient(180deg,rgba(10,24,48,.98),rgba(5,12,25,.98));box-shadow:0 30px 90px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden}.map-fullscreen-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px 18px;border-bottom:1px solid var(--line)}.map-fullscreen-head h3{margin:0;font-size:18px}.map-fullscreen-body{flex:1;min-height:0;padding:18px}.map-fullscreen-map{width:100%;height:100%;border-radius:18px;overflow:hidden;border:1px solid var(--line);background:#071426}.map-fullscreen-map .leaflet-container,.map-fullscreen-map.leaflet-container{width:100%!important;height:100%!important}
+    
+    .leaflet-fallas-control{min-width:260px;max-width:min(360px,calc(100vw - 80px));padding:12px;border:1px solid rgba(34,211,238,.30);border-radius:16px;background:rgba(8,21,44,.94);box-shadow:0 18px 44px rgba(0,0,0,.38);color:#eef6ff;backdrop-filter:blur(8px)}
+    .leaflet-fallas-control .ctrl-title{font-weight:950;font-size:13px;margin-bottom:8px;color:#bff7ff}
+    .leaflet-fallas-control label{display:block;font-size:11px;color:#a8bad9;font-weight:900;margin:7px 0 4px}
+    .leaflet-fallas-control select{width:100%;border:1px solid rgba(148,163,184,.28);border-radius:10px;background:#0a1830;color:#fff;padding:8px 9px;font-weight:800;font-size:12px;outline:none}
+    .leaflet-fallas-control .ctrl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .leaflet-fallas-control .ctrl-actions{display:flex;gap:8px;margin-top:9px}
+    .leaflet-fallas-control button{border:1px solid rgba(148,163,184,.28);border-radius:10px;background:rgba(255,255,255,.06);color:#dbeafe;padding:8px 10px;font-weight:900;cursor:pointer}
+    .leaflet-fallas-legend{margin-top:9px;display:grid;gap:6px;max-height:160px;overflow:auto;padding-right:3px}
+    .leaflet-fallas-legend .legend-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;color:#dbeafe;border:1px solid rgba(255,255,255,.08);border-radius:999px;background:rgba(255,255,255,.04);padding:5px 8px}
+    .leaflet-fallas-legend .legend-left{display:flex;align-items:center;gap:6px;min-width:0}.leaflet-fallas-legend .legend-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.leaflet-fallas-legend .legend-count{font-weight:950;color:#fff}
+    .leaflet-fallas-legend .legend-swatch{width:12px;height:12px;border-radius:50%;flex:0 0 auto;border:2px solid rgba(255,255,255,.82)}
+    @media(max-width:900px){.leaflet-fallas-control{max-width:270px}.leaflet-fallas-control .ctrl-grid{grid-template-columns:1fr}.leaflet-fallas-legend{max-height:100px}}
+    .fault-popup b{color:#bff7ff}.fault-popup small{color:#9fb5d6}.map-note{font-size:12px;color:var(--muted);margin-top:8px}.severity-dot,.fault-dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;background:#22d3ee;border:2px solid rgba(255,255,255,.85);box-shadow:0 0 0 2px rgba(2,6,23,.60),0 6px 14px rgba(0,0,0,.35)}.severity-critical{background:#ef4444}.severity-high{background:#f59e0b}.severity-medium{background:#3b82f6}.severity-low{background:#22c55e}
+    .map-filter-card{border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,rgba(10,24,48,.92),rgba(8,18,36,.78));box-shadow:var(--shadow);padding:14px;margin-bottom:16px}.map-filter-grid{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:10px;align-items:end}.map-filter-grid .field select{min-height:44px}.legend-panel{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.legend-item{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid rgba(255,255,255,.10);border-radius:999px;background:rgba(255,255,255,.045);font-size:12px;color:#dbeafe}.legend-swatch{width:12px;height:12px;border-radius:50%;display:inline-block;border:2px solid rgba(255,255,255,.8)}
     @media(max-width:1300px){.filters{grid-template-columns:repeat(3,1fr)}.kpis{grid-template-columns:repeat(3,1fr)}.grid-2,.grid-3{grid-template-columns:1fr}.page{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.sidebar-toggle-tab{display:none}.page.sidebar-hidden{grid-template-columns:1fr}.page.sidebar-hidden .sidebar{display:none}.nav{display:grid;grid-template-columns:1fr 1fr;gap:8px}.nav a{margin:0}}@media(max-width:780px){.main{padding:16px}.filters,.kpis{grid-template-columns:1fr}.hero{display:block}.chartbox{height:280px}}
   </style>
 </head>
@@ -85,6 +107,7 @@
       <div class="module-tabs" aria-label="Cambiar módulo del dashboard">
         <button id="btnInst" class="active" onclick="setModule('instalaciones')">⚡ Instalaciones</button>
         <button id="btnFact" onclick="setModule('factibilidades')">📡 Factibilidades</button>
+        <button id="btnFallas" onclick="setModule('fallas')">🚨 Fallas</button>
       </div>
 
       <div class="filters">
@@ -145,6 +168,43 @@
         </div>
         <div class="card"><h3>Detalle de actividades</h3><div id="detailFact" class="table-wrap"></div></div>
       </section>
+
+      <section id="secFallas" class="section">
+        <div id="kpisFallas" class="kpis"></div>
+        <div class="grid-2">
+          <div class="card"><h3>Fallas por mes y duración promedio</h3><div class="chartbox"><canvas id="fallasMonthlyChart"></canvas></div></div>
+          <div class="card"><h3>Distribución por estado</h3><div class="chartbox sm"><canvas id="fallasStatusChart"></canvas></div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><h3>Fallas por semana - Año actual</h3><div class="chartbox"><canvas id="fallasWeeklyChart"></canvas></div><div class="muted" style="font-size:12px;margin-top:8px">La barra resaltada corresponde a la semana actual.</div></div>
+          <div class="card"><h3>Ranking de clientes con más fallas</h3><div id="rankingFallas" class="mini-list"></div></div>
+        </div>
+        <div class="grid-3">
+          <div class="card"><h3>Fallas por tipo de falla</h3><div class="chartbox sm"><canvas id="fallasTipoChart"></canvas></div></div>
+          <div class="card"><h3>Top subcausas</h3><div class="chartbox sm"><canvas id="fallasSubcausaChart"></canvas></div></div>
+          <div class="card"><h3>Prioridad de las fallas</h3><div class="chartbox sm"><canvas id="fallasPriorityChart"></canvas></div></div>
+        </div>
+        <div class="grid-3">
+          <div class="card"><h3>Duración promedio por tipo de falla</h3><div class="chartbox sm"><canvas id="fallasDuracionTipoChart"></canvas></div></div>
+          <div class="card"><h3>Top equipos con fallas</h3><div class="chartbox sm"><canvas id="fallasEquipoChart"></canvas></div></div>
+          <div class="card"><h3>Tabla mensual - Fallas y duración</h3><div id="monthlyTableFallas" class="table-wrap"></div></div>
+        </div>
+        <div class="map-filter-card">
+          <div class="map-filter-grid">
+            <div class="field"><label>Mapa base</label><select id="fallasMapBaseSelect"><option value="osm">OpenStreetMap</option><option value="relief">Relieve / Topográfico</option><option value="satellite">Satélite</option><option value="gray">Claro / Cartográfico</option><option value="dark">Oscuro</option></select></div>
+            <div class="field"><label>Colorear fallas por</label><select id="fallasMapColorMode"><option value="tipo">Tipo de falla</option><option value="subcausa">Subcausa</option><option value="prioridad">Prioridad</option><option value="estado">Estado</option></select></div>
+            <div class="field"><label>Filtrar tipo de falla</label><select id="fallasMapTipoFilter"><option value="">Todos los tipos</option></select></div>
+            <div class="field"><label>Filtrar subcausa</label><select id="fallasMapSubcausaFilter"><option value="">Todas las subcausas</option></select></div>
+            <button class="btn ghost" type="button" onclick="clearFallasMapFilters()">Limpiar filtros mapa</button>
+          </div>
+          <div id="fallasMapLegend" class="legend-panel"></div>
+        </div>
+        <div class="grid-2">
+          <div class="card"><button class="map-expand-btn" type="button" onclick="openFallasMapFullscreen('markers')">⛶ Maximizar</button><h3>Mapa geográfico de fallas</h3><div id="fallasMap" class="mapbox"></div><div class="map-note">El color del punto depende del selector superior. Usa Coord daño / Coord falla en formato latitud, longitud.</div></div>
+          <div class="card"><button class="map-expand-btn" type="button" onclick="openFallasMapFullscreen('heat')">⛶ Maximizar</button><h3>Mapa de calor de fallas</h3><div id="fallasHeatMap" class="mapbox"></div><div class="map-note">La intensidad aumenta donde existen más tickets cercanos o mayores duraciones. Respeta los filtros del mapa.</div></div>
+        </div>
+        <div class="card"><h3>Detalle de fallas</h3><div id="detailFallas" class="table-wrap"></div></div>
+      </section>
     </main>
   </div>
   <div id="detailModal" class="modal-backdrop" onclick="closeDetailModal(event)">
@@ -167,6 +227,16 @@
         <button class="modal-close" onclick="closeChartFullscreen()">Cerrar ✕</button>
       </div>
       <div class="fullscreen-chartbox"><canvas id="fullscreenCanvas"></canvas></div>
+    </div>
+  </div>
+
+  <div id="mapFullscreenModal" class="map-fullscreen-backdrop" onclick="closeFallasMapFullscreen(event)">
+    <div class="map-fullscreen-card" onclick="event.stopPropagation()">
+      <div class="map-fullscreen-head">
+        <h3 id="mapFullscreenTitle">Mapa ampliado</h3>
+        <button class="modal-close" onclick="closeFallasMapFullscreen()">Cerrar ✕</button>
+      </div>
+      <div class="map-fullscreen-body"><div id="fallasFullscreenMap" class="map-fullscreen-map"></div></div>
     </div>
   </div>
 <script>
@@ -199,7 +269,7 @@ function restoreSidebarState(){
 }
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const COLORS={blue:'#3b82f6',cyan:'#22d3ee',green:'#22c55e',amber:'#f59e0b',red:'#ef4444',violet:'#8b5cf6',gray:'#64748b'};
-let currentModule='instalaciones', instalaciones=[], factibilidades=[], charts={}, fullscreenChart=null;
+let currentModule='instalaciones', instalaciones=[], factibilidades=[], fallas=[], charts={}, fullscreenChart=null, fallasMarkersMap=null, fallasHeatMap=null, fallasMarkersLayer=null, fallasHeatLayer=null, fallasMarkersBaseLayer=null, fallasHeatBaseLayer=null, fallasFullscreenMap=null, fallasFullscreenLayer=null, fallasFullscreenHeatLayer=null, fallasFullscreenBaseLayer=null, fallasFullscreenMode='markers', fallasMarkerControl=null, fallasHeatControl=null, fallasFullscreenControl=null;
 function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
 function asDate(v){if(!v)return null; const d=new Date(String(v).slice(0,10)+'T00:00:00'); return isNaN(d)?null:d;}
 function fmtDate(v){const d=asDate(v); return d?d.toLocaleDateString('es-CO'):'';}
@@ -334,9 +404,9 @@ window.limpiarSupabaseDashboard = function(){
   window.__dashboardSupabaseClient = null;
   return 'Configuración eliminada. Actualiza el dashboard.';
 };
-function setModule(m){currentModule=m; document.getElementById('btnInst').classList.toggle('active',m==='instalaciones'); document.getElementById('btnFact').classList.toggle('active',m==='factibilidades'); document.getElementById('secInst').classList.toggle('active',m==='instalaciones'); document.getElementById('secFact').classList.toggle('active',m==='factibilidades'); document.getElementById('pageTitle').textContent=m==='instalaciones'?'Dashboard Ejecutivo de Instalaciones':'Dashboard Ejecutivo de Factibilidades'; document.getElementById('pageSubtitle').textContent=m==='instalaciones'?'Histórico mensual, avance semanal, estados, fibra instalada, tiempos, tiempos muertos y ranking de clientes instalados.':'Histórico mensual, avance semanal, estados, fibra registrada, tiempos, tiempos muertos y ranking de clientes con factibilidad.'; fillEstadoFilter(); renderAll();}
+function setModule(m){currentModule=m; document.getElementById('btnInst').classList.toggle('active',m==='instalaciones'); document.getElementById('btnFact').classList.toggle('active',m==='factibilidades'); document.getElementById('btnFallas').classList.toggle('active',m==='fallas'); document.getElementById('secInst').classList.toggle('active',m==='instalaciones'); document.getElementById('secFact').classList.toggle('active',m==='factibilidades'); document.getElementById('secFallas').classList.toggle('active',m==='fallas'); document.getElementById('pageTitle').textContent=m==='instalaciones'?'Dashboard Ejecutivo de Instalaciones':(m==='factibilidades'?'Dashboard Ejecutivo de Factibilidades':'Dashboard Ejecutivo de Fallas'); document.getElementById('pageSubtitle').textContent=m==='instalaciones'?'Histórico mensual, avance semanal, estados, fibra instalada, tiempos, tiempos muertos y ranking de clientes instalados.':(m==='factibilidades'?'Histórico mensual, avance semanal, estados, fibra registrada, tiempos, tiempos muertos y ranking de clientes con factibilidad.':'Control estadístico de tickets, causas, subcausas, duración, ubicación geográfica, mapa de calor y seguimiento operativo de fallas.'); fillEstadoFilter(); renderAll(); setTimeout(()=>{ if(m==='fallas'){ invalidateFallasMaps(); } },250);}
 function initFilters(){const ySel=document.getElementById('yearFilter'); const now=new Date(); for(let y=now.getFullYear()+1;y>=now.getFullYear()-5;y--) ySel.innerHTML+=`<option value="${y}" ${y===now.getFullYear()?'selected':''}>${y}</option>`; const mSel=document.getElementById('monthFilter'); MESES.forEach((m,i)=>mSel.innerHTML+=`<option value="${i}">${m}</option>`); ['estadoFilter','yearFilter','monthFilter','startFilter','endFilter','quickFilter'].forEach(id=>document.getElementById(id).addEventListener('change',renderAll));}
-function fillEstadoFilter(){const rows=currentModule==='instalaciones'?instalaciones:factibilidades; const sel=document.getElementById('estadoFilter'); const current=sel.value; const estados=[...new Set(rows.map(r=>r.estado_general).filter(Boolean))].sort(); sel.innerHTML='<option value="">Todos los estados</option>'+estados.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join(''); if(estados.includes(current)) sel.value=current;}
+function fillEstadoFilter(){const rows=currentModule==='instalaciones'?instalaciones:(currentModule==='factibilidades'?factibilidades:fallas); const sel=document.getElementById('estadoFilter'); const current=sel.value; const estados=[...new Set(rows.map(r=>currentModule==='fallas'?r.estado:r.estado_general).filter(Boolean))].sort(); sel.innerHTML='<option value="">Todos los estados</option>'+estados.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join(''); if(estados.includes(current)) sel.value=current;}
 function filteredRows(mod){const rows=mod==='instalaciones'?instalaciones:factibilidades; const year=Number(document.getElementById('yearFilter').value); const month=document.getElementById('monthFilter').value; const estado=document.getElementById('estadoFilter').value; const quick=document.getElementById('quickFilter').value; const s=asDate(document.getElementById('startFilter').value), e=asDate(document.getElementById('endFilter').value); const now=new Date(); const cw=getWeekNumber(now); return rows.filter(r=>{if(estado && r.estado_general!==estado)return false; const d=asDate(completionDate(r,mod)); if(!d)return false; if(quick==='currentWeek') return d.getFullYear()===now.getFullYear() && getWeekNumber(d)===cw; if(quick==='currentMonth') return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth(); if(quick==='custom'){ if(s && d<s)return false; if(e && d>e)return false; return true;} if(d.getFullYear()!==year)return false; if(month!=='' && d.getMonth()!==Number(month))return false; return true;});}
 function allYearDone(mod){const rows=mod==='instalaciones'?instalaciones:factibilidades; const year=Number(document.getElementById('yearFilter').value); return rows.filter(r=>isDone(r,mod)).filter(r=>{const d=asDate(chartDoneDate(r)); return d&&d.getFullYear()===year;});}
 function selectedMonthValue(){return document.getElementById('monthFilter').value;}
@@ -397,7 +467,7 @@ function closeDetailModal(evt){
   if(evt && evt.target && evt.target.id!=='detailModal') return;
   document.getElementById('detailModal').classList.remove('show');
 }
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){ closeDetailModal(); closeChartFullscreen(); }});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){ closeDetailModal(); closeChartFullscreen(); closeFallasMapFullscreen(); }});
 const dataLabelsPlugin = {
   id: 'dataLabelsPlugin',
   afterDatasetsDraw(chart){
@@ -637,11 +707,367 @@ function renderModule(mod){
   }
 
 }
-function renderAll(){fillEstadoFilter(); renderModule('instalaciones'); renderModule('factibilidades');}
-async function loadData(){document.getElementById('connStatus').textContent='Cargando datos desde Supabase...'; try{const client=await getDashboardClient(); const [i,f]=await Promise.all([client.from('instalaciones').select('*').order('fecha_ingreso',{ascending:false}),client.from('factibilidades').select('*').order('fecha_ingreso',{ascending:false})]); if(i.error)throw i.error; if(f.error)throw f.error; instalaciones=i.data||[]; factibilidades=f.data||[]; document.getElementById('connStatus').textContent=`Conectado: ${instalaciones.length} instalaciones / ${factibilidades.length} factibilidades`; document.getElementById('lastUpdate').textContent='Actualizado: '+new Date().toLocaleString('es-CO'); renderAll();}catch(err){console.error(err); document.getElementById('connStatus').innerHTML='<span style="color:#fecaca">Error: '+esc(err.message||err)+'</span>';}}
+
+function fallaDate(r){return r.fecha_inicio || r.created_at || r.fecha_fin || '';}
+function fallaDoneDate(r){return r.fecha_inicio || r.fecha_fin || r.created_at || '';}
+function fallaDurationMin(r){
+  const explicit=parseNum(r.duracion_falla_minutos);
+  if(Number.isFinite(explicit)) return explicit;
+  if(r.fecha_inicio && r.hora_inicio && r.fecha_fin && r.hora_fin){
+    const ini=new Date(`${r.fecha_inicio}T${r.hora_inicio}`), fin=new Date(`${r.fecha_fin}T${r.hora_fin}`);
+    if(!isNaN(ini) && !isNaN(fin) && fin>=ini) return Math.round((fin-ini)/60000);
+  }
+  const txt=String(r.duracion_falla||'').toLowerCase();
+  let min=0;
+  const d=txt.match(/(\\d+(?:[.,]\\d+)?)\\s*d/); if(d) min+=Number(d[1].replace(',','.'))*1440;
+  const h=txt.match(/(\d+(?:[.,]\d+)?)\\s*h/); if(h) min+=Number(h[1].replace(',','.'))*60;
+  const m=txt.match(/(\d+(?:[.,]\d+)?)\\s*min/); if(m) min+=Number(m[1].replace(',','.'));
+  return min || null;
+}
+function fmtDurationMin(min){if(!Number.isFinite(min) || min<=0) return '0 min'; const d=Math.floor(min/1440), h=Math.floor((min%1440)/60), m=Math.round(min%60); const parts=[]; if(d) parts.push(`${d} d`); if(h||d) parts.push(`${h} h`); parts.push(`${m} min`); return parts.join(' ');}
+function fallaTipo(r){return r.tipo_falla || 'SIN TIPO';}
+function fallaSubcausa(r){return r.subcausa_falla || r.subcausa || r.subtipo_falla || 'SIN SUBCAUSA';}
+function normalizeCoordValue(v){
+  if(!v) return null;
+  const txt=String(v).trim().replace(/;/g,',').replace(/[()]/g,'');
+  let nums=txt.match(/-?\d+(?:[.,]\d+)?/g);
+  if(!nums || nums.length<2) return null;
+  let lat=Number(nums[0].replace(',','.')), lng=Number(nums[1].replace(',','.'));
+  if(!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  if(Math.abs(lat)>90 && Math.abs(lng)<=90){ const t=lat; lat=lng; lng=t; }
+  if(lat<-90 || lat>90 || lng<-180 || lng>180) return null;
+  return {lat,lng};
+}
+function fallaCoord(r){return normalizeCoordValue(r.coord_dano || r.coord_falla || r.coordenada_falla || r.coordenada_cliente || r.coordenadas || '');}
+function filteredFallas(){
+  const year=Number(document.getElementById('yearFilter').value); const month=document.getElementById('monthFilter').value; const estado=document.getElementById('estadoFilter').value; const quick=document.getElementById('quickFilter').value; const s=asDate(document.getElementById('startFilter').value), e=asDate(document.getElementById('endFilter').value); const now=new Date(); const cw=getWeekNumber(now);
+  return fallas.filter(r=>{ if(estado && r.estado!==estado)return false; const d=asDate(fallaDate(r)); if(!d)return false; if(quick==='currentWeek') return d.getFullYear()===now.getFullYear() && getWeekNumber(d)===cw; if(quick==='currentMonth') return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth(); if(quick==='custom'){ if(s && d<s)return false; if(e && d>e)return false; return true;} if(d.getFullYear()!==year)return false; if(month!=='' && d.getMonth()!==Number(month))return false; return true;});
+}
+function fallasYearRows(){const year=selectedYearValue(); return fallas.filter(r=>{const d=asDate(fallaDate(r)); return d&&d.getFullYear()===year;});}
+function groupFallasMonthly(rows){
+  const m=Array.from({length:12},(_,i)=>({mes:MESES[i],mesIndex:i,cantidad:0,duracion:[],records:[]}));
+  rows.forEach(r=>{const d=asDate(fallaDate(r)); if(!d)return; const x=m[d.getMonth()]; x.cantidad++; x.records.push(r); const dm=fallaDurationMin(r); if(Number.isFinite(dm)) x.duracion.push(dm);});
+  const out=m.map(x=>({...x,promMin:avg(x.duracion)})); const month=selectedMonthValue(); return month===''?out:[out[Number(month)]];
+}
+function groupFallasWeekly(rows){
+  const arr=Array.from({length:53},(_,i)=>({semana:i+1,cantidad:0,records:[]}));
+  rows.forEach(r=>{const d=asDate(fallaDate(r)); if(!d)return; const w=getWeekNumber(d); if(w>=1&&w<=53){arr[w-1].cantidad++; arr[w-1].records.push(r);}});
+  const allowedWeeks=weeksForSelectedMonth(); return allowedWeeks?arr.filter(x=>allowedWeeks.has(x.semana)):arr;
+}
+function groupCountBy(rows,fn,limit=12){
+  const map=new Map(); rows.forEach(r=>{const k=fn(r)||'SIN DATO'; if(!map.has(k)) map.set(k,{label:k,cantidad:0,records:[],duracion:[]}); const item=map.get(k); item.cantidad++; item.records.push(r); const dm=fallaDurationMin(r); if(Number.isFinite(dm)) item.duracion.push(dm);});
+  return [...map.values()].sort((a,b)=>b.cantidad-a.cantidad).slice(0,limit).map(x=>({...x,promMin:avg(x.duracion)}));
+}
+function renderFallasKPIs(rows){
+  const cerradas=rows.filter(r=>String(r.estado||'').toUpperCase()==='CERRADO'); const abiertas=rows.filter(r=>String(r.estado||'').toUpperCase()==='ABIERTO'); const gestion=rows.filter(r=>String(r.estado||'').toUpperCase()==='EN_GESTION'); const coords=rows.filter(fallaCoord).length; const dur=rows.map(fallaDurationMin).filter(Number.isFinite); const prom=avg(dur); const criticas=rows.filter(r=>String(r.prioridad||'').toUpperCase()==='CRITICA' || String(r.prioridad||'').toUpperCase()==='ALTA').length;
+  document.getElementById('kpisFallas').innerHTML=`
+ <div class="kpi"><div class="label">Total fallas</div><div class="value">${rows.length}</div><div class="sub">Con filtros aplicados</div></div>
+ <div class="kpi amber"><div class="label">Abiertas</div><div class="value">${abiertas.length}</div><div class="sub">Pendientes de cierre</div></div>
+ <div class="kpi violet"><div class="label">En gestión</div><div class="value">${gestion.length}</div><div class="sub">Trabajo activo</div></div>
+ <div class="kpi green"><div class="label">Cerradas</div><div class="value">${cerradas.length}</div><div class="sub">Resueltas</div></div>
+ <div class="kpi"><div class="label">Promedio duración</div><div class="value">${fmtDurationMin(prom)}</div><div class="sub">${dur.length} tickets medidos</div></div>
+ <div class="kpi amber"><div class="label">Georreferenciadas</div><div class="value">${coords}</div><div class="sub">${criticas} críticas / altas</div></div>`;
+}
+function renderFallasTable(rows){
+  const sorted=[...rows].sort((a,b)=>String(fallaDate(b)).localeCompare(String(fallaDate(a))));
+  return `<table><thead><tr><th>Fecha/Hora</th><th>Ticket</th><th>ID Cliente</th><th>Cliente</th><th>Estado</th><th>Prioridad</th><th>Tipo falla</th><th>Subcausa</th><th class="right">Duración</th><th>Equipo</th><th>Coord falla</th><th>Responsable</th></tr></thead><tbody>${sorted.map(r=>`<tr><td>${fmtDate(r.fecha_inicio)}<br><span class="muted">${esc(r.hora_inicio||'')}</span></td><td><b>${esc(r.ticket||'')}</b></td><td>${esc(r.id_cliente||'')}</td><td><b>${esc(r.nombre_cliente||'')}</b><br><span class="muted">${esc(r.direccion_cliente||'')}</span></td><td>${badge(r.estado)}</td><td>${esc(r.prioridad||'')}</td><td>${esc(fallaTipo(r))}</td><td>${esc(fallaSubcausa(r))}</td><td class="right">${fmtDurationMin(fallaDurationMin(r))}</td><td>${esc(r.equipo_switch||'')}<br><span class="muted">${esc(r.puerto_switch||'')}</span></td><td>${esc(r.coord_dano||r.coord_falla||r.coordenada_falla||'')}</td><td>${esc(r.responsable||'')}</td></tr>`).join('') || '<tr><td colspan="12" class="muted">Sin fallas asociadas a este dato.</td></tr>'}</tbody></table>`;
+}
+function openFallasDetailModal(title,subtitle,rows){
+  document.getElementById('detailModalTitle').textContent=title; document.getElementById('detailModalSubtitle').textContent=`${rows.length} falla(s) asociada(s). ${subtitle||''}`; document.getElementById('detailModalBody').innerHTML=`<div class="table-wrap">${renderFallasTable(rows)}</div>`; document.getElementById('detailModal').classList.add('show');
+}
+function renderFallasRanking(rows){
+  const list=groupCountBy(rows,r=>r.nombre_cliente||r.id_cliente||'SIN CLIENTE',10);
+  document.getElementById('rankingFallas').innerHTML=list.length?list.map((x,i)=>`<div class="rank" ondblclick="openFallasDetailModal('Fallas - ${esc(x.label)}','Cliente seleccionado.', fallas.filter(r=>(r.nombre_cliente||r.id_cliente||'SIN CLIENTE')==='${String(x.label).replace(/'/g,"\\'")}'))"><div><b>${i+1}. ${esc(x.label)}</b><br><small>Duración prom.: ${fmtDurationMin(x.promMin)}</small></div><b>${x.cantidad}</b></div>`).join(''):'<div class="muted">Sin clientes con fallas en el periodo.</div>';
+}
+function renderFallasMonthlyTable(monthly){
+  const total=monthly.reduce((a,b)=>a+b.cantidad,0); const prom=avg(monthly.flatMap(x=>x.duracion)); const rows=monthly.filter(x=>x.cantidad>0).map(x=>`<tr><td>${x.mes}</td><td class="right">${x.cantidad}</td><td class="right">${fmtDurationMin(x.promMin)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Sin datos para el periodo.</td></tr>';
+  document.getElementById('monthlyTableFallas').innerHTML=`<table><thead><tr><th>Mes</th><th class="right">Cantidad fallas</th><th class="right">Duración promedio</th></tr></thead><tbody>${rows}<tr><th>Total general</th><th class="right">${total}</th><th class="right">${fmtDurationMin(prom)}</th></tr></tbody></table>`;
+}
+function severityClass(p){const u=String(p||'').toUpperCase(); if(u==='CRITICA')return 'severity-critical'; if(u==='ALTA')return 'severity-high'; if(u==='MEDIA')return 'severity-medium'; return 'severity-low';}
+function normalizeCategoryLabel(v){return String(v||'SIN DATO').trim() || 'SIN DATO';}
+function hashColor(label){
+  const palette=['#22d3ee','#3b82f6','#22c55e','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#a3e635','#fb7185','#38bdf8','#f97316'];
+  const txt=normalizeCategoryLabel(label); let h=0; for(let i=0;i<txt.length;i++) h=(h*31+txt.charCodeAt(i))>>>0; return palette[h%palette.length];
+}
+function fallaColorLabel(r){
+  const mode=document.getElementById('fallasMapColorMode')?.value || 'tipo';
+  if(mode==='subcausa') return fallaSubcausa(r);
+  if(mode==='prioridad') return r.prioridad || 'SIN PRIORIDAD';
+  if(mode==='estado') return r.estado || 'SIN ESTADO';
+  return fallaTipo(r);
+}
+function fallaColor(r){return hashColor(fallaColorLabel(r));}
+function buildFallaPopup(r){const c=fallaCoord(r); return `<div class="fault-popup"><b>Ticket ${esc(r.ticket||'')}</b><br><small>${fmtDate(r.fecha_inicio)} ${esc(r.hora_inicio||'')}</small><br><br><b>Cliente:</b> ${esc(r.nombre_cliente||'')}<br><b>Tipo:</b> ${esc(fallaTipo(r))}<br><b>Subcausa:</b> ${esc(fallaSubcausa(r))}<br><b>Estado:</b> ${esc(r.estado||'')}<br><b>Prioridad:</b> ${esc(r.prioridad||'')}<br><b>Duración:</b> ${fmtDurationMin(fallaDurationMin(r))}<br><b>Coord:</b> ${c?`${c.lat.toFixed(6)}, ${c.lng.toFixed(6)}`:''}</div>`;}
+const FALLAS_BASEMAPS={
+  osm:{label:'OpenStreetMap',url:'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',maxZoom:19,attribution:'&copy; OpenStreetMap'},
+  relief:{label:'Relieve / Topográfico',url:'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',maxZoom:17,attribution:'&copy; OpenStreetMap contributors, SRTM | OpenTopoMap'},
+  satellite:{label:'Satélite',url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',maxZoom:19,attribution:'Tiles &copy; Esri'},
+  gray:{label:'Claro / Cartográfico',url:'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',maxZoom:20,attribution:'&copy; OpenStreetMap &copy; CARTO'},
+  dark:{label:'Oscuro',url:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',maxZoom:20,attribution:'&copy; OpenStreetMap &copy; CARTO'}
+};
+function selectedFallasBaseMap(){return document.getElementById('fallasMapBaseSelect')?.value || 'osm';}
+function createBaseTileLayer(key){
+  const cfg=FALLAS_BASEMAPS[key] || FALLAS_BASEMAPS.osm;
+  const layer=L.tileLayer(cfg.url,{maxZoom:cfg.maxZoom,attribution:cfg.attribution,crossOrigin:true,updateWhenIdle:false,updateWhenZooming:false,keepBuffer:4});
+  layer._isFallasBaseLayer=true;
+  return layer;
+}
+function setBaseLayerOnMap(map,key){
+  if(!map || typeof L==='undefined') return null;
+  let existing=[]; map.eachLayer(layer=>{ if(layer && layer._isFallasBaseLayer) existing.push(layer); });
+  existing.forEach(layer=>map.removeLayer(layer));
+  const layer=createBaseTileLayer(key).addTo(map);
+  try{ layer.bringToBack(); }catch(e){}
+  return layer;
+}
+function applyFallasBaseMap(){
+  const key=selectedFallasBaseMap();
+  fallasMarkersBaseLayer=setBaseLayerOnMap(fallasMarkersMap,key);
+  fallasHeatBaseLayer=setBaseLayerOnMap(fallasHeatMap,key);
+  fallasFullscreenBaseLayer=setBaseLayerOnMap(fallasFullscreenMap,key);
+  forceInvalidateFallasMaps();
+}
+function ensureFallasMaps(){
+  if(typeof L==='undefined') return false;
+  const markersEl=document.getElementById('fallasMap');
+  const heatEl=document.getElementById('fallasHeatMap');
+  if(!fallasMarkersMap && markersEl){
+    fallasMarkersMap=L.map('fallasMap',{scrollWheelZoom:true,preferCanvas:true,zoomControl:true}).setView([4.15,-73.63],12);
+    fallasMarkersBaseLayer=createBaseTileLayer(selectedFallasBaseMap()).addTo(fallasMarkersMap);
+    fallasMarkerControl=createFallasLeafletControl(fallasMarkersMap,'Control del mapa');
+  }
+  if(!fallasHeatMap && heatEl){
+    fallasHeatMap=L.map('fallasHeatMap',{scrollWheelZoom:true,preferCanvas:true,zoomControl:true}).setView([4.15,-73.63],12);
+    fallasHeatBaseLayer=createBaseTileLayer(selectedFallasBaseMap()).addTo(fallasHeatMap);
+    fallasHeatControl=createFallasLeafletControl(fallasHeatMap,'Control del mapa de calor');
+  }
+  forceInvalidateFallasMaps();
+  return !!(fallasMarkersMap && fallasHeatMap);
+}
+function forceInvalidateFallasMaps(){
+  const run=()=>{try{
+    if(fallasMarkersMap){fallasMarkersMap.invalidateSize(true);}
+    if(fallasHeatMap){fallasHeatMap.invalidateSize(true);}
+    if(fallasFullscreenMap){fallasFullscreenMap.invalidateSize(true);}
+  }catch(e){console.warn('No fue posible reajustar mapas', e);}};
+  [80,250,600,1000].forEach(ms=>setTimeout(run,ms));
+  if(window.requestAnimationFrame) requestAnimationFrame(run);
+}
+function invalidateFallasMaps(){forceInvalidateFallasMaps();}
+function updateFallasMapFilterOptions(baseRows){
+  const tipoSel=document.getElementById('fallasMapTipoFilter');
+  const subSel=document.getElementById('fallasMapSubcausaFilter');
+  if(!tipoSel || !subSel) return;
+  const currentTipo=tipoSel.value, currentSub=subSel.value;
+  const tipos=[...new Set(baseRows.map(fallaTipo).map(normalizeCategoryLabel))].sort((a,b)=>a.localeCompare(b,'es'));
+  tipoSel.innerHTML='<option value="">Todos los tipos</option>'+tipos.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  if(tipos.includes(currentTipo)) tipoSel.value=currentTipo;
+  const rowsForSub=tipoSel.value ? baseRows.filter(r=>normalizeCategoryLabel(fallaTipo(r))===tipoSel.value) : baseRows;
+  const subs=[...new Set(rowsForSub.map(fallaSubcausa).map(normalizeCategoryLabel))].sort((a,b)=>a.localeCompare(b,'es'));
+  subSel.innerHTML='<option value="">Todas las subcausas</option>'+subs.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  if(subs.includes(currentSub)) subSel.value=currentSub;
+  refreshFallasLeafletControls();
+}
+function filteredFallasForMap(baseRows=filteredFallas()){
+  const tipo=document.getElementById('fallasMapTipoFilter')?.value || '';
+  const sub=document.getElementById('fallasMapSubcausaFilter')?.value || '';
+  return baseRows.filter(r=>(!tipo || normalizeCategoryLabel(fallaTipo(r))===tipo) && (!sub || normalizeCategoryLabel(fallaSubcausa(r))===sub));
+}
+function renderFallasMapLegend(rows){
+  const el=document.getElementById('fallasMapLegend'); if(!el) return;
+  const map=new Map();
+  rows.forEach(r=>{const label=normalizeCategoryLabel(fallaColorLabel(r)); if(!map.has(label)) map.set(label,{label,color:fallaColor(r),count:0}); map.get(label).count++;});
+  const items=[...map.values()].sort((a,b)=>b.count-a.count).slice(0,18);
+  el.innerHTML=items.length?items.map(x=>`<span class="legend-item"><span class="legend-swatch" style="background:${x.color}"></span>${esc(x.label)} <b>${x.count}</b></span>`).join(''):'<span class="muted">Sin fallas georreferenciadas para los filtros seleccionados.</span>';
+}
+
+function buildFallasControlOptions(selectedValue, items, emptyLabel){
+  return `<option value="">${esc(emptyLabel)}</option>` + items.map(x=>`<option value="${esc(x)}" ${x===selectedValue?'selected':''}>${esc(x)}</option>`).join('');
+}
+function currentFallasMapLegendItems(rows){
+  const map=new Map();
+  rows.forEach(r=>{
+    const label=normalizeCategoryLabel(fallaColorLabel(r));
+    if(!map.has(label)) map.set(label,{label,color:fallaColor(r),count:0});
+    map.get(label).count++;
+  });
+  return [...map.values()].sort((a,b)=>b.count-a.count).slice(0,14);
+}
+function getFallasControlHTML(title='Control del mapa'){
+  const baseRows=filteredFallas();
+  const tipoValue=document.getElementById('fallasMapTipoFilter')?.value || '';
+  const subValue=document.getElementById('fallasMapSubcausaFilter')?.value || '';
+  const colorValue=document.getElementById('fallasMapColorMode')?.value || 'tipo';
+  const baseValue=selectedFallasBaseMap();
+  const tipos=[...new Set(baseRows.map(fallaTipo).map(normalizeCategoryLabel))].sort((a,b)=>a.localeCompare(b,'es'));
+  const rowsForSub=tipoValue ? baseRows.filter(r=>normalizeCategoryLabel(fallaTipo(r))===tipoValue) : baseRows;
+  const subs=[...new Set(rowsForSub.map(fallaSubcausa).map(normalizeCategoryLabel))].sort((a,b)=>a.localeCompare(b,'es'));
+  const legendRows=filteredFallasForMap(baseRows).filter(fallaCoord);
+  const legendItems=currentFallasMapLegendItems(legendRows);
+  return `<div class="ctrl-title">${esc(title)}</div>
+    <div class="ctrl-grid">
+      <div><label>Mapa base</label><select onchange="setFallasMapControl('base',this.value)">
+        <option value="osm" ${baseValue==='osm'?'selected':''}>OpenStreetMap</option>
+        <option value="relief" ${baseValue==='relief'?'selected':''}>Relieve / Topográfico</option>
+        <option value="satellite" ${baseValue==='satellite'?'selected':''}>Satélite</option>
+        <option value="gray" ${baseValue==='gray'?'selected':''}>Claro / Cartográfico</option>
+        <option value="dark" ${baseValue==='dark'?'selected':''}>Oscuro</option>
+      </select></div>
+      <div><label>Colorear por</label><select onchange="setFallasMapControl('color',this.value)">
+        <option value="tipo" ${colorValue==='tipo'?'selected':''}>Tipo de falla</option>
+        <option value="subcausa" ${colorValue==='subcausa'?'selected':''}>Subcausa</option>
+        <option value="prioridad" ${colorValue==='prioridad'?'selected':''}>Prioridad</option>
+        <option value="estado" ${colorValue==='estado'?'selected':''}>Estado</option>
+      </select></div>
+    </div>
+    <label>Filtrar tipo de falla</label><select onchange="setFallasMapControl('tipo',this.value)">${buildFallasControlOptions(tipoValue,tipos,'Todos los tipos')}</select>
+    <label>Filtrar subcausa</label><select onchange="setFallasMapControl('subcausa',this.value)">${buildFallasControlOptions(subValue,subs,'Todas las subcausas')}</select>
+    <div class="ctrl-actions"><button type="button" onclick="clearFallasMapFilters()">Limpiar filtros</button></div>
+    <div class="leaflet-fallas-legend">${legendItems.length?legendItems.map(x=>`<div class="legend-row"><span class="legend-left"><span class="legend-swatch" style="background:${x.color}"></span><span class="legend-text">${esc(x.label)}</span></span><span class="legend-count">${x.count}</span></div>`).join(''):'<div class="muted">Sin fallas georreferenciadas.</div>'}</div>`;
+}
+function createFallasLeafletControl(map,title){
+  if(!map || typeof L==='undefined') return null;
+  const C=L.Control.extend({
+    options:{position:'topright'},
+    onAdd:function(){
+      const div=L.DomUtil.create('div','leaflet-fallas-control');
+      div.innerHTML=getFallasControlHTML(title);
+      L.DomEvent.disableClickPropagation(div);
+      L.DomEvent.disableScrollPropagation(div);
+      return div;
+    }
+  });
+  return new C().addTo(map);
+}
+function refreshFallasLeafletControls(){
+  const controls=[fallasMarkerControl,fallasHeatControl,fallasFullscreenControl];
+  controls.forEach(ctrl=>{try{if(ctrl && ctrl.getContainer) ctrl.getContainer().innerHTML=getFallasControlHTML(ctrl===fallasHeatControl?'Control del mapa de calor':'Control del mapa');}catch(e){}});
+}
+function setFallasMapControl(kind,value){
+  const base=document.getElementById('fallasMapBaseSelect');
+  const color=document.getElementById('fallasMapColorMode');
+  const tipo=document.getElementById('fallasMapTipoFilter');
+  const sub=document.getElementById('fallasMapSubcausaFilter');
+  if(kind==='base' && base) base.value=value;
+  if(kind==='color' && color) color.value=value;
+  if(kind==='tipo'){
+    if(tipo) tipo.value=value;
+    if(sub) sub.value='';
+  }
+  if(kind==='subcausa' && sub) sub.value=value;
+  if(kind==='base') applyFallasBaseMap();
+  refreshFallasMapOnly();
+}
+
+function getFallasGeoPoints(rows){
+  const points=[]; const markerData=[];
+  rows.forEach(r=>{
+    const c=fallaCoord(r); if(!c)return;
+    const dur=fallaDurationMin(r)||60;
+    const intensity=Math.max(0.35, Math.min(1, dur/1440));
+    points.push([c.lat,c.lng,intensity]);
+    markerData.push({row:r,lat:c.lat,lng:c.lng});
+  });
+  return {points,markerData};
+}
+function createFallaMarker(p){
+  const color=fallaColor(p.row);
+  return L.circleMarker([p.lat,p.lng],{radius:8,color:'#ffffff',weight:2,fillColor:color,fillOpacity:.92,opacity:.95}).bindPopup(buildFallaPopup(p.row));
+}
+function renderFallasMaps(rows){
+  if(!ensureFallasMaps()) return;
+  if(fallasMarkersLayer){fallasMarkersLayer.remove(); fallasMarkersLayer=null;}
+  if(fallasHeatLayer){fallasHeatLayer.remove(); fallasHeatLayer=null;}
+  const {points,markerData}=getFallasGeoPoints(rows);
+  const markers=markerData.map(createFallaMarker);
+  fallasMarkersLayer=L.layerGroup(markers).addTo(fallasMarkersMap);
+  if(points.length && L.heatLayer){fallasHeatLayer=L.heatLayer(points,{radius:32,blur:24,maxZoom:18,minOpacity:.35}).addTo(fallasHeatMap);}
+  const bounds=points.length?L.latLngBounds(points.map(p=>[p[0],p[1]])):null;
+  if(bounds && bounds.isValid()){
+    fallasMarkersMap.fitBounds(bounds.pad(.20),{animate:false,maxZoom:16});
+    fallasHeatMap.fitBounds(bounds.pad(.20),{animate:false,maxZoom:16});
+  } else {
+    fallasMarkersMap.setView([4.15,-73.63],12,{animate:false});
+    fallasHeatMap.setView([4.15,-73.63],12,{animate:false});
+  }
+  renderFallasMapLegend(rows.filter(fallaCoord));
+  refreshFallasLeafletControls();
+  forceInvalidateFallasMaps();
+}
+function refreshFallasMapOnly(){
+  const baseRows=filteredFallas();
+  updateFallasMapFilterOptions(baseRows);
+  renderFallasMaps(filteredFallasForMap(baseRows));
+  if(document.getElementById('mapFullscreenModal')?.classList.contains('show')) renderFallasFullscreenMap();
+}
+function clearFallasMapFilters(){
+  const tipo=document.getElementById('fallasMapTipoFilter'), sub=document.getElementById('fallasMapSubcausaFilter');
+  if(tipo) tipo.value=''; if(sub) sub.value='';
+  refreshFallasMapOnly();
+}
+function initFallasMapControls(){
+  ['fallasMapBaseSelect','fallasMapColorMode','fallasMapTipoFilter','fallasMapSubcausaFilter'].forEach(id=>{
+    const el=document.getElementById(id); if(!el || el.dataset.bound==='1') return;
+    el.dataset.bound='1';
+    el.addEventListener('change',()=>{
+      if(id==='fallasMapBaseSelect') applyFallasBaseMap();
+      refreshFallasMapOnly();
+    });
+  });
+}
+function openFallasMapFullscreen(mode){
+  fallasFullscreenMode=mode==='heat'?'heat':'markers';
+  const modal=document.getElementById('mapFullscreenModal');
+  const title=document.getElementById('mapFullscreenTitle');
+  if(title) title.textContent=fallasFullscreenMode==='heat'?'Mapa de calor de fallas - ampliado':'Mapa geográfico de fallas - ampliado';
+  if(modal) modal.classList.add('show');
+  setTimeout(()=>renderFallasFullscreenMap(),120);
+}
+function closeFallasMapFullscreen(evt){
+  if(evt && evt.target && evt.target.id!=='mapFullscreenModal') return;
+  const modal=document.getElementById('mapFullscreenModal');
+  if(modal) modal.classList.remove('show');
+  if(fallasFullscreenMap){fallasFullscreenMap.remove(); fallasFullscreenMap=null; fallasFullscreenLayer=null; fallasFullscreenHeatLayer=null; fallasFullscreenControl=null;}
+}
+function renderFallasFullscreenMap(){
+  if(typeof L==='undefined') return;
+  const el=document.getElementById('fallasFullscreenMap'); if(!el) return;
+  if(fallasFullscreenMap){fallasFullscreenMap.remove(); fallasFullscreenMap=null; fallasFullscreenLayer=null; fallasFullscreenHeatLayer=null; fallasFullscreenControl=null;}
+  fallasFullscreenMap=L.map('fallasFullscreenMap',{scrollWheelZoom:true,preferCanvas:true,zoomControl:true}).setView([4.15,-73.63],12);
+  fallasFullscreenBaseLayer=createBaseTileLayer(selectedFallasBaseMap()).addTo(fallasFullscreenMap);
+  fallasFullscreenControl=createFallasLeafletControl(fallasFullscreenMap, fallasFullscreenMode==='heat'?'Control del mapa de calor':'Control del mapa');
+  const rows=filteredFallasForMap(filteredFallas());
+  const {points,markerData}=getFallasGeoPoints(rows);
+  if(fallasFullscreenMode==='heat'){
+    if(points.length && L.heatLayer){fallasFullscreenHeatLayer=L.heatLayer(points,{radius:38,blur:26,maxZoom:18,minOpacity:.35}).addTo(fallasFullscreenMap);}
+  }else{
+    const markers=markerData.map(createFallaMarker);
+    fallasFullscreenLayer=L.layerGroup(markers).addTo(fallasFullscreenMap);
+  }
+  const bounds=points.length?L.latLngBounds(points.map(p=>[p[0],p[1]])):null;
+  if(bounds && bounds.isValid()) fallasFullscreenMap.fitBounds(bounds.pad(.20),{animate:false,maxZoom:16}); else fallasFullscreenMap.setView([4.15,-73.63],12,{animate:false});
+  forceInvalidateFallasMaps();
+}
+function renderFallasDashboard(){
+  const rows=filteredFallas(); const monthly=groupFallasMonthly(rows); const weekly=groupFallasWeekly(rows); renderFallasKPIs(rows); renderFallasRanking(rows); renderFallasMonthlyTable(monthly); document.getElementById('detailFallas').innerHTML=renderFallasTable(rows);
+  chart('fallasMonthlyChart','line',{labels:monthly.map(x=>x.mes),datasets:[{label:'Fallas',data:monthly.map(x=>x.cantidad),borderColor:COLORS.red,backgroundColor:'rgba(239,68,68,.14)',tension:.35,fill:true,pointRadius:4},{label:'Duración prom. horas',data:monthly.map(x=>Number((x.promMin/60).toFixed(1))),borderColor:COLORS.amber,backgroundColor:'rgba(245,158,11,.12)',tension:.35,yAxisID:'y1'}]}, {scales:{y:{beginAtZero:true,ticks:{color:'#b8c7e3'},grid:{color:'rgba(255,255,255,.07)'}},y1:{position:'right',beginAtZero:true,ticks:{color:'#fcd34d'},grid:{drawOnChartArea:false}},x:{ticks:{color:'#b8c7e3'},grid:{color:'rgba(255,255,255,.06)'}}}, detailHandler:({index})=>{const item=monthly[index]; if(item) openFallasDetailModal(`Fallas - ${item.mes}`,'Mes seleccionado.',item.records);}});
+  const cw=getWeekNumber(new Date()); chart('fallasWeeklyChart','bar',{labels:weekly.map(x=>'Semana '+x.semana),datasets:[{label:'Fallas por semana',data:weekly.map(x=>x.cantidad),backgroundColor:weekly.map(x=>x.semana===cw?COLORS.red:'rgba(59,130,246,.65)'),borderColor:weekly.map(x=>x.semana===cw?COLORS.red:COLORS.blue),borderWidth:1}]}, {plugins:{legend:{display:false}},detailHandler:({index})=>{const item=weekly[index]; if(item) openFallasDetailModal(`Fallas - Semana ${item.semana}`,'Semana seleccionada.',item.records);}});
+  const status=groupCountBy(rows,r=>r.estado||'SIN ESTADO',10); chart('fallasStatusChart','doughnut',{labels:status.map(x=>x.label),datasets:[{data:status.map(x=>x.cantidad),backgroundColor:[COLORS.green,COLORS.blue,COLORS.amber,COLORS.violet,COLORS.red,COLORS.cyan,COLORS.gray]}]}, {detailHandler:({index})=>{const item=status[index]; if(item) openFallasDetailModal(`Fallas - Estado ${item.label}`,'Estado seleccionado.',item.records);}});
+  const tipos=groupCountBy(rows,fallaTipo,12); chart('fallasTipoChart','bar',{labels:tipos.map(x=>x.label),datasets:[{label:'Cantidad',data:tipos.map(x=>x.cantidad),backgroundColor:'rgba(34,211,238,.72)',borderColor:COLORS.cyan,borderWidth:1}]},{plugins:{legend:{display:false}},detailHandler:({index})=>{const item=tipos[index]; if(item) openFallasDetailModal(`Fallas - ${item.label}`,'Tipo de falla seleccionado.',item.records);}});
+  const sub=groupCountBy(rows,fallaSubcausa,10); chart('fallasSubcausaChart','bar',{labels:sub.map(x=>x.label),datasets:[{label:'Cantidad',data:sub.map(x=>x.cantidad),backgroundColor:'rgba(139,92,246,.72)',borderColor:COLORS.violet,borderWidth:1}]},{indexAxis:'y',plugins:{legend:{display:false}},detailHandler:({index})=>{const item=sub[index]; if(item) openFallasDetailModal(`Fallas - Subcausa ${item.label}`,'Subcausa seleccionada.',item.records);}});
+  const pr=groupCountBy(rows,r=>r.prioridad||'SIN PRIORIDAD',8); chart('fallasPriorityChart','doughnut',{labels:pr.map(x=>x.label),datasets:[{data:pr.map(x=>x.cantidad),backgroundColor:[COLORS.red,COLORS.amber,COLORS.blue,COLORS.green,COLORS.gray]}]}, {detailHandler:({index})=>{const item=pr[index]; if(item) openFallasDetailModal(`Fallas - Prioridad ${item.label}`,'Prioridad seleccionada.',item.records);}});
+  chart('fallasDuracionTipoChart','bar',{labels:tipos.map(x=>x.label),datasets:[{label:'Horas promedio',data:tipos.map(x=>Number((x.promMin/60).toFixed(1))),backgroundColor:'rgba(245,158,11,.72)',borderColor:COLORS.amber,borderWidth:1}]},{plugins:{legend:{display:false},tooltip:{callbacks:{label:(c)=>` ${c.raw} horas promedio`}}},detailHandler:({index})=>{const item=tipos[index]; if(item) openFallasDetailModal(`Duración - ${item.label}`,'Registros usados para calcular el promedio.',item.records);}});
+  const eq=groupCountBy(rows,r=>r.equipo_switch||r.demonico||'SIN EQUIPO',10); chart('fallasEquipoChart','bar',{labels:eq.map(x=>x.label),datasets:[{label:'Fallas',data:eq.map(x=>x.cantidad),backgroundColor:'rgba(239,68,68,.68)',borderColor:COLORS.red,borderWidth:1}]},{indexAxis:'y',plugins:{legend:{display:false}},detailHandler:({index})=>{const item=eq[index]; if(item) openFallasDetailModal(`Fallas - Equipo ${item.label}`,'Equipo seleccionado.',item.records);}});
+  updateFallasMapFilterOptions(rows);
+  renderFallasMaps(filteredFallasForMap(rows));
+}
+
+function renderAll(){fillEstadoFilter(); renderModule('instalaciones'); renderModule('factibilidades'); renderFallasDashboard();}
+async function loadData(){document.getElementById('connStatus').textContent='Cargando datos desde Supabase...'; try{const client=await getDashboardClient(); const [i,f,t]=await Promise.all([client.from('instalaciones').select('*').order('fecha_ingreso',{ascending:false}),client.from('factibilidades').select('*').order('fecha_ingreso',{ascending:false}),client.from('om_tickets').select('*').order('fecha_inicio',{ascending:false})]); if(i.error)throw i.error; if(f.error)throw f.error; if(t.error)throw t.error; instalaciones=i.data||[]; factibilidades=f.data||[]; fallas=t.data||[]; document.getElementById('connStatus').textContent=`Conectado: ${instalaciones.length} instalaciones / ${factibilidades.length} factibilidades / ${fallas.length} fallas`; document.getElementById('lastUpdate').textContent='Actualizado: '+new Date().toLocaleString('es-CO'); renderAll();}catch(err){console.error(err); document.getElementById('connStatus').innerHTML='<span style="color:#fecaca">Error: '+esc(err.message||err)+'</span>';}}
 initSidebarSession();
 restoreSidebarState();
 initFilters();
+initFallasMapControls();
 (async()=>{
   const logged = await requireDashboardLogin();
   if(logged) await loadData();
@@ -649,5 +1075,6 @@ initFilters();
 </script>
 </body>
 </html>
+
 
 
