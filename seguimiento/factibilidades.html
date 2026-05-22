@@ -41,6 +41,9 @@
     tbody tr.row-aprobada{background:rgba(34,197,94,.14)}
     tbody tr.row-aprobada:hover{background:rgba(34,197,94,.22)}
     tbody tr.row-aprobada td{border-bottom-color:rgba(34,197,94,.25)}
+    tbody tr.row-entregada{background:rgba(34,197,94,.14)}
+    tbody tr.row-entregada:hover{background:rgba(34,197,94,.22)}
+    tbody tr.row-entregada td{border-bottom-color:rgba(34,197,94,.25)}
     tbody tr.row-no-viable{background:rgba(239,68,68,.14)}
     tbody tr.row-no-viable:hover{background:rgba(239,68,68,.22)}
     tbody tr.row-no-viable td{border-bottom-color:rgba(239,68,68,.25)}
@@ -59,6 +62,7 @@
     .estado-RADICADA{background:rgba(59,130,246,.16);color:#bfdbfe}
     .estado-EN_GESTION_EMSA{background:rgba(168,85,247,.16);color:#ddd6fe}
     .estado-APROBADA{background:rgba(34,197,94,.16);color:#bbf7d0}
+    .estado-ENTREGADA{background:rgba(34,197,94,.16);color:#bbf7d0}
     .estado-NO_VIABLE{background:rgba(239,68,68,.16);color:#fecaca}
     .estado-SOLIC_AGENDA_CONTRATISTA{background:rgba(14,165,233,.16);color:#bae6fd}
     .estado-RECHAZADA,.estado-CANCELADA{background:rgba(239,68,68,.16);color:#fecaca}
@@ -167,7 +171,7 @@
         <div class="field"><label>Estado general</label>
           <select name="estado_general">
             <option>INGRESADA</option><option>SOLIC AGENDA CONTRATISTA</option><option>EN_VALIDACION</option><option>PENDIENTE_DOCUMENTACION</option><option>PENDIENTE_PRESUPUESTO</option><option>GESTION DE PERMISOS</option><option>FACTIBILIDAD REALIZADA</option>
-            <option>LISTA_PARA_RADICAR</option><option>RADICADA</option><option>EN_GESTION_EMSA</option><option>APROBADA</option><option>RECHAZADA</option><option>NO VIABLE</option><option>CANCELADA</option>
+            <option>LISTA_PARA_RADICAR</option><option>RADICADA</option><option>EN_GESTION_EMSA</option><option>APROBADA</option><option>ENTREGADA</option><option>RECHAZADA</option><option>NO VIABLE</option><option>CANCELADA</option>
           </select>
         </div>
 
@@ -316,7 +320,7 @@ function renderShell(){
             <input id="searchFact" class="control" placeholder="Buscar por cliente, ID cliente, ID cambio o tarea">
             <select id="filterEstado" class="control">
               <option value="">Todos los estados</option><option>INGRESADA</option><option>SOLIC AGENDA CONTRATISTA</option><option>EN_VALIDACION</option><option>PENDIENTE_DOCUMENTACION</option><option>GESTION DE PERMISOS</option><option>FACTIBILIDAD REALIZADA</option>
-              <option>PENDIENTE_PRESUPUESTO</option><option>LISTA_PARA_RADICAR</option><option>RADICADA</option><option>EN_GESTION_EMSA</option><option>APROBADA</option><option>RECHAZADA</option><option>NO VIABLE</option><option>CANCELADA</option>
+              <option>PENDIENTE_PRESUPUESTO</option><option>LISTA_PARA_RADICAR</option><option>RADICADA</option><option>EN_GESTION_EMSA</option><option>APROBADA</option><option>ENTREGADA</option><option>RECHAZADA</option><option>NO VIABLE</option><option>CANCELADA</option>
             </select>
             <input id="filterFecha" class="control" type="date" title="Filtrar por fecha de ingreso">
           </div>
@@ -905,11 +909,11 @@ function applyKpiFilter(rows){
     case 'TOTAL':
       return rows;
     case 'PENDIENTES':
-      return rows.filter(r => !['APROBADA','RECHAZADA','CANCELADA','FACTIBILIDAD REALIZADA'].includes(r.estado_general));
+      return rows.filter(r => !['APROBADA','ENTREGADA','RECHAZADA','CANCELADA','FACTIBILIDAD REALIZADA','NO VIABLE','NO_VIABLE'].includes(String(r.estado_general || '').trim().toUpperCase()));
     case 'LISTAS_RADICAR':
       return rows.filter(r => calcularListaParaRadicar(r));
     case 'APROBADAS':
-      return rows.filter(r => r.estado_general === 'APROBADA' || r.estado_general === 'FACTIBILIDAD REALIZADA');
+      return rows.filter(r => ['APROBADA','ENTREGADA','FACTIBILIDAD REALIZADA'].includes(String(r.estado_general || '').trim().toUpperCase()));
     default:
       return rows;
   }
@@ -924,7 +928,10 @@ function bindKpiClicks(){
   });
 }
 function renderSummary(rows){
-  const total = rows.length, listas = rows.filter(r => calcularListaParaRadicar(r)).length, aprobadas = rows.filter(r => r.estado_general === 'APROBADA').length, pendientes = rows.filter(r => !['APROBADA','RECHAZADA','CANCELADA'].includes(r.estado_general)).length;
+  const total = rows.length,
+        listas = rows.filter(r => calcularListaParaRadicar(r)).length,
+        aprobadas = rows.filter(r => ['APROBADA','ENTREGADA','FACTIBILIDAD REALIZADA'].includes(String(r.estado_general || '').trim().toUpperCase())).length,
+        pendientes = rows.filter(r => !['APROBADA','ENTREGADA','RECHAZADA','CANCELADA','FACTIBILIDAD REALIZADA','NO VIABLE','NO_VIABLE'].includes(String(r.estado_general || '').trim().toUpperCase())).length;
   document.getElementById('summary').innerHTML = `
     <div class="stat ${activeKpi==='TOTAL'?'active':''}" data-kpi="TOTAL"><div class="label">Total solicitudes</div><div class="value">${total}</div><div class="sub">Base visible</div></div>
     <div class="stat ${activeKpi==='PENDIENTES'?'active':''}" data-kpi="PENDIENTES"><div class="label">Pendientes</div><div class="value">${pendientes}</div><div class="sub">Aún activas</div></div>
@@ -1046,6 +1053,7 @@ function getFilteredRows(){
 function getEstadoRowClass(estado){
   const normalized = String(estado || '').trim().toUpperCase();
   if(normalized === 'APROBADA') return 'row-aprobada';
+  if(normalized === 'ENTREGADA') return 'row-entregada';
   if(normalized === 'NO VIABLE' || normalized === 'NO_VIABLE') return 'row-no-viable';
   return '';
 }
@@ -1186,6 +1194,33 @@ window.showDetail = function(id){
 window.closeDetailModal = function(){ document.getElementById('detailModal').classList.remove('show'); };
 document.getElementById('detailModal').addEventListener('click', function(e){ if(e.target.id === 'detailModal'){} });
 
+
+async function getCurrentAuditUserSafe(client){
+  try{
+    if(client?.auth?.getUser){
+      const { data } = await client.auth.getUser();
+      return data?.user || null;
+    }
+  }catch(e){
+    console.warn('No se pudo leer el usuario autenticado para auditoría:', e);
+  }
+  return null;
+}
+function displayAuditUser(row, currentUser=null){
+  const email = String(row?.usuario_email || '').trim();
+  if(email) return email;
+
+  const uid = String(row?.usuario_id || '').trim();
+  const currentUid = String(currentUser?.id || '').trim();
+  const currentEmail = String(currentUser?.email || localStorage.getItem('user_email') || '').trim();
+
+  // Si el registro fue hecho por el usuario autenticado actual y la auditoría vieja no guardó email,
+  // se muestra el correo de la sesión en vez del UUID.
+  if(uid && currentUid && uid === currentUid && currentEmail) return currentEmail;
+
+  return currentEmail || uid || 'Sin usuario';
+}
+
 function fmtDateTimeAudit(value){
   if(!value) return '';
   try{
@@ -1236,6 +1271,7 @@ async function verAuditoria(tabla, registroId, tituloRegistro=''){
     if(error) throw error;
 
     const rows = data || [];
+    const currentAuditUser = await getCurrentAuditUserSafe(client);
     if(meta) meta.textContent = `${rows.length} movimiento(s) encontrado(s).`;
 
     if(!rows.length){
@@ -1259,7 +1295,7 @@ async function verAuditoria(tabla, registroId, tituloRegistro=''){
           ${rows.map(r => `
             <tr>
               <td>${esc(fmtDateTimeAudit(r.fecha_hora))}</td>
-              <td>${esc(r.usuario_email || r.usuario_id || 'Sin usuario')}</td>
+              <td>${esc(displayAuditUser(r, currentAuditUser))}</td>
               <td>${esc(r.accion || '')}</td>
               <td>${esc(r.campo_modificado || 'Registro completo')}</td>
               <td class="audit-value audit-old">${esc(limpiarValorAuditoria(r.valor_anterior))}</td>
@@ -1325,7 +1361,7 @@ document.getElementById('factibilidadForm').addEventListener('submit', async fun
       dias_habiles_transcurridos: null
     };
 
-    if(calcularListaParaRadicar(payload) && !['RADICADA','APROBADA','SOLIC AGENDA CONTRATISTA'].includes(payload.estado_general)){
+    if(calcularListaParaRadicar(payload) && !['RADICADA','APROBADA','ENTREGADA','RECHAZADA','CANCELADA','NO VIABLE','NO_VIABLE','SOLIC AGENDA CONTRATISTA'].includes(String(payload.estado_general || '').trim().toUpperCase())){
       payload.estado_general = 'LISTA_PARA_RADICAR';
     }
     // Radicación EMSA no aplica en factibilidades.
