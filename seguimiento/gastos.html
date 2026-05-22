@@ -40,11 +40,58 @@
     }
 
     .app{
+      display:grid;
+      grid-template-columns:240px 1fr;
       min-height:100vh;
+      transition:grid-template-columns .25s ease;
+    }
+
+    .app.sidebar-hidden{
+      grid-template-columns:0 1fr;
     }
 
     .sidebar{
-      display:none;
+      background:linear-gradient(180deg,#08142a,#081126);
+      border-right:1px solid rgba(255,255,255,.10);
+      padding:18px 16px;
+      position:sticky;
+      top:0;
+      height:100vh;
+      overflow:auto;
+      transition:transform .25s ease,opacity .25s ease;
+      z-index:30;
+    }
+
+    .app.sidebar-hidden .sidebar{
+      transform:translateX(-100%);
+      opacity:0;
+      pointer-events:none;
+      padding-left:0;
+      padding-right:0;
+      border-right:0;
+    }
+
+    .sidebar-toggle-tab{
+      position:fixed;
+      left:240px;
+      top:50%;
+      transform:translateY(-50%);
+      width:28px;
+      height:72px;
+      border:1px solid rgba(255,255,255,.10);
+      border-left:0;
+      border-radius:0 14px 14px 0;
+      background:linear-gradient(135deg,#1d4ed8,#0f766e);
+      color:#fff;
+      font-weight:900;
+      cursor:pointer;
+      z-index:80;
+      box-shadow:var(--shadow);
+      transition:left .25s ease;
+    }
+
+    .app.sidebar-hidden .sidebar-toggle-tab{
+      left:0;
     }
 
     .brand{
@@ -100,12 +147,65 @@
       color:white;
     }
 
+
+    .sidebar .brand{
+      display:block;
+      margin:0 0 4px;
+      padding:0;
+      border:none;
+      background:transparent;
+      border-radius:0;
+      font-size:18px;
+      font-weight:800;
+      color:#fff;
+    }
+
+    .sidebar .subbrand{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:24px;
+    }
+
+    .sidebar .nav a{
+      display:block;
+      padding:12px;
+      border-radius:12px;
+      color:#fff;
+      text-decoration:none;
+      margin-bottom:8px;
+      border:1px solid transparent;
+      font-size:14px;
+      transition:.2s ease;
+    }
+
+    .sidebar .nav a:hover,
+    .sidebar .nav a.active{
+      background:rgba(255,255,255,.05);
+      border-color:rgba(255,255,255,.10);
+    }
+
+    .session-box{
+      margin-top:24px;
+      padding:14px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:16px;
+      background:rgba(255,255,255,.03);
+    }
+
+    .session-box small{
+      display:block;
+      color:var(--muted);
+      margin-bottom:8px;
+      word-break:break-all;
+    }
+
     .main{
       padding:24px;
       overflow:auto;
       width:100%;
       max-width:1600px;
       margin:0 auto;
+      min-width:0;
     }
 
     .topbar{
@@ -176,7 +276,7 @@
 
     .grid-kpi{
       display:grid;
-      grid-template-columns:repeat(5,minmax(160px,1fr));
+      grid-template-columns:repeat(6,minmax(160px,1fr));
       gap:16px;
       margin-bottom:18px;
     }
@@ -278,6 +378,7 @@
     .btn:hover{transform:translateY(-1px); filter:brightness(1.08)}
     .btn.primary{background:linear-gradient(135deg,#0ea5e9,#2563eb)}
     .btn.green{background:linear-gradient(135deg,#16a34a,#22c55e)}
+    .btn.secondary{background:#1f3d79}
     .btn.red{background:linear-gradient(135deg,#dc2626,#ef4444)}
     .btn.yellow{background:linear-gradient(135deg,#d97706,#f59e0b)}
     .btn.ghost{background:transparent;border:1px solid var(--border);}
@@ -729,6 +830,9 @@
       .toolbar{align-items:stretch}
       .toolbar > div{width:100%}
       .btn{justify-content:center}
+      .app{grid-template-columns:1fr}
+      .sidebar{position:relative;height:auto}
+      .sidebar-toggle-tab{display:none}
     }
   </style>
 
@@ -737,7 +841,30 @@
 
 </head>
 <body>
-<div class="app">
+<div class="app" id="appShell">
+  <aside class="sidebar" ondblclick="toggleSidebar()">
+    <div class="brand">Nodo O&amp;M</div>
+    <div class="subbrand">Control y seguimiento</div>
+    <nav class="nav">
+      <a href="index.html">Inicio</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="fallas.html">Tickets / Fallas</a>
+      <a href="mantenimientos.html">Mantenimientos</a>
+      <a href="instalaciones.html">Instalaciones</a>
+      <a href="factibilidades.html">Factibilidades</a>
+      <a href="traslados.html">Traslados</a>
+      <a href="materiales.html">Materiales</a>
+      <a href="liquidaciones.html">Liquidaciones</a>
+      <a href="gastos.html" class="active">Gastos</a>
+      <a href="tareas.html">Tareas y Alertas</a>
+      <a href="reportes.html">Reportes</a>
+    </nav>
+    <div class="session-box">
+      <small>Sesión<br><span id="sidebarUser">Cargando usuario...</span></small>
+      <button class="btn secondary" style="width:100%" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+  </aside>
+  <button id="sidebarToggleTab" class="sidebar-toggle-tab" title="Ocultar / mostrar barra lateral" onclick="toggleSidebar()">‹</button>
 <main class="main">
     <section class="topbar">
       <div>
@@ -771,6 +898,10 @@
         <div class="label">Gastos del mes</div>
         <div class="value" id="kpiMes">$0</div>
       </div>
+      <div class="kpi red" id="kpiRangoCard">
+        <div class="label" id="kpiRangoLabel">Gastos rango fechas</div>
+        <div class="value" id="kpiRangoFechas">$0</div>
+      </div>
       <div class="kpi">
         <div class="label">Registros visibles</div>
         <div class="value" id="kpiRegistros">0</div>
@@ -793,6 +924,8 @@
           <option value="Nequi">Nequi</option>
         </select>
         <input type="month" id="filtroMes" title="Filtrar por mes. Déjalo vacío para ver todos los meses." />
+        <input type="date" id="filtroFechaDesde" title="Fecha inicial del rango" />
+        <input type="date" id="filtroFechaHasta" title="Fecha final del rango" />
         <button class="btn ghost" type="button" onclick="limpiarFiltros()"><i data-lucide="filter-x"></i> Limpiar filtros</button>
       </div>
       <div class="actions">
@@ -1346,6 +1479,7 @@
     usuarioActual = data.user;
     const nombre = usuarioActual.user_metadata?.full_name || usuarioActual.user_metadata?.name || usuarioActual.email;
     $("currentUser").textContent = nombre;
+    if($("sidebarUser")) $("sidebarUser").textContent = usuarioActual.email || nombre;
     $("usuarioVisible").value = `${nombre} (${usuarioActual.email})`;
     $("movUsuarioVisible").value = `${nombre} (${usuarioActual.email})`;
     aplicarPermisosMovimientosCaja();
@@ -1366,6 +1500,8 @@
     $("filtroTipo").addEventListener("change", aplicarFiltros);
     $("filtroMetodo").addEventListener("change", aplicarFiltros);
     $("filtroMes").addEventListener("change", aplicarFiltros);
+    $("filtroFechaDesde").addEventListener("change", aplicarFiltros);
+    $("filtroFechaHasta").addEventListener("change", aplicarFiltros);
 
     $("facturaFile").addEventListener("change", (e) => {
       archivoFacturaSeleccionado = e.target.files?.[0] || null;
@@ -2376,7 +2512,46 @@
       .filter(g => String(g.fecha || "").startsWith(mesFiltro))
       .reduce((acc, g) => acc + Number(g.valor || 0), 0);
 
+    const fechaDesde = $("filtroFechaDesde")?.value || "";
+    const fechaHasta = $("filtroFechaHasta")?.value || "";
+    const q = ($("buscar")?.value || "").trim().toLowerCase();
+    const tipoFiltro = $("filtroTipo")?.value || "";
+    const metodoFiltro = $("filtroMetodo")?.value || "";
+
+    const totalRangoFechas = (fechaDesde || fechaHasta)
+      ? gastosBase
+          .filter(g => {
+            const texto = [
+              g.usuario_email,
+              g.usuario_nombre,
+              g.numero_factura,
+              g.descripcion,
+              g.tipo_gasto,
+              g.metodo_pago
+            ].join(" ").toLowerCase();
+
+            return fechaEnRango(g.fecha, fechaDesde, fechaHasta)
+              && (!q || texto.includes(q))
+              && (!tipoFiltro || g.tipo_gasto === tipoFiltro)
+              && (!metodoFiltro || g.metodo_pago === metodoFiltro);
+          })
+          .reduce((acc, g) => acc + Number(g.valor || 0), 0)
+      : 0;
+
+    if($("kpiRangoLabel")){
+      if(fechaDesde && fechaHasta){
+        $("kpiRangoLabel").textContent = `Gastos ${fechaDesde} a ${fechaHasta}`;
+      }else if(fechaDesde){
+        $("kpiRangoLabel").textContent = `Gastos desde ${fechaDesde}`;
+      }else if(fechaHasta){
+        $("kpiRangoLabel").textContent = `Gastos hasta ${fechaHasta}`;
+      }else{
+        $("kpiRangoLabel").textContent = "Gastos rango fechas";
+      }
+    }
+
     $("kpiMes").textContent = formatCOP(totalMes);
+    if($("kpiRangoFechas")) $("kpiRangoFechas").textContent = formatCOP(totalRangoFechas);
     $("kpiRegistros").textContent = gastosFiltrados.length + (puedeVerMovimientosCaja() ? movimientosFiltrados.length : 0);
   }
 
@@ -2413,8 +2588,18 @@
     $("filtroTipo").value = "";
     $("filtroMetodo").value = "";
     $("filtroMes").value = "";
+    $("filtroFechaDesde").value = "";
+    $("filtroFechaHasta").value = "";
     aplicarFiltros();
     toast("Filtros limpiados. Mostrando todos los registros.");
+  }
+
+  function fechaEnRango(fecha, desde, hasta){
+    if(!fecha) return !desde && !hasta;
+    const valor = String(fecha).slice(0,10);
+    const matchDesde = !desde || valor >= desde;
+    const matchHasta = !hasta || valor <= hasta;
+    return matchDesde && matchHasta;
   }
 
   function aplicarFiltros(){
@@ -2423,6 +2608,8 @@
     const tipo = $("filtroTipo").value;
     const metodo = $("filtroMetodo").value;
     const mes = $("filtroMes").value;
+    const fechaDesde = $("filtroFechaDesde")?.value || "";
+    const fechaHasta = $("filtroFechaHasta")?.value || "";
 
     gastosFiltrados = gastos.filter(g => {
       const texto = [
@@ -2441,8 +2628,9 @@
       const matchTipo = !tipo || g.tipo_gasto === tipo;
       const matchMetodo = !metodo || g.metodo_pago === metodo;
       const matchMes = !mes || String(g.fecha || "").startsWith(mes);
+      const matchRangoFechas = fechaEnRango(g.fecha, fechaDesde, fechaHasta);
 
-      return gastoVisibleParaUsuario(g) && matchQ && matchUsuario && matchTipo && matchMetodo && matchMes;
+      return gastoVisibleParaUsuario(g) && matchQ && matchUsuario && matchTipo && matchMetodo && matchMes && matchRangoFechas;
     });
 
     movimientosFiltrados = movimientosCaja.filter(m => {
@@ -2473,6 +2661,7 @@
       const matchQ = !q || texto.includes(q);
       const matchUsuario = !usuarioFiltro || usuarioKey === usuarioFiltro;
       const matchMes = !mes || String(m.fecha || "").startsWith(mes);
+      const matchRangoFechas = fechaEnRango(m.fecha, fechaDesde, fechaHasta);
 
       const matchMovFecha = !movFecha || String(m.fecha || "") === movFecha;
       const matchMovUsuario = !movUsuario || usuarioTexto.includes(movUsuario);
@@ -2485,6 +2674,7 @@
         && matchQ
         && matchUsuario
         && matchMes
+        && matchRangoFechas
         && matchMovFecha
         && matchMovUsuario
         && matchMovTipo
@@ -2755,7 +2945,27 @@
     XLSX.writeFile(wb, `gastos_movimientos_${new Date().toISOString().slice(0,10)}.xlsx`);
   }
 
+  function toggleSidebar(){
+    const app = document.getElementById("appShell") || document.querySelector(".app");
+    const tab = document.getElementById("sidebarToggleTab");
+    if(!app) return;
+    app.classList.toggle("sidebar-hidden");
+    const hidden = app.classList.contains("sidebar-hidden");
+    localStorage.setItem("om_sidebar_hidden", hidden ? "1" : "0");
+    if(tab) tab.textContent = hidden ? "›" : "‹";
+  }
+
+  function restoreSidebarState(){
+    const app = document.getElementById("appShell") || document.querySelector(".app");
+    const tab = document.getElementById("sidebarToggleTab");
+    if(!app) return;
+    const hidden = localStorage.getItem("om_sidebar_hidden") === "1";
+    app.classList.toggle("sidebar-hidden", hidden);
+    if(tab) tab.textContent = hidden ? "›" : "‹";
+  }
+
   async function init(){
+    restoreSidebarState();
     lucide.createIcons();
     llenarTipos();
 
@@ -2775,5 +2985,8 @@
 </script>
 </body>
 </html>
+
+
+
 
 
