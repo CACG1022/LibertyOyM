@@ -614,6 +614,7 @@
         <strong>Importante</strong>
         <ul>
           <li>La red filtrada se muestra en azul.</li><li><b>CLIENTE1/CLIENTE2 se toma del contenedor padre del KMZ</b>, no del nombre de cada Fiber Cable.</li>
+          <li>Al filtrar un cliente se oculta la red general y solo queda visible la ruta OTDR aguamarina más el Nodo/ODF.</li>
           <li>La ruta ordenada usada por el OTDR se muestra en cian punteado.</li>
           <li>Si el punto cae al lado contrario, usa <b>Invertir sentido de ruta</b>.</li>
           <li>Doble clic sobre un tramo muestra sus atributos.</li>
@@ -858,8 +859,13 @@
       });
 
       filteredGeoJSON = extractLineFeatures({ type:'FeatureCollection', features: matched });
-      [filteredLayer, orderedRouteLayer, pointLayer].forEach(l => { if (l) map.removeLayer(l); });
-      filteredLayer = orderedRouteLayer = pointLayer = null; orderedRoute = lastFault = null; clearHighlight();
+
+      // Al filtrar un cliente ocultamos la red general y los tramos azules.
+      // En pantalla queda únicamente el Nodo/ODF, la ruta OTDR aguamarina y el punto de falla si se calcula.
+      [allLayer, filteredLayer, orderedRouteLayer, pointLayer].forEach(l => { if (l) map.removeLayer(l); });
+      allLayer = filteredLayer = orderedRouteLayer = pointLayer = null;
+      orderedRoute = lastFault = null;
+      clearHighlight();
 
       if (!filteredGeoJSON.features.length) {
         matchInfo.textContent = 'No se encontraron líneas para ese criterio.';
@@ -867,12 +873,11 @@
         setStatus('Sin coincidencias. Revisa el campo o el texto de búsqueda.', true); refreshLayerControl(); return;
       }
 
-      filteredLayer = L.geoJSON(filteredGeoJSON, { style: { color: '#2563eb', weight: 5, opacity: 1 }, onEachFeature: bindInteractiveFeature }).addTo(map);
       const names = [...new Set(matched.map(f => safeValue((f.properties || {})[field] || (f.properties || {})._cliente)).filter(Boolean))];
       matchInfo.innerHTML = `Coincidencias: <strong>${matched.length}</strong><br>${names.slice(0, 12).map(n => `<span class="tag">${escapeHtml(n)}</span>`).join('')}`;
       rebuildOrderedRoute();
-      try { map.fitBounds(L.featureGroup([filteredLayer, orderedRouteLayer, nodoLayer].filter(Boolean)).getBounds(), { padding: [30, 30] }); } catch(e) {}
-      setStatus('Cliente filtrado correctamente. Ingresa la distancia OTDR.');
+      try { map.fitBounds(L.featureGroup([orderedRouteLayer, nodoLayer].filter(Boolean)).getBounds(), { padding: [30, 30] }); } catch(e) {}
+      setStatus('Cliente filtrado correctamente. Solo se muestra la ruta OTDR y el Nodo/ODF.');
     }
 
     function distanceCoordKm(a, b) {
@@ -1477,5 +1482,3 @@
   </script>
 </body>
 </html>
-
-
