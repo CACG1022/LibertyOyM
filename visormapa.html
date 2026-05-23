@@ -147,6 +147,7 @@
       height: 100vh;
       width: 100%;
       background: #020817;
+      touch-action: none;
     }
 
     .status, .result {
@@ -425,6 +426,55 @@
       to { transform: rotate(360deg); }
     }
 
+
+    .rotation-compass {
+      position: absolute;
+      top: 72px;
+      left: 14px;
+      z-index: 900;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: rgba(7,18,38,0.88);
+      border: 1px solid rgba(34,211,238,0.38);
+      backdrop-filter: blur(12px);
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e0f2fe;
+      font-weight: 800;
+      letter-spacing: .5px;
+      pointer-events: none;
+    }
+    .rotation-compass .needle {
+      position: absolute;
+      width: 3px;
+      height: 22px;
+      background: linear-gradient(180deg, #f43f5e 0%, #f43f5e 48%, #38bdf8 52%, #38bdf8 100%);
+      border-radius: 999px;
+      transform-origin: center center;
+      box-shadow: 0 0 12px rgba(56,189,248,.45);
+    }
+    .rotation-compass .n-label {
+      position: absolute;
+      top: 5px;
+      font-size: 11px;
+      color: #fecdd3;
+      text-shadow: 0 0 10px rgba(244,63,94,.5);
+    }
+
+    .rotate-hint {
+      margin-top: 8px;
+      padding: 9px 10px;
+      border-radius: 12px;
+      background: rgba(56,189,248,0.08);
+      border: 1px solid rgba(56,189,248,0.18);
+      color: #bae6fd;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
     @media (max-width: 900px) {
       .app { grid-template-columns: 1fr; height:auto; }
       .app.sidebar-collapsed { grid-template-columns: 1fr; }
@@ -515,6 +565,22 @@
       </div>
 
       <div class="block">
+        <label>Rotación / orientación del mapa</label>
+        <div class="row">
+          <button id="rotateLeftBtn" class="secondary">⟲ Girar -15°</button>
+          <button id="rotateRightBtn" class="secondary">Girar +15° ⟳</button>
+        </div>
+        <button id="resetBearingBtn" class="secondary" style="margin-top:8px;">Restablecer Norte ↑</button>
+        <div id="rotationInfo" class="result" style="margin-top:10px;">
+          <strong>Rotación:</strong> 0°<br>
+          <span class="small">En celular puedes girar el mapa con dos dedos.</span>
+        </div>
+        <div class="rotate-hint">
+          Para orientar la ruta en campo, activa el GPS y gira el mapa con dos dedos hasta que coincida con tu dirección de avance.
+        </div>
+      </div>
+
+      <div class="block">
         <label>Herramienta de medición manual</label>
         <button id="measureToggleBtn" class="secondary">Activar medición</button>
         <button id="measureUndoBtn" class="secondary" style="margin-top:8px;">Deshacer último punto</button>
@@ -543,6 +609,10 @@
 
     <main class="map-wrap">
       <div id="map"></div>
+      <div id="rotationCompass" class="rotation-compass">
+        <div id="compassNeedle" class="needle"></div>
+        <div class="n-label">N</div>
+      </div>
       <div class="legend">
         <div><span class="node-demo"></span> Nodo/ODF</div>
         <div style="margin-top:6px;"><span class="network-demo"></span> Red cargada</div>
@@ -557,6 +627,7 @@
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-rotate@0.2.8/dist/leaflet-rotate.js"></script>
   <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
@@ -565,7 +636,7 @@
     const DEFAULT_KMZ = './RED VILLAVICENCIO-V2.kmz';
     const DEFAULT_NODO = './NODO_VVC.geojson';
 
-    const map = L.map('map', { doubleClickZoom: false }).setView([4.142, -73.6266], 12);
+    const map = L.map('map', { doubleClickZoom: false, rotate: true, touchRotate: true, bearing: 0, rotateControl: { closeOnZeroBearing: false } }).setView([4.142, -73.6266], 12);
     const cartoAttr = '&copy; OpenStreetMap contributors &copy; CARTO';
     const esriAttr = '&copy; Esri';
     const baseDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { subdomains:'abcd', maxZoom: 20, attribution: cartoAttr }).addTo(map);
@@ -607,6 +678,7 @@
     const startMode = $('startMode'), otdrDirection = $('otdrDirection'), rebuildRouteBtn = $('rebuildRouteBtn'), reverseRouteBtn = $('reverseRouteBtn'), copyBtn = $('copyBtn'), loadDefaultKmzBtn = $('loadDefaultKmzBtn');
     const measureToggleBtn = $('measureToggleBtn'), measureUndoBtn = $('measureUndoBtn'), measureClearBtn = $('measureClearBtn'), measureInfo = $('measureInfo');
     const gpsToggleBtn = $('gpsToggleBtn'), centerGpsBtn = $('centerGpsBtn'), goFaultBtn = $('goFaultBtn'), openMapsBtn = $('openMapsBtn'), gpsInfo = $('gpsInfo');
+    const rotateLeftBtn = $('rotateLeftBtn'), rotateRightBtn = $('rotateRightBtn'), resetBearingBtn = $('resetBearingBtn'), rotationInfo = $('rotationInfo'), compassNeedle = $('compassNeedle');
     const appEl = document.querySelector('.app'), sidebarToggle = $('sidebarToggle');
 
     function setStatus(msg, isError = false) { statusBox.textContent = msg; statusBox.className = isError ? 'status warn' : 'status'; }
@@ -906,6 +978,57 @@
       appEl.classList.toggle('sidebar-collapsed');
       updateSidebarButton();
       setTimeout(() => map.invalidateSize(), 380);
+    }
+
+
+    function normalizeBearing(deg) {
+      const n = Number(deg || 0) % 360;
+      return n < 0 ? n + 360 : n;
+    }
+
+    function getMapBearing() {
+      if (typeof map.getBearing === 'function') return normalizeBearing(map.getBearing());
+      return 0;
+    }
+
+    function setMapBearing(deg) {
+      if (typeof map.setBearing !== 'function') {
+        setStatus('La rotación no cargó. Revisa conexión a internet para cargar el plugin leaflet-rotate.', true);
+        return;
+      }
+      map.setBearing(normalizeBearing(deg));
+      updateRotationInfo();
+    }
+
+    function rotateMapBy(delta) {
+      setMapBearing(getMapBearing() + delta);
+    }
+
+    function updateRotationInfo() {
+      const bearing = getMapBearing();
+      const rounded = Math.round(bearing);
+      if (rotationInfo) {
+        rotationInfo.innerHTML = `
+          <strong>Rotación:</strong> ${rounded}°<br>
+          <span class="small">Norte ${rounded === 0 ? 'arriba' : 'girado'} · En celular usa dos dedos para rotar.</span>
+        `;
+      }
+      if (compassNeedle) {
+        compassNeedle.style.transform = `rotate(${-bearing}deg)`;
+      }
+    }
+
+    function setupRotationSupport() {
+      if (typeof map.setBearing === 'function') {
+        updateRotationInfo();
+        map.on('rotate', updateRotationInfo);
+        map.on('rotateend', updateRotationInfo);
+        setStatus('Rotación del mapa activa. En celular puedes girar con dos dedos.');
+      } else {
+        if (rotationInfo) {
+          rotationInfo.innerHTML = `<strong>Rotación:</strong> No disponible<br><span class="small">No cargó el plugin de rotación. Verifica internet.</span>`;
+        }
+      }
     }
 
 
@@ -1310,6 +1433,9 @@
     distanceInput.addEventListener('keydown', e => { if (e.key === 'Enter') locateFault(); });
     measureToggleBtn.addEventListener('click', toggleMeasureMode); measureUndoBtn.addEventListener('click', undoMeasurePoint); measureClearBtn.addEventListener('click', clearMeasure);
     if (sidebarToggle) sidebarToggle.addEventListener('click', toggleSidebar);
+    rotateLeftBtn.addEventListener('click', () => rotateMapBy(-15));
+    rotateRightBtn.addEventListener('click', () => rotateMapBy(15));
+    resetBearingBtn.addEventListener('click', () => setMapBearing(0));
     if (gpsToggleBtn) gpsToggleBtn.addEventListener('click', toggleGps);
     if (centerGpsBtn) centerGpsBtn.addEventListener('click', centerOnGps);
     if (goFaultBtn) goFaultBtn.addEventListener('click', centerOnFault);
@@ -1319,4 +1445,5 @@
   </script>
 </body>
 </html>
+
 
