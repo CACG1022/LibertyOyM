@@ -1063,13 +1063,15 @@
       orientBaseRouteFromNodeToClient();
       const routeKm = turf.length(orderedRoute, { units:'kilometers' });
 
+      // IMPORTANTE: la ruta OTDR se dibuja en el pane estándar de Leaflet.
+      // Con leaflet-rotate, algunos panes personalizados pueden desfasarse al hacer zoom/giro en celulares.
       orderedRouteLayer = L.geoJSON(orderedRoute, {
-        pane:'routePane',
         style:{ color:'#06b6d4', weight:5, opacity:1, dashArray:'10, 8' },
         onEachFeature:(feature, layer) => {
           layer.bindTooltip(`Ruta OTDR: ${formatMeters(routeKm * 1000)}`, { permanent:false, sticky:true, className:'route-label' });
         }
       }).addTo(map);
+      if (orderedRouteLayer && orderedRouteLayer.bringToFront) orderedRouteLayer.bringToFront();
 
       refreshLayerControl();
       resultBox.innerHTML = `
@@ -1087,9 +1089,22 @@
       if (!orderedRoute) { rebuildOrderedRoute(); if (!orderedRoute) return; }
       orderedRoute.geometry.coordinates.reverse();
       if (orderedRouteLayer) map.removeLayer(orderedRouteLayer);
-      orderedRouteLayer = L.geoJSON(orderedRoute, { pane:'routePane', style:{ color:'#06b6d4', weight:5, opacity:1, dashArray:'10, 8' } }).addTo(map);
+      orderedRouteLayer = L.geoJSON(orderedRoute, { style:{ color:'#06b6d4', weight:5, opacity:1, dashArray:'10, 8' } }).addTo(map);
+      if (orderedRouteLayer && orderedRouteLayer.bringToFront) orderedRouteLayer.bringToFront();
       if (pointLayer) { map.removeLayer(pointLayer); pointLayer = null; lastFault = null; }
       refreshLayerControl(); setStatus('Ruta visual invertida. También puedes escoger el sentido de medición OTDR en la lista.');
+    }
+
+
+    function refreshOrderedRoutePosition() {
+      // Evita desfases visuales de la ruta aguamarina cuando el mapa se rota o cambia de zoom.
+      if (!orderedRouteLayer) return;
+      try {
+        orderedRouteLayer.eachLayer(layer => {
+          if (layer && typeof layer.redraw === 'function') layer.redraw();
+        });
+        if (orderedRouteLayer.bringToFront) orderedRouteLayer.bringToFront();
+      } catch (e) {}
     }
 
     function locateFault() {
@@ -1425,6 +1440,7 @@
     function toggleMeasureMode() { measureMode = !measureMode; updateMeasureInfo(); setStatus(measureMode ? 'Modo de medición activado.' : 'Modo de medición desactivado.'); }
 
     map.on('click', e => { if (measureMode) addMeasurePoint(e.latlng); else clearHighlight(); });
+    map.on('zoomend moveend rotate rotateend', refreshOrderedRoutePosition);
     map.on('locationfound', renderUserLocation);
     map.on('locationerror', gpsError);
     fileInput.addEventListener('change', e => { const file = e.target.files[0]; if (file) loadFile(file); });
