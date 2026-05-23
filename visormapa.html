@@ -249,6 +249,21 @@
     .leaflet-control-zoom a:hover,
     .leaflet-bar a:hover { background: rgba(15, 35, 68, 0.98) !important; }
 
+
+    /* Separación de controles: evita que brújula, zoom y botón Panel queden superpuestos */
+    .leaflet-top.leaflet-left {
+      top: 142px !important;
+      left: 14px !important;
+    }
+    .leaflet-bottom.leaflet-left {
+      bottom: 18px !important;
+      left: 14px !important;
+    }
+    .leaflet-bottom.leaflet-left .leaflet-control-zoom {
+      margin-left: 0 !important;
+      margin-bottom: 0 !important;
+    }
+
     .node-icon-wrapper {
       width: 46px; height: 46px; display: flex; align-items: center; justify-content: center;
       filter: drop-shadow(0 0 10px rgba(34,197,94,.45));
@@ -429,8 +444,8 @@
 
     .rotation-compass {
       position: absolute;
-      top: 72px;
-      left: 14px;
+      top: 78px;
+      left: 18px;
       z-index: 900;
       width: 54px;
       height: 54px;
@@ -636,7 +651,8 @@
     const DEFAULT_KMZ = './RED VILLAVICENCIO-V2.kmz';
     const DEFAULT_NODO = './NODO_VVC.geojson';
 
-    const map = L.map('map', { doubleClickZoom: false, rotate: true, touchRotate: true, bearing: 0, rotateControl: { closeOnZeroBearing: false } }).setView([4.142, -73.6266], 12);
+    const map = L.map('map', { zoomControl: false, doubleClickZoom: false, rotate: true, touchRotate: true, bearing: 0, rotateControl: { closeOnZeroBearing: false } }).setView([4.142, -73.6266], 12);
+    L.control.zoom({ position: 'bottomleft' }).addTo(map);
     const cartoAttr = '&copy; OpenStreetMap contributors &copy; CARTO';
     const esriAttr = '&copy; Esri';
     const baseDark = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { subdomains:'abcd', maxZoom: 20, attribution: cartoAttr }).addTo(map);
