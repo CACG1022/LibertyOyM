@@ -205,6 +205,12 @@
       background: radial-gradient(circle at 35% 35%, #fff 0%, #fb7185 30%, #e11d48 70%);
       box-shadow: 0 0 0 2px rgba(244,63,94,.35), 0 0 12px rgba(244,63,94,.9);
     }
+    .splice-demo {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff 0%, #d8b4fe 28%, #9333ea 72%);
+      border: 2px solid #f5e8ff;
+      box-shadow: 0 0 0 2px rgba(147,51,234,.34), 0 0 14px rgba(168,85,247,.9);
+    }
 
     ul { margin: 8px 0 0 16px; padding: 0; }
     .warn {
@@ -292,6 +298,45 @@
       box-shadow: var(--shadow);
       font-size: 14px;
     }
+
+    .splice-marker-wrap {
+      position: relative;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+    }
+    .splice-marker-wrap::before {
+      content: '';
+      position: absolute;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 2px solid rgba(168,85,247,.56);
+      box-shadow: 0 0 18px rgba(168,85,247,.42);
+      animation: splicePulse 2.2s ease-out infinite;
+    }
+    .splice-core {
+      position: relative;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.95);
+      background: radial-gradient(circle at 35% 35%, #fff 0%, #e9d5ff 25%, #9333ea 68%, #3b0764 100%);
+      box-shadow: 0 0 20px rgba(168,85,247,.9);
+    }
+    .splice-core::before, .splice-core::after {
+      content:'';
+      position:absolute;
+      left:50%; top:50%;
+      transform:translate(-50%,-50%);
+      background:rgba(30,41,59,.88);
+      border-radius:999px;
+    }
+    .splice-core::before { width: 12px; height: 2px; }
+    .splice-core::after { width: 2px; height: 12px; }
 
     .fault-marker-wrap {
       position: relative;
@@ -427,6 +472,11 @@
     ::-webkit-scrollbar-thumb { background: rgba(68, 102, 155, 0.65); border-radius: 999px; }
     ::-webkit-scrollbar-thumb:hover { background: rgba(91, 148, 255, 0.75); }
 
+    @keyframes splicePulse {
+      0% { transform: scale(.65); opacity: .9; }
+      70% { transform: scale(1.8); opacity: 0; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
     @keyframes faultPulse {
       0% { transform: scale(.7); opacity: .95; }
       70% { transform: scale(3.25); opacity: 0; }
@@ -513,6 +563,13 @@
         <input type="file" id="fileInput" accept=".geojson,.json,.kml,.kmz" />
         <button id="loadDefaultKmzBtn" class="secondary" style="margin-top:8px;">Cargar KMZ predeterminado</button>
         <div class="small" style="margin-top:8px;">Soporta GeoJSON, KML y KMZ. El KMZ debe estar en la misma carpeta del HTML si quieres cargarlo automáticamente.</div>
+      </div>
+
+      <div class="block">
+        <label>Capa de empalmes predeterminada</label>
+        <button id="loadDefaultEmpalmesBtn" class="secondary">Cargar empalmes predeterminados</button>
+        <button id="toggleEmpalmesBtn" class="secondary" style="margin-top:8px;">Ocultar empalmes</button>
+        <div id="empalmesInfo" class="small" style="margin-top:8px;">Usa el archivo <b>Empalmes Villavicencio.kmz</b> en la misma carpeta del HTML. Los empalmes se mostrarán en color morado.</div>
       </div>
 
       <div class="block">
@@ -637,6 +694,7 @@
         <div style="margin-top:6px;"><span class="selected-demo"></span> Tramo seleccionado</div>
         <div style="margin-top:6px;"><span class="measure-demo"></span> Medición manual</div>
         <div style="margin-top:6px;"><span class="gps-demo"></span> Mi ubicación GPS</div>
+        <div style="margin-top:6px;"><span class="splice-demo"></span> Empalmes</div>
         <div style="margin-top:6px;"><span class="point-demo"></span> Punto falla</div>
       </div>
     </main>
@@ -651,6 +709,7 @@
   <script>
     const DEFAULT_KMZ = './RED VILLAVICENCIO-V2.kmz';
     const DEFAULT_NODO = './NODO_VVC.geojson';
+    const DEFAULT_EMPALMES = './Empalmes Villavicencio.kmz';
 
     const map = L.map('map', { zoomControl: false, doubleClickZoom: false, rotate: true, touchRotate: true, bearing: 0, rotateControl: { closeOnZeroBearing: false } }).setView([4.142, -73.6266], 12);
     L.control.zoom({ position: 'bottomleft' }).addTo(map);
@@ -680,16 +739,18 @@
     map.createPane('nodePane'); map.getPane('nodePane').style.zIndex = 650;
     map.createPane('routePane'); map.getPane('routePane').style.zIndex = 620;
     map.createPane('faultPane'); map.getPane('faultPane').style.zIndex = 700;
+    map.createPane('splicePane'); map.getPane('splicePane').style.zIndex = 660;
     const gpsLayer = L.layerGroup().addTo(map);
 
     let rawGeoJSON = null, filteredGeoJSON = null, orderedRoute = null, lastFault = null;
-    let allLayer = null, filteredLayer = null, orderedRouteLayer = null, pointLayer = null, nodoLayer = null;
+    let allLayer = null, filteredLayer = null, orderedRouteLayer = null, pointLayer = null, nodoLayer = null, empalmesLayer = null, empalmesData = null, empalmesVisible = true;
     let candidateNameFields = [], layerControl = null, highlightedLayer = null, nodeCoord = null;
     let measureMode = false, measurePoints = [], measureLine = null, measureMarkers = [], measureTooltipMarker = null;
     let gpsActive = false, userLatLng = null, userAccuracy = null, userHeading = null, userMarker = null, userAccuracyCircle = null;
 
     const $ = id => document.getElementById(id);
     const fileInput = $('fileInput'), nameField = $('nameField'), clientSearch = $('clientSearch'), clientList = $('clientList');
+    const loadDefaultEmpalmesBtn = $('loadDefaultEmpalmesBtn'), toggleEmpalmesBtn = $('toggleEmpalmesBtn'), empalmesInfo = $('empalmesInfo');
     const filterBtn = $('filterBtn'), clearBtn = $('clearBtn'), locateBtn = $('locateBtn'), distanceInput = $('distanceInput'), distanceUnit = $('distanceUnit');
     const statusBox = $('status'), resultBox = $('result'), matchInfo = $('matchInfo'), searchAllFields = $('searchAllFields');
     const startMode = $('startMode'), otdrDirection = $('otdrDirection'), rebuildRouteBtn = $('rebuildRouteBtn'), reverseRouteBtn = $('reverseRouteBtn'), copyBtn = $('copyBtn'), loadDefaultKmzBtn = $('loadDefaultKmzBtn');
@@ -775,6 +836,7 @@
       if (filteredLayer) overlays['Tramos filtrados'] = filteredLayer;
       if (orderedRouteLayer) overlays['Ruta OTDR ordenada'] = orderedRouteLayer;
       if (pointLayer) overlays['Punto de falla'] = pointLayer;
+      if (empalmesLayer) overlays['Empalmes'] = empalmesLayer;
       if (measureLine) overlays['Medición manual'] = measureLine;
       if (gpsLayer && gpsLayer.getLayers().length) overlays['Mi ubicación GPS'] = gpsLayer;
       layerControl = L.control.layers(baseMaps, overlays, { collapsed: true, position: 'topright' }).addTo(map);
@@ -1228,6 +1290,87 @@
       return await parseKMLText(kmlText);
     }
 
+
+    function createSpliceIcon() {
+      return L.divIcon({
+        html: '<div class="splice-marker-wrap"><div class="splice-core"></div></div>',
+        className: 'splice-marker-icon',
+        iconSize: [34, 34],
+        iconAnchor: [17, 17],
+        popupAnchor: [0, -18]
+      });
+    }
+
+    function renderEmpalmesLayer(data, showLayer = true) {
+      if (empalmesLayer) {
+        map.removeLayer(empalmesLayer);
+        empalmesLayer = null;
+      }
+
+      empalmesData = data;
+      const count = (data.features || []).length;
+      empalmesLayer = L.geoJSON(data, {
+        pane: 'splicePane',
+        pointToLayer: (feature, latlng) => L.marker(latlng, { icon: createSpliceIcon(), pane: 'splicePane' }),
+        style: { color: '#a855f7', weight: 4, opacity: 0.95, fillColor: '#9333ea', fillOpacity: 0.60 },
+        onEachFeature: (feature, layer) => {
+          layer.bindPopup(buildAttributesPopup(feature));
+          layer.on('dblclick', e => { layer.openPopup(); L.DomEvent.stopPropagation(e); });
+          layer.on('click', e => { if (measureMode) { addMeasurePoint(e.latlng); L.DomEvent.stopPropagation(e); } });
+        }
+      });
+
+      empalmesVisible = showLayer;
+      if (showLayer) empalmesLayer.addTo(map);
+      if (empalmesInfo) empalmesInfo.innerHTML = `Empalmes cargados: <strong>${count}</strong>. Puedes activar/desactivar esta capa cuando lo requieras.`;
+      if (toggleEmpalmesBtn) toggleEmpalmesBtn.textContent = showLayer ? 'Ocultar empalmes' : 'Mostrar empalmes';
+      refreshLayerControl();
+    }
+
+    async function loadEmpalmesFile(file) {
+      const ext = file.name.split('.').pop().toLowerCase();
+      setStatus(`Cargando capa de empalmes ${file.name}...`);
+      try {
+        let data;
+        if (ext === 'geojson' || ext === 'json') data = JSON.parse(await file.text());
+        else if (ext === 'kml') data = await parseKMLText(await file.text());
+        else if (ext === 'kmz') data = await parseKMZBlob(file);
+        else throw new Error('Formato de empalmes no soportado.');
+
+        if (!data || !data.features) throw new Error('No se pudo leer la geometría de los empalmes.');
+        renderEmpalmesLayer(data, true);
+        setStatus(`Capa de empalmes cargada correctamente. Elementos: ${data.features.length}`);
+        try { map.fitBounds(L.featureGroup([empalmesLayer, orderedRouteLayer, nodoLayer].filter(Boolean)).getBounds(), { padding:[35,35] }); } catch(e) {}
+      } catch(error) { console.error(error); setStatus(`Error cargando empalmes: ${error.message}`, true); }
+    }
+
+    async function loadDefaultEmpalmes() {
+      try {
+        setStatus('Cargando Empalmes Villavicencio.kmz...');
+        const response = await fetch(DEFAULT_EMPALMES);
+        if (!response.ok) throw new Error(`No se encontró ${DEFAULT_EMPALMES}. Verifica que el KMZ esté en la misma carpeta del HTML.`);
+        const blob = await response.blob();
+        await loadEmpalmesFile(new File([blob], 'Empalmes Villavicencio.kmz', { type:'application/vnd.google-earth.kmz' }));
+      } catch(error) { console.error(error); setStatus(error.message, true); }
+    }
+
+    function toggleEmpalmesLayer() {
+      if (!empalmesLayer && empalmesData) renderEmpalmesLayer(empalmesData, true);
+      if (!empalmesLayer) { setStatus('Primero carga la capa de empalmes.', true); return; }
+      if (map.hasLayer(empalmesLayer)) {
+        map.removeLayer(empalmesLayer);
+        empalmesVisible = false;
+        if (toggleEmpalmesBtn) toggleEmpalmesBtn.textContent = 'Mostrar empalmes';
+        setStatus('Capa de empalmes oculta.');
+      } else {
+        empalmesLayer.addTo(map);
+        empalmesVisible = true;
+        if (toggleEmpalmesBtn) toggleEmpalmesBtn.textContent = 'Ocultar empalmes';
+        setStatus('Capa de empalmes visible.');
+      }
+      refreshLayerControl();
+    }
+
     async function loadFile(file) {
       const ext = file.name.split('.').pop().toLowerCase();
       setStatus(`Cargando archivo ${file.name}...`);
@@ -1450,6 +1593,8 @@
     map.on('locationerror', gpsError);
     fileInput.addEventListener('change', e => { const file = e.target.files[0]; if (file) loadFile(file); });
     loadDefaultKmzBtn.addEventListener('click', loadDefaultKmz);
+    loadDefaultEmpalmesBtn.addEventListener('click', loadDefaultEmpalmes);
+    toggleEmpalmesBtn.addEventListener('click', toggleEmpalmesLayer);
     filterBtn.addEventListener('click', filterClient); clearBtn.addEventListener('click', showAllNetwork); locateBtn.addEventListener('click', locateFault);
     rebuildRouteBtn.addEventListener('click', rebuildOrderedRoute); reverseRouteBtn.addEventListener('click', reverseOrderedRoute); copyBtn.addEventListener('click', copyFault);
     otdrDirection.addEventListener('change', () => {
@@ -1482,3 +1627,4 @@
   </script>
 </body>
 </html>
+
