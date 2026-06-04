@@ -176,16 +176,6 @@
     .mov-select{width:18px;height:18px;accent-color:#22c55e;cursor:pointer}
     .cod-reserva-pill{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:rgba(34,197,94,.18);border:1px solid rgba(34,197,94,.45);color:#bbf7d0;font-weight:800;font-size:11px;margin-top:4px}
 
-
-    .line-filter-row th{padding:6px 8px;background:rgba(15,23,42,.95);position:sticky;top:42px;z-index:3}
-    .line-filter{width:100%;height:34px;border-radius:10px;border:1px solid rgba(147,197,253,.25);background:#0f172a;color:#e5f0ff;padding:0 9px;font-size:12px;box-sizing:border-box;outline:none}
-    .line-filter::placeholder{color:#93a4bd}
-    .line-sort-btn{display:flex;width:100%;align-items:center;justify-content:space-between;gap:6px;border:0;background:transparent;color:#93c5fd;font-weight:900;font-size:13px;cursor:pointer;text-align:left;padding:0}
-    .line-sort-btn:hover{color:#fff}
-    .line-sort-icon{font-size:11px;opacity:.8;min-width:14px;text-align:right}
-    .line-hidden-by-filter{display:none!important}
-    .material-lines table thead th{vertical-align:middle}
-
     .main{padding:26px 28px}
     .header h1{margin:0 0 6px;font-size:28px}.header p{margin:0 0 20px;color:var(--muted)}
     .toolbar{display:grid;grid-template-columns:minmax(260px,1fr) minmax(180px,240px) minmax(180px,240px) auto auto auto auto;gap:12px;margin-bottom:18px;align-items:center}
@@ -220,24 +210,6 @@
     .line-bodega-stock{min-width:210px}
     .line-serial{min-width:150px}
     .line-material{min-width:320px}
-
-
-    .line-duplicada{
-      border-color:#f59e0b !important;
-      box-shadow:0 0 0 2px rgba(245,158,11,.25) !important;
-    }
-    tr.row-duplicada{
-      background:rgba(245,158,11,.08) !important;
-      box-shadow:inset 4px 0 0 rgba(245,158,11,.85);
-    }
-    .duplicate-warning{
-      margin-top:6px;
-      color:#fbbf24;
-      font-size:10px;
-      font-weight:800;
-      display:none;
-      line-height:1.25;
-    }
 
     .sap-warning{
       margin-top:6px;
@@ -840,29 +812,17 @@
 
 <table>
               <thead>
-                <tr class="line-header-row">
-                  <th style="width:135px"><button type="button" class="line-sort-btn" onclick="sortMaterialLines('sap')">Código SAP <span class="line-sort-icon" data-sort-icon="sap">↕</span></button></th>
-                  <th style="min-width:260px"><button type="button" class="line-sort-btn" onclick="sortMaterialLines('material')">Material <span class="line-sort-icon" data-sort-icon="material">↕</span></button></th>
-                  <th style="width:105px"><button type="button" class="line-sort-btn" onclick="sortMaterialLines('cantidad')">Cantidad <span class="line-sort-icon" data-sort-icon="cantidad">↕</span></button></th>
-                  <th style="width:105px"><button type="button" class="line-sort-btn" onclick="sortMaterialLines('unidad')">Unidad <span class="line-sort-icon" data-sort-icon="unidad">↕</span></button></th>
-                  <th style="width:190px"><button type="button" class="line-sort-btn" onclick="sortMaterialLines('origen')">Bodega origen <span class="line-sort-icon" data-sort-icon="origen">↕</span></button></th>
-                  <th style="width:190px"><button type="button" class="line-sort-btn" onclick="sortMaterialLines('destino')">Bodega destino <span class="line-sort-icon" data-sort-icon="destino">↕</span></button></th>
-                  <th style="width:170px"><button type="button" class="line-sort-btn" onclick="sortMaterialLines('stock')">Stock SAP <span class="line-sort-icon" data-sort-icon="stock">↕</span></button></th>
-                  <th style="width:150px"><button type="button" class="line-sort-btn" onclick="sortMaterialLines('serial')">Cod serial <span class="line-sort-icon" data-sort-icon="serial">↕</span></button></th>
-                  <th style="width:150px"><button type="button" class="line-sort-btn" onclick="sortMaterialLines('reserva')">Cod reserva <span class="line-sort-icon" data-sort-icon="reserva">↕</span></button></th>
+                <tr>
+                  <th style="width:135px">Código SAP</th>
+                  <th style="min-width:260px">Material</th>
+                  <th style="width:105px">Cantidad</th>
+                  <th style="width:105px">Unidad</th>
+                  <th style="width:190px">Bodega origen</th>
+                  <th style="width:190px">Bodega destino</th>
+                  <th style="width:170px">Stock SAP</th>
+                  <th style="width:150px">Cod serial</th>
+                  <th style="width:150px">Cod reserva</th>
                   <th style="width:80px">Acción</th>
-                </tr>
-                <tr class="line-filter-row">
-                  <th><input class="line-filter" data-line-filter="sap" placeholder="Filtrar SAP" oninput="applyMaterialLineFiltersAndSort()"></th>
-                  <th><input class="line-filter" data-line-filter="material" placeholder="Filtrar material" oninput="applyMaterialLineFiltersAndSort()"></th>
-                  <th><input class="line-filter" data-line-filter="cantidad" placeholder="Cant." oninput="applyMaterialLineFiltersAndSort()"></th>
-                  <th><input class="line-filter" data-line-filter="unidad" placeholder="Und" oninput="applyMaterialLineFiltersAndSort()"></th>
-                  <th><input class="line-filter" data-line-filter="origen" placeholder="Origen" oninput="applyMaterialLineFiltersAndSort()"></th>
-                  <th><input class="line-filter" data-line-filter="destino" placeholder="Destino" oninput="applyMaterialLineFiltersAndSort()"></th>
-                  <th><input class="line-filter" data-line-filter="stock" placeholder="Stock" oninput="applyMaterialLineFiltersAndSort()"></th>
-                  <th><input class="line-filter" data-line-filter="serial" placeholder="Serial" oninput="applyMaterialLineFiltersAndSort()"></th>
-                  <th><input class="line-filter" data-line-filter="reserva" placeholder="Reserva" oninput="applyMaterialLineFiltersAndSort()"></th>
-                  <th><button type="button" class="small-btn" onclick="clearMaterialLineFilters()" title="Limpiar filtros">Limpiar</button></th>
                 </tr>
               </thead>
               <tbody id="materialLinesBody"></tbody>
@@ -943,7 +903,7 @@
           </select>
         </div>
         <div class="field"><label>Bodega inicial *</label><select name="bodega_inicial_id" id="matBodegaInicial" required></select></div>
-        <div class="field"><label>Cantidad inicial *</label><input type="number" step="0.01" min="0.01" name="cantidad_inicial" required placeholder="0"></div>
+        <div class="field"><label>Cantidad inicial *</label><input type="number" step="0.01" min="0" name="cantidad_inicial" required placeholder="0"></div>
         <div class="field"><label>Categoría / GP antiguo</label><input name="categoria" placeholder="Opcional"></div>
         <div class="field"><label>Storage location SAP</label><input name="storage_location" placeholder="Opcional, ej: 0141"></div>
         <div class="field span-2"><label>Observación</label><input name="descripcion" placeholder="Ej: creación inicial desde módulo de materiales"></div>
@@ -2025,32 +1985,31 @@ function addMaterialLine(data = {}){
 
   tr.innerHTML = `
     <td>
-      <input class="control line-sap" list="sapList" value="${esc(data.codigo_sap || '')}" oninput="syncMaterialLineBySap(this); validarDuplicadosMaterialesModal(false); applyMaterialLineFiltersAndSort()" onchange="syncMaterialLineBySap(this); validarDuplicadosMaterialesModal(false); applyMaterialLineFiltersAndSort()">
+      <input class="control line-sap" list="sapList" value="${esc(data.codigo_sap || '')}" oninput="syncMaterialLineBySap(this)" onchange="syncMaterialLineBySap(this)">
       <div class="sap-warning">Este material no se encuentra relacionado en STOCK SAP</div>
-      <div class="duplicate-warning">Código SAP o material duplicado en esta acta.</div>
     </td>
-    <td><input class="control line-material" list="materialList" value="${esc(data.material_nombre || data.material || '')}" required oninput="syncMaterialLineByName(this); validarDuplicadosMaterialesModal(false); applyMaterialLineFiltersAndSort()" onchange="syncMaterialLineByName(this); validarDuplicadosMaterialesModal(false); applyMaterialLineFiltersAndSort()"></td>
-    <td><input class="control line-cantidad" type="number" step="0.01" min="0.01" value="${esc(data.cantidad || '')}" required oninput="applyMaterialLineFiltersAndSort()"></td>
+    <td><input class="control line-material" list="materialList" value="${esc(data.material_nombre || data.material || '')}" required oninput="syncMaterialLineByName(this)" onchange="syncMaterialLineByName(this)"></td>
+    <td><input class="control line-cantidad" type="number" step="0.01" min="0.01" value="${esc(data.cantidad || '')}" required></td>
     <td>
       <input class="control line-unidad" value="${esc(normalizarUnidadSap(data.unidad || ''))}" readonly placeholder="Unidad">
     </td>
     <td>
-      <select class="control line-bodega-origen-id" onchange="applyMaterialLineFiltersAndSort()">
+      <select class="control line-bodega-origen-id">
         ${getBodegaOptionsHtml(selectedOrigen)}
       </select>
     </td>
     <td>
-      <select class="control line-bodega-destino-id" onchange="applyMaterialLineFiltersAndSort()">
+      <select class="control line-bodega-destino-id">
         ${getBodegaOptionsHtml(selectedDestino)}
       </select>
     </td>
     <td>
-      <select class="control line-bodega-stock" onchange="applyMaterialLineFiltersAndSort()">
+      <select class="control line-bodega-stock">
         <option value="">Selecciona stock</option>
       </select>
     </td>
-    <td><div class="serial-cell"><input class="barcode-field control line-serial" value="${esc(data.codigo_serial || data.cod_serial || '')}" placeholder="Serial" inputmode="text" autocomplete="off" oninput="applyMaterialLineFiltersAndSort()"><button type="button" class="scan-serial-btn" onclick="abrirEscanerSerial(this)" title="Escanear serial con cámara">📷</button></div></td>
-    <td><input class="control line-reserva" value="${esc(data.cod_reserva || data.codigo_reserva || '')}" placeholder="Cod reserva" oninput="applyMaterialLineFiltersAndSort()"></td>
+    <td><div class="serial-cell"><input class="barcode-field control line-serial" value="${esc(data.codigo_serial || data.cod_serial || '')}" placeholder="Serial" inputmode="text" autocomplete="off"><button type="button" class="scan-serial-btn" onclick="abrirEscanerSerial(this)" title="Escanear serial con cámara">📷</button></div></td>
+    <td><input class="control line-reserva" value="${esc(data.cod_reserva || data.codigo_reserva || '')}" placeholder="Cod reserva"></td>
     <td><button type="button" class="small-btn" onclick="removeMaterialLine(this)">✕</button></td>
   `;
   body.appendChild(tr);
@@ -2064,8 +2023,6 @@ function addMaterialLine(data = {}){
 
   actualizarRequeridosBodegasPorLinea();
   actualizarReservaInputs();
-  validarDuplicadosMaterialesModal(false);
-  applyMaterialLineFiltersAndSort();
 }
 
 
@@ -2074,7 +2031,6 @@ function removeMaterialLine(btn){
   const tr = btn.closest('tr');
   if(tr) tr.remove();
   if(body && !body.children.length) addMaterialLine();
-  applyMaterialLineFiltersAndSort();
 }
 
 function getStockRowsPorSap(codigo){
@@ -2186,172 +2142,6 @@ function syncMaterialLineByName(input){
 }
 
 
-function normalizarMaterialDuplicado(v){
-  return String(v || '')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/\s+/g,' ')
-    .trim()
-    .toUpperCase();
-}
-
-const materialLineSortState = { key: null, dir: 1 };
-
-function normalizeLineText(v){
-  return String(v || '')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .toLowerCase()
-    .trim();
-}
-
-function getSelectTextValue(select){
-  if(!select) return '';
-  const opt = select.selectedOptions && select.selectedOptions[0];
-  return (opt ? (opt.textContent || opt.value) : select.value || '').trim();
-}
-
-function getMaterialLineValue(tr, key){
-  switch(key){
-    case 'sap': return tr.querySelector('.line-sap')?.value || '';
-    case 'material': return tr.querySelector('.line-material')?.value || '';
-    case 'cantidad': return tr.querySelector('.line-cantidad')?.value || '';
-    case 'unidad': return tr.querySelector('.line-unidad')?.value || '';
-    case 'origen': return getSelectTextValue(tr.querySelector('.line-bodega-origen-id'));
-    case 'destino': return getSelectTextValue(tr.querySelector('.line-bodega-destino-id'));
-    case 'stock': return getSelectTextValue(tr.querySelector('.line-bodega-stock'));
-    case 'serial': return tr.querySelector('.line-serial')?.value || '';
-    case 'reserva': return tr.querySelector('.line-reserva')?.value || '';
-    default: return '';
-  }
-}
-
-function sortMaterialLines(key){
-  if(materialLineSortState.key === key){
-    materialLineSortState.dir *= -1;
-  }else{
-    materialLineSortState.key = key;
-    materialLineSortState.dir = 1;
-  }
-  applyMaterialLineFiltersAndSort();
-}
-
-function updateMaterialLineSortIcons(){
-  document.querySelectorAll('[data-sort-icon]').forEach(el => {
-    const key = el.getAttribute('data-sort-icon');
-    if(key === materialLineSortState.key) el.textContent = materialLineSortState.dir === 1 ? '▲' : '▼';
-    else el.textContent = '↕';
-  });
-}
-
-function getMaterialLineFilters(){
-  const filters = {};
-  document.querySelectorAll('[data-line-filter]').forEach(input => {
-    const key = input.getAttribute('data-line-filter');
-    const value = normalizeLineText(input.value);
-    if(value) filters[key] = value;
-  });
-  return filters;
-}
-
-function applyMaterialLineFiltersAndSort(){
-  const body = document.getElementById('materialLinesBody');
-  if(!body) return;
-
-  const filters = getMaterialLineFilters();
-  let rows = Array.from(body.querySelectorAll('tr'));
-
-  if(materialLineSortState.key){
-    const key = materialLineSortState.key;
-    const dir = materialLineSortState.dir;
-    rows.sort((a,b) => {
-      const avRaw = getMaterialLineValue(a,key);
-      const bvRaw = getMaterialLineValue(b,key);
-      if(key === 'cantidad'){
-        const av = Number(String(avRaw).replace(',','.')) || 0;
-        const bv = Number(String(bvRaw).replace(',','.')) || 0;
-        return (av - bv) * dir;
-      }
-      return String(avRaw).localeCompare(String(bvRaw), 'es', {numeric:true, sensitivity:'base'}) * dir;
-    });
-    rows.forEach(r => body.appendChild(r));
-  }
-
-  rows = Array.from(body.querySelectorAll('tr'));
-  rows.forEach(tr => {
-    const visible = Object.entries(filters).every(([key, value]) => normalizeLineText(getMaterialLineValue(tr,key)).includes(value));
-    tr.classList.toggle('line-hidden-by-filter', !visible);
-  });
-
-  updateMaterialLineSortIcons();
-}
-
-function clearMaterialLineFilters(){
-  document.querySelectorAll('[data-line-filter]').forEach(i => i.value = '');
-  materialLineSortState.key = null;
-  materialLineSortState.dir = 1;
-  applyMaterialLineFiltersAndSort();
-}
-
-
-function validarDuplicadosMaterialesModal(mostrarAlerta = false){
-  const rows = Array.from(document.querySelectorAll('#materialLinesBody tr'));
-  const sapMap = new Map();
-  const matMap = new Map();
-  const duplicadas = new Set();
-
-  rows.forEach((tr, idx) => {
-    const sap = normalizarCodigoSap(tr.querySelector('.line-sap')?.value || '');
-    const mat = normalizarMaterialDuplicado(tr.querySelector('.line-material')?.value || '');
-
-    if(sap){
-      if(sapMap.has(sap)){
-        duplicadas.add(idx);
-        duplicadas.add(sapMap.get(sap));
-      }else{
-        sapMap.set(sap, idx);
-      }
-    }
-
-    if(mat){
-      if(matMap.has(mat)){
-        duplicadas.add(idx);
-        duplicadas.add(matMap.get(mat));
-      }else{
-        matMap.set(mat, idx);
-      }
-    }
-  });
-
-  rows.forEach((tr, idx) => {
-    const isDup = duplicadas.has(idx);
-    tr.classList.toggle('row-duplicada', isDup);
-    tr.querySelectorAll('.line-sap,.line-material').forEach(el => el.classList.toggle('line-duplicada', isDup));
-    const warn = tr.querySelector('.duplicate-warning');
-    if(warn) warn.style.display = isDup ? 'block' : 'none';
-  });
-
-  if(duplicadas.size){
-    const msg = 'No puedes repetir el mismo Código SAP ni el mismo material dentro de la misma acta. Elimina o consolida las filas duplicadas.';
-    if(mostrarAlerta) alert(msg);
-    return msg;
-  }
-  return '';
-}
-
-function getSoporteActualMovimiento(){
-  const row = currentMovimientoId ? movimientos.find(x => String(x.id) === String(currentMovimientoId)) : null;
-  const grupoRows = row ? obtenerGrupoMovimiento(row) : [];
-  const soporteRow = grupoRows.find(x => x.soporte_acta_url || x.soporte_acta_file_id || x.soporte_acta_nombre) || row || null;
-
-  if(!soporteRow) return {};
-
-  return {
-    soporte_acta_url: soporteRow.soporte_acta_url || null,
-    soporte_acta_file_id: soporteRow.soporte_acta_file_id || null,
-    soporte_acta_nombre: soporteRow.soporte_acta_nombre || null
-  };
-}
-
-
 function getMaterialLineItems(){
   const tipo = getTipoMovimientoActual();
   const rows = Array.from(document.querySelectorAll('#materialLinesBody tr'));
@@ -2376,9 +2166,6 @@ function getMaterialLineItems(){
   if(!items.length) throw new Error('Debes agregar al menos un material.');
   const invalid = items.find(x => !x.material_nombre || !x.cantidad || x.cantidad <= 0);
   if(invalid) throw new Error('Cada material debe tener descripción y cantidad mayor a cero.');
-
-  const duplicadoMsg = validarDuplicadosMaterialesModal(true);
-  if(duplicadoMsg) throw new Error(duplicadoMsg);
 
   const sinStock = items.find(x => x.codigo_sap && !x.bodega_origen_stock);
   if(sinStock) throw new Error(`Debes seleccionar el Stock SAP del código ${sinStock.codigo_sap}.`);
@@ -3435,9 +3222,7 @@ document.getElementById('movForm').addEventListener('submit', async function(e){
     const userEmail = localStorage.getItem('user_email') || null;
     const items = getMaterialLineItems();
 
-    // Si se edita una acta y NO se adjunta un nuevo soporte, se conserva el soporte anterior.
-    // Esto evita que al borrar/reinsertar líneas del grupo se pierdan las URLs guardadas en Supabase.
-    let soporteInfo = currentMovimientoId ? getSoporteActualMovimiento() : {};
+    let soporteInfo = {};
     if(soporteActaFile){
       msg.textContent = 'Subiendo soporte del acta...';
       soporteInfo = await subirSoporteActaDrive(soporteActaFile);
@@ -3607,7 +3392,7 @@ document.getElementById('matForm').addEventListener('submit', async function(e){
     if(!codigoSap) throw new Error('Debes diligenciar el código SAP.');
     if(!material) throw new Error('Debes diligenciar la descripción del material.');
     if(!bodegaId || !bodega) throw new Error('Debes seleccionar la bodega inicial.');
-    if(!cantidadInicial || cantidadInicial <= 0) throw new Error('La cantidad inicial debe ser mayor a cero.');
+    if(Number.isNaN(cantidadInicial) || cantidadInicial < 0) throw new Error('La cantidad inicial no puede ser negativa.');
 
     const existeSap = getStockSapRowByCodigo(codigoSap);
     if(existeSap){
@@ -3639,21 +3424,25 @@ document.getElementById('matForm').addEventListener('submit', async function(e){
 
     if(stockInsert.error) throw stockInsert.error;
 
-    msg.textContent = 'Registrando trazabilidad AJUSTE_INICIAL...';
+    if(cantidadInicial > 0){
+      msg.textContent = 'Registrando trazabilidad AJUSTE_INICIAL...';
 
-    await crearMovimientoAjusteInicial(client, {
-      codigo_sap: codigoSap,
-      material,
-      unidad_sap: unidadRaw,
-      unidad: unidadVisible,
-      cantidad: cantidadInicial,
-      bodega_id: bodegaId,
-      bodega_nombre: bodega.nombre,
-      categoria,
-      observaciones: observacion
-    });
+      await crearMovimientoAjusteInicial(client, {
+        codigo_sap: codigoSap,
+        material,
+        unidad_sap: unidadRaw,
+        unidad: unidadVisible,
+        cantidad: cantidadInicial,
+        bodega_id: bodegaId,
+        bodega_nombre: bodega.nombre,
+        categoria,
+        observaciones: observacion
+      });
+    }
 
-    msg.textContent = 'Material nuevo creado correctamente.';
+    msg.textContent = cantidadInicial > 0
+      ? 'Material nuevo creado correctamente.'
+      : 'Material nuevo creado correctamente con inventario inicial en 0.';
     closeMatModal();
     await loadAll();
   }catch(err){
@@ -3712,6 +3501,7 @@ document.addEventListener('keydown', function(e){
 
 </body>
 </html>
+
 
 
 
