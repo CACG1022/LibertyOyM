@@ -2327,6 +2327,59 @@ async function subirSoporteActaDrive(file){
 }
 
 
+function limpiarSoporteActaInfo(info){
+  const out = {};
+  if(info?.soporte_acta_url) out.soporte_acta_url = info.soporte_acta_url;
+  if(info?.soporte_acta_file_id) out.soporte_acta_file_id = info.soporte_acta_file_id;
+  if(info?.soporte_acta_nombre) out.soporte_acta_nombre = info.soporte_acta_nombre;
+  return out;
+}
+
+function getSoporteActualMovimiento(){
+  /*
+    IMPORTANTE:
+    Al editar un acta el módulo elimina las líneas anteriores del grupo y las vuelve a insertar.
+    Si no se adjunta un archivo nuevo, debemos reutilizar la URL/file_id/nombre existentes;
+    de lo contrario Supabase queda con NULL en soporte_acta_url, soporte_acta_file_id y soporte_acta_nombre.
+  */
+  const candidatos = [];
+
+  if(currentGrupoMovimientoId){
+    candidatos.push(...movimientos.filter(x =>
+      String(x.grupo_movimiento_id || '') === String(currentGrupoMovimientoId)
+    ));
+  }
+
+  if(currentMovimientoId){
+    const filaActual = movimientos.find(x => String(x.id) === String(currentMovimientoId));
+    if(filaActual) candidatos.push(filaActual);
+
+    if(filaActual?.grupo_movimiento_id){
+      candidatos.push(...movimientos.filter(x =>
+        String(x.grupo_movimiento_id || '') === String(filaActual.grupo_movimiento_id)
+      ));
+    }
+  }
+
+  const conSoporte = candidatos.find(x =>
+    x?.soporte_acta_url || x?.soporte_acta_file_id || x?.soporte_acta_nombre
+  );
+
+  return limpiarSoporteActaInfo(conSoporte || {});
+}
+
+function combinarSoporteActa(existente, nuevo){
+  /*
+    Conserva el soporte anterior y solo reemplaza los campos que vengan
+    realmente informados desde n8n cuando se sube un archivo nuevo.
+  */
+  return {
+    ...limpiarSoporteActaInfo(existente || {}),
+    ...limpiarSoporteActaInfo(nuevo || {})
+  };
+}
+
+
 function obtenerGrupoMovimiento(row){
   if(!row) return [];
 
@@ -2410,7 +2463,8 @@ function openMovModal(row = null){
   }
 
   const movMsg = document.getElementById('movMsg');
-  movMsg.innerHTML = row?.soporte_acta_url ? `<a class="link-btn" target="_blank" href="${esc(row.soporte_acta_url)}">Ver soporte actual</a>` : '';
+  const soporteActual = row ? getSoporteActualMovimiento() : {};
+  movMsg.innerHTML = soporteActual?.soporte_acta_url ? `<a class="link-btn" target="_blank" href="${esc(soporteActual.soporte_acta_url)}">Ver soporte actual</a>` : '';
   toggleMovementFields();
   initBarcodeMode();
   actualizarReservaInputs();
@@ -3222,10 +3276,13 @@ document.getElementById('movForm').addEventListener('submit', async function(e){
     const userEmail = localStorage.getItem('user_email') || null;
     const items = getMaterialLineItems();
 
-    let soporteInfo = {};
+    const soporteExistente = getSoporteActualMovimiento();
+    let soporteInfo = soporteExistente;
+
     if(soporteActaFile){
       msg.textContent = 'Subiendo soporte del acta...';
-      soporteInfo = await subirSoporteActaDrive(soporteActaFile);
+      const soporteNuevo = await subirSoporteActaDrive(soporteActaFile);
+      soporteInfo = combinarSoporteActa(soporteExistente, soporteNuevo);
     }
 
     const grupoMovimientoId = currentGrupoMovimientoId 
@@ -3501,7 +3558,6 @@ document.addEventListener('keydown', function(e){
 
 </body>
 </html>
-
 
 
 
