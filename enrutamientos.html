@@ -1,57 +1,801 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Enrutamiento OYM Offline</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial;background:#020617;color:#e5e7eb;overflow:hidden}header{position:fixed;top:0;left:0;right:0;height:54px;background:rgba(2,6,23,.92);z-index:900;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between;padding:8px 12px}h1{font-size:15px;margin:0}.small{font-size:12px;color:#9ca3af}.mapWrap{position:fixed;inset:54px 0 0 0}#map{height:100%;width:100%}.cross{position:absolute;left:50%;top:50%;width:68px;height:68px;transform:translate(-50%,-50%);z-index:700;pointer-events:none}.cross:before,.cross:after{content:"";position:absolute;background:#ef4444;box-shadow:0 0 5px #fff}.cross:before{left:50%;top:0;width:3px;height:68px}.cross:after{top:50%;left:0;height:3px;width:68px}.circle{position:absolute;inset:12px;border:3px solid #ef4444;border-radius:50%;box-shadow:0 0 5px #fff}.buttonsMap{position:absolute;right:10px;top:70px;z-index:800;display:flex;flex-direction:column;gap:8px;width:150px}.bottom{position:absolute;left:10px;bottom:88px;z-index:800;display:flex;flex-direction:column;gap:8px;width:160px}.centerInfo{position:absolute;left:50%;bottom:16px;transform:translateX(-50%);z-index:800;background:rgba(2,6,23,.92);border:1px solid #475569;border-radius:12px;padding:9px;width:min(460px,calc(100% - 20px));font-size:12px;text-align:center}button{border:0;border-radius:12px;padding:10px;font-weight:700;background:#22c55e;color:#020617;box-shadow:0 8px 20px rgba(0,0,0,.3)}button.blue{background:#38bdf8}button.orange{background:#f59e0b}button.red{background:#ef4444;color:white}button.gray{background:#64748b;color:white}button.purple{background:#7c3aed;color:white}.overlay{display:none;position:fixed;inset:0;background:rgba(2,6,23,.84);z-index:9999;overflow:auto;padding:12px}.modal{background:#111827;border:1px solid #475569;border-radius:16px;width:min(980px,100%);margin:12px auto;overflow:hidden}.head{position:sticky;top:0;background:#020617;border-bottom:1px solid #334155;padding:12px;display:flex;justify-content:space-between;align-items:center;z-index:2}.head h2{margin:0;font-size:16px}.body{padding:14px}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}label{font-size:12px;color:#9ca3af;margin:9px 0 4px;display:block}input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #475569;background:#020617;color:#e5e7eb}textarea{min-height:65px}.section{margin:16px 0 8px;color:#93c5fd;border-bottom:1px solid #334155;padding-bottom:5px;font-weight:700;font-size:14px}.hidden{display:none}.gpsBox,.item{background:#020617;border:1px dashed #475569;border-radius:12px;padding:10px;font-size:13px;color:#cbd5e1;margin-bottom:10px}.item{border-style:solid}.photoGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.photoCard{background:#020617;border:1px solid #334155;border-radius:12px;padding:10px}.preview{width:100%;max-height:240px;object-fit:cover;border-radius:10px;margin-top:8px;display:none}.mini{width:49%;max-height:120px;object-fit:cover;border-radius:8px}.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:700;margin:2px}.pendiente{background:#f59e0b;color:#111827}.enviado{background:#16a34a}.error{background:#dc2626}.interno{background:#7c3aed}.externo{background:#0284c7}.gpsPulse{width:18px;height:18px;background:#38bdf8;border:3px solid white;border-radius:50%;animation:pulse 1.7s infinite}@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(56,189,248,.8)}70%{box-shadow:0 0 0 18px rgba(56,189,248,0)}100%{box-shadow:0 0 0 0 rgba(56,189,248,0)}}@media(max-width:720px){.row,.photoGrid{grid-template-columns:1fr}.buttonsMap{width:135px}.bottom{width:145px}.mini{width:100%}}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Enrutamiento OYM - Cliente + Empalmes</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root{--bg:#020617;--panel:#111827;--accent:#22c55e;--accent2:#38bdf8;--text:#e5e7eb;--muted:#9ca3af;--danger:#ef4444;--warning:#f59e0b;--purple:#7c3aed}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text);overflow:hidden}
+    header{position:fixed;top:0;left:0;right:0;height:58px;z-index:800;padding:9px 14px;background:rgba(2,6,23,.92);backdrop-filter:blur(5px);border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center;gap:10px}
+    header h1{margin:0;font-size:15px;line-height:1.1}
+    header span{color:var(--muted);font-size:12px}
+    .mapWrap{position:fixed;inset:58px 0 0 0}
+    #map{width:100%;height:100%;z-index:1}
+    .crosshair{position:absolute;left:50%;top:50%;width:66px;height:66px;transform:translate(-50%,-50%);z-index:700;pointer-events:none}
+    .crosshair:before,.crosshair:after{content:"";position:absolute;background:#ef4444;box-shadow:0 0 5px white}
+    .crosshair:before{left:50%;top:0;width:3px;height:66px;transform:translateX(-50%)}
+    .crosshair:after{top:50%;left:0;height:3px;width:66px;transform:translateY(-50%)}
+    .crosshairCircle{position:absolute;inset:12px;border:3px solid #ef4444;border-radius:50%;box-shadow:0 0 5px white}
+    .centerInfo{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:701;background:rgba(2,6,23,.9);border:1px solid #475569;border-radius:14px;padding:10px 12px;font-size:12px;color:#e5e7eb;width:min(490px,calc(100% - 24px));text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+    .floatButtons{position:absolute;right:12px;top:74px;z-index:702;display:flex;flex-direction:column;gap:10px;width:162px}
+    .bottomLeft{position:absolute;left:12px;bottom:92px;z-index:702;display:flex;flex-direction:column;gap:10px;width:175px}
+    button{border:0;border-radius:13px;padding:11px 12px;cursor:pointer;font-weight:700;color:#020617;background:var(--accent);transition:.15s;width:100%;box-shadow:0 10px 22px rgba(0,0,0,.26)}
+    button:hover{filter:brightness(1.08)}
+    button.secondary{background:var(--accent2)}
+    button.warning{background:var(--warning)}
+    button.danger{background:var(--danger);color:white}
+    button.gray{background:#64748b;color:white}
+    button.purple{background:var(--purple);color:white}
+    .modalOverlay,.panelOverlay{display:none;position:fixed;inset:0;z-index:9999;background:rgba(2,6,23,.84);backdrop-filter:blur(4px);padding:14px;overflow:auto}
+    .panelOverlay{z-index:9998}
+    .modal,.panel{width:min(980px,100%);margin:12px auto;background:#111827;border:1px solid #475569;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.55);overflow:hidden}
+    .panel{width:min(820px,100%)}
+    .modalHeader,.panelHeader{padding:14px 16px;background:#020617;border-bottom:1px solid #334155;display:flex;justify-content:space-between;align-items:center;gap:10px;position:sticky;top:0;z-index:10}
+    .modalHeader h2,.panelHeader h2{margin:0;font-size:17px}
+    .modalBody,.panelBody{padding:16px;max-height:82vh;overflow:auto}
+    .closeBtn{width:auto;padding:8px 12px;background:#ef4444;color:white;box-shadow:none}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    label{font-size:12px;color:var(--muted);display:block;margin:10px 0 5px}
+    input,select,textarea{width:100%;padding:10px;border-radius:10px;border:1px solid #475569;background:#020617;color:var(--text);outline:none;font-size:14px}
+    textarea{min-height:70px;resize:vertical}
+    .buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+    .gpsBox{font-size:13px;color:var(--muted);line-height:1.5;background:#020617;border:1px dashed #475569;border-radius:12px;padding:10px;margin-bottom:10px}
+    .sectionTitle{margin:18px 0 8px;padding-bottom:6px;border-bottom:1px solid #334155;color:#93c5fd;font-weight:bold;font-size:14px}
+    .hidden{display:none!important}
+    .hint{font-size:12px;color:#cbd5e1;background:#020617;border-left:4px solid #38bdf8;padding:9px;border-radius:8px;margin:10px 0}
+    .photoPreview{width:100%;border-radius:12px;margin-top:10px;border:1px solid #475569;display:none;max-height:260px;object-fit:cover}
+    .photoGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .photoCard,.listItem{border:1px solid #334155;background:#020617;border-radius:14px;padding:10px}
+    .listItem{margin-bottom:10px;font-size:13px}
+    .required{color:#f87171;font-weight:bold}
+    .badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:bold;margin-bottom:6px;background:#334155;color:white}
+    .badge.interno{background:#7c3aed}.badge.externo{background:#0284c7}.badge.pendiente{background:#f59e0b;color:#111827}.badge.enviado{background:#16a34a}.badge.error{background:#dc2626}.badge.editado{background:#0ea5e9}
+    .miniPhoto{width:49%;max-height:120px;object-fit:cover;border-radius:10px;margin-top:8px;border:1px solid #334155}
+    .popupImg{width:100%;border-radius:8px;margin-top:6px}
+    .leaflet-popup-content{font-family:Arial,sans-serif;min-width:245px}
+    .gpsPulse{width:18px;height:18px;background:#38bdf8;border:3px solid white;border-radius:50%;box-shadow:0 0 0 rgba(56,189,248,.8);animation:pulse 1.7s infinite}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(56,189,248,.8)}70%{box-shadow:0 0 0 18px rgba(56,189,248,0)}100%{box-shadow:0 0 0 0 rgba(56,189,248,0)}}
+    @media(max-width:700px){header h1{font-size:13px}.floatButtons{right:10px;top:68px;width:138px}.bottomLeft{left:10px;bottom:92px;width:150px}.row,.photoGrid,.buttons{grid-template-columns:1fr}.modalBody,.panelBody{max-height:none}.miniPhoto{width:100%}}
+  </style>
 </head>
+
 <body>
-<header><div><h1>Enrutamiento OYM</h1><div class="small">Offline + envío manual a Supabase</div></div><div id="status" class="small">Pendientes: 0</div></header>
-<section class="mapWrap"><div id="map"></div><div class="cross"><div class="circle"></div></div><div class="buttonsMap"><button class="blue" onclick="iniciarGPS()">Ir a mi GPS</button><button onclick="marcarCentro()">Marcar</button><button class="gray" onclick="abrirRegistros()">Registros</button><button class="orange" onclick="sincronizar()">Enviar datos</button></div><div class="bottom"><button class="orange" onclick="seguir=true">Seguir GPS</button><button class="purple" onclick="seguir=false">No seguir</button></div><div class="centerInfo" id="centerInfo"></div></section>
+<header>
+  <div>
+    <h1 id="tituloApp">Enrutamiento OYM</h1>
+    <span id="clienteHeader">Sin enrutamiento activo</span>
+  </div>
+  <span id="syncStatus">Pendientes: 0</span>
+</header>
 
-<div class="overlay" id="formOverlay"><div class="modal"><div class="head"><h2>Registrar empalme</h2><button class="red" onclick="cerrarForm()">Cerrar</button></div><div class="body">
-<div class="gpsBox" id="gpsForm"></div>
-<div class="section">1. Clasificación</div><div class="row"><div><label>Tipo de enrutamiento *</label><select id="ambiente" onchange="ambienteChange()"><option value="">Seleccione</option><option value="externo">Externo</option><option value="interno">Interno</option></select></div><div><label>Tipo de punto</label><select id="tipo_punto"><option>Empalme</option><option>Caja de empalme</option><option>Manga</option><option>ODF</option><option>Reserva</option><option>Nodo</option><option>Cliente</option><option>Gabinete</option><option>FDH/FDT</option></select></div></div>
-<div id="internoBox" class="hidden"><div class="section">2. Ubicación interna</div><div class="row"><div><label>Zona interna</label><select id="zona_interna"><option></option><option>Sótano</option><option>Semisótano</option><option>Parqueadero</option><option>Cuarto técnico</option><option>Cuarto de telecomunicaciones</option><option>Cuarto eléctrico</option><option>Rack</option><option>Shut de comunicaciones</option><option>Escalera</option><option>Pasillo</option><option>Terraza</option><option>Azotea</option><option>Fachada interna</option><option>Patio interno</option><option>Local comercial</option><option>Oficina</option><option>Apartamento</option><option>Otro</option></select></div><div><label>Piso / nivel</label><input id="piso_nivel"></div></div><div class="row"><div><label>Torre / bloque</label><input id="torre_bloque"></div><div><label>Cuarto / rack</label><input id="cuarto_rack"></div></div><div class="row"><div><label>Referencia visual</label><input id="referencia_visual"></div><div><label>Acceso requerido</label><select id="acceso_requerido"><option>No aplica</option><option>Llave administración</option><option>Acompañamiento vigilancia</option><option>Permiso del cliente</option><option>Escalera</option><option>Arnés / trabajo en altura</option><option>Ingreso restringido</option></select></div></div><label>Descripción interna</label><textarea id="descripcion_interna"></textarea></div>
-<div id="externoBox" class="hidden"><div class="section">2. Ubicación externa</div><div class="row"><div><label>Elemento externo</label><select id="elemento_externo"><option></option><option>Poste</option><option>Cámara</option><option>Pedestal</option><option>Fachada</option><option>Canalización</option><option>Armario</option><option>Gabinete exterior</option><option>Reserva aérea</option><option>Reserva subterránea</option><option>Otro</option></select></div><div><label>ID elemento</label><input id="id_elemento_externo"></div></div><label>Referencia externa</label><textarea id="referencia_externa"></textarea></div>
-<div class="section">3. Ruta y fusión</div><div class="row"><div><label>ID Cliente / Servicio</label><input id="id_cliente"></div><div><label>Código ruta / cambio</label><input id="codigo_ruta"></div></div><div class="row"><div><label>Nombre punto / caja / manga</label><input id="nombre_punto"></div><div><label>Sentido</label><select id="sentido"><option>Nodo → Cliente</option><option>Cliente → Nodo</option><option>Troncal</option><option>Distribución</option><option>Derivación</option></select></div></div><div class="row"><div><label>Cable entrada</label><input id="cable_entrada"></div><div><label>Cable salida</label><input id="cable_salida"></div></div><div class="row"><div><label>Tubo entrada</label><input id="tubo_entrada"></div><div><label>Hilo entrada</label><input id="hilo_entrada" type="number"></div></div><div class="row"><div><label>Tubo salida</label><input id="tubo_salida"></div><div><label>Hilo salida</label><input id="hilo_salida" type="number"></div></div><label>Observaciones</label><textarea id="observacion"></textarea>
-<div class="section">4. Fotos obligatorias</div><div class="photoGrid"><div class="photoCard"><label>Foto 1 panorámica *</label><button class="blue" onclick="tomarFoto('foto1')">Tomar foto 1</button><input id="inputFoto1" type="file" accept="image/*" capture="environment" style="display:none"><img id="prevFoto1" class="preview"></div><div class="photoCard"><label>Foto 2 empalme y fusión *</label><button class="blue" onclick="tomarFoto('foto2')">Tomar foto 2</button><input id="inputFoto2" type="file" accept="image/*" capture="environment" style="display:none"><img id="prevFoto2" class="preview"></div></div><canvas id="canvas" style="display:none"></canvas><div class="row" style="margin-top:12px"><button class="gray" onclick="cerrarForm()">Cancelar</button><button onclick="guardarOffline()">Guardar offline</button></div>
-</div></div></div>
+<section class="mapWrap">
+  <div id="map"></div>
+  <div class="crosshair"><div class="crosshairCircle"></div></div>
 
-<div class="overlay" id="regOverlay"><div class="modal"><div class="head"><h2>Registros offline</h2><button class="red" onclick="cerrarRegistros()">Cerrar</button></div><div class="body"><div class="row"><button class="orange" onclick="sincronizar()">Enviar pendientes</button><button class="gray" onclick="exportarJSON()">Exportar JSON</button></div><div class="row" style="margin-top:8px"><button class="red" onclick="limpiarTodo()">Limpiar todo local</button></div><div id="lista" style="margin-top:12px"></div></div></div></div>
+  <div class="floatButtons">
+    <button class="secondary" onclick="iniciarGPSRealtime()">Ir a mi GPS</button>
+    <button onclick="marcarCentro()">Marcar</button>
+    <button class="gray" onclick="abrirPanelRegistros()">Empalmes</button>
+    <button class="warning" onclick="sincronizarPendientes()">Enviar datos</button>
+    <button class="purple" onclick="abrirModalEnrutamiento(true)">Nuevo cliente</button>
+  </div>
+
+  <div class="bottomLeft">
+    <button class="warning" onclick="activarSeguimiento()">Seguir GPS</button>
+    <button class="purple" onclick="desactivarSeguimiento()">No seguir</button>
+  </div>
+
+  <div class="centerInfo" id="centerInfo">Centro del mapa: --</div>
+</section>
+
+<!-- MODAL ENRUTAMIENTO -->
+<div class="modalOverlay" id="modalEnrutamiento">
+  <div class="modal">
+    <div class="modalHeader">
+      <h2>Iniciar enrutamiento</h2>
+      <button class="closeBtn" onclick="cerrarModalEnrutamiento()">Cerrar</button>
+    </div>
+    <div class="modalBody">
+      <div class="hint">
+        Esta información quedará asociada a todos los empalmes que marques. Así no tendrás que repetir el ID Cliente ni el Código de ruta en cada punto.
+      </div>
+
+      <div class="row">
+        <div>
+          <label>ID Cliente / Servicio <span class="required">*</span></label>
+          <input id="rutaIdCliente" placeholder="Ej: CI1032479">
+        </div>
+        <div>
+          <label>Código ruta / cambio <span class="required">*</span></label>
+          <input id="rutaCodigoCambio" placeholder="Ej: C232605">
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Nombre cliente</label>
+          <input id="rutaNombreCliente" placeholder="Ej: Cliente o sede">
+        </div>
+        <div>
+          <label>Dirección / referencia</label>
+          <input id="rutaDireccionCliente" placeholder="Ej: dirección del cliente">
+        </div>
+      </div>
+
+      <label>Observación general del enrutamiento</label>
+      <textarea id="rutaObservacion"></textarea>
+
+      <div class="buttons">
+        <button class="gray" onclick="cargarUltimoEnrutamiento()">Cargar último</button>
+        <button onclick="guardarEnrutamientoActivo()">Iniciar / continuar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL EMPALME -->
+<div class="modalOverlay" id="modalFormulario">
+  <div class="modal">
+    <div class="modalHeader"><h2 id="tituloModalEmpalme">Registrar empalme</h2><button class="closeBtn" onclick="cerrarModal()">Cerrar</button></div>
+    <div class="modalBody">
+      <div class="gpsBox" id="modalGpsInfo"></div>
+      <input id="editOfflineId" type="hidden">
+
+      <div class="sectionTitle">1. Enrutamiento activo</div>
+      <div class="gpsBox" id="infoRutaActivaFormulario"></div>
+
+      <div class="sectionTitle">2. Clasificación</div>
+      <div class="row">
+        <div><label>Tipo de enrutamiento <span class="required">*</span></label><select id="ambiente" onchange="cambiarAmbiente()"><option value="">Seleccione...</option><option value="externo">Externo</option><option value="interno">Interno</option></select></div>
+        <div><label>Tipo de punto</label><select id="tipoPunto"><option>Empalme</option><option>Caja de empalme</option><option>Manga</option><option>ODF</option><option>Reserva</option><option>Nodo</option><option>Cliente</option><option>Gabinete</option><option>FDH/FDT</option></select></div>
+      </div>
+
+      <div id="camposInternos" class="hidden">
+        <div class="sectionTitle">3. Ubicación interna</div>
+        <div class="row">
+          <div><label>Zona interna</label><select id="zonaInterna"><option value="">Seleccione...</option><option>Sótano</option><option>Semisótano</option><option>Parqueadero</option><option>Cuarto técnico</option><option>Cuarto de telecomunicaciones</option><option>Cuarto eléctrico</option><option>Rack</option><option>Shut de comunicaciones</option><option>Escalera</option><option>Pasillo</option><option>Terraza</option><option>Azotea</option><option>Fachada interna</option><option>Patio interno</option><option>Local comercial</option><option>Oficina</option><option>Apartamento</option><option>Otro</option></select></div>
+          <div><label>Piso / nivel</label><input id="pisoNivel" placeholder="Ej: Piso 3, Sótano 1"></div>
+        </div>
+        <div class="row">
+          <div><label>Torre / bloque / edificio</label><input id="torreBloque" placeholder="Ej: Torre B"></div>
+          <div><label>Nombre del cuarto / rack</label><input id="cuartoRack" placeholder="Ej: Rack principal"></div>
+        </div>
+        <div class="row">
+          <div><label>Referencia visual</label><input id="referenciaVisual" placeholder="Ej: junto al tablero eléctrico"></div>
+          <div><label>Acceso requerido</label><select id="accesoRequerido"><option>No aplica</option><option>Llave administración</option><option>Acompañamiento vigilancia</option><option>Permiso del cliente</option><option>Escalera</option><option>Arnés / trabajo en altura</option><option>Ingreso restringido</option></select></div>
+        </div>
+        <label>Descripción exacta</label><textarea id="descripcionInterna"></textarea>
+      </div>
+
+      <div id="camposExternos" class="hidden">
+        <div class="sectionTitle">3. Ubicación externa</div>
+        <div class="row">
+          <div><label>Elemento externo</label><select id="elementoExterno"><option value="">Seleccione...</option><option>Poste</option><option>Cámara</option><option>Pedestal</option><option>Fachada</option><option>Canalización</option><option>Armario</option><option>Gabinete exterior</option><option>Reserva aérea</option><option>Reserva subterránea</option><option>Otro</option></select></div>
+          <div><label>ID poste/cámara/elemento</label><input id="idElementoExterno" placeholder="Ej: P-045"></div>
+        </div>
+        <label>Referencia externa</label><textarea id="referenciaExterna"></textarea>
+      </div>
+
+      <div class="sectionTitle">4. Datos de fusión</div>
+      <div class="row">
+        <div><label>Nombre punto / caja / manga</label><input id="punto" placeholder="Ej: EMP-012"></div>
+        <div><label>Sentido</label><select id="sentido"><option>Nodo → Cliente</option><option>Cliente → Nodo</option><option>Troncal</option><option>Distribución</option><option>Derivación</option></select></div>
+      </div>
+      <div class="row">
+        <div><label>Cable entrada</label><input id="cableEntrada"></div>
+        <div><label>Cable salida</label><input id="cableSalida"></div>
+      </div>
+      <div class="row">
+        <div><label>Tubo entrada</label><input id="tuboEntrada"></div>
+        <div><label>Hilo entrada</label><input id="hiloEntrada" type="number"></div>
+      </div>
+      <div class="row">
+        <div><label>Tubo salida</label><input id="tuboSalida"></div>
+        <div><label>Hilo salida</label><input id="hiloSalida" type="number"></div>
+      </div>
+      <label>Observaciones</label><textarea id="observacion"></textarea>
+
+      <div class="sectionTitle">5. Fotos obligatorias</div>
+      <div class="hint" id="hintFotos">Para registros nuevos debes tomar las dos fotos. En edición puedes conservar las fotos existentes.</div>
+      <div class="photoGrid">
+        <div class="photoCard"><label>Foto 1 panorámica <span class="required">*</span></label><button class="secondary" onclick="abrirCamara('panoramica')">Tomar / reemplazar foto</button><input id="cameraPanoramica" type="file" accept="image/*" capture="environment" style="display:none"><img id="previewPanoramica" class="photoPreview"></div>
+        <div class="photoCard"><label>Foto 2 empalme y fusión <span class="required">*</span></label><button class="secondary" onclick="abrirCamara('fusion')">Tomar / reemplazar foto</button><input id="cameraFusion" type="file" accept="image/*" capture="environment" style="display:none"><img id="previewFusion" class="photoPreview"></div>
+      </div>
+
+      <div class="buttons">
+        <button class="gray" onclick="cerrarModal()">Cancelar</button>
+        <button onclick="guardarRegistroLocal()">Guardar empalme</button>
+      </div>
+      <canvas id="canvas" style="display:none"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL REGISTROS -->
+<div class="panelOverlay" id="panelRegistros">
+  <div class="panel">
+    <div class="panelHeader"><h2>Empalmes del enrutamiento</h2><button class="closeBtn" onclick="cerrarPanelRegistros()">Cerrar</button></div>
+    <div class="panelBody">
+      <div class="gpsBox" id="panelRutaInfo"></div>
+      <div class="buttons">
+        <button class="warning" onclick="sincronizarPendientes()">Enviar pendientes</button>
+        <button class="gray" onclick="exportarJSON()">Exportar JSON</button>
+      </div>
+      <div class="buttons">
+        <button class="purple" onclick="finalizarEnrutamiento()">Finalizar enrutamiento</button>
+        <button class="danger" onclick="limpiarTodo()">Limpiar locales</button>
+      </div>
+      <div id="listaRegistros" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
 
 <script>
-const SUPABASE_URL='https://fovxevhlcjeccrldlqim.supabase.co';
-const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImZvdnhldmhsY2plY2NybGRscWltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMjIwMDQsImV4cCI6MjA5NjY5ODAwNH0.jp6DvOUNc9UAMxB8H67l-Re18roi2XnpJyk_V57b6fw'.replace('JIUzI1Ni','JIUzI1Ni');
-const N8N_WEBHOOK='https://ftth-n8n2.pzveh5.easypanel.host/webhook/8f61872c-0b38-4f7e-acea-b3a272cfcd52';
-const db=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-let map,gpsMarker,fixedMarker,watchId=null,seguir=true,latSel=null,lngSel=null,precisionGps=null,foto1=null,foto2=null,markers={};
-let registros=JSON.parse(localStorage.getItem('oym_empalmes_offline_v1')||'[]');
-function v(id){return document.getElementById(id)?.value.trim()||''}function save(){localStorage.setItem('oym_empalmes_offline_v1',JSON.stringify(registros));status()}
-function status(){let p=registros.filter(x=>x.sync_status!=='enviado').length,e=registros.filter(x=>x.sync_status==='enviado').length;document.getElementById('status').innerText=`Pendientes: ${p} · Enviados: ${e}`}
-function init(){map=L.map('map').setView([4.142,-73.6266],16);let sat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:22}).addTo(map);let osm=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22});L.control.layers({'Satélite':sat,'Calles':osm}).addTo(map);map.on('move zoom moveend',center);center();pintar();status()}
-function center(){let c=map.getCenter();document.getElementById('centerInfo').innerHTML=`<b>Mira central:</b> ${c.lat.toFixed(7)}, ${c.lng.toFixed(7)}<br>Centra el empalme y presiona <b>Marcar</b>`}
-function gpsIcon(){return L.divIcon({html:'<div class="gpsPulse"></div>',className:'',iconSize:[24,24],iconAnchor:[12,12]})}
-function iniciarGPS(){if(!navigator.geolocation){alert('GPS no soportado');return}if(watchId!==null){seguir=true;return}watchId=navigator.geolocation.watchPosition(p=>{let lat=p.coords.latitude,lng=p.coords.longitude;precisionGps=Math.round(p.coords.accuracy);if(!gpsMarker)gpsMarker=L.marker([lat,lng],{icon:gpsIcon()}).addTo(map);else gpsMarker.setLatLng([lat,lng]);gpsMarker.bindPopup(`GPS tiempo real<br>Precisión ${precisionGps} m`);if(seguir)map.setView([lat,lng],Math.max(map.getZoom(),19));},e=>alert('Error GPS: '+e.message),{enableHighAccuracy:true,timeout:12000,maximumAge:0})}
-function marcarCentro(){let c=map.getCenter();latSel=c.lat;lngSel=c.lng;if(fixedMarker)map.removeLayer(fixedMarker);fixedMarker=L.marker([latSel,lngSel]).addTo(map).bindPopup('Empalme fijado').openPopup();document.getElementById('gpsForm').innerHTML=`<b>Coordenada:</b> ${latSel.toFixed(7)}, ${lngSel.toFixed(7)}<br><b>Fecha:</b> ${new Date().toLocaleString()}`;document.getElementById('formOverlay').style.display='block'}
-function cerrarForm(){document.getElementById('formOverlay').style.display='none'}function abrirRegistros(){pintar();document.getElementById('regOverlay').style.display='block'}function cerrarRegistros(){document.getElementById('regOverlay').style.display='none'}
-function ambienteChange(){let a=v('ambiente');document.getElementById('internoBox').classList.toggle('hidden',a!=='interno');document.getElementById('externoBox').classList.toggle('hidden',a!=='externo')}
-function tomarFoto(t){if(!latSel){alert('Primero marca el empalme');return}document.getElementById(t==='foto1'?'inputFoto1':'inputFoto2').click()}
-document.getElementById('inputFoto1').addEventListener('change',e=>procFoto(e,'foto1'));document.getElementById('inputFoto2').addEventListener('change',e=>procFoto(e,'foto2'));
-function procFoto(e,tipo){let file=e.target.files[0];if(!file)return;let rd=new FileReader();rd.onload=ev=>{let img=new Image();img.onload=()=>{let cv=document.getElementById('canvas'),ctx=cv.getContext('2d'),sc=Math.min(1,1280/img.width);cv.width=img.width*sc;cv.height=img.height*sc;ctx.drawImage(img,0,0,cv.width,cv.height);let titulo=tipo==='foto1'?'FOTO 1 PANORÁMICA':'FOTO 2 EMPALME Y FUSIÓN';let lineas=[titulo,`Punto: ${v('nombre_punto')||'Sin nombre'} (${v('ambiente')||'N/A'})`,`Fusión: Hilo ${v('hilo_entrada')||'N/A'} → Hilo ${v('hilo_salida')||'N/A'}`,`GPS: ${latSel.toFixed(7)}, ${lngSel.toFixed(7)}`,`Fecha: ${new Date().toLocaleString()}`];ctx.fillStyle='rgba(0,0,0,.76)';ctx.fillRect(0,cv.height-135,cv.width,135);ctx.fillStyle='#fff';ctx.font=`${Math.max(16,cv.width/50)}px Arial`;lineas.forEach((l,i)=>ctx.fillText(l,18,cv.height-108+i*22));let data=cv.toDataURL('image/jpeg',.86);if(tipo==='foto1'){foto1=data;prevFoto1.src=data;prevFoto1.style.display='block'}else{foto2=data;prevFoto2.src=data;prevFoto2.style.display='block'}};img.src=ev.target.result};rd.readAsDataURL(file)}
-function guardarOffline(){if(!v('ambiente'))return alert('Selecciona interno o externo');if(!foto1)return alert('Foto 1 panorámica obligatoria');if(!foto2)return alert('Foto 2 empalme y fusión obligatoria');let r={offline_id:crypto.randomUUID(),sync_status:'pendiente',error_sync:null,fecha_captura_app:new Date().toISOString(),ambiente:v('ambiente'),tipo_punto:v('tipo_punto'),latitud:latSel,longitud:lngSel,precision_gps:precisionGps,zona_interna:v('zona_interna'),piso_nivel:v('piso_nivel'),torre_bloque:v('torre_bloque'),cuarto_rack:v('cuarto_rack'),referencia_visual:v('referencia_visual'),acceso_requerido:v('acceso_requerido'),descripcion_interna:v('descripcion_interna'),elemento_externo:v('elemento_externo'),id_elemento_externo:v('id_elemento_externo'),referencia_externa:v('referencia_externa'),id_cliente:v('id_cliente'),codigo_ruta:v('codigo_ruta'),nombre_punto:v('nombre_punto')||'Punto sin nombre',sentido:v('sentido'),cable_entrada:v('cable_entrada'),cable_salida:v('cable_salida'),tubo_entrada:v('tubo_entrada'),hilo_entrada:v('hilo_entrada')?Number(v('hilo_entrada')):null,tubo_salida:v('tubo_salida'),hilo_salida:v('hilo_salida')?Number(v('hilo_salida')):null,observacion:v('observacion'),foto1_base64:foto1,foto2_base64:foto2,foto1_panoramica_url:null,foto2_empalme_fusion_url:null,user_agent:navigator.userAgent};registros.unshift(r);save();limpiarForm();cerrarForm();pintar();alert('Guardado offline. Usa Enviar datos cuando tengas conexión.')}
-function limpiarForm(){document.querySelectorAll('#formOverlay input:not([type=file]),#formOverlay textarea').forEach(x=>x.value='');document.querySelectorAll('#formOverlay select').forEach(x=>x.selectedIndex=0);foto1=foto2=null;prevFoto1.style.display='none';prevFoto2.style.display='none';ambienteChange()}
-async function sincronizar(){let pend=registros.filter(r=>r.sync_status!=='enviado');if(!pend.length)return alert('No hay pendientes');for(let r of pend){try{r.sync_status='enviando';save();pintar();let fotos=await enviarFotos(r);r.foto1_panoramica_url=fotos.foto1_url||fotos.foto1_panoramica_url||fotos.url_foto1||null;r.foto2_empalme_fusion_url=fotos.foto2_url||fotos.foto2_empalme_fusion_url||fotos.url_foto2||null;let payload={...r,fecha_envio_app:new Date().toISOString(),dispositivo:'HTML_OFFLINE'};delete payload.sync_status;delete payload.error_sync;delete payload.foto1_base64;delete payload.foto2_base64;const {data,error}=await db.from('empalmes_enrutamiento').upsert(payload,{onConflict:'offline_id'}).select().single();if(error)throw error;await db.from('empalmes_enrutamiento_fotos').insert([{empalme_id:data.id,tipo_foto:'foto1_panoramica',url_foto:r.foto1_panoramica_url,nombre_archivo:`${r.offline_id}_foto1.jpg`,latitud:r.latitud,longitud:r.longitud,etiqueta:'Foto panorámica',respuesta_n8n:fotos},{empalme_id:data.id,tipo_foto:'foto2_empalme_fusion',url_foto:r.foto2_empalme_fusion_url,nombre_archivo:`${r.offline_id}_foto2.jpg`,latitud:r.latitud,longitud:r.longitud,etiqueta:'Foto empalme y fusión',respuesta_n8n:fotos}]);r.sync_status='enviado';r.supabase_id=data.id;r.error_sync=null;save()}catch(e){r.sync_status='error';r.error_sync=e.message||String(e);save();console.error(e)}}pintar();alert('Envío finalizado. Revisa registros.')}
-async function enviarFotos(r){let resp=await fetch(N8N_WEBHOOK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({offline_id:r.offline_id,id_cliente:r.id_cliente,codigo_ruta:r.codigo_ruta,nombre_punto:r.nombre_punto,latitud:r.latitud,longitud:r.longitud,foto1_nombre_archivo:`${r.offline_id}_foto1_panoramica.jpg`,foto2_nombre_archivo:`${r.offline_id}_foto2_empalme_fusion.jpg`,foto1_panoramica_base64:r.foto1_base64,foto2_empalme_fusion_base64:r.foto2_base64,metadata:r})});if(!resp.ok)throw new Error('n8n HTTP '+resp.status);let txt=await resp.text();try{return txt?JSON.parse(txt):{}}catch{return {respuesta_texto:txt}}}
-function pintar(){Object.values(markers).forEach(m=>map.removeLayer(m));markers={};registros.forEach(r=>{let col=r.sync_status==='enviado'?'#16a34a':r.sync_status==='error'?'#dc2626':(r.ambiente==='interno'?'#7c3aed':'#0284c7');let m=L.circleMarker([r.latitud,r.longitud],{radius:10,color:'#fff',weight:2,fillColor:col,fillOpacity:.95}).addTo(map);m.bindPopup(`<b>${r.nombre_punto}</b><br>Sync: ${r.sync_status}<br>Cliente: ${r.id_cliente||'N/A'}<br>Hilo ${r.hilo_entrada||'N/A'} → ${r.hilo_salida||'N/A'}<br><button onclick="eliminar('${r.offline_id}')" style="background:#ef4444;color:white;margin-top:8px">Eliminar</button>`);markers[r.offline_id]=m});let lista=document.getElementById('lista');if(!lista)return;if(!registros.length){lista.innerHTML='<div class="gpsBox">Sin registros.</div>';return}lista.innerHTML=registros.map(r=>`<div class="item"><span class="badge ${r.ambiente}">${(r.ambiente||'N/A').toUpperCase()}</span><span class="badge ${r.sync_status==='enviado'?'enviado':r.sync_status==='error'?'error':'pendiente'}">${r.sync_status.toUpperCase()}</span><br><b>${r.nombre_punto}</b><br>Cliente: ${r.id_cliente||'N/A'} · Ruta: ${r.codigo_ruta||'N/A'}<br>Fusión: tubo ${r.tubo_entrada||'N/A'} hilo ${r.hilo_entrada||'N/A'} → tubo ${r.tubo_salida||'N/A'} hilo ${r.hilo_salida||'N/A'}<br>GPS: ${Number(r.latitud).toFixed(7)}, ${Number(r.longitud).toFixed(7)}<br>${r.error_sync?'<b style="color:#f87171">Error:</b> '+r.error_sync+'<br>':''}<img class="mini" src="${r.foto1_base64}"> <img class="mini" src="${r.foto2_base64}"><div class="row"><button class="blue" onclick="ver('${r.offline_id}')">Ver mapa</button><button class="red" onclick="eliminar('${r.offline_id}')">Eliminar</button></div></div>`).join('');status()}
-function ver(id){let r=registros.find(x=>x.offline_id===id);if(!r)return;cerrarRegistros();map.setView([r.latitud,r.longitud],20);setTimeout(()=>markers[id]?.openPopup(),300)}function eliminar(id){let r=registros.find(x=>x.offline_id===id);if(r?.sync_status==='enviado'){if(!confirm('Ya fue enviado. Se eliminará solo del celular.'))return}else if(!confirm('¿Eliminar empalme local?'))return;registros=registros.filter(x=>x.offline_id!==id);save();pintar()}function exportarJSON(){let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(registros,null,2)],{type:'application/json'}));a.download='empalmes_offline.json';a.click()}function limpiarTodo(){if(confirm('¿Borrar todo lo local?')){registros=[];save();pintar()}}
-init();
+const SUPABASE_URL = "https://fovxevhlcjeccrldlqim.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInR5cCI6IkpXVCJ9".includes("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9") ? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvdnhldmhsY2plY2NybGRscWltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMjIwMDQsImV4cCI6MjA5NjY5ODAwNH0.jp6DvOUNc9UAMxB8H67l-Re18roi2XnpJyk_V57b6fw" : "";
+const N8N_WEBHOOK_FOTOS = "https://ftth-n8n2.pzveh5.easypanel.host/webhook/8f61872c-0b38-4f7e-acea-b3a272cfcd52";
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let map, gpsMarker, fixedMarker, watchId = null;
+let followGPS = true;
+let selectedLat = null, selectedLng = null, currentAccuracy = null;
+let fotoPanoramica = null, fotoFusion = null;
+let registroMarkers = {};
+let enrutamientoActivo = JSON.parse(localStorage.getItem("oym_enrutamiento_activo_v2") || "null");
+let enrutamientos = JSON.parse(localStorage.getItem("oym_enrutamientos_v2") || "[]");
+let registros = JSON.parse(localStorage.getItem("oym_empalmes_offline_v2") || "[]");
+const defaultLat = 4.142, defaultLng = -73.6266;
+
+function iniciarMapa(){
+  map = L.map('map',{zoomControl:true}).setView([defaultLat,defaultLng],16);
+  const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,attribution:'© OpenStreetMap'});
+  const satelite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:22,attribution:'Tiles © Esri'});
+  const relieve = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',{maxZoom:17,attribution:'© OpenTopoMap'});
+  satelite.addTo(map);
+  L.control.layers({"Satélite":satelite,"Calles":osm,"Relieve":relieve}).addTo(map);
+  map.on("move zoom moveend", actualizarCentroInfo);
+  actualizarCentroInfo();
+  pintarRegistros();
+  actualizarHeader();
+  if(!enrutamientoActivo) abrirModalEnrutamiento(false);
+}
+
+function actualizarCentroInfo(){
+  const c = map.getCenter();
+  const ruta = enrutamientoActivo ? `<br><b>Cliente:</b> ${enrutamientoActivo.id_cliente} · <b>Ruta:</b> ${enrutamientoActivo.codigo_ruta}` : `<br><b>Sin cliente activo.</b> Inicia un enrutamiento.`;
+  document.getElementById("centerInfo").innerHTML = `<b>Mira central:</b> ${c.lat.toFixed(7)}, ${c.lng.toFixed(7)}${ruta}<br>Centra el empalme y presiona <b>Marcar</b>.`;
+}
+
+function actualizarHeader(){
+  if(enrutamientoActivo){
+    document.getElementById("clienteHeader").textContent = `Cliente: ${enrutamientoActivo.id_cliente} · Ruta: ${enrutamientoActivo.codigo_ruta}`;
+  } else {
+    document.getElementById("clienteHeader").textContent = "Sin enrutamiento activo";
+  }
+  actualizarSyncStatus();
+  actualizarCentroInfo();
+}
+
+function abrirModalEnrutamiento(limpiar){
+  if(limpiar){
+    ["rutaIdCliente","rutaCodigoCambio","rutaNombreCliente","rutaDireccionCliente","rutaObservacion"].forEach(id=>document.getElementById(id).value="");
+  } else if(enrutamientoActivo){
+    document.getElementById("rutaIdCliente").value = enrutamientoActivo.id_cliente || "";
+    document.getElementById("rutaCodigoCambio").value = enrutamientoActivo.codigo_ruta || "";
+    document.getElementById("rutaNombreCliente").value = enrutamientoActivo.nombre_cliente || "";
+    document.getElementById("rutaDireccionCliente").value = enrutamientoActivo.direccion_cliente || "";
+    document.getElementById("rutaObservacion").value = enrutamientoActivo.observacion_general || "";
+  }
+  document.getElementById("modalEnrutamiento").style.display = "block";
+}
+
+function cerrarModalEnrutamiento(){
+  if(!enrutamientoActivo){ alert("Debes iniciar un enrutamiento para poder registrar empalmes."); return; }
+  document.getElementById("modalEnrutamiento").style.display = "none";
+}
+
+function guardarEnrutamientoActivo(){
+  const idCliente = val("rutaIdCliente");
+  const codigoRuta = val("rutaCodigoCambio");
+  if(!idCliente || !codigoRuta){ alert("ID Cliente y Código ruta/cambio son obligatorios."); return; }
+
+  const nuevo = {
+    offline_id: crypto.randomUUID(),
+    sync_status: "pendiente",
+    supabase_id: null,
+    id_cliente: idCliente,
+    codigo_ruta: codigoRuta,
+    nombre_cliente: val("rutaNombreCliente"),
+    direccion_cliente: val("rutaDireccionCliente"),
+    observacion_general: val("rutaObservacion"),
+    estado: "activo",
+    fecha_inicio: new Date().toISOString(),
+    user_agent: navigator.userAgent
+  };
+
+  enrutamientoActivo = nuevo;
+  enrutamientos.unshift(nuevo);
+  guardarEnrutamientos();
+  actualizarHeader();
+  document.getElementById("modalEnrutamiento").style.display = "none";
+  alert("Enrutamiento iniciado. Ahora todos los empalmes quedarán asociados a este cliente/ruta.");
+}
+
+function cargarUltimoEnrutamiento(){
+  if(enrutamientos.length === 0){ alert("No hay enrutamientos anteriores guardados."); return; }
+  enrutamientoActivo = enrutamientos[0];
+  localStorage.setItem("oym_enrutamiento_activo_v2", JSON.stringify(enrutamientoActivo));
+  abrirModalEnrutamiento(false);
+  actualizarHeader();
+}
+
+function finalizarEnrutamiento(){
+  if(!enrutamientoActivo){ alert("No hay enrutamiento activo."); return; }
+  if(!confirm("¿Finalizar este enrutamiento e iniciar luego otro cliente?")) return;
+  enrutamientoActivo.estado = "finalizado";
+  enrutamientoActivo.fecha_finalizacion = new Date().toISOString();
+  enrutamientoActivo.sync_status = enrutamientoActivo.sync_status === "enviado" ? "pendiente_update" : "pendiente";
+  const idx = enrutamientos.findIndex(r => r.offline_id === enrutamientoActivo.offline_id);
+  if(idx >= 0) enrutamientos[idx] = enrutamientoActivo;
+  guardarEnrutamientos();
+  enrutamientoActivo = null;
+  localStorage.removeItem("oym_enrutamiento_activo_v2");
+  actualizarHeader();
+  cerrarPanelRegistros();
+  abrirModalEnrutamiento(true);
+}
+
+function guardarEnrutamientos(){
+  localStorage.setItem("oym_enrutamientos_v2", JSON.stringify(enrutamientos));
+  if(enrutamientoActivo) localStorage.setItem("oym_enrutamiento_activo_v2", JSON.stringify(enrutamientoActivo));
+}
+
+function crearIconoGPS(){ return L.divIcon({html:'<div class="gpsPulse"></div>',className:'',iconSize:[24,24],iconAnchor:[12,12]}); }
+
+function iniciarGPSRealtime(){
+  if(!navigator.geolocation){ alert("El navegador no soporta geolocalización."); return; }
+  if(watchId !== null){ followGPS = true; return; }
+  followGPS = true;
+  watchId = navigator.geolocation.watchPosition(pos=>{
+    const lat=pos.coords.latitude,lng=pos.coords.longitude;
+    currentAccuracy=Math.round(pos.coords.accuracy);
+    if(!gpsMarker) gpsMarker=L.marker([lat,lng],{icon:crearIconoGPS(),title:"GPS tiempo real"}).addTo(map);
+    else gpsMarker.setLatLng([lat,lng]);
+    gpsMarker.bindPopup(`GPS tiempo real<br>Precisión: ${currentAccuracy} m`);
+    if(followGPS) map.setView([lat,lng], Math.max(map.getZoom(),19));
+  },err=>alert("No se pudo iniciar GPS: "+err.message),{enableHighAccuracy:true,timeout:12000,maximumAge:0});
+}
+
+function activarSeguimiento(){ followGPS=true; if(gpsMarker) map.setView(gpsMarker.getLatLng(),Math.max(map.getZoom(),19)); else iniciarGPSRealtime(); }
+function desactivarSeguimiento(){ followGPS=false; alert("Seguimiento desactivado."); }
+
+function marcarCentro(){
+  if(!enrutamientoActivo){ abrirModalEnrutamiento(false); return; }
+  const c=map.getCenter();
+  selectedLat=c.lat; selectedLng=c.lng;
+  if(fixedMarker) map.removeLayer(fixedMarker);
+  fixedMarker=L.marker([selectedLat,selectedLng]).addTo(map).bindPopup("Empalme fijado").openPopup();
+  abrirModalEmpalmeNuevo();
+}
+
+function abrirModalEmpalmeNuevo(){
+  limpiarFormulario();
+  document.getElementById("editOfflineId").value = "";
+  document.getElementById("tituloModalEmpalme").textContent = "Registrar empalme";
+  fotoPanoramica = null;
+  fotoFusion = null;
+  document.getElementById("previewPanoramica").style.display = "none";
+  document.getElementById("previewFusion").style.display = "none";
+  abrirModal();
+}
+
+function abrirModal(){
+  document.getElementById("modalGpsInfo").innerHTML = `<b>Coordenada fijada:</b> ${selectedLat.toFixed(7)}, ${selectedLng.toFixed(7)}<br><b>Fecha:</b> ${new Date().toLocaleString()}<br><b>Origen:</b> mira central.`;
+  document.getElementById("infoRutaActivaFormulario").innerHTML = `<b>ID Cliente:</b> ${enrutamientoActivo.id_cliente}<br><b>Código ruta/cambio:</b> ${enrutamientoActivo.codigo_ruta}<br><b>Cliente:</b> ${enrutamientoActivo.nombre_cliente || "N/A"}`;
+  document.getElementById("modalFormulario").style.display = "block";
+}
+function cerrarModal(){ document.getElementById("modalFormulario").style.display = "none"; }
+function abrirPanelRegistros(){ pintarRegistros(); document.getElementById("panelRegistros").style.display="block"; }
+function cerrarPanelRegistros(){ document.getElementById("panelRegistros").style.display="none"; }
+
+function cambiarAmbiente(){
+  const ambiente=val("ambiente");
+  document.getElementById("camposInternos").classList.toggle("hidden",ambiente!=="interno");
+  document.getElementById("camposExternos").classList.toggle("hidden",ambiente!=="externo");
+}
+
+function abrirCamara(tipo){
+  if(!selectedLat || !selectedLng){ alert("Primero fija el empalme con Marcar."); return; }
+  document.getElementById(tipo==="panoramica"?"cameraPanoramica":"cameraFusion").click();
+}
+document.getElementById("cameraPanoramica").addEventListener("change",e=>procesarFoto(e,"panoramica"));
+document.getElementById("cameraFusion").addEventListener("change",e=>procesarFoto(e,"fusion"));
+
+function procesarFoto(e,tipo){
+  const file=e.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      const canvas=document.getElementById("canvas"),ctx=canvas.getContext("2d");
+      const maxW=1280,scale=Math.min(1,maxW/img.width);
+      canvas.width=img.width*scale; canvas.height=img.height*scale;
+      ctx.drawImage(img,0,0,canvas.width,canvas.height);
+      const titulo=tipo==="panoramica"?"FOTO 1 PANORÁMICA":"FOTO 2 EMPALME Y FUSIÓN";
+      const ambiente=val("ambiente")||"N/A";
+      const ubicacion=ambiente==="interno"?`${val("zonaInterna")} ${val("pisoNivel")} ${val("torreBloque")} ${val("cuartoRack")}`.trim():`${val("elementoExterno")} ${val("idElementoExterno")}`.trim();
+      const etiqueta=[titulo,`Cliente: ${enrutamientoActivo.id_cliente} | Ruta: ${enrutamientoActivo.codigo_ruta}`,`Punto: ${val("punto")||"Punto sin nombre"} (${ambiente.toUpperCase()})`,`Ubicación: ${ubicacion||"N/A"}`,`Fusión: Hilo ${val("hiloEntrada")||"N/A"} entrada → Hilo ${val("hiloSalida")||"N/A"} salida`,`GPS: ${selectedLat.toFixed(7)}, ${selectedLng.toFixed(7)}`,`Fecha: ${new Date().toLocaleString()}`];
+      const boxH=178;
+      ctx.fillStyle="rgba(0,0,0,.76)"; ctx.fillRect(0,canvas.height-boxH,canvas.width,boxH);
+      ctx.fillStyle="#fff"; ctx.font=`${Math.max(16,canvas.width/52)}px Arial`;
+      etiqueta.forEach((linea,i)=>ctx.fillText(linea,18,canvas.height-boxH+25+(i*22)));
+      const data=canvas.toDataURL("image/jpeg",.88);
+      if(tipo==="panoramica"){ fotoPanoramica=data; document.getElementById("previewPanoramica").src=data; document.getElementById("previewPanoramica").style.display="block"; }
+      else { fotoFusion=data; document.getElementById("previewFusion").src=data; document.getElementById("previewFusion").style.display="block"; }
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function guardarRegistroLocal(){
+  if(!enrutamientoActivo){ alert("Debes iniciar un enrutamiento."); return; }
+  if(!selectedLat || !selectedLng){ alert("Debes fijar el empalme."); return; }
+  if(!val("ambiente")){ alert("Debes seleccionar Externo o Interno."); return; }
+
+  const editId = val("editOfflineId");
+  const existente = editId ? registros.find(r => r.offline_id === editId) : null;
+
+  if(!fotoPanoramica && !existente?.foto1_base64){ alert("La Foto 1 panorámica es obligatoria."); return; }
+  if(!fotoFusion && !existente?.foto2_base64){ alert("La Foto 2 empalme y fusión es obligatoria."); return; }
+
+  const base = {
+    enrutamiento_offline_id: enrutamientoActivo.offline_id,
+    id_cliente: enrutamientoActivo.id_cliente,
+    codigo_ruta: enrutamientoActivo.codigo_ruta,
+    nombre_cliente: enrutamientoActivo.nombre_cliente,
+    fecha_ultima_edicion_app: editId ? new Date().toISOString() : null,
+    editado_en_app: !!editId,
+    sync_status: editId ? (existente.sync_status === "enviado" ? "pendiente_update" : "pendiente") : "pendiente",
+    supabase_id: existente?.supabase_id || null,
+    error_sync: null,
+    fecha_captura_app: existente?.fecha_captura_app || new Date().toISOString(),
+    ambiente: val("ambiente"),
+    tipo_punto: val("tipoPunto"),
+    zona_interna: val("zonaInterna"),
+    piso_nivel: val("pisoNivel"),
+    torre_bloque: val("torreBloque"),
+    cuarto_rack: val("cuartoRack"),
+    referencia_visual: val("referenciaVisual"),
+    acceso_requerido: val("accesoRequerido"),
+    descripcion_interna: val("descripcionInterna"),
+    elemento_externo: val("elementoExterno"),
+    id_elemento_externo: val("idElementoExterno"),
+    referencia_externa: val("referenciaExterna"),
+    nombre_punto: val("punto") || "Punto sin nombre",
+    sentido: val("sentido"),
+    cable_entrada: val("cableEntrada"),
+    cable_salida: val("cableSalida"),
+    tubo_entrada: val("tuboEntrada"),
+    hilo_entrada: val("hiloEntrada") ? Number(val("hiloEntrada")) : null,
+    tubo_salida: val("tuboSalida"),
+    hilo_salida: val("hiloSalida") ? Number(val("hiloSalida")) : null,
+    observacion: val("observacion"),
+    latitud: selectedLat,
+    longitud: selectedLng,
+    precision_gps: currentAccuracy,
+    foto1_base64: fotoPanoramica || existente?.foto1_base64,
+    foto2_base64: fotoFusion || existente?.foto2_base64,
+    foto1_panoramica_url: existente?.foto1_panoramica_url || null,
+    foto2_empalme_fusion_url: existente?.foto2_empalme_fusion_url || null,
+    user_agent: navigator.userAgent
+  };
+
+  if(editId){
+    const idx = registros.findIndex(r => r.offline_id === editId);
+    registros[idx] = {...existente, ...base};
+    alert("Empalme actualizado localmente.");
+  } else {
+    registros.unshift({offline_id: crypto.randomUUID(), ...base});
+    alert("Empalme guardado offline.");
+  }
+
+  guardarLocalStorage();
+  limpiarDespuesDeGuardar();
+  pintarRegistros();
+  cerrarModal();
+}
+
+function editarRegistro(id){
+  const r = registros.find(x => x.offline_id === id); if(!r) return;
+  selectedLat = r.latitud; selectedLng = r.longitud;
+  if(fixedMarker) map.removeLayer(fixedMarker);
+  fixedMarker = L.marker([selectedLat, selectedLng]).addTo(map).bindPopup("Empalme en edición").openPopup();
+
+  document.getElementById("editOfflineId").value = r.offline_id;
+  document.getElementById("tituloModalEmpalme").textContent = "Ver / modificar empalme";
+
+  setVal("ambiente", r.ambiente); cambiarAmbiente();
+  setVal("tipoPunto", r.tipo_punto);
+  setVal("zonaInterna", r.zona_interna);
+  setVal("pisoNivel", r.piso_nivel);
+  setVal("torreBloque", r.torre_bloque);
+  setVal("cuartoRack", r.cuarto_rack);
+  setVal("referenciaVisual", r.referencia_visual);
+  setVal("accesoRequerido", r.acceso_requerido);
+  setVal("descripcionInterna", r.descripcion_interna);
+  setVal("elementoExterno", r.elemento_externo);
+  setVal("idElementoExterno", r.id_elemento_externo);
+  setVal("referenciaExterna", r.referencia_externa);
+  setVal("punto", r.nombre_punto);
+  setVal("sentido", r.sentido);
+  setVal("cableEntrada", r.cable_entrada);
+  setVal("cableSalida", r.cable_salida);
+  setVal("tuboEntrada", r.tubo_entrada);
+  setVal("hiloEntrada", r.hilo_entrada);
+  setVal("tuboSalida", r.tubo_salida);
+  setVal("hiloSalida", r.hilo_salida);
+  setVal("observacion", r.observacion);
+
+  fotoPanoramica = r.foto1_base64;
+  fotoFusion = r.foto2_base64;
+  if(fotoPanoramica){ document.getElementById("previewPanoramica").src = fotoPanoramica; document.getElementById("previewPanoramica").style.display = "block"; }
+  if(fotoFusion){ document.getElementById("previewFusion").src = fotoFusion; document.getElementById("previewFusion").style.display = "block"; }
+
+  abrirModal();
+}
+
+async function sincronizarPendientes(){
+  const pendientesRutas = enrutamientos.filter(r => r.sync_status !== "enviado" || r.estado === "finalizado");
+  const pendientesEmpalmes = registros.filter(r => r.sync_status !== "enviado");
+  if(pendientesRutas.length === 0 && pendientesEmpalmes.length === 0){ alert("No hay datos pendientes por enviar."); return; }
+
+  for(const ruta of pendientesRutas){
+    try{
+      const payload = {
+        offline_id: ruta.offline_id,
+        id_cliente: ruta.id_cliente,
+        codigo_ruta: ruta.codigo_ruta,
+        nombre_cliente: ruta.nombre_cliente,
+        direccion_cliente: ruta.direccion_cliente,
+        observacion_general: ruta.observacion_general,
+        estado: ruta.estado,
+        fecha_inicio: ruta.fecha_inicio,
+        fecha_finalizacion: ruta.fecha_finalizacion || null,
+        dispositivo: "HTML_MOBILE",
+        user_agent: ruta.user_agent
+      };
+      const {data,error} = await supabaseClient.from("enrutamientos_clientes").upsert(payload,{onConflict:"offline_id"}).select().single();
+      if(error) throw error;
+      ruta.supabase_id = data.id;
+      ruta.sync_status = "enviado";
+    } catch(err){
+      ruta.sync_status = "error";
+      ruta.error_sync = err.message || String(err);
+    }
+  }
+  guardarEnrutamientos();
+
+  for(const r of pendientesEmpalmes){
+    try{
+      const ruta = enrutamientos.find(x => x.offline_id === r.enrutamiento_offline_id);
+      if(!ruta || !ruta.supabase_id) throw new Error("Primero debe sincronizarse el enrutamiento del cliente.");
+
+      r.sync_status = "enviando"; guardarLocalStorage(); pintarRegistros();
+
+      const fotos = await enviarFotosN8N(r);
+      r.foto1_panoramica_url = fotos.foto1_url || fotos.foto1_panoramica_url || r.foto1_panoramica_url || null;
+      r.foto2_empalme_fusion_url = fotos.foto2_url || fotos.foto2_empalme_fusion_url || r.foto2_empalme_fusion_url || null;
+
+      const payload = {
+        offline_id: r.offline_id,
+        enrutamiento_id: ruta.supabase_id,
+        enrutamiento_offline_id: r.enrutamiento_offline_id,
+        ambiente: r.ambiente,
+        tipo_punto: r.tipo_punto,
+        latitud: r.latitud,
+        longitud: r.longitud,
+        precision_gps: r.precision_gps,
+        zona_interna: r.zona_interna,
+        piso_nivel: r.piso_nivel,
+        torre_bloque: r.torre_bloque,
+        cuarto_rack: r.cuarto_rack,
+        referencia_visual: r.referencia_visual,
+        acceso_requerido: r.acceso_requerido,
+        descripcion_interna: r.descripcion_interna,
+        elemento_externo: r.elemento_externo,
+        id_elemento_externo: r.id_elemento_externo,
+        referencia_externa: r.referencia_externa,
+        id_cliente: r.id_cliente,
+        codigo_ruta: r.codigo_ruta,
+        nombre_punto: r.nombre_punto,
+        sentido: r.sentido,
+        cable_entrada: r.cable_entrada,
+        cable_salida: r.cable_salida,
+        tubo_entrada: r.tubo_entrada,
+        hilo_entrada: r.hilo_entrada,
+        tubo_salida: r.tubo_salida,
+        hilo_salida: r.hilo_salida,
+        observacion: r.observacion,
+        foto1_panoramica_url: r.foto1_panoramica_url,
+        foto2_empalme_fusion_url: r.foto2_empalme_fusion_url,
+        foto1_nombre_archivo: fotos.foto1_nombre_archivo || `${r.offline_id}_foto1_panoramica.jpg`,
+        foto2_nombre_archivo: fotos.foto2_nombre_archivo || `${r.offline_id}_foto2_empalme_fusion.jpg`,
+        fecha_captura_app: r.fecha_captura_app,
+        fecha_envio_app: new Date().toISOString(),
+        editado_en_app: r.editado_en_app || false,
+        fecha_ultima_edicion_app: r.fecha_ultima_edicion_app,
+        dispositivo: "HTML_MOBILE",
+        user_agent: r.user_agent
+      };
+
+      const {data,error} = await supabaseClient.from("empalmes_enrutamiento").upsert(payload,{onConflict:"offline_id"}).select().single();
+      if(error) throw error;
+      r.supabase_id = data.id;
+      await guardarFotosTabla(data.id, r, fotos);
+      r.sync_status = "enviado";
+      r.error_sync = null;
+      guardarLocalStorage();
+      pintarRegistros();
+    } catch(err){
+      r.sync_status = "error";
+      r.error_sync = err.message || String(err);
+      guardarLocalStorage();
+      pintarRegistros();
+    }
+  }
+
+  guardarEnrutamientos();
+  actualizarSyncStatus();
+  alert("Proceso de envío terminado.");
+}
+
+async function enviarFotosN8N(r){
+  const payload = {
+    offline_id: r.offline_id,
+    enrutamiento_offline_id: r.enrutamiento_offline_id,
+    id_cliente: r.id_cliente,
+    codigo_ruta: r.codigo_ruta,
+    nombre_punto: r.nombre_punto,
+    latitud: r.latitud,
+    longitud: r.longitud,
+    fecha_captura_app: r.fecha_captura_app,
+    foto1_nombre_archivo: `${r.offline_id}_foto1_panoramica.jpg`,
+    foto2_nombre_archivo: `${r.offline_id}_foto2_empalme_fusion.jpg`,
+    foto1_panoramica_base64: r.foto1_base64,
+    foto2_empalme_fusion_base64: r.foto2_base64,
+    metadata: r
+  };
+  const resp = await fetch(N8N_WEBHOOK_FOTOS,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+  if(!resp.ok) throw new Error("n8n respondió error HTTP " + resp.status);
+  const text = await resp.text();
+  try{return text ? JSON.parse(text) : {};}catch{return {respuesta_texto:text};}
+}
+
+async function guardarFotosTabla(empalmeId,r,fotos){
+  const rows = [
+    {empalme_id:empalmeId,tipo_foto:"foto1_panoramica",url_foto:r.foto1_panoramica_url,nombre_archivo:fotos.foto1_nombre_archivo || `${r.offline_id}_foto1_panoramica.jpg`,latitud:r.latitud,longitud:r.longitud,etiqueta:"Foto 1 panorámica geoetiquetada",respuesta_n8n:fotos},
+    {empalme_id:empalmeId,tipo_foto:"foto2_empalme_fusion",url_foto:r.foto2_empalme_fusion_url,nombre_archivo:fotos.foto2_nombre_archivo || `${r.offline_id}_foto2_empalme_fusion.jpg`,latitud:r.latitud,longitud:r.longitud,etiqueta:"Foto 2 empalme y fusión geoetiquetada",respuesta_n8n:fotos}
+  ];
+  await supabaseClient.from("empalmes_enrutamiento_fotos").insert(rows);
+}
+
+function pintarRegistros(){
+  Object.values(registroMarkers).forEach(m=>map.removeLayer(m));
+  registroMarkers={};
+  const visibles = enrutamientoActivo ? registros.filter(r => r.enrutamiento_offline_id === enrutamientoActivo.offline_id) : registros;
+
+  visibles.forEach(r=>{
+    const color = r.sync_status==="enviado" ? "#16a34a" : r.sync_status==="error" ? "#dc2626" : (r.ambiente==="interno" ? "#7c3aed" : "#0284c7");
+    const marker=L.circleMarker([r.latitud,r.longitud],{radius:10,color:"#fff",weight:2,fillColor:color,fillOpacity:.95}).addTo(map);
+    marker.bindPopup(`
+      <b>${r.nombre_punto}</b><br>
+      <b>Cliente:</b> ${r.id_cliente || "N/A"}<br>
+      <b>Ruta:</b> ${r.codigo_ruta || "N/A"}<br>
+      <b>Ambiente:</b> ${r.ambiente || "N/A"}<br>
+      <b>Fusión:</b> Hilo ${r.hilo_entrada || "N/A"} → ${r.hilo_salida || "N/A"}<br>
+      <b>Sync:</b> ${r.sync_status || "pendiente"}<br>
+      <button onclick="editarRegistro('${r.offline_id}')" style="margin-top:8px;background:#38bdf8;color:#020617;">Ver / modificar</button>
+      <button onclick="eliminarRegistro('${r.offline_id}')" style="margin-top:8px;background:#ef4444;color:white;">Eliminar</button>
+    `);
+    registroMarkers[r.offline_id]=marker;
+  });
+  pintarListaRegistros(visibles);
+  actualizarSyncStatus();
+}
+
+function pintarListaRegistros(listaDatos){
+  const lista=document.getElementById("listaRegistros");
+  const rutaBox=document.getElementById("panelRutaInfo");
+  if(rutaBox){
+    rutaBox.innerHTML = enrutamientoActivo ? `<b>ID Cliente:</b> ${enrutamientoActivo.id_cliente}<br><b>Código ruta/cambio:</b> ${enrutamientoActivo.codigo_ruta}<br><b>Cliente:</b> ${enrutamientoActivo.nombre_cliente || "N/A"}<br><b>Empalmes locales de esta ruta:</b> ${listaDatos.length}` : "Sin enrutamiento activo.";
+  }
+
+  if(listaDatos.length===0){ lista.innerHTML=`<div class="gpsBox">Aún no hay empalmes para este enrutamiento.</div>`; return; }
+  lista.innerHTML=listaDatos.map(r=>{
+    const statusClass = r.sync_status==="enviado" ? "enviado" : r.sync_status==="error" ? "error" : "pendiente";
+    return `<div class="listItem">
+      <span class="badge ${r.ambiente}">${(r.ambiente||"N/A").toUpperCase()}</span>
+      <span class="badge ${statusClass}">${(r.sync_status||"pendiente").toUpperCase()}</span>
+      ${r.editado_en_app ? `<span class="badge editado">EDITADO</span>` : ""}<br>
+      <b>${r.nombre_punto}</b> · ${r.tipo_punto || ""}<br>
+      <b>Fusión:</b> Tubo ${r.tubo_entrada || "N/A"} / Hilo ${r.hilo_entrada || "N/A"} → Tubo ${r.tubo_salida || "N/A"} / Hilo ${r.hilo_salida || "N/A"}<br>
+      <b>GPS:</b> ${Number(r.latitud).toFixed(7)}, ${Number(r.longitud).toFixed(7)}<br>
+      ${r.error_sync ? `<b style="color:#f87171">Error:</b> ${r.error_sync}<br>` : ""}
+      ${r.foto1_base64 ? `<img class="miniPhoto" src="${r.foto1_base64}">` : ""}
+      ${r.foto2_base64 ? `<img class="miniPhoto" src="${r.foto2_base64}">` : ""}
+      <div class="buttons">
+        <button class="secondary" onclick="irARegistro('${r.offline_id}')">Ver mapa</button>
+        <button class="warning" onclick="editarRegistro('${r.offline_id}')">Modificar</button>
+      </div>
+      <div class="buttons">
+        <button class="danger" onclick="eliminarRegistro('${r.offline_id}')">Eliminar</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function irARegistro(id){
+  const r=registros.find(x=>x.offline_id===id); if(!r)return;
+  cerrarPanelRegistros(); map.setView([r.latitud,r.longitud],20);
+  setTimeout(()=>{if(registroMarkers[id]) registroMarkers[id].openPopup();},300);
+}
+
+function eliminarRegistro(id){
+  const r=registros.find(x=>x.offline_id===id);
+  if(r && r.sync_status==="enviado"){
+    if(!confirm("Este empalme ya fue enviado a Supabase. Se eliminará solo localmente. ¿Continuar?")) return;
+  } else if(!confirm("¿Seguro que deseas eliminar este empalme offline?")) return;
+  registros=registros.filter(x=>x.offline_id!==id);
+  guardarLocalStorage();
+  pintarRegistros();
+}
+
+function guardarLocalStorage(){ localStorage.setItem("oym_empalmes_offline_v2",JSON.stringify(registros)); }
+function limpiarDespuesDeGuardar(){
+  fotoPanoramica=null; fotoFusion=null;
+  document.getElementById("previewPanoramica").style.display="none";
+  document.getElementById("previewFusion").style.display="none";
+  document.getElementById("cameraPanoramica").value="";
+  document.getElementById("cameraFusion").value="";
+  limpiarFormulario();
+}
+function limpiarFormulario(){
+  ["editOfflineId","ambiente","zonaInterna","pisoNivel","torreBloque","cuartoRack","referenciaVisual","descripcionInterna","elementoExterno","idElementoExterno","referenciaExterna","punto","cableEntrada","cableSalida","tuboEntrada","hiloEntrada","tuboSalida","hiloSalida","observacion"].forEach(id=>setVal(id,""));
+  cambiarAmbiente();
+}
+function actualizarSyncStatus(){
+  const pendientes = registros.filter(r=>r.sync_status!=="enviado").length + enrutamientos.filter(r=>r.sync_status!=="enviado").length;
+  const enviados = registros.filter(r=>r.sync_status==="enviado").length;
+  document.getElementById("syncStatus").textContent=`Pendientes: ${pendientes} · Enviados: ${enviados}`;
+}
+function exportarJSON(){
+  const data=JSON.stringify({enrutamientoActivo,enrutamientos,registros},null,2);
+  const blob=new Blob([data],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download="enrutamiento_cliente_empalmes.json"; a.click();
+  URL.revokeObjectURL(url);
+}
+function limpiarTodo(){
+  if(!confirm("¿Seguro que deseas borrar todos los datos locales?")) return;
+  localStorage.removeItem("oym_empalmes_offline_v2");
+  localStorage.removeItem("oym_enrutamientos_v2");
+  localStorage.removeItem("oym_enrutamiento_activo_v2");
+  registros=[]; enrutamientos=[]; enrutamientoActivo=null;
+  pintarRegistros(); actualizarHeader(); abrirModalEnrutamiento(true);
+}
+function val(id){const el=document.getElementById(id);return el?String(el.value ?? "").trim():"";}
+function setVal(id,value){const el=document.getElementById(id); if(el) el.value = value ?? "";}
+iniciarMapa();
 </script>
 </body>
 </html>
+
