@@ -990,7 +990,7 @@ function renderShell(){
 
       <section id="movimientosView" class="card" style="display:none">
         <div class="reserva-bulk-box">
-          <input id="bulkReservaCode" class="control" placeholder="Cod_reserva para materiales seleccionados">
+          <input id="bulkReservaCode" class="control" placeholder="Filtrar o copiar Cod_reserva" oninput="filtrarPorCodigoReserva()">
           <button class="small-btn" onclick="aplicarReservaSeleccionados()">Copiar código a seleccionados</button>
           <button class="small-btn" onclick="limpiarSeleccionMovimientos()">Limpiar selección</button>
           <span id="bulkReservaMsg" class="muted-note"></span>
@@ -1485,6 +1485,16 @@ function limpiarSeleccionMovimientos(){
   if(msg) msg.textContent = '';
 }
 
+function getFiltroCodigoReserva(){
+  return String(document.getElementById('bulkReservaCode')?.value || '').trim().toLowerCase();
+}
+
+function filtrarPorCodigoReserva(){
+  const msg = document.getElementById('bulkReservaMsg');
+  if(msg) msg.textContent = '';
+  renderMovimientos();
+}
+
 async function actualizarCodigoReservaMovimiento(id, codigo){
   const client = await resolveClient();
   const value = String(codigo || '').trim() || null;
@@ -1548,16 +1558,18 @@ function renderMovimientos(){
   const txt = getSearch();
   const bodega = getBodega();
   const tipo = getTipo();
+  const filtroReserva = getFiltroCodigoReserva();
 
   let rows = movimientos.filter(r => {
     const matchText = !txt || [
-      r.codigo_sap, r.om_materiales_catalogo?.material, r.guia, r.transportadora,
+      r.codigo_sap, r.om_materiales_catalogo?.material, r.material_descripcion, r.guia, r.transportadora,
       r.cliente, r.id_cambio, r.id_cliente, r.responsable,
-      r.origen_nombre, r.destino_nombre, r.bodega_origen_stock, r.codigo_serial
+      r.origen_nombre, r.destino_nombre, r.bodega_origen_stock, r.codigo_serial, r.cod_reserva
     ].map(x=>String(x||'').toLowerCase()).some(x=>x.includes(txt));
+    const matchReserva = !filtroReserva || String(r.cod_reserva || '').toLowerCase().includes(filtroReserva);
     const matchTipo = !tipo || r.tipo_movimiento === tipo;
     const matchBodega = !bodega || r.origen_nombre === bodega || r.destino_nombre === bodega;
-    return matchText && matchTipo && matchBodega;
+    return matchText && matchReserva && matchTipo && matchBodega;
   });
 
   rows = applyKpi(rows, 'movimientos');
@@ -3558,7 +3570,6 @@ document.addEventListener('keydown', function(e){
 
 </body>
 </html>
-
 
 
 
