@@ -26,7 +26,7 @@
     .page{display:grid;grid-template-columns:240px 1fr;min-height:100vh;transition:grid-template-columns .25s ease}.page.sidebar-hidden{grid-template-columns:0 1fr}.sidebar{background:linear-gradient(180deg,#08142a,#081126);border-right:1px solid var(--line);padding:18px 16px;position:sticky;top:0;height:100vh;overflow:auto;transition:transform .25s ease,opacity .25s ease;z-index:30;font-family:Arial,Helvetica,sans-serif}.page.sidebar-hidden .sidebar{transform:translateX(-100%);opacity:0;pointer-events:none;padding-left:0;padding-right:0;border-right:0}.sidebar-toggle-tab{position:fixed;left:240px;top:50%;transform:translateY(-50%);width:28px;height:72px;border:1px solid var(--line);border-left:0;border-radius:0 14px 14px 0;background:linear-gradient(135deg,#1d4ed8,#0f766e);color:#fff;font-weight:900;cursor:pointer;z-index:80;box-shadow:var(--shadow);transition:left .25s ease}.page.sidebar-hidden .sidebar-toggle-tab{left:0}.brand{font-size:18px;font-weight:800;margin-bottom:4px}.brand span{color:inherit}.subbrand{font-size:12px;color:var(--muted);margin-bottom:24px}.nav a{display:block;padding:12px;border-radius:12px;color:#fff;text-decoration:none;margin-bottom:8px;border:1px solid transparent}.nav a:hover,.nav a.active{background:rgba(255,255,255,.05);border-color:var(--line)}.session-box,.statusbox{margin-top:24px;padding:14px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.03);font-size:12px;color:var(--muted)}.session-box small{display:block;color:var(--muted);margin-bottom:8px;word-break:break-all}.module-tabs{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 18px}.module-tabs button{padding:10px 14px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#dbeafe;font-weight:900;cursor:pointer}.module-tabs button.active{border-color:rgba(34,211,238,.45);background:rgba(34,211,238,.12);box-shadow:0 0 24px rgba(34,211,238,.10)}
     .main{padding:28px;max-width:1800px;width:100%;margin:0 auto}.hero{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:20px}.hero h1{margin:0 0 8px;font-size:30px;letter-spacing:-.6px}.hero p{margin:0;color:var(--muted)}.pill{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(34,211,238,.3);background:rgba(34,211,238,.08);border-radius:999px;padding:8px 12px;color:#bff7ff;font-size:12px;font-weight:800;white-space:nowrap}.dot{width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 14px var(--green)}
     .filters{display:grid;grid-template-columns:1.2fr repeat(5,minmax(150px,1fr)) auto;gap:10px;align-items:end;margin-bottom:18px}.field label{display:block;color:#a8bad9;font-size:12px;font-weight:800;margin-bottom:7px}.field input,.field select{width:100%;background:#0a1830;border:1px solid var(--line);color:#fff;border-radius:14px;padding:12px 13px;outline:none}.btn{border:0;border-radius:14px;padding:12px 14px;background:linear-gradient(135deg,#2563eb,#22d3ee);color:#fff;font-weight:900;cursor:pointer;box-shadow:0 12px 30px rgba(37,99,235,.18)}.btn.secondary{background:#1f3d79;box-shadow:none}.btn.ghost{background:rgba(255,255,255,.04);border:1px solid var(--line);box-shadow:none}.btn:hover{filter:brightness(1.08)}
-    .kpis{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:13px;margin-bottom:18px}.kpi{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025));box-shadow:var(--shadow);padding:16px;min-height:118px}.kpi:after{content:"";position:absolute;inset:auto -30px -45px auto;width:110px;height:110px;border-radius:50%;background:rgba(34,211,238,.12);filter:blur(4px)}.kpi .label{font-size:12px;color:#aabbd8;font-weight:800;text-transform:uppercase;letter-spacing:.4px}.kpi .value{font-size:30px;font-weight:950;margin-top:9px}.kpi .sub{font-size:12px;color:#b9d2ff;margin-top:7px}.kpi.green:after{background:rgba(34,197,94,.14)}.kpi.amber:after{background:rgba(245,158,11,.14)}.kpi.violet:after{background:rgba(139,92,246,.14)}
+    .kpis{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:13px;margin-bottom:18px}.kpi{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025));box-shadow:var(--shadow);padding:16px;min-height:118px}.kpi.kpi-clickable{cursor:pointer}.kpi.kpi-clickable:hover{border-color:rgba(34,211,238,.45);filter:brightness(1.08)}.kpi:after{content:"";position:absolute;inset:auto -30px -45px auto;width:110px;height:110px;border-radius:50%;background:rgba(34,211,238,.12);filter:blur(4px)}.kpi .label{font-size:12px;color:#aabbd8;font-weight:800;text-transform:uppercase;letter-spacing:.4px}.kpi .value{font-size:30px;font-weight:950;margin-top:9px}.kpi .sub{font-size:12px;color:#b9d2ff;margin-top:7px}.kpi.green:after{background:rgba(34,197,94,.14)}.kpi.amber:after{background:rgba(245,158,11,.14)}.kpi.violet:after{background:rgba(139,92,246,.14)}
     .grid-2{display:grid;grid-template-columns:1.25fr .75fr;gap:16px;margin-bottom:16px}.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}.card{border:1px solid var(--line);border-radius:24px;background:linear-gradient(180deg,rgba(10,24,48,.92),rgba(8,18,36,.86));box-shadow:var(--shadow);padding:16px;min-height:260px}.card h3{margin:0 0 12px;font-size:16px}.chartbox{height:310px}.chartbox.sm{height:260px}.section{display:none}.section.active{display:block}.table-wrap{overflow:auto;border-radius:18px;border:1px solid var(--line);background:rgba(0,0,0,.12)}table{width:100%;border-collapse:collapse;min-width:820px}th,td{padding:12px 13px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left;vertical-align:top}th{background:rgba(148,163,184,.12);color:#c8e8ff;font-size:12px;text-transform:uppercase;letter-spacing:.3px;position:sticky;top:0}td{color:#eaf2ff;font-size:13px}.right{text-align:right}.badge{display:inline-flex;padding:6px 9px;border-radius:999px;border:1px solid var(--line);font-size:11px;font-weight:900}.ok{background:rgba(34,197,94,.14);color:#b7f7ca}.warn{background:rgba(245,158,11,.14);color:#fde68a}.info{background:rgba(59,130,246,.15);color:#bfdbfe}.danger{background:rgba(239,68,68,.15);color:#fecaca}.violet{background:rgba(139,92,246,.15);color:#ddd6fe}.mini-list{display:grid;gap:9px}.rank{display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 11px;border:1px solid rgba(255,255,255,.08);border-radius:14px;background:rgba(255,255,255,.035)}.rank small{color:var(--muted)}.muted{color:var(--muted)}.tabs-inline{display:flex;gap:8px;margin:0 0 14px}.tabs-inline button{padding:9px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.04);color:#dbeafe;font-weight:800;cursor:pointer}.tabs-inline button.active{border-color:rgba(34,211,238,.45);background:rgba(34,211,238,.12)}
 
     .modal-backdrop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(2,6,23,.72);backdrop-filter:blur(10px);z-index:50}
@@ -283,7 +283,7 @@ function closeDate(r){return r.fecha_entrega || r.fecha_cierre || r.fecha_fin ||
 function completionDate(r,mod){return closeDate(r) || r.fecha_ingreso || r.created_at || '';}
 function chartDoneDate(r){return closeDate(r);}
 function fmtNum(v){return Number.isFinite(v)?Number(v).toFixed(1):'';}
-function isDone(r,mod){const e=String(r.estado_general||'').toUpperCase(); return mod==='instalaciones' ? e==='ENTREGADA' : ['FACTIBILIDAD REALIZADA','APROBADA'].includes(e);}
+function isDone(r,mod){const e=String(r.estado_general||'').toUpperCase().trim(); return mod==='instalaciones' ? e==='ENTREGADA' : ['FACTIBILIDAD REALIZADA','APROBADA','ENTREGADA','ENTREGADAS'].includes(e);}
 function totalDays(r,mod){ const cierre=closeDate(r); if(mod==='instalaciones') return parseNum(r.tiempo_total_instalacion) ?? daysBetween(r.fecha_ingreso,cierre); return daysBetween(r.fecha_ingreso,cierre); }
 function effectiveDays(r,mod){ if(mod==='instalaciones') return parseNum(r.tiempo_efectivo_instalacion) ?? totalDays(r,mod); const t=totalDays(r,mod); const dead=deadPermDays(r)+deadRadDays(r); return t===null?null:Math.max(0,t-dead); }
 function deadPermDays(r){return parseNum(r.tiempo_muerto_permisos) ?? daysBetween(r.fecha_solicitud_permisos,r.fecha_aprobacion_permisos) ?? daysBetween(r.fecha_solicitud_permisos,r.fecha_respuesta_permisos) ?? 0;}
@@ -553,13 +553,44 @@ function chart(id,type,data,options={}){
     };
   }
 }
-function renderKPIs(mod,rows){const done=rows.filter(r=>isDone(r,mod)); const inProgress=rows.filter(r=>!isDone(r,mod) && !String(r.estado_general||'').toUpperCase().includes('CANCEL')); const totalAvg=avg(done.map(r=>totalDays(r,mod)).filter(x=>x!==null)); const effAvg=avg(done.map(r=>effectiveDays(r,mod)).filter(x=>x!==null)); const deadP=avg(done.map(deadPermDays).filter(Boolean)); const deadR=avg(done.map(deadRadDays).filter(Boolean)); const target=mod==='instalaciones'?'kpisInst':'kpisFact'; const label=mod==='instalaciones'?'Instalaciones':'Factibilidades'; document.getElementById(target).innerHTML=`
+function renderKPIs(mod,rows){
+  const done=rows.filter(r=>isDone(r,mod));
+  const inProgress=rows.filter(r=>!isDone(r,mod) && !String(r.estado_general||'').toUpperCase().includes('CANCEL'));
+  const totalRows=done.filter(r=>totalDays(r,mod)!==null);
+  const effectiveRows=done.filter(r=>effectiveDays(r,mod)!==null);
+  const deadRows=done.filter(r=>(deadPermDays(r)+deadRadDays(r))>0);
+  const totalAvg=avg(totalRows.map(r=>totalDays(r,mod)));
+  const effAvg=avg(effectiveRows.map(r=>effectiveDays(r,mod)));
+  const deadAvg=avg(deadRows.map(r=>deadPermDays(r)+deadRadDays(r)));
+  const target=mod==='instalaciones'?'kpisInst':'kpisFact';
+  const label=mod==='instalaciones'?'Instalaciones':'Factibilidades';
+  document.getElementById(target).innerHTML=`
  <div class="kpi green"><div class="label">${label} realizadas</div><div class="value">${done.length}</div><div class="sub">Según estado final</div></div>
  <div class="kpi"><div class="label">Total registros</div><div class="value">${rows.length}</div><div class="sub">Con filtros aplicados</div></div>
  <div class="kpi amber"><div class="label">En proceso</div><div class="value">${inProgress.length}</div><div class="sub">No finalizadas</div></div>
- <div class="kpi violet"><div class="label">Promedio total</div><div class="value">${totalAvg.toFixed(1)}</div><div class="sub">días promedio</div></div>
- <div class="kpi"><div class="label">Promedio efectivo</div><div class="value">${effAvg.toFixed(1)}</div><div class="sub">descontando tiempos muertos</div></div>
- <div class="kpi amber"><div class="label">Tiempo muerto prom.</div><div class="value">${(deadP+deadR).toFixed(1)}</div><div class="sub">permisos + radicación</div></div>`;}
+ <div class="kpi violet kpi-clickable" ondblclick="openTimeKpiDetail('${mod}','total')" title="Doble clic para ver clientes usados en el cálculo"><div class="label">Promedio total</div><div class="value">${totalAvg.toFixed(1)}</div><div class="sub">días promedio · doble clic</div></div>
+ <div class="kpi kpi-clickable" ondblclick="openTimeKpiDetail('${mod}','efectivo')" title="Doble clic para ver clientes usados en el cálculo"><div class="label">Promedio efectivo</div><div class="value">${effAvg.toFixed(1)}</div><div class="sub">descontando tiempos muertos · doble clic</div></div>
+ <div class="kpi amber kpi-clickable" ondblclick="openTimeKpiDetail('${mod}','muerto')" title="Doble clic para ver clientes usados en el cálculo"><div class="label">Tiempo muerto prom.</div><div class="value">${deadAvg.toFixed(1)}</div><div class="sub">permisos + radicación · doble clic</div></div>`;
+}
+function openTimeKpiDetail(mod,kind){
+  const rows=filteredRows(mod);
+  const done=rows.filter(r=>isDone(r,mod));
+  let detailRows=[], title='', subtitle='';
+  if(kind==='total'){
+    detailRows=done.filter(r=>totalDays(r,mod)!==null);
+    title=(mod==='instalaciones'?'Instalaciones':'Factibilidades')+' - KPI Promedio total';
+    subtitle='Clientes usados para calcular el promedio total. Se muestra el tiempo total de cada registro.';
+  }else if(kind==='efectivo'){
+    detailRows=done.filter(r=>effectiveDays(r,mod)!==null);
+    title=(mod==='instalaciones'?'Instalaciones':'Factibilidades')+' - KPI Promedio efectivo';
+    subtitle='Clientes usados para calcular el promedio efectivo. Se descuenta el tiempo muerto cuando aplica.';
+  }else{
+    detailRows=done.filter(r=>(deadPermDays(r)+deadRadDays(r))>0);
+    title=(mod==='instalaciones'?'Instalaciones':'Factibilidades')+' - KPI Tiempo muerto promedio';
+    subtitle='Clientes usados para calcular el tiempo muerto promedio: permisos + radicación.';
+  }
+  openDetailModal(title,subtitle,detailRows,mod);
+}
 function renderMonthlyTable(mod,monthly){const total=monthly.reduce((a,b)=>a+b.cantidad,0); const prom=avg(monthly.flatMap(x=>x.total)); const rows=monthly.filter(x=>x.cantidad>0).map(x=>`<tr><td>${x.mes}</td><td class="right">${x.cantidad}</td><td class="right">${x.prom.toFixed(1)}</td></tr>`).join('') || '<tr><td colspan="3" class="muted">Sin datos para el periodo.</td></tr>'; const html=`<table><thead><tr><th>Mes</th><th class="right">${mod==='instalaciones'?'Ingreso de instalaciones en el mes':'Factibilidades realizadas en el mes'}</th><th class="right">Promedio</th></tr></thead><tbody>${rows}<tr><th>Total general</th><th class="right">${total}</th><th class="right">${prom.toFixed(1)}</th></tr></tbody></table>`; document.getElementById(mod==='instalaciones'?'monthlyTableInst':'monthlyTableFact').innerHTML=html;}
 function renderRanking(mod,rows){const done=rows.filter(r=>isDone(r,mod)); const map=new Map(); done.forEach(r=>{const k=(r.cliente||'SIN CLIENTE').trim(); map.set(k,(map.get(k)||0)+1);}); const list=[...map.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10); const id=mod==='instalaciones'?'rankingInst':'rankingFact'; document.getElementById(id).innerHTML=list.length?list.map(([c,n],i)=>`<div class="rank"><div><b>${i+1}. ${esc(c)}</b><br><small>${mod==='instalaciones'?'Cliente instalado':'Cliente con factibilidad'}</small></div><b>${n}</b></div>`).join(''):'<div class="muted">Sin clientes finalizados en el periodo.</div>';}
 
@@ -608,14 +639,20 @@ function renderModule(mod){
   chart(pref+'MonthlyChart','line',{
     labels:monthly.map(x=>x.mes),
     datasets:[
-      {label:moduleLabel+' realizadas',data:monthly.map(x=>x.cantidad),borderColor:COLORS.cyan,backgroundColor:'rgba(34,211,238,.14)',tension:.35,fill:true,pointRadius:4},
-      {label:'Promedio días',data:monthly.map(x=>Number(x.prom.toFixed(1))),borderColor:COLORS.amber,backgroundColor:'rgba(245,158,11,.12)',tension:.35,yAxisID:'y1'}
+      {label:moduleLabel+' realizadas',data:monthly.map(x=>x.cantidad),borderColor:COLORS.cyan,backgroundColor:'rgba(34,211,238,.14)',tension:.35,fill:true,pointRadius:4,yAxisID:'y'},
+      {label:'Promedio total días',data:monthly.map(x=>Number(x.prom.toFixed(1))),borderColor:COLORS.amber,backgroundColor:'rgba(245,158,11,.12)',tension:.35,pointRadius:4,yAxisID:'y1'},
+      {label:'Promedio efectivo días',data:monthly.map(x=>Number(x.promEfectivo.toFixed(1))),borderColor:COLORS.green,backgroundColor:'rgba(34,197,94,.10)',tension:.35,pointRadius:4,yAxisID:'y1'},
+      {label:'Tiempo muerto promedio días',data:monthly.map(x=>Number((x.promPerm + x.promRad).toFixed(1))),borderColor:COLORS.red,backgroundColor:'rgba(239,68,68,.10)',tension:.35,pointRadius:4,yAxisID:'y1'}
     ]},
-    {scales:{y:{beginAtZero:true,ticks:{color:'#b8c7e3'},grid:{color:'rgba(255,255,255,.07)'}},y1:{position:'right',beginAtZero:true,ticks:{color:'#fcd34d'},grid:{drawOnChartArea:false}},x:{ticks:{color:'#b8c7e3'},grid:{color:'rgba(255,255,255,.06)'}}},
+    {scales:{y:{beginAtZero:true,ticks:{color:'#b8c7e3'},grid:{color:'rgba(255,255,255,.07)'},title:{display:true,text:'Cantidad',color:'#b8c7e3'}},y1:{position:'right',beginAtZero:true,ticks:{color:'#fcd34d'},grid:{drawOnChartArea:false},title:{display:true,text:'Días',color:'#fcd34d'}},x:{ticks:{color:'#b8c7e3'},grid:{color:'rgba(255,255,255,.06)'}}},
+    plugins:{tooltip:{callbacks:{label:(c)=>{
+      if(c.datasetIndex===0) return ` ${c.dataset.label}: ${c.raw}`;
+      return ` ${c.dataset.label}: ${c.raw} días`;
+    }}}},
     detailHandler:({index,datasetIndex})=>{
       const item=monthly[index]; if(!item) return;
-      const tipo=datasetIndex===1?'promedio de días':'cantidad realizada';
-      openDetailModal(`${moduleLabel} - ${item.mes}`,`Dato seleccionado: ${tipo}.`,item.records,mod);
+      const tipos=['cantidad realizada','promedio total','promedio efectivo','tiempo muerto promedio'];
+      openDetailModal(`${moduleLabel} - ${item.mes}`,`Dato seleccionado: ${tipos[datasetIndex] || 'dato mensual'}.`,item.records,mod);
     }});
 
   const cw=getWeekNumber(new Date());
@@ -761,14 +798,25 @@ function groupCountBy(rows,fn,limit=12){
   return [...map.values()].sort((a,b)=>b.cantidad-a.cantidad).slice(0,limit).map(x=>({...x,promMin:avg(x.duracion)}));
 }
 function renderFallasKPIs(rows){
-  const cerradas=rows.filter(r=>String(r.estado||'').toUpperCase()==='CERRADO'); const abiertas=rows.filter(r=>String(r.estado||'').toUpperCase()==='ABIERTO'); const gestion=rows.filter(r=>String(r.estado||'').toUpperCase()==='EN_GESTION'); const coords=rows.filter(fallaCoord).length; const dur=rows.map(fallaDurationMin).filter(Number.isFinite); const prom=avg(dur); const criticas=rows.filter(r=>String(r.prioridad||'').toUpperCase()==='CRITICA' || String(r.prioridad||'').toUpperCase()==='ALTA').length;
+  const cerradas=rows.filter(r=>String(r.estado||'').toUpperCase()==='CERRADO');
+  const abiertas=rows.filter(r=>String(r.estado||'').toUpperCase()==='ABIERTO');
+  const gestion=rows.filter(r=>String(r.estado||'').toUpperCase()==='EN_GESTION');
+  const coords=rows.filter(fallaCoord).length;
+  const durRows=rows.filter(r=>Number.isFinite(fallaDurationMin(r)));
+  const dur=durRows.map(fallaDurationMin);
+  const prom=avg(dur);
+  const criticas=rows.filter(r=>String(r.prioridad||'').toUpperCase()==='CRITICA' || String(r.prioridad||'').toUpperCase()==='ALTA').length;
   document.getElementById('kpisFallas').innerHTML=`
  <div class="kpi"><div class="label">Total fallas</div><div class="value">${rows.length}</div><div class="sub">Con filtros aplicados</div></div>
  <div class="kpi amber"><div class="label">Abiertas</div><div class="value">${abiertas.length}</div><div class="sub">Pendientes de cierre</div></div>
  <div class="kpi violet"><div class="label">En gestión</div><div class="value">${gestion.length}</div><div class="sub">Trabajo activo</div></div>
  <div class="kpi green"><div class="label">Cerradas</div><div class="value">${cerradas.length}</div><div class="sub">Resueltas</div></div>
- <div class="kpi"><div class="label">Promedio duración</div><div class="value">${fmtDurationMin(prom)}</div><div class="sub">${dur.length} tickets medidos</div></div>
+ <div class="kpi kpi-clickable" ondblclick="openFallasDurationKpiDetail()" title="Doble clic para ver clientes usados en el cálculo"><div class="label">Promedio duración</div><div class="value">${fmtDurationMin(prom)}</div><div class="sub">${dur.length} tickets medidos · doble clic</div></div>
  <div class="kpi amber"><div class="label">Georreferenciadas</div><div class="value">${coords}</div><div class="sub">${criticas} críticas / altas</div></div>`;
+}
+function openFallasDurationKpiDetail(){
+  const rows=filteredFallas().filter(r=>Number.isFinite(fallaDurationMin(r)));
+  openFallasDetailModal('Fallas - KPI Promedio duración','Clientes/tickets usados para calcular la duración promedio. Se muestra la duración de cada falla.',rows);
 }
 function renderFallasTable(rows){
   const sorted=[...rows].sort((a,b)=>String(fallaDate(b)).localeCompare(String(fallaDate(a))));
