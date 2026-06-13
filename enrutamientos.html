@@ -66,6 +66,7 @@
     @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(56,189,248,.8)}70%{box-shadow:0 0 0 18px rgba(56,189,248,0)}100%{box-shadow:0 0 0 0 rgba(56,189,248,0)}}
     @media(max-width:700px){header h1{font-size:13px}.floatButtons{right:10px;top:68px;width:138px}.floatButtons.oculto{transform:translateX(160px)}.toggleButtons{right:10px;top:68px}.bottomLeft{left:10px;bottom:92px;width:150px}.row,.photoGrid,.buttons{grid-template-columns:1fr}.modalBody,.panelBody{max-height:none}.miniPhoto{width:100%}}
   
+.fabMarcar.oculto{display:none!important;}
 .fabMarcar{
 position:fixed;right:18px;bottom:110px;width:72px;height:72px;border-radius:50%;
 background:#e53935;color:#fff;font-size:48px;font-weight:bold;display:flex;
@@ -388,6 +389,72 @@ async function migrarFotosLegacyAIndexedDB(){
 }
 
 
+
+function ocultarFabMarcar(){
+  const btn = document.getElementById("fabMarcar");
+  if(btn){
+    btn.classList.add("oculto");
+    btn.style.display = "none";
+  }
+}
+
+function mostrarFabMarcar(){
+  const modalFormulario = document.getElementById("modalFormulario");
+  const modalEnrutamiento = document.getElementById("modalEnrutamiento");
+  const panelRegistros = document.getElementById("panelRegistros");
+  const panelAlmacenamiento = document.getElementById("panelAlmacenamiento");
+
+  const hayVentanaAbierta =
+    (modalFormulario && modalFormulario.style.display !== "none" && modalFormulario.style.display !== "") ||
+    (modalEnrutamiento && modalEnrutamiento.style.display !== "none" && modalEnrutamiento.style.display !== "") ||
+    (panelRegistros && panelRegistros.style.display !== "none" && panelRegistros.style.display !== "") ||
+    (panelAlmacenamiento && panelAlmacenamiento.style.display !== "none" && panelAlmacenamiento.style.display !== "");
+
+  const btn = document.getElementById("fabMarcar");
+  if(btn && !hayVentanaAbierta){
+    btn.classList.remove("oculto");
+    btn.style.display = "flex";
+  }
+}
+
+function actualizarVisibilidadFab(){
+  const btn = document.getElementById("fabMarcar");
+  if(!btn) return;
+
+  const modalFormulario = document.getElementById("modalFormulario");
+  const modalEnrutamiento = document.getElementById("modalEnrutamiento");
+  const panelRegistros = document.getElementById("panelRegistros");
+  const panelAlmacenamiento = document.getElementById("panelAlmacenamiento");
+
+  const hayVentanaAbierta =
+    (modalFormulario && modalFormulario.style.display !== "none" && modalFormulario.style.display !== "") ||
+    (modalEnrutamiento && modalEnrutamiento.style.display !== "none" && modalEnrutamiento.style.display !== "") ||
+    (panelRegistros && panelRegistros.style.display !== "none" && panelRegistros.style.display !== "") ||
+    (panelAlmacenamiento && panelAlmacenamiento.style.display !== "none" && panelAlmacenamiento.style.display !== "");
+
+  if(hayVentanaAbierta){
+    btn.classList.add("oculto");
+    btn.style.display = "none";
+  }else{
+    btn.classList.remove("oculto");
+    btn.style.display = "flex";
+  }
+}
+
+
+
+function iniciarObservadorFab(){
+  const ids = ["modalFormulario", "modalEnrutamiento", "panelRegistros", "panelAlmacenamiento"];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const obs = new MutationObserver(actualizarVisibilidadFab);
+    obs.observe(el, { attributes:true, attributeFilter:["style","class"] });
+  });
+  actualizarVisibilidadFab();
+}
+
+
 function iniciarMapa(){
   map = L.map('map',{zoomControl:true}).setView([defaultLat,defaultLng],16);
   const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,attribution:'© OpenStreetMap'});
@@ -486,11 +553,13 @@ function abrirModalEnrutamiento(limpiar){
     document.getElementById("rutaObservacion").value = enrutamientoActivo.observacion_general || "";
   }
   document.getElementById("modalEnrutamiento").style.display = "block";
+  ocultarFabMarcar();
 }
 
 function cerrarModalEnrutamiento(){
   if(!enrutamientoActivo){ alert("Debes iniciar un enrutamiento para poder registrar empalmes."); return; }
   document.getElementById("modalEnrutamiento").style.display = "none";
+  actualizarVisibilidadFab();
 }
 
 function guardarEnrutamientoActivo(){
@@ -594,10 +663,11 @@ function abrirModal(){
   document.getElementById("modalGpsInfo").innerHTML = `<b>Coordenada fijada:</b> ${selectedLat.toFixed(7)}, ${selectedLng.toFixed(7)}<br><b>Fecha:</b> ${new Date().toLocaleString()}<br><b>Origen:</b> mira central.`;
   document.getElementById("infoRutaActivaFormulario").innerHTML = `<b>ID Cliente:</b> ${enrutamientoActivo.id_cliente}<br><b>Código ruta/cambio:</b> ${enrutamientoActivo.codigo_ruta}<br><b>Cliente:</b> ${enrutamientoActivo.nombre_cliente || "N/A"}`;
   document.getElementById("modalFormulario").style.display = "block";
+  ocultarFabMarcar();
 }
-function cerrarModal(){ document.getElementById("modalFormulario").style.display = "none"; }
-function abrirPanelRegistros(){ pintarRegistros(); document.getElementById("panelRegistros").style.display="block"; }
-function cerrarPanelRegistros(){ document.getElementById("panelRegistros").style.display="none"; }
+function cerrarModal(){ document.getElementById("modalFormulario").style.display = "none"; actualizarVisibilidadFab(); }
+function abrirPanelRegistros(){ pintarRegistros(); document.getElementById("panelRegistros").style.display="block"; ocultarFabMarcar(); }
+function cerrarPanelRegistros(){ document.getElementById("panelRegistros").style.display="none"; actualizarVisibilidadFab(); }
 
 function cambiarAmbiente(){
   const ambiente=val("ambiente");
@@ -1186,11 +1256,13 @@ function reenviarTodo(){
 
 function abrirPanelAlmacenamiento(){
   document.getElementById("panelAlmacenamiento").style.display = "block";
+  ocultarFabMarcar();
   actualizarInfoAlmacenamiento();
 }
 
 function cerrarPanelAlmacenamiento(){
   document.getElementById("panelAlmacenamiento").style.display = "none";
+  actualizarVisibilidadFab();
 }
 
 async function contarFotosIndexedDB(){
@@ -1381,23 +1453,12 @@ window.addEventListener("pagehide", function(){
   }
 });
 
-migrarFotosLegacyAIndexedDB().then(iniciarMapa).catch(err => { console.error(err); iniciarMapa(); });
+migrarFotosLegacyAIndexedDB().then(() => { iniciarMapa(); iniciarObservadorFab(); }).catch(err => { console.error(err); iniciarMapa(); iniciarObservadorFab(); });
 </script>
 
 <button id="fabMarcar" class="fabMarcar" onclick="marcarCentro()" title="Marcar ubicación">+</button>
-
-<script>
-function ocultarFabMarcar(){
-  const b=document.getElementById('fabMarcar');
-  if(b) b.style.display='none';
-}
-function mostrarFabMarcar(){
-  const b=document.getElementById('fabMarcar');
-  if(b) b.style.display='flex';
-}
-</script>
-
 </body>
 </html>
+
 
 
