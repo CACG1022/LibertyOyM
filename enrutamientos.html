@@ -1076,6 +1076,7 @@ function guardarLocalStorage(){
 
 function confirmarGuardadoVisual(registro){
   cerrarModal();
+  mostrarFabMarcar();
 
   setTimeout(() => {
     pintarRegistros();
@@ -1384,6 +1385,19 @@ migrarFotosLegacyAIndexedDB().then(iniciarMapa).catch(err => { console.error(err
 </script>
 
 <button id="fabMarcar" class="fabMarcar" onclick="marcarCentro()" title="Marcar ubicación">+</button>
+
+<script>
+function ocultarFabMarcar(){
+  const b=document.getElementById('fabMarcar');
+  if(b) b.style.display='none';
+}
+function mostrarFabMarcar(){
+  const b=document.getElementById('fabMarcar');
+  if(b) b.style.display='flex';
+}
+</script>
+
 </body>
 </html>
+
 
