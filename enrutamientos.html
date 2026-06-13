@@ -87,6 +87,7 @@
     <button class="secondary" onclick="iniciarGPSRealtime()">Ir a mi GPS</button>
     <button onclick="marcarCentro()">Marcar</button>
     <button class="gray" onclick="abrirPanelRegistros()">Empalmes</button>
+    <button class="purple" onclick="abrirPanelAlmacenamiento()">Almacenamiento</button>
     <button class="warning" onclick="sincronizarPendientes()">Enviar datos</button>
     <button class="danger" onclick="reenviarTodo()">Reenviar todo</button>
     <button class="purple" onclick="abrirModalEnrutamiento(true)">Nuevo cliente</button>
@@ -250,6 +251,36 @@
         <button class="danger" onclick="limpiarTodo()">Limpiar locales</button>
       </div>
       <div id="listaRegistros" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- PANEL ALMACENAMIENTO OFFLINE -->
+<div class="panelOverlay" id="panelAlmacenamiento">
+  <div class="panel">
+    <div class="panelHeader">
+      <h2>Almacenamiento offline</h2>
+      <button class="closeBtn" onclick="cerrarPanelAlmacenamiento()">Cerrar</button>
+    </div>
+    <div class="panelBody">
+      <div class="gpsBox" id="storageInfo">
+        Calculando almacenamiento...
+      </div>
+
+      <div class="hint">
+        Usa <b>Limpiar fotos enviadas</b> para liberar espacio sin borrar los registros del aplicativo. Usa <b>Formatear offline</b> solo cuando ya hayas enviado todo y quieras empezar desde cero.
+      </div>
+
+      <div class="buttons">
+        <button class="secondary" onclick="actualizarInfoAlmacenamiento()">Actualizar espacio</button>
+        <button class="warning" onclick="limpiarFotosEnviadas()">Limpiar fotos enviadas</button>
+      </div>
+
+      <div class="buttons">
+        <button class="danger" onclick="formatearAlmacenamientoOffline()">Formatear offline</button>
+        <button class="gray" onclick="exportarJSON()">Exportar respaldo JSON</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1062,6 +1093,141 @@ function reenviarTodo(){
   sincronizarPendientes(true);
 }
 
+
+function abrirPanelAlmacenamiento(){
+  document.getElementById("panelAlmacenamiento").style.display = "block";
+  actualizarInfoAlmacenamiento();
+}
+
+function cerrarPanelAlmacenamiento(){
+  document.getElementById("panelAlmacenamiento").style.display = "none";
+}
+
+async function contarFotosIndexedDB(){
+  try{
+    const db = await abrirDBFotos();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(FOTO_STORE, "readonly");
+      const req = tx.objectStore(FOTO_STORE).count();
+      req.onsuccess = () => resolve(req.result || 0);
+      req.onerror = () => reject(req.error);
+    });
+  }catch(e){
+    console.warn("No se pudo contar IndexedDB:", e);
+    return 0;
+  }
+}
+
+async function actualizarInfoAlmacenamiento(){
+  const fotosLocales = await contarFotosIndexedDB();
+  const totalRegistros = registros.length;
+  const pendientes = registros.filter(r => r.sync_status !== "enviado").length;
+  const enviados = registros.filter(r => r.sync_status === "enviado").length;
+  const rutas = enrutamientos.length;
+
+  let usado = "N/A";
+  let cuota = "N/A";
+  let porcentaje = "N/A";
+
+  if(navigator.storage && navigator.storage.estimate){
+    try{
+      const estimate = await navigator.storage.estimate();
+      usado = ((estimate.usage || 0) / 1024 / 1024).toFixed(2) + " MB";
+      cuota = ((estimate.quota || 0) / 1024 / 1024).toFixed(2) + " MB";
+      porcentaje = estimate.quota ? (((estimate.usage || 0) / estimate.quota) * 100).toFixed(1) + "%" : "N/A";
+    }catch(e){
+      console.warn("No se pudo estimar almacenamiento:", e);
+    }
+  }
+
+  const info = `
+    <b>Espacio usado:</b> ${usado}<br>
+    <b>Espacio disponible asignado por navegador:</b> ${cuota}<br>
+    <b>Porcentaje usado:</b> ${porcentaje}<br><br>
+    <b>Enrutamientos locales:</b> ${rutas}<br>
+    <b>Empalmes locales:</b> ${totalRegistros}<br>
+    <b>Empalmes enviados:</b> ${enviados}<br>
+    <b>Empalmes pendientes:</b> ${pendientes}<br>
+    <b>Fotos en IndexedDB:</b> ${fotosLocales}
+  `;
+
+  const el = document.getElementById("storageInfo");
+  if(el) el.innerHTML = info;
+}
+
+async function limpiarFotosEnviadas(){
+  const enviados = registros.filter(r => r.sync_status === "enviado");
+
+  if(enviados.length === 0){
+    alert("No hay registros enviados con fotos locales para limpiar.");
+    return;
+  }
+
+  if(!confirm(`Se eliminarán del dispositivo las fotos locales de ${enviados.length} empalme(s) enviados. Los registros y URLs de Supabase/Drive se conservan. ¿Continuar?`)){
+    return;
+  }
+
+  let eliminadas = 0;
+
+  for(const r of enviados){
+    if(r.foto1_key){
+      await eliminarFotoIndexedDB(r.foto1_key);
+      eliminadas++;
+    }
+    if(r.foto2_key){
+      await eliminarFotoIndexedDB(r.foto2_key);
+      eliminadas++;
+    }
+
+    r.foto1_key = null;
+    r.foto2_key = null;
+  }
+
+  guardarLocalStorage();
+  pintarRegistros();
+  actualizarSyncStatus();
+  await actualizarInfoAlmacenamiento();
+
+  alert(`Limpieza terminada. Fotos locales eliminadas: ${eliminadas}.`);
+}
+
+async function formatearAlmacenamientoOffline(){
+  const pendientes = registros.filter(r => r.sync_status !== "enviado").length;
+
+  let mensaje = "Esto borrará TODO lo offline de este dispositivo: enrutamientos locales, empalmes locales y fotos en IndexedDB. No borra Supabase ni Google Drive.";
+  if(pendientes > 0){
+    mensaje += `\\n\\nATENCIÓN: tienes ${pendientes} empalme(s) pendiente(s) que podrían no estar enviados.`;
+  }
+  mensaje += "\\n\\n¿Continuar?";
+
+  if(!confirm(mensaje)) return;
+
+  const confirmacion = prompt('Escribe BORRAR para confirmar el formateo offline:');
+  if(confirmacion !== "BORRAR"){
+    alert("Formateo cancelado.");
+    return;
+  }
+
+  try{
+    await new Promise((resolve) => {
+      const req = indexedDB.deleteDatabase(DB_NAME);
+      req.onsuccess = resolve;
+      req.onerror = resolve;
+      req.onblocked = resolve;
+    });
+  }catch(e){
+    console.warn("No se pudo borrar IndexedDB completamente:", e);
+  }
+
+  localStorage.removeItem("oym_empalmes_offline_v2");
+  localStorage.removeItem("oym_enrutamientos_v2");
+  localStorage.removeItem("oym_enrutamiento_activo_v2");
+
+  alert("Almacenamiento offline formateado correctamente.");
+  location.reload();
+}
+
+
 function exportarJSON(){
   const data=JSON.stringify({enrutamientoActivo,enrutamientos,registros},null,2);
   const blob=new Blob([data],{type:"application/json"});
@@ -1129,5 +1295,4 @@ migrarFotosLegacyAIndexedDB().then(iniciarMapa).catch(err => { console.error(err
 </script>
 </body>
 </html>
-
 
