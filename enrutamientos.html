@@ -270,6 +270,79 @@ let enrutamientos = JSON.parse(localStorage.getItem("oym_enrutamientos_v2") || "
 let registros = JSON.parse(localStorage.getItem("oym_empalmes_offline_v2") || "[]");
 const defaultLat = 4.142, defaultLng = -73.6266;
 
+const DB_NAME = "oym_enrutamiento_fotos_db";
+const DB_VERSION = 1;
+const FOTO_STORE = "fotos";
+
+function abrirDBFotos(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = event => {
+      const db = event.target.result;
+      if(!db.objectStoreNames.contains(FOTO_STORE)){
+        db.createObjectStore(FOTO_STORE, { keyPath: "key" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function guardarFotoIndexedDB(key, base64){
+  if(!base64) return null;
+  const db = await abrirDBFotos();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FOTO_STORE, "readwrite");
+    tx.objectStore(FOTO_STORE).put({ key, base64, created_at: new Date().toISOString() });
+    tx.oncomplete = () => resolve(key);
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function obtenerFotoIndexedDB(key){
+  if(!key) return null;
+  const db = await abrirDBFotos();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FOTO_STORE, "readonly");
+    const req = tx.objectStore(FOTO_STORE).get(key);
+    req.onsuccess = () => resolve(req.result?.base64 || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function eliminarFotoIndexedDB(key){
+  if(!key) return;
+  const db = await abrirDBFotos();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FOTO_STORE, "readwrite");
+    tx.objectStore(FOTO_STORE).delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function migrarFotosLegacyAIndexedDB(){
+  let cambio = false;
+  for(const r of registros){
+    if(r.foto1_base64){
+      r.foto1_key = r.foto1_key || `${r.offline_id}_foto1`;
+      await guardarFotoIndexedDB(r.foto1_key, r.foto1_base64);
+      delete r.foto1_base64;
+      cambio = true;
+    }
+    if(r.foto2_base64){
+      r.foto2_key = r.foto2_key || `${r.offline_id}_foto2`;
+      await guardarFotoIndexedDB(r.foto2_key, r.foto2_base64);
+      delete r.foto2_base64;
+      cambio = true;
+    }
+  }
+  if(cambio){
+    localStorage.setItem("oym_empalmes_offline_v2", JSON.stringify(registros));
+  }
+}
+
+
 function iniciarMapa(){
   map = L.map('map',{zoomControl:true}).setView([defaultLat,defaultLng],16);
   const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:22,attribution:'© OpenStreetMap'});
@@ -494,7 +567,7 @@ function actualizarInfoConsecutivo(consecutivo){
   document.getElementById("infoConsecutivoEmpalme").innerHTML = `<b>Consecutivo:</b> ${etiqueta}<br>Este consecutivo se reinicia por cada nuevo cliente/ruta.`;
 }
 
-function guardarRegistroLocal(){
+async function guardarRegistroLocal(){
   if(!enrutamientoActivo){ alert("Debes iniciar un enrutamiento."); return; }
   if(!selectedLat || !selectedLng){ alert("Debes fijar el empalme."); return; }
   if(!val("ambiente")){ alert("Debes seleccionar Externo o Interno."); return; }
@@ -505,6 +578,16 @@ function guardarRegistroLocal(){
 
   if(!fotoPanoramica && !existente?.foto1_base64){ alert("La Foto 1 panorámica es obligatoria."); return; }
   if(!fotoFusion && !existente?.foto2_base64){ alert("La Foto 2 empalme y fusión es obligatoria."); return; }
+
+  const foto1Key = existente?.foto1_key || `${editId || crypto.randomUUID()}_foto1`;
+  const foto2Key = existente?.foto2_key || `${editId || crypto.randomUUID()}_foto2`;
+
+  if(fotoPanoramica){
+    await guardarFotoIndexedDB(foto1Key, fotoPanoramica);
+  }
+  if(fotoFusion){
+    await guardarFotoIndexedDB(foto2Key, fotoFusion);
+  }
 
   const base = {
     enrutamiento_offline_id: enrutamientoActivo.offline_id,
@@ -543,8 +626,8 @@ function guardarRegistroLocal(){
     latitud: selectedLat,
     longitud: selectedLng,
     precision_gps: currentAccuracy,
-    foto1_base64: fotoPanoramica || existente?.foto1_base64,
-    foto2_base64: fotoFusion || existente?.foto2_base64,
+    foto1_key: foto1Key,
+    foto2_key: foto2Key,
     foto1_panoramica_url: existente?.foto1_panoramica_url || null,
     foto2_empalme_fusion_url: existente?.foto2_empalme_fusion_url || null,
     user_agent: navigator.userAgent
@@ -574,7 +657,7 @@ function guardarRegistroLocal(){
   confirmarGuardadoVisual(registroGuardado);
 }
 
-function editarRegistro(id){
+async function editarRegistro(id){
   const r = registros.find(x => x.offline_id === id); if(!r) return;
   selectedLat = r.latitud; selectedLng = r.longitud;
   if(fixedMarker) map.removeLayer(fixedMarker);
@@ -605,10 +688,22 @@ function editarRegistro(id){
   setVal("hiloSalida", r.hilo_salida);
   setVal("observacion", r.observacion);
 
-  fotoPanoramica = r.foto1_base64;
-  fotoFusion = r.foto2_base64;
-  if(fotoPanoramica){ document.getElementById("previewPanoramica").src = fotoPanoramica; document.getElementById("previewPanoramica").style.display = "block"; }
-  if(fotoFusion){ document.getElementById("previewFusion").src = fotoFusion; document.getElementById("previewFusion").style.display = "block"; }
+  fotoPanoramica = await obtenerFotoIndexedDB(r.foto1_key);
+  fotoFusion = await obtenerFotoIndexedDB(r.foto2_key);
+
+  if(fotoPanoramica){
+    document.getElementById("previewPanoramica").src = fotoPanoramica;
+    document.getElementById("previewPanoramica").style.display = "block";
+  }else{
+    document.getElementById("previewPanoramica").style.display = "none";
+  }
+
+  if(fotoFusion){
+    document.getElementById("previewFusion").src = fotoFusion;
+    document.getElementById("previewFusion").style.display = "block";
+  }else{
+    document.getElementById("previewFusion").style.display = "none";
+  }
 
   abrirModal();
 }
@@ -730,6 +825,13 @@ async function sincronizarPendientes(forzarReenvio = false){
 }
 
 async function enviarFotosN8N(r){
+  const foto1Base64 = await obtenerFotoIndexedDB(r.foto1_key);
+  const foto2Base64 = await obtenerFotoIndexedDB(r.foto2_key);
+
+  if(!foto1Base64 || !foto2Base64){
+    throw new Error("No se encontraron las fotos locales de este empalme. Revisa que no hayas limpiado los datos del navegador.");
+  }
+
   const payload = {
     offline_id: r.offline_id,
     enrutamiento_offline_id: r.enrutamiento_offline_id,
@@ -743,8 +845,8 @@ async function enviarFotosN8N(r){
     fecha_captura_app: r.fecha_captura_app,
     foto1_nombre_archivo: `${r.offline_id}_foto1_panoramica.jpg`,
     foto2_nombre_archivo: `${r.offline_id}_foto2_empalme_fusion.jpg`,
-    foto1_panoramica_base64: r.foto1_base64,
-    foto2_empalme_fusion_base64: r.foto2_base64,
+    foto1_panoramica_base64: foto1Base64,
+    foto2_empalme_fusion_base64: foto2Base64,
     metadata: r
   };
   const resp = await fetch(N8N_WEBHOOK_FOTOS,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
@@ -812,8 +914,7 @@ function pintarListaRegistros(listaDatos){
       <b>Fusión:</b> Hilo entrada ${r.hilo_entrada || "N/A"} → Hilo salida ${r.hilo_salida || "N/A"}<br>
       <b>GPS:</b> ${Number(r.latitud).toFixed(7)}, ${Number(r.longitud).toFixed(7)}<br>
       ${r.error_sync ? `<b style="color:#f87171">Error:</b> ${r.error_sync}<br>` : ""}
-      ${r.foto1_base64 ? `<img class="miniPhoto" src="${r.foto1_base64}">` : ""}
-      ${r.foto2_base64 ? `<img class="miniPhoto" src="${r.foto2_base64}">` : ""}
+      <div class="gpsBox">Fotos guardadas localmente en el dispositivo.</div>
       <div class="buttons">
         <button class="secondary" onclick="irARegistro('${r.offline_id}')">Ver mapa</button>
         <button class="warning" onclick="editarRegistro('${r.offline_id}')">Modificar</button>
@@ -831,11 +932,13 @@ function irARegistro(id){
   setTimeout(()=>{if(registroMarkers[id]) registroMarkers[id].openPopup();},300);
 }
 
-function eliminarRegistro(id){
+async function eliminarRegistro(id){
   const r=registros.find(x=>x.offline_id===id);
   if(r && r.sync_status==="enviado"){
     if(!confirm("Este empalme ya fue enviado a Supabase. Se eliminará solo localmente. ¿Continuar?")) return;
   } else if(!confirm("¿Seguro que deseas eliminar este empalme offline?")) return;
+  await eliminarFotoIndexedDB(r?.foto1_key);
+  await eliminarFotoIndexedDB(r?.foto2_key);
   registros=registros.filter(x=>x.offline_id!==id);
   guardarLocalStorage();
   pintarRegistros();
@@ -967,11 +1070,22 @@ function exportarJSON(){
   a.href=url; a.download="enrutamiento_cliente_empalmes.json"; a.click();
   URL.revokeObjectURL(url);
 }
-function limpiarTodo(){
+async function limpiarTodo(){
   if(!confirm("¿Seguro que deseas borrar todos los datos locales?")) return;
   localStorage.removeItem("oym_empalmes_offline_v2");
   localStorage.removeItem("oym_enrutamientos_v2");
   localStorage.removeItem("oym_enrutamiento_activo_v2");
+  try{
+    const db = await abrirDBFotos();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(FOTO_STORE, "readwrite");
+      tx.objectStore(FOTO_STORE).clear();
+      tx.oncomplete = resolve;
+      tx.onerror = () => reject(tx.error);
+    });
+  }catch(e){
+    console.warn("No se pudo limpiar IndexedDB:", e);
+  }
   registros=[]; enrutamientos=[]; enrutamientoActivo=null;
   pintarRegistros(); actualizarHeader(); abrirModalEnrutamiento(true);
 }
@@ -1011,8 +1125,9 @@ window.addEventListener("pagehide", function(){
   }
 });
 
-iniciarMapa();
+migrarFotosLegacyAIndexedDB().then(iniciarMapa).catch(err => { console.error(err); iniciarMapa(); });
 </script>
 </body>
 </html>
+
 
