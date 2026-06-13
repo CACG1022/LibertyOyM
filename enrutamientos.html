@@ -24,7 +24,9 @@
     .crosshair:after{top:50%;left:0;height:3px;width:66px;transform:translateY(-50%)}
     .crosshairCircle{position:absolute;inset:12px;border:3px solid #ef4444;border-radius:50%;box-shadow:0 0 5px white}
     .centerInfo{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:701;background:rgba(2,6,23,.9);border:1px solid #475569;border-radius:14px;padding:10px 12px;font-size:12px;color:#e5e7eb;width:min(490px,calc(100% - 24px));text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.35)}
-    .floatButtons{position:absolute;right:12px;top:74px;z-index:702;display:flex;flex-direction:column;gap:10px;width:162px}
+    .floatButtons{position:absolute;right:12px;top:74px;z-index:702;display:flex;flex-direction:column;gap:10px;width:162px;transition:.25s ease}
+    .floatButtons.oculto{transform:translateX(185px);opacity:.08;pointer-events:none}
+    .toggleButtons{position:absolute;right:12px;top:74px;z-index:703;width:44px;height:44px;border-radius:999px;padding:0;background:#38bdf8;color:#020617;font-size:20px;display:flex;align-items:center;justify-content:center}
     .bottomLeft{position:absolute;left:12px;bottom:92px;z-index:702;display:flex;flex-direction:column;gap:10px;width:175px}
     button{border:0;border-radius:13px;padding:11px 12px;cursor:pointer;font-weight:700;color:#020617;background:var(--accent);transition:.15s;width:100%;box-shadow:0 10px 22px rgba(0,0,0,.26)}
     button:hover{filter:brightness(1.08)}
@@ -60,9 +62,9 @@
     .miniPhoto{width:49%;max-height:120px;object-fit:cover;border-radius:10px;margin-top:8px;border:1px solid #334155}
     .popupImg{width:100%;border-radius:8px;margin-top:6px}
     .leaflet-popup-content{font-family:Arial,sans-serif;min-width:245px}
-    .gpsPulse{width:18px;height:18px;background:#38bdf8;border:3px solid white;border-radius:50%;box-shadow:0 0 0 rgba(56,189,248,.8);animation:pulse 1.7s infinite}
+    .gpsPulse{width:18px;height:18px;background:#38bdf8;border:3px solid white;border-radius:50%;box-shadow:0 0 0 rgba(56,189,248,.8);animation:pulse 1.7s infinite}.labelEmpalme{background:#020617;color:#fff;border:2px solid #22c55e;border-radius:999px;padding:3px 8px;font-size:12px;font-weight:bold;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.45)}
     @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(56,189,248,.8)}70%{box-shadow:0 0 0 18px rgba(56,189,248,0)}100%{box-shadow:0 0 0 0 rgba(56,189,248,0)}}
-    @media(max-width:700px){header h1{font-size:13px}.floatButtons{right:10px;top:68px;width:138px}.bottomLeft{left:10px;bottom:92px;width:150px}.row,.photoGrid,.buttons{grid-template-columns:1fr}.modalBody,.panelBody{max-height:none}.miniPhoto{width:100%}}
+    @media(max-width:700px){header h1{font-size:13px}.floatButtons{right:10px;top:68px;width:138px}.floatButtons.oculto{transform:translateX(160px)}.toggleButtons{right:10px;top:68px}.bottomLeft{left:10px;bottom:92px;width:150px}.row,.photoGrid,.buttons{grid-template-columns:1fr}.modalBody,.panelBody{max-height:none}.miniPhoto{width:100%}}
   </style>
 </head>
 
@@ -79,11 +81,14 @@
   <div id="map"></div>
   <div class="crosshair"><div class="crosshairCircle"></div></div>
 
-  <div class="floatButtons">
+  <button id="toggleBotones" class="toggleButtons" onclick="toggleBotonesLaterales()" title="Ocultar/mostrar botones">☰</button>
+
+  <div class="floatButtons" id="floatButtons">
     <button class="secondary" onclick="iniciarGPSRealtime()">Ir a mi GPS</button>
     <button onclick="marcarCentro()">Marcar</button>
     <button class="gray" onclick="abrirPanelRegistros()">Empalmes</button>
     <button class="warning" onclick="sincronizarPendientes()">Enviar datos</button>
+    <button class="danger" onclick="reenviarTodo()">Reenviar todo</button>
     <button class="purple" onclick="abrirModalEnrutamiento(true)">Nuevo cliente</button>
   </div>
 
@@ -147,6 +152,8 @@
     <div class="modalBody">
       <div class="gpsBox" id="modalGpsInfo"></div>
       <input id="editOfflineId" type="hidden">
+      <input id="consecutivoEmpalme" type="hidden">
+      <div class="gpsBox" id="infoConsecutivoEmpalme"></div>
 
       <div class="sectionTitle">1. Enrutamiento activo</div>
       <div class="gpsBox" id="infoRutaActivaFormulario"></div>
@@ -154,13 +161,13 @@
       <div class="sectionTitle">2. Clasificación</div>
       <div class="row">
         <div><label>Tipo de enrutamiento <span class="required">*</span></label><select id="ambiente" onchange="cambiarAmbiente()"><option value="">Seleccione...</option><option value="externo">Externo</option><option value="interno">Interno</option></select></div>
-        <div><label>Tipo de punto</label><select id="tipoPunto"><option>Empalme</option><option>Caja de empalme</option><option>Manga</option><option>ODF</option><option>Reserva</option><option>Nodo</option><option>Cliente</option><option>Gabinete</option><option>FDH/FDT</option></select></div>
+        <div><label>Tipo de punto</label><select id="tipoPunto" onchange="actualizarEtiquetaConsecutivo()"><option>Empalme</option><option>Caja de empalme</option><option>Manga</option><option>ODF</option><option>Reserva</option><option>Nodo</option><option>Cliente</option><option>Gabinete</option><option>FDH/FDT</option></select></div>
       </div>
 
       <div id="camposInternos" class="hidden">
         <div class="sectionTitle">3. Ubicación interna</div>
         <div class="row">
-          <div><label>Zona interna</label><select id="zonaInterna"><option value="">Seleccione...</option><option>Sótano</option><option>Semisótano</option><option>Parqueadero</option><option>Cuarto técnico</option><option>Cuarto de telecomunicaciones</option><option>Cuarto eléctrico</option><option>Rack</option><option>Shut de comunicaciones</option><option>Escalera</option><option>Pasillo</option><option>Terraza</option><option>Azotea</option><option>Fachada interna</option><option>Patio interno</option><option>Local comercial</option><option>Oficina</option><option>Apartamento</option><option>Otro</option></select></div>
+          <div><label>Zona interna</label><select id="zonaInterna"><option value="">Seleccione...</option><option>Sótano</option><option>Semisótano</option><option>Parqueadero</option><option>Cuarto técnico</option><option>Cuarto de telecomunicaciones</option><option>ODF</option><option>Cuarto eléctrico</option><option>Rack</option><option>Shut de comunicaciones</option><option>Escalera</option><option>Pasillo</option><option>Terraza</option><option>Azotea</option><option>Fachada interna</option><option>Patio interno</option><option>Local comercial</option><option>Oficina</option><option>Apartamento</option><option>Otro</option></select></div>
           <div><label>Piso / nivel</label><input id="pisoNivel" placeholder="Ej: Piso 3, Sótano 1"></div>
         </div>
         <div class="row">
@@ -176,10 +183,21 @@
 
       <div id="camposExternos" class="hidden">
         <div class="sectionTitle">3. Ubicación externa</div>
-        <div class="row">
-          <div><label>Elemento externo</label><select id="elementoExterno"><option value="">Seleccione...</option><option>Poste</option><option>Cámara</option><option>Pedestal</option><option>Fachada</option><option>Canalización</option><option>Armario</option><option>Gabinete exterior</option><option>Reserva aérea</option><option>Reserva subterránea</option><option>Otro</option></select></div>
-          <div><label>ID poste/cámara/elemento</label><input id="idElementoExterno" placeholder="Ej: P-045"></div>
-        </div>
+        <label>Elemento externo <span class="required">*</span></label>
+        <select id="elementoExterno">
+          <option value="">Seleccione...</option>
+          <option>Poste</option>
+          <option>Cámara</option>
+          <option>Pedestal</option>
+          <option>Fachada</option>
+          <option>Canalización</option>
+          <option>Armario</option>
+          <option>Gabinete exterior</option>
+          <option>Reserva aérea</option>
+          <option>Reserva subterránea</option>
+          <option>Otro</option>
+        </select>
+        <input id="idElementoExterno" type="hidden" value="">
         <label>Referencia externa</label><textarea id="referenciaExterna"></textarea>
       </div>
 
@@ -193,13 +211,11 @@
         <div><label>Cable salida</label><input id="cableSalida"></div>
       </div>
       <div class="row">
-        <div><label>Tubo entrada</label><input id="tuboEntrada"></div>
         <div><label>Hilo entrada</label><input id="hiloEntrada" type="number"></div>
-      </div>
-      <div class="row">
-        <div><label>Tubo salida</label><input id="tuboSalida"></div>
         <div><label>Hilo salida</label><input id="hiloSalida" type="number"></div>
       </div>
+      <input id="tuboEntrada" type="hidden" value="">
+      <input id="tuboSalida" type="hidden" value="">
       <label>Observaciones</label><textarea id="observacion"></textarea>
 
       <div class="sectionTitle">5. Fotos obligatorias</div>
@@ -226,6 +242,7 @@
       <div class="gpsBox" id="panelRutaInfo"></div>
       <div class="buttons">
         <button class="warning" onclick="sincronizarPendientes()">Enviar pendientes</button>
+        <button class="danger" onclick="reenviarTodo()">Reenviar todo</button>
         <button class="gray" onclick="exportarJSON()">Exportar JSON</button>
       </div>
       <div class="buttons">
@@ -389,6 +406,7 @@ function abrirModalEmpalmeNuevo(){
   limpiarFormulario();
   document.getElementById("editOfflineId").value = "";
   document.getElementById("tituloModalEmpalme").textContent = "Registrar empalme";
+  actualizarInfoConsecutivo(obtenerSiguienteConsecutivo());
   fotoPanoramica = null;
   fotoFusion = null;
   document.getElementById("previewPanoramica").style.display = "none";
@@ -431,7 +449,8 @@ function procesarFoto(e,tipo){
       const titulo=tipo==="panoramica"?"FOTO 1 PANORÁMICA":"FOTO 2 EMPALME Y FUSIÓN";
       const ambiente=val("ambiente")||"N/A";
       const ubicacion=ambiente==="interno"?`${val("zonaInterna")} ${val("pisoNivel")} ${val("torreBloque")} ${val("cuartoRack")}`.trim():`${val("elementoExterno")} ${val("idElementoExterno")}`.trim();
-      const etiqueta=[titulo,`Cliente: ${enrutamientoActivo.id_cliente} | Ruta: ${enrutamientoActivo.codigo_ruta}`,`Punto: ${val("punto")||"Punto sin nombre"} (${ambiente.toUpperCase()})`,`Ubicación: ${ubicacion||"N/A"}`,`Fusión: Hilo ${val("hiloEntrada")||"N/A"} entrada → Hilo ${val("hiloSalida")||"N/A"} salida`,`GPS: ${selectedLat.toFixed(7)}, ${selectedLng.toFixed(7)}`,`Fecha: ${new Date().toLocaleString()}`];
+      const consecutivoActual = val("consecutivoEmpalme") || obtenerSiguienteConsecutivo();
+      const etiqueta=[titulo,`Cliente: ${enrutamientoActivo.id_cliente} | Ruta: ${enrutamientoActivo.codigo_ruta}`,`${construirEtiquetaPunto(consecutivoActual)} | Punto: ${val("punto")||"Punto sin nombre"} (${ambiente.toUpperCase()})`,`Ubicación: ${ubicacion||"N/A"}`,`Fusión: Hilo ${val("hiloEntrada")||"N/A"} entrada → Hilo ${val("hiloSalida")||"N/A"} salida`,`GPS: ${selectedLat.toFixed(7)}, ${selectedLng.toFixed(7)}`,`Fecha: ${new Date().toLocaleString()}`];
       const boxH=178;
       ctx.fillStyle="rgba(0,0,0,.76)"; ctx.fillRect(0,canvas.height-boxH,canvas.width,boxH);
       ctx.fillStyle="#fff"; ctx.font=`${Math.max(16,canvas.width/52)}px Arial`;
@@ -445,10 +464,41 @@ function procesarFoto(e,tipo){
   reader.readAsDataURL(file);
 }
 
+
+
+function obtenerTipoEtiqueta(){
+  return val("tipoPunto") === "Nodo" ? "Nodo" : "Empalme";
+}
+
+function construirEtiquetaPunto(consecutivo){
+  return `${obtenerTipoEtiqueta()} ${Number(consecutivo || val("consecutivoEmpalme") || obtenerSiguienteConsecutivo())}`;
+}
+
+function actualizarEtiquetaConsecutivo(){
+  const c = Number(val("consecutivoEmpalme") || obtenerSiguienteConsecutivo());
+  actualizarInfoConsecutivo(c);
+}
+
+function registrosDeRutaActual(){
+  if(!enrutamientoActivo) return [];
+  return registros.filter(r => r.enrutamiento_offline_id === enrutamientoActivo.offline_id);
+}
+function obtenerSiguienteConsecutivo(){
+  const nums = registrosDeRutaActual().map(r => Number(r.consecutivo_empalme || 0)).filter(n => n > 0);
+  return nums.length ? Math.max(...nums) + 1 : 1;
+}
+function actualizarInfoConsecutivo(consecutivo){
+  const c = Number(consecutivo || obtenerSiguienteConsecutivo());
+  const etiqueta = construirEtiquetaPunto(c);
+  document.getElementById("consecutivoEmpalme").value = c;
+  document.getElementById("infoConsecutivoEmpalme").innerHTML = `<b>Consecutivo:</b> ${etiqueta}<br>Este consecutivo se reinicia por cada nuevo cliente/ruta.`;
+}
+
 function guardarRegistroLocal(){
   if(!enrutamientoActivo){ alert("Debes iniciar un enrutamiento."); return; }
   if(!selectedLat || !selectedLng){ alert("Debes fijar el empalme."); return; }
   if(!val("ambiente")){ alert("Debes seleccionar Externo o Interno."); return; }
+  if(val("ambiente") === "externo" && !val("elementoExterno")){ alert("El campo Elemento externo es obligatorio."); return; }
 
   const editId = val("editOfflineId");
   const existente = editId ? registros.find(r => r.offline_id === editId) : null;
@@ -461,6 +511,8 @@ function guardarRegistroLocal(){
     id_cliente: enrutamientoActivo.id_cliente,
     codigo_ruta: enrutamientoActivo.codigo_ruta,
     nombre_cliente: enrutamientoActivo.nombre_cliente,
+    consecutivo_empalme: Number(val("consecutivoEmpalme")),
+    etiqueta_empalme: construirEtiquetaPunto(Number(val("consecutivoEmpalme"))),
     fecha_ultima_edicion_app: editId ? new Date().toISOString() : null,
     editado_en_app: !!editId,
     sync_status: editId ? (existente.sync_status === "enviado" ? "pendiente_update" : "pendiente") : "pendiente",
@@ -483,9 +535,9 @@ function guardarRegistroLocal(){
     sentido: val("sentido"),
     cable_entrada: val("cableEntrada"),
     cable_salida: val("cableSalida"),
-    tubo_entrada: val("tuboEntrada"),
+    tubo_entrada: "",
     hilo_entrada: val("hiloEntrada") ? Number(val("hiloEntrada")) : null,
-    tubo_salida: val("tuboSalida"),
+    tubo_salida: "",
     hilo_salida: val("hiloSalida") ? Number(val("hiloSalida")) : null,
     observacion: val("observacion"),
     latitud: selectedLat,
@@ -521,9 +573,11 @@ function editarRegistro(id){
 
   document.getElementById("editOfflineId").value = r.offline_id;
   document.getElementById("tituloModalEmpalme").textContent = "Ver / modificar empalme";
+  actualizarInfoConsecutivo(r.consecutivo_empalme || 1);
 
   setVal("ambiente", r.ambiente); cambiarAmbiente();
   setVal("tipoPunto", r.tipo_punto);
+  actualizarInfoConsecutivo(r.consecutivo_empalme || 1);
   setVal("zonaInterna", r.zona_interna);
   setVal("pisoNivel", r.piso_nivel);
   setVal("torreBloque", r.torre_bloque);
@@ -538,9 +592,7 @@ function editarRegistro(id){
   setVal("sentido", r.sentido);
   setVal("cableEntrada", r.cable_entrada);
   setVal("cableSalida", r.cable_salida);
-  setVal("tuboEntrada", r.tubo_entrada);
   setVal("hiloEntrada", r.hilo_entrada);
-  setVal("tuboSalida", r.tubo_salida);
   setVal("hiloSalida", r.hilo_salida);
   setVal("observacion", r.observacion);
 
@@ -552,10 +604,19 @@ function editarRegistro(id){
   abrirModal();
 }
 
-async function sincronizarPendientes(){
-  const pendientesRutas = enrutamientos.filter(r => r.sync_status !== "enviado" || r.estado === "finalizado");
-  const pendientesEmpalmes = registros.filter(r => r.sync_status !== "enviado");
-  if(pendientesRutas.length === 0 && pendientesEmpalmes.length === 0){ alert("No hay datos pendientes por enviar."); return; }
+async function sincronizarPendientes(forzarReenvio = false){
+  const pendientesRutas = forzarReenvio
+    ? enrutamientos.filter(r => enrutamientoActivo && r.offline_id === enrutamientoActivo.offline_id)
+    : enrutamientos.filter(r => r.sync_status !== "enviado" || r.estado === "finalizado");
+
+  const pendientesEmpalmes = forzarReenvio
+    ? registros.filter(r => enrutamientoActivo && r.enrutamiento_offline_id === enrutamientoActivo.offline_id)
+    : registros.filter(r => r.sync_status !== "enviado");
+
+  if(pendientesRutas.length === 0 && pendientesEmpalmes.length === 0){
+    alert("No hay datos para enviar.");
+    return;
+  }
 
   for(const ruta of pendientesRutas){
     try{
@@ -598,6 +659,8 @@ async function sincronizarPendientes(){
         offline_id: r.offline_id,
         enrutamiento_id: ruta.supabase_id,
         enrutamiento_offline_id: r.enrutamiento_offline_id,
+        consecutivo_empalme: r.consecutivo_empalme,
+        etiqueta_empalme: r.etiqueta_empalme,
         ambiente: r.ambiente,
         tipo_punto: r.tipo_punto,
         latitud: r.latitud,
@@ -664,6 +727,8 @@ async function enviarFotosN8N(r){
     id_cliente: r.id_cliente,
     codigo_ruta: r.codigo_ruta,
     nombre_punto: r.nombre_punto,
+    consecutivo_empalme: r.consecutivo_empalme,
+    etiqueta_empalme: r.etiqueta_empalme,
     latitud: r.latitud,
     longitud: r.longitud,
     fecha_captura_app: r.fecha_captura_app,
@@ -680,6 +745,13 @@ async function enviarFotosN8N(r){
 }
 
 async function guardarFotosTabla(empalmeId,r,fotos){
+  // Si se reenvía un empalme ya existente, se eliminan las referencias antiguas
+  // para que Supabase quede actualizado con las fotos más recientes.
+  await supabaseClient
+    .from("empalmes_enrutamiento_fotos")
+    .delete()
+    .eq("empalme_id", empalmeId);
+
   const rows = [
     {empalme_id:empalmeId,tipo_foto:"foto1_panoramica",url_foto:r.foto1_panoramica_url,nombre_archivo:fotos.foto1_nombre_archivo || `${r.offline_id}_foto1_panoramica.jpg`,latitud:r.latitud,longitud:r.longitud,etiqueta:"Foto 1 panorámica geoetiquetada",respuesta_n8n:fotos},
     {empalme_id:empalmeId,tipo_foto:"foto2_empalme_fusion",url_foto:r.foto2_empalme_fusion_url,nombre_archivo:fotos.foto2_nombre_archivo || `${r.offline_id}_foto2_empalme_fusion.jpg`,latitud:r.latitud,longitud:r.longitud,etiqueta:"Foto 2 empalme y fusión geoetiquetada",respuesta_n8n:fotos}
@@ -696,7 +768,8 @@ function pintarRegistros(){
     const color = r.sync_status==="enviado" ? "#16a34a" : r.sync_status==="error" ? "#dc2626" : (r.ambiente==="interno" ? "#7c3aed" : "#0284c7");
     const marker=L.circleMarker([r.latitud,r.longitud],{radius:10,color:"#fff",weight:2,fillColor:color,fillOpacity:.95}).addTo(map);
     marker.bindPopup(`
-      <b>${r.nombre_punto}</b><br>
+      <b>${r.etiqueta_empalme || ("Empalme " + (r.consecutivo_empalme || ""))}</b><br>
+      <b>Punto:</b> ${r.nombre_punto}<br>
       <b>Cliente:</b> ${r.id_cliente || "N/A"}<br>
       <b>Ruta:</b> ${r.codigo_ruta || "N/A"}<br>
       <b>Ambiente:</b> ${r.ambiente || "N/A"}<br>
@@ -705,6 +778,7 @@ function pintarRegistros(){
       <button onclick="editarRegistro('${r.offline_id}')" style="margin-top:8px;background:#38bdf8;color:#020617;">Ver / modificar</button>
       <button onclick="eliminarRegistro('${r.offline_id}')" style="margin-top:8px;background:#ef4444;color:white;">Eliminar</button>
     `);
+    marker.bindTooltip(r.etiqueta_empalme || ("Empalme " + (r.consecutivo_empalme || "")), {permanent:true,direction:"top",offset:[0,-12],className:"labelEmpalme"});
     registroMarkers[r.offline_id]=marker;
   });
   pintarListaRegistros(visibles);
@@ -725,8 +799,8 @@ function pintarListaRegistros(listaDatos){
       <span class="badge ${r.ambiente}">${(r.ambiente||"N/A").toUpperCase()}</span>
       <span class="badge ${statusClass}">${(r.sync_status||"pendiente").toUpperCase()}</span>
       ${r.editado_en_app ? `<span class="badge editado">EDITADO</span>` : ""}<br>
-      <b>${r.nombre_punto}</b> · ${r.tipo_punto || ""}<br>
-      <b>Fusión:</b> Tubo ${r.tubo_entrada || "N/A"} / Hilo ${r.hilo_entrada || "N/A"} → Tubo ${r.tubo_salida || "N/A"} / Hilo ${r.hilo_salida || "N/A"}<br>
+      <b>${r.etiqueta_empalme || ("Empalme " + (r.consecutivo_empalme || ""))}</b> · ${r.nombre_punto} · ${r.tipo_punto || ""}<br>
+      <b>Fusión:</b> Hilo entrada ${r.hilo_entrada || "N/A"} → Hilo salida ${r.hilo_salida || "N/A"}<br>
       <b>GPS:</b> ${Number(r.latitud).toFixed(7)}, ${Number(r.longitud).toFixed(7)}<br>
       ${r.error_sync ? `<b style="color:#f87171">Error:</b> ${r.error_sync}<br>` : ""}
       ${r.foto1_base64 ? `<img class="miniPhoto" src="${r.foto1_base64}">` : ""}
@@ -776,6 +850,47 @@ function actualizarSyncStatus(){
   const enviados = registros.filter(r=>r.sync_status==="enviado").length;
   document.getElementById("syncStatus").textContent=`Pendientes: ${pendientes} · Enviados: ${enviados}`;
 }
+
+function reenviarTodo(){
+  if(!enrutamientoActivo){
+    alert("No hay un cliente/enrutamiento activo para reenviar.");
+    return;
+  }
+
+  if(!confirm(`¿Deseas reenviar TODA la información del cliente actual (${enrutamientoActivo.id_cliente} / ${enrutamientoActivo.codigo_ruta}), incluyendo fotos? No se reenviarán clientes anteriores.`)){
+    return;
+  }
+
+  enrutamientos = enrutamientos.map(r => {
+    if(r.offline_id !== enrutamientoActivo.offline_id) return r;
+    return {
+      ...r,
+      sync_status: r.estado === "finalizado" ? "pendiente_update" : "pendiente_reenvio",
+      error_sync: null
+    };
+  });
+
+  enrutamientoActivo = enrutamientos.find(r => r.offline_id === enrutamientoActivo.offline_id) || enrutamientoActivo;
+
+  registros = registros.map(r => {
+    if(r.enrutamiento_offline_id !== enrutamientoActivo.offline_id) return r;
+    return {
+      ...r,
+      sync_status: "pendiente_reenvio",
+      error_sync: null,
+      fecha_ultima_edicion_app: new Date().toISOString(),
+      editado_en_app: true
+    };
+  });
+
+  guardarEnrutamientos();
+  guardarLocalStorage();
+  pintarRegistros();
+  actualizarSyncStatus();
+
+  sincronizarPendientes(true);
+}
+
 function exportarJSON(){
   const data=JSON.stringify({enrutamientoActivo,enrutamientos,registros},null,2);
   const blob=new Blob([data],{type:"application/json"});
@@ -794,6 +909,15 @@ function limpiarTodo(){
 }
 function val(id){const el=document.getElementById(id);return el?String(el.value ?? "").trim():"";}
 function setVal(id,value){const el=document.getElementById(id); if(el) el.value = value ?? "";}
+
+function toggleBotonesLaterales(){
+  const panel = document.getElementById("floatButtons");
+  const btn = document.getElementById("toggleBotones");
+  const oculto = panel.classList.toggle("oculto");
+  btn.textContent = oculto ? "☰" : "×";
+  btn.title = oculto ? "Mostrar botones" : "Ocultar botones";
+}
+
 iniciarMapa();
 </script>
 </body>
