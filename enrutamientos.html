@@ -162,7 +162,7 @@
       <div class="sectionTitle">2. Clasificación</div>
       <div class="row">
         <div><label>Tipo de enrutamiento <span class="required">*</span></label><select id="ambiente" onchange="cambiarAmbiente()"><option value="">Seleccione...</option><option value="externo">Externo</option><option value="interno">Interno</option></select></div>
-        <div><label>Tipo de punto</label><select id="tipoPunto" onchange="actualizarEtiquetaConsecutivo()"><option>Empalme</option><option>Caja de empalme</option><option>Manga</option><option>ODF</option><option>Reserva</option><option>Nodo</option><option>Cliente</option><option>Gabinete</option><option>FDH/FDT</option></select></div>
+        <div><label>Tipo de punto</label><select id="tipoPunto" onchange="actualizarCamposPorTipoPunto()"><option>Empalme</option><option>Caja de empalme</option><option>Manga</option><option>ODF</option><option>Reserva</option><option>Nodo</option><option>Cliente</option><option>Gabinete</option><option>FDH/FDT</option></select></div>
       </div>
 
       <div id="camposInternos" class="hidden">
@@ -204,16 +204,24 @@
 
       <div class="sectionTitle">4. Datos de fusión</div>
       <div class="row">
-        <div><label>Nombre punto / caja / manga</label><input id="punto" placeholder="Ej: EMP-012"></div>
+        <div><label id="labelPunto">Nombre punto / caja / manga</label><input id="punto" placeholder="Ej: EMP-012"></div>
         <div><label>Sentido</label><select id="sentido"><option>Nodo → Cliente</option><option>Cliente → Nodo</option><option>Troncal</option><option>Distribución</option><option>Derivación</option></select></div>
       </div>
       <div class="row">
-        <div><label>Cable entrada</label><input id="cableEntrada"></div>
-        <div><label>Cable salida</label><input id="cableSalida"></div>
+        <div id="grupoCableEntrada"><label>Cable entrada</label><input id="cableEntrada"></div>
+        <div id="grupoCableSalida">
+          <label id="labelCableSalida">Cable salida</label>
+          <input id="cableSalida">
+          <select id="cableSalidaSelect" class="hidden" onchange="document.getElementById('cableSalida').value=this.value">
+            <option value="">Seleccione...</option>
+            <option>CABLE NUEVO</option>
+            <option>HABILITACIÓN DE HILOS</option>
+          </select>
+        </div>
       </div>
       <div class="row">
-        <div><label>Hilo entrada</label><input id="hiloEntrada" type="number"></div>
-        <div><label>Hilo salida</label><input id="hiloSalida" type="number"></div>
+        <div id="grupoHiloEntrada"><label>Hilo entrada</label><input id="hiloEntrada" type="number"></div>
+        <div id="grupoHiloSalida"><label>Hilo salida</label><input id="hiloSalida" type="number"></div>
       </div>
       <input id="tuboEntrada" type="hidden" value="">
       <input id="tuboSalida" type="hidden" value="">
@@ -394,6 +402,63 @@ function actualizarCentroInfo(){
   document.getElementById("centerInfo").innerHTML = `<b>Mira central:</b> ${c.lat.toFixed(7)}, ${c.lng.toFixed(7)}${ruta}<br>Centra el empalme y presiona <b>Marcar</b>.`;
 }
 
+
+function actualizarCamposPorTipoPunto(){
+  const tipo = val("tipoPunto");
+
+  const grupoCableEntrada = document.getElementById("grupoCableEntrada");
+  const grupoHiloEntrada = document.getElementById("grupoHiloEntrada");
+  const grupoCableSalida = document.getElementById("grupoCableSalida");
+  const grupoHiloSalida = document.getElementById("grupoHiloSalida");
+  const cableSalidaInput = document.getElementById("cableSalida");
+  const cableSalidaSelect = document.getElementById("cableSalidaSelect");
+  const labelPunto = document.getElementById("labelPunto");
+
+  if(labelPunto){
+    labelPunto.textContent = tipo === "Nodo" ? "ODF" : "Nombre punto / caja / manga";
+  }
+
+  // Estado base
+  grupoCableEntrada?.classList.remove("hidden");
+  grupoHiloEntrada?.classList.remove("hidden");
+  grupoCableSalida?.classList.remove("hidden");
+  grupoHiloSalida?.classList.remove("hidden");
+
+  if(cableSalidaInput && cableSalidaSelect){
+    cableSalidaInput.classList.remove("hidden");
+    cableSalidaSelect.classList.add("hidden");
+  }
+
+  if(tipo === "Cliente"){
+    grupoCableEntrada?.classList.add("hidden");
+    grupoHiloEntrada?.classList.add("hidden");
+
+    setVal("cableEntrada", "");
+    setVal("hiloEntrada", "");
+
+    if(cableSalidaInput && cableSalidaSelect){
+      cableSalidaInput.classList.add("hidden");
+      cableSalidaSelect.classList.remove("hidden");
+      cableSalidaSelect.value = val("cableSalida") || "";
+    }
+  }
+
+  if(tipo === "Nodo"){
+    grupoCableSalida?.classList.add("hidden");
+    grupoHiloSalida?.classList.add("hidden");
+
+    setVal("cableSalida", "");
+    setVal("hiloSalida", "");
+
+    if(cableSalidaSelect){
+      cableSalidaSelect.value = "";
+    }
+  }
+
+  actualizarEtiquetaConsecutivo();
+}
+
+
 function actualizarHeader(){
   if(enrutamientoActivo){
     document.getElementById("clienteHeader").textContent = `Cliente: ${enrutamientoActivo.id_cliente} · Ruta: ${enrutamientoActivo.codigo_ruta}`;
@@ -511,6 +576,7 @@ function abrirModalEmpalmeNuevo(){
   document.getElementById("editOfflineId").value = "";
   document.getElementById("tituloModalEmpalme").textContent = "Registrar empalme";
   actualizarInfoConsecutivo(obtenerSiguienteConsecutivo());
+  actualizarCamposPorTipoPunto();
   fotoPanoramica = null;
   fotoFusion = null;
   document.getElementById("previewPanoramica").style.display = "none";
@@ -571,7 +637,10 @@ function procesarFoto(e,tipo){
 
 
 function obtenerTipoEtiqueta(){
-  return val("tipoPunto") === "Nodo" ? "Nodo" : "Empalme";
+  const tipo = val("tipoPunto");
+  if(tipo === "Nodo") return "Nodo";
+  if(tipo === "Cliente") return "Cliente";
+  return "Empalme";
 }
 
 function construirEtiquetaPunto(consecutivo){
@@ -603,6 +672,8 @@ async function guardarRegistroLocal(){
   if(!selectedLat || !selectedLng){ alert("Debes fijar el empalme."); return; }
   if(!val("ambiente")){ alert("Debes seleccionar Externo o Interno."); return; }
   if(val("ambiente") === "externo" && !val("elementoExterno")){ alert("El campo Elemento externo es obligatorio."); return; }
+  if(val("tipoPunto") === "Cliente" && !val("cableSalida")){ alert("Para Cliente debes seleccionar Cable nuevo o Habilitación de hilos."); return; }
+  if(val("tipoPunto") !== "Nodo" && val("tipoPunto") !== "Cliente" && (!val("hiloEntrada") || !val("hiloSalida"))){ alert("Para empalmes debes diligenciar hilo de entrada e hilo de salida."); return; }
 
   const editId = val("editOfflineId");
   const existente = editId ? registros.find(r => r.offline_id === editId) : null;
@@ -618,6 +689,16 @@ async function guardarRegistroLocal(){
   }
   if(fotoFusion){
     await guardarFotoIndexedDB(foto2Key, fotoFusion);
+  }
+
+  const tipoPuntoActual = val("tipoPunto");
+  if(tipoPuntoActual === "Cliente"){
+    setVal("cableEntrada", "");
+    setVal("hiloEntrada", "");
+  }
+  if(tipoPuntoActual === "Nodo"){
+    setVal("cableSalida", "");
+    setVal("hiloSalida", "");
   }
 
   const base = {
@@ -700,6 +781,7 @@ async function editarRegistro(id){
 
   setVal("ambiente", r.ambiente); cambiarAmbiente();
   setVal("tipoPunto", r.tipo_punto);
+  actualizarCamposPorTipoPunto();
   actualizarInfoConsecutivo(r.consecutivo_empalme || 1);
   setVal("zonaInterna", r.zona_interna);
   setVal("pisoNivel", r.piso_nivel);
@@ -1046,6 +1128,7 @@ function limpiarDespuesDeGuardar(){
 function limpiarFormulario(){
   ["editOfflineId","ambiente","zonaInterna","pisoNivel","torreBloque","cuartoRack","referenciaVisual","descripcionInterna","elementoExterno","idElementoExterno","referenciaExterna","punto","cableEntrada","cableSalida","tuboEntrada","hiloEntrada","tuboSalida","hiloSalida","observacion"].forEach(id=>setVal(id,""));
   cambiarAmbiente();
+  actualizarCamposPorTipoPunto();
 }
 function actualizarSyncStatus(){
   const pendientes = registros.filter(r=>r.sync_status!=="enviado").length + enrutamientos.filter(r=>r.sync_status!=="enviado").length;
