@@ -1383,8 +1383,7 @@ window.addEventListener("pagehide", function(){
 migrarFotosLegacyAIndexedDB().then(iniciarMapa).catch(err => { console.error(err); iniciarMapa(); });
 </script>
 
-<button id="fabMarcar" class="fabMarcar" onclick="marcarEmpalme()">+</button>
+<button id="fabMarcar" class="fabMarcar" onclick="marcarCentro()" title="Marcar ubicación">+</button>
 </body>
 </html>
-
 
