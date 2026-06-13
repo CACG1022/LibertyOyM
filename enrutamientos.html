@@ -65,7 +65,13 @@
     .gpsPulse{width:18px;height:18px;background:#38bdf8;border:3px solid white;border-radius:50%;box-shadow:0 0 0 rgba(56,189,248,.8);animation:pulse 1.7s infinite}.labelEmpalme{background:#020617;color:#fff;border:2px solid #22c55e;border-radius:999px;padding:3px 8px;font-size:12px;font-weight:bold;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.45)}
     @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(56,189,248,.8)}70%{box-shadow:0 0 0 18px rgba(56,189,248,0)}100%{box-shadow:0 0 0 0 rgba(56,189,248,0)}}
     @media(max-width:700px){header h1{font-size:13px}.floatButtons{right:10px;top:68px;width:138px}.floatButtons.oculto{transform:translateX(160px)}.toggleButtons{right:10px;top:68px}.bottomLeft{left:10px;bottom:92px;width:150px}.row,.photoGrid,.buttons{grid-template-columns:1fr}.modalBody,.panelBody{max-height:none}.miniPhoto{width:100%}}
-  </style>
+  
+.fabMarcar{
+position:fixed;right:18px;bottom:110px;width:72px;height:72px;border-radius:50%;
+background:#e53935;color:#fff;font-size:48px;font-weight:bold;display:flex;
+align-items:center;justify-content:center;z-index:99999;border:4px solid #fff;
+box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
+</style>
 </head>
 
 <body>
@@ -85,7 +91,7 @@
 
   <div class="floatButtons" id="floatButtons">
     <button class="secondary" onclick="iniciarGPSRealtime()">Ir a mi GPS</button>
-    <button onclick="marcarCentro()">Marcar</button>
+    <button onclick="marcarCentro()" style="display:none">Marcar</button>
     <button class="gray" onclick="abrirPanelRegistros()">Empalmes</button>
     <button class="purple" onclick="abrirPanelAlmacenamiento()">Almacenamiento</button>
     <button class="warning" onclick="sincronizarPendientes()">Enviar datos</button>
@@ -399,7 +405,7 @@ function iniciarMapa(){
 function actualizarCentroInfo(){
   const c = map.getCenter();
   const ruta = enrutamientoActivo ? `<br><b>Cliente:</b> ${enrutamientoActivo.id_cliente} · <b>Ruta:</b> ${enrutamientoActivo.codigo_ruta}` : `<br><b>Sin cliente activo.</b> Inicia un enrutamiento.`;
-  document.getElementById("centerInfo").innerHTML = `<b>Mira central:</b> ${c.lat.toFixed(7)}, ${c.lng.toFixed(7)}${ruta}<br>Centra el empalme y presiona <b>Marcar</b>.`;
+  document.getElementById("centerInfo").innerHTML = `<b>Mira central:</b> ${c.lat.toFixed(7)}, ${c.lng.toFixed(7)}${ruta}<br>Centra el empalme y presiona <b style="display:none">Marcar</b>.`;
 }
 
 
@@ -1376,6 +1382,9 @@ window.addEventListener("pagehide", function(){
 
 migrarFotosLegacyAIndexedDB().then(iniciarMapa).catch(err => { console.error(err); iniciarMapa(); });
 </script>
+
+<button id="fabMarcar" class="fabMarcar" onclick="marcarEmpalme()">+</button>
 </body>
 </html>
+
 
