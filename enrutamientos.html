@@ -72,10 +72,43 @@ position:fixed;right:18px;bottom:110px;width:72px;height:72px;border-radius:50%;
 background:#e53935;color:#fff;font-size:48px;font-weight:bold;display:flex;
 align-items:center;justify-content:center;z-index:99999;border:4px solid #fff;
 box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
+
+    .authOverlay{position:fixed;inset:0;background:#020617;z-index:30000;display:flex;align-items:center;justify-content:center;padding:16px}
+    .authCard{width:min(430px,100%);background:#111827;border:1px solid #334155;border-radius:18px;padding:18px;box-shadow:0 24px 80px rgba(0,0,0,.6)}
+    .clienteCard{border:1px solid #334155;background:#020617;border-radius:14px;padding:10px;margin:8px 0;font-size:13px}
+
 </style>
 </head>
 
 <body>
+
+<div class="authOverlay" id="authOverlay">
+  <div class="authCard">
+    <h2>Ingreso Técnico OYM</h2>
+    <label>Correo</label>
+    <input id="loginEmail" type="email" placeholder="tecnico@dominio.com">
+    <label>Contraseña</label>
+    <input id="loginPassword" type="password" placeholder="Contraseña">
+    <button onclick="loginTecnico()">Ingresar</button>
+    <div class="gpsBox" id="loginMsg" style="margin-top:10px">Inicia sesión para ver tus clientes asignados.</div>
+  </div>
+</div>
+
+<div class="panelOverlay" id="panelClientesAsignados">
+  <div class="panel">
+    <div class="panelHeader">
+      <h2>Clientes asignados</h2>
+      <button class="closeBtn" onclick="cerrarPanelClientesAsignados()">Cerrar</button>
+    </div>
+    <div class="panelBody">
+      <div class="hint">Selecciona el cliente/ruta asignado desde el Master. Esa información quedará asociada automáticamente a todos los puntos que marques.</div>
+      <div class="gpsBox" id="usuarioTecnicoInfo"></div>
+      <button class="secondary" onclick="cargarClientesAsignados()">Actualizar clientes</button>
+      <div id="listaClientesAsignados" style="margin-top:12px"></div>
+    </div>
+  </div>
+</div>
+
 <header>
   <div>
     <h1 id="tituloApp">Enrutamiento OYM</h1>
@@ -93,11 +126,13 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
   <div class="floatButtons" id="floatButtons">
     <button class="secondary" onclick="iniciarGPSRealtime()">Ir a mi GPS</button>
     <button onclick="marcarCentro()" style="display:none">Marcar</button>
+    <button class="gray" onclick="abrirPanelClientesAsignados()">Mis clientes</button>
     <button class="gray" onclick="abrirPanelRegistros()">Empalmes</button>
     <button class="purple" onclick="abrirPanelAlmacenamiento()">Almacenamiento</button>
     <button class="warning" onclick="sincronizarPendientes()">Enviar datos</button>
     <button class="danger" onclick="reenviarTodo()">Reenviar todo</button>
-    <button class="purple" onclick="abrirModalEnrutamiento(true)">Nuevo cliente</button>
+    <button class="purple" onclick="abrirPanelClientesAsignados()">Mis clientes asignados</button>
+    <button class="danger" onclick="logoutTecnico()">Cerrar sesión</button>
   </div>
 
   <div class="bottomLeft">
@@ -112,42 +147,41 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
 <div class="modalOverlay" id="modalEnrutamiento">
   <div class="modal">
     <div class="modalHeader">
-      <h2>Iniciar enrutamiento</h2>
+      <h2>Cliente asignado</h2>
       <button class="closeBtn" onclick="cerrarModalEnrutamiento()">Cerrar</button>
     </div>
     <div class="modalBody">
       <div class="hint">
-        Esta información quedará asociada a todos los empalmes que marques. Así no tendrás que repetir el ID Cliente ni el Código de ruta en cada punto.
+        La información del cliente debe venir asignada desde el Master. El técnico no debe diligenciar estos campos manualmente.
       </div>
 
       <div class="row">
         <div>
           <label>ID Cliente / Servicio <span class="required">*</span></label>
-          <input id="rutaIdCliente" placeholder="Ej: CI1032479">
+          <input id="rutaIdCliente" disabled placeholder="Ej: CI1032479">
         </div>
         <div>
           <label>Código ruta / cambio <span class="required">*</span></label>
-          <input id="rutaCodigoCambio" placeholder="Ej: C232605">
+          <input id="rutaCodigoCambio" disabled placeholder="Ej: C232605">
         </div>
       </div>
 
       <div class="row">
         <div>
           <label>Nombre cliente</label>
-          <input id="rutaNombreCliente" placeholder="Ej: Cliente o sede">
+          <input id="rutaNombreCliente" disabled placeholder="Ej: Cliente o sede">
         </div>
         <div>
           <label>Dirección / referencia</label>
-          <input id="rutaDireccionCliente" placeholder="Ej: dirección del cliente">
+          <input id="rutaDireccionCliente" disabled placeholder="Ej: dirección del cliente">
         </div>
       </div>
 
       <label>Observación general del enrutamiento</label>
-      <textarea id="rutaObservacion"></textarea>
+      <textarea id="rutaObservacion" disabled></textarea>
 
       <div class="buttons">
-        <button class="gray" onclick="cargarUltimoEnrutamiento()">Cargar último</button>
-        <button onclick="guardarEnrutamientoActivo()">Iniciar / continuar</button>
+        <button class="gray" onclick="abrirPanelClientesAsignados(); cerrarModalEnrutamientoSinValidar();">Seleccionar cliente asignado</button>
       </div>
     </div>
   </div>
@@ -305,6 +339,12 @@ const SUPABASE_URL = "https://fovxevhlcjeccrldlqim.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInR5cCI6IkpXVCJ9".includes("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9") ? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvdnhldmhsY2plY2NybGRscWltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODExMjIwMDQsImV4cCI6MjA5NjY5ODAwNH0.jp6DvOUNc9UAMxB8H67l-Re18roi2XnpJyk_V57b6fw" : "";
 const N8N_WEBHOOK_FOTOS = "https://ftth-n8n2.pzveh5.easypanel.host/webhook/8f61872c-0b38-4f7e-acea-b3a272cfcd52";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+let usuarioTecnico = null;
+let perfilTecnico = null;
+let clientesAsignados = [];
+const ADMIN_BOOTSTRAP_EMAILS = [
+  "camilo.carreno@libertynet.com"
+];
 
 let map, gpsMarker, fixedMarker, watchId = null;
 let followGPS = true;
@@ -403,12 +443,14 @@ function mostrarFabMarcar(){
   const modalEnrutamiento = document.getElementById("modalEnrutamiento");
   const panelRegistros = document.getElementById("panelRegistros");
   const panelAlmacenamiento = document.getElementById("panelAlmacenamiento");
+  const panelClientesAsignados = document.getElementById("panelClientesAsignados");
 
   const hayVentanaAbierta =
     (modalFormulario && modalFormulario.style.display !== "none" && modalFormulario.style.display !== "") ||
     (modalEnrutamiento && modalEnrutamiento.style.display !== "none" && modalEnrutamiento.style.display !== "") ||
     (panelRegistros && panelRegistros.style.display !== "none" && panelRegistros.style.display !== "") ||
-    (panelAlmacenamiento && panelAlmacenamiento.style.display !== "none" && panelAlmacenamiento.style.display !== "");
+    (panelAlmacenamiento && panelAlmacenamiento.style.display !== "none" && panelAlmacenamiento.style.display !== "") ||
+    (panelClientesAsignados && panelClientesAsignados.style.display !== "none" && panelClientesAsignados.style.display !== "");
 
   const btn = document.getElementById("fabMarcar");
   if(btn && !hayVentanaAbierta){
@@ -425,12 +467,14 @@ function actualizarVisibilidadFab(){
   const modalEnrutamiento = document.getElementById("modalEnrutamiento");
   const panelRegistros = document.getElementById("panelRegistros");
   const panelAlmacenamiento = document.getElementById("panelAlmacenamiento");
+  const panelClientesAsignados = document.getElementById("panelClientesAsignados");
 
   const hayVentanaAbierta =
     (modalFormulario && modalFormulario.style.display !== "none" && modalFormulario.style.display !== "") ||
     (modalEnrutamiento && modalEnrutamiento.style.display !== "none" && modalEnrutamiento.style.display !== "") ||
     (panelRegistros && panelRegistros.style.display !== "none" && panelRegistros.style.display !== "") ||
-    (panelAlmacenamiento && panelAlmacenamiento.style.display !== "none" && panelAlmacenamiento.style.display !== "");
+    (panelAlmacenamiento && panelAlmacenamiento.style.display !== "none" && panelAlmacenamiento.style.display !== "") ||
+    (panelClientesAsignados && panelClientesAsignados.style.display !== "none" && panelClientesAsignados.style.display !== "");
 
   if(hayVentanaAbierta){
     btn.classList.add("oculto");
@@ -444,7 +488,7 @@ function actualizarVisibilidadFab(){
 
 
 function iniciarObservadorFab(){
-  const ids = ["modalFormulario", "modalEnrutamiento", "panelRegistros", "panelAlmacenamiento"];
+  const ids = ["modalFormulario", "modalEnrutamiento", "panelRegistros", "panelAlmacenamiento", "panelClientesAsignados"];
   ids.forEach(id => {
     const el = document.getElementById(id);
     if(!el) return;
@@ -454,6 +498,195 @@ function iniciarObservadorFab(){
   actualizarVisibilidadFab();
 }
 
+
+
+async function verificarSesionTecnico(){
+  const {data:{session}} = await supabaseClient.auth.getSession();
+  if(session){
+    usuarioTecnico = session.user;
+    await cargarPerfilTecnico();
+    document.getElementById("authOverlay").style.display = "none";
+    await cargarClientesAsignados();
+  }else{
+    document.getElementById("authOverlay").style.display = "flex";
+  }
+}
+
+async function loginTecnico(){
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+  const msg = document.getElementById("loginMsg");
+  msg.textContent = "Validando...";
+  const {data,error} = await supabaseClient.auth.signInWithPassword({email,password});
+  if(error){ msg.textContent = "Error: " + error.message; return; }
+  usuarioTecnico = data.user;
+  await cargarPerfilTecnico();
+  document.getElementById("authOverlay").style.display = "none";
+  await cargarClientesAsignados();
+}
+
+async function cargarPerfilTecnico(){
+  const email = usuarioTecnico.email;
+  const esBootstrapAdmin = ADMIN_BOOTSTRAP_EMAILS.includes(String(email).toLowerCase());
+
+  let {data,error} = await supabaseClient
+    .from("oym_usuarios")
+    .select("*")
+    .eq("id", usuarioTecnico.id)
+    .maybeSingle();
+
+  if(error) console.warn(error);
+
+  if(!data){
+    const perfilNuevo = {
+      id: usuarioTecnico.id,
+      email,
+      nombre: esBootstrapAdmin ? "Camilo Carreño" : email,
+      rol: esBootstrapAdmin ? "admin" : "tecnico",
+      activo:true
+    };
+
+    await supabaseClient.from("oym_usuarios").upsert(perfilNuevo,{onConflict:"id"});
+    data = perfilNuevo;
+  }
+
+  perfilTecnico = data || {email:usuarioTecnico.email,nombre:usuarioTecnico.email,rol:"tecnico"};
+  const box = document.getElementById("usuarioTecnicoInfo");
+  if(box) box.innerHTML = `<b>Usuario:</b> ${perfilTecnico.nombre || usuarioTecnico.email}<br><b>Correo:</b> ${usuarioTecnico.email}<br><b>Rol:</b> ${perfilTecnico.rol}`;
+}
+
+async function cargarClientesAsignados(){
+  if(!usuarioTecnico) return;
+
+  let query = supabaseClient
+    .from("enrutamientos_clientes")
+    .select("*")
+    .order("fecha_asignacion",{ascending:false});
+
+  // El técnico solo ve lo suyo por user_id. El admin puede ver todo.
+  if(perfilTecnico?.rol !== "admin"){
+    query = query.eq("tecnico_id", usuarioTecnico.id);
+  }
+
+  const {data,error} = await query;
+
+  if(error){
+    alert("Error cargando clientes asignados: " + error.message);
+    console.error("Error clientes asignados:", error);
+    return;
+  }
+
+  clientesAsignados = (data || []).filter(c => {
+    const estado = String(c.estado_asignacion || "asignado").toLowerCase();
+    return estado === "asignado" || estado === "en_proceso" || estado === "activo";
+  });
+
+  console.log("Usuario técnico:", usuarioTecnico.id, usuarioTecnico.email);
+  console.log("Perfil técnico:", perfilTecnico);
+  console.log("Clientes recibidos:", data);
+  console.log("Clientes filtrados:", clientesAsignados);
+
+  pintarClientesAsignados();
+
+  if(!enrutamientoActivo && clientesAsignados.length){
+    abrirPanelClientesAsignados();
+  }
+}
+
+function abrirPanelClientesAsignados(){
+  pintarClientesAsignados();
+  document.getElementById("panelClientesAsignados").style.display = "block";
+  ocultarFabMarcar();
+}
+
+function cerrarPanelClientesAsignados(){
+  document.getElementById("panelClientesAsignados").style.display = "none";
+  actualizarVisibilidadFab();
+}
+
+function pintarClientesAsignados(){
+  const cont = document.getElementById("listaClientesAsignados");
+  const box = document.getElementById("usuarioTecnicoInfo");
+
+  if(box && usuarioTecnico){
+    box.innerHTML = `
+      <b>Técnico:</b> ${escapeHtml(perfilTecnico?.nombre || usuarioTecnico.email)}<br>
+      <b>Correo:</b> ${escapeHtml(usuarioTecnico.email)}<br>
+      <b>User ID:</b> ${escapeHtml(usuarioTecnico.id)}<br>
+      <b>Clientes asignados:</b> ${clientesAsignados.length}
+    `;
+  }
+
+  if(!cont) return;
+
+  if(!clientesAsignados.length){
+    cont.innerHTML = `
+      <div class="gpsBox">
+        No tienes clientes asignados pendientes.<br><br>
+        Verifica en Supabase que <b>tecnico_id</b> sea igual al User ID mostrado arriba y que <b>estado_asignacion</b> sea asignado o en_proceso.
+      </div>
+    `;
+    return;
+  }
+
+  cont.innerHTML = clientesAsignados.map(c => `
+    <div class="clienteCard">
+      <b>${escapeHtml(c.id_cliente || "Sin ID")}</b> · Ruta ${escapeHtml(c.codigo_ruta || "N/A")}<br>
+      <b>Cliente:</b> ${escapeHtml(c.nombre_cliente || "N/A")}<br>
+      <b>Dirección:</b> ${escapeHtml(c.direccion_cliente || "N/A")}<br>
+      <b>Estado asignación:</b> ${escapeHtml(c.estado_asignacion || "asignado")}<br>
+      <b>Asignado a:</b> ${escapeHtml(c.tecnico_nombre || c.tecnico_email || "N/A")}<br>
+      <button onclick="seleccionarClienteAsignado('${escapeAttr(c.id)}')">Trabajar este cliente</button>
+    </div>
+  `).join("");
+}
+
+async function seleccionarClienteAsignado(id){
+  const c = clientesAsignados.find(x => String(x.id) === String(id));
+  if(!c) return;
+
+  if(enrutamientoActivo && enrutamientoActivo.supabase_id !== c.id){
+    if(!confirm("Ya tienes un cliente activo. ¿Deseas cambiar al cliente seleccionado?")) return;
+  }
+
+  const localExistente = enrutamientos.find(r => r.supabase_id === c.id || r.offline_id === c.offline_id);
+
+  enrutamientoActivo = localExistente || {
+    offline_id: c.offline_id || crypto.randomUUID(),
+    sync_status: "enviado",
+    supabase_id: c.id,
+    id_cliente: c.id_cliente,
+    codigo_ruta: c.codigo_ruta,
+    nombre_cliente: c.nombre_cliente,
+    direccion_cliente: c.direccion_cliente,
+    observacion_general: c.observacion_general || "",
+    estado: c.estado || "activo",
+    fecha_inicio: c.fecha_inicio || new Date().toISOString(),
+    user_agent: navigator.userAgent,
+    asignado_desde_master: true
+  };
+
+  if(!localExistente){
+    enrutamientos.unshift(enrutamientoActivo);
+  }
+
+  localStorage.setItem("oym_enrutamiento_activo_v2", JSON.stringify(enrutamientoActivo));
+  guardarEnrutamientos();
+  actualizarHeader();
+  pintarRegistros();
+  cerrarPanelClientesAsignados();
+
+  await supabaseClient.from("enrutamientos_clientes").update({
+    estado_asignacion:"en_proceso"
+  }).eq("id", c.id);
+
+  alert("Cliente cargado. Ya puedes marcar puntos de enrutamiento.");
+}
+
+async function logoutTecnico(){
+  await supabaseClient.auth.signOut();
+  location.reload();
+}
 
 function iniciarMapa(){
   map = L.map('map',{zoomControl:true}).setView([defaultLat,defaultLng],16);
@@ -466,7 +699,7 @@ function iniciarMapa(){
   actualizarCentroInfo();
   pintarRegistros();
   actualizarHeader();
-  if(!enrutamientoActivo) abrirModalEnrutamiento(false);
+  if(!enrutamientoActivo) abrirPanelClientesAsignados();
 }
 
 function actualizarCentroInfo(){
@@ -556,45 +789,28 @@ function abrirModalEnrutamiento(limpiar){
   ocultarFabMarcar();
 }
 
-function cerrarModalEnrutamiento(){
-  if(!enrutamientoActivo){ alert("Debes iniciar un enrutamiento para poder registrar empalmes."); return; }
+function cerrarModalEnrutamientoSinValidar(){
   document.getElementById("modalEnrutamiento").style.display = "none";
   actualizarVisibilidadFab();
 }
 
-function guardarEnrutamientoActivo(){
-  const idCliente = val("rutaIdCliente");
-  const codigoRuta = val("rutaCodigoCambio");
-  if(!idCliente || !codigoRuta){ alert("ID Cliente y Código ruta/cambio son obligatorios."); return; }
-
-  const nuevo = {
-    offline_id: crypto.randomUUID(),
-    sync_status: "pendiente",
-    supabase_id: null,
-    id_cliente: idCliente,
-    codigo_ruta: codigoRuta,
-    nombre_cliente: val("rutaNombreCliente"),
-    direccion_cliente: val("rutaDireccionCliente"),
-    observacion_general: val("rutaObservacion"),
-    estado: "activo",
-    fecha_inicio: new Date().toISOString(),
-    user_agent: navigator.userAgent
-  };
-
-  enrutamientoActivo = nuevo;
-  enrutamientos.unshift(nuevo);
-  guardarEnrutamientos();
-  actualizarHeader();
+function cerrarModalEnrutamiento(){
   document.getElementById("modalEnrutamiento").style.display = "none";
-  alert("Enrutamiento iniciado. Ahora todos los empalmes quedarán asociados a este cliente/ruta.");
+  if(!enrutamientoActivo){
+    abrirPanelClientesAsignados();
+    return;
+  }
+  actualizarVisibilidadFab();
+}
+
+function guardarEnrutamientoActivo(){
+  alert("Los clientes deben asignarse desde el Master. Selecciona un cliente desde 'Mis clientes asignados'.");
+  abrirPanelClientesAsignados();
 }
 
 function cargarUltimoEnrutamiento(){
-  if(enrutamientos.length === 0){ alert("No hay enrutamientos anteriores guardados."); return; }
-  enrutamientoActivo = enrutamientos[0];
-  localStorage.setItem("oym_enrutamiento_activo_v2", JSON.stringify(enrutamientoActivo));
-  abrirModalEnrutamiento(false);
-  actualizarHeader();
+  alert("Esta opción fue reemplazada. Usa 'Mis clientes asignados'.");
+  abrirPanelClientesAsignados();
 }
 
 function finalizarEnrutamiento(){
@@ -610,7 +826,7 @@ function finalizarEnrutamiento(){
   localStorage.removeItem("oym_enrutamiento_activo_v2");
   actualizarHeader();
   cerrarPanelRegistros();
-  abrirModalEnrutamiento(true);
+  abrirPanelClientesAsignados();
 }
 
 function guardarEnrutamientos(){
@@ -638,7 +854,7 @@ function activarSeguimiento(){ followGPS=true; if(gpsMarker) map.setView(gpsMark
 function desactivarSeguimiento(){ followGPS=false; alert("Seguimiento desactivado."); }
 
 function marcarCentro(){
-  if(!enrutamientoActivo){ abrirModalEnrutamiento(false); return; }
+  if(!enrutamientoActivo){ abrirPanelClientesAsignados(); return; }
   const c=map.getCenter();
   selectedLat=c.lat; selectedLng=c.lng;
   if(fixedMarker) map.removeLayer(fixedMarker);
@@ -1415,8 +1631,14 @@ async function limpiarTodo(){
     console.warn("No se pudo limpiar IndexedDB:", e);
   }
   registros=[]; enrutamientos=[]; enrutamientoActivo=null;
-  pintarRegistros(); actualizarHeader(); abrirModalEnrutamiento(true);
+  pintarRegistros(); actualizarHeader(); abrirPanelClientesAsignados();
 }
+
+function escapeHtml(value){
+  return String(value ?? "").replace(/[&<>"']/g, m => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));
+}
+function escapeAttr(value){ return escapeHtml(value); }
+
 function val(id){const el=document.getElementById(id);return el?String(el.value ?? "").trim():"";}
 function setVal(id,value){const el=document.getElementById(id); if(el) el.value = value ?? "";}
 
@@ -1453,7 +1675,7 @@ window.addEventListener("pagehide", function(){
   }
 });
 
-migrarFotosLegacyAIndexedDB().then(() => { iniciarMapa(); iniciarObservadorFab(); }).catch(err => { console.error(err); iniciarMapa(); iniciarObservadorFab(); });
+migrarFotosLegacyAIndexedDB().then(() => { iniciarMapa(); iniciarObservadorFab(); verificarSesionTecnico(); }).catch(err => { console.error(err); iniciarMapa(); iniciarObservadorFab(); verificarSesionTecnico(); });
 </script>
 
 <button id="fabMarcar" class="fabMarcar" onclick="marcarCentro()" title="Marcar ubicación">+</button>
