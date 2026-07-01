@@ -6,6 +6,7 @@
   <title>Factibilidades</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="app.js"></script>
   <style>
     :root{--border:rgba(255,255,255,.10);--text:#eef4ff;--muted:#9ab0d0;--shadow:0 18px 40px rgba(0,0,0,.28)}
@@ -25,17 +26,9 @@
     .template-help{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:8px;margin-top:8px}.template-token{font-size:12px;color:#bfdbfe;border:1px solid var(--border);border-radius:10px;padding:8px;background:rgba(255,255,255,.03);cursor:pointer}.template-token:hover{background:rgba(59,130,246,.16)}
     .main{padding:26px 28px}
     .header h1{margin:0 0 6px;font-size:28px}.header p{margin:0 0 20px;color:var(--muted)}
-    .toolbar-row{display:grid;grid-template-columns:minmax(520px,1fr) minmax(520px,auto);gap:12px;align-items:start;margin-bottom:12px}
-    .toolbar-left{display:grid;grid-template-columns:minmax(260px,1.4fr) minmax(210px,.8fr) minmax(170px,.7fr);gap:12px;align-items:center}
-    .toolbar-right{display:grid;grid-template-columns:minmax(190px,220px) minmax(150px,180px) minmax(190px,220px) minmax(130px,160px);gap:12px;align-items:center;justify-content:end}
-    .control{min-width:0;width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}
-
-    .delivery-filters{display:grid;grid-template-columns:auto minmax(150px,1fr) minmax(150px,1fr) minmax(150px,1fr) minmax(150px,1fr) minmax(130px,.8fr);gap:10px;align-items:center;margin:0 0 12px;padding:10px 12px;border:1px solid rgba(96,165,250,.18);border-radius:16px;background:rgba(255,255,255,.025)}
-    .delivery-filters .filter-title{font-size:12px;color:#bfdbfe;font-weight:800;margin-right:4px;white-space:nowrap}
-    .delivery-filters .control{min-width:0;width:100%}
-    .delivery-filters .small-btn{width:100%;white-space:nowrap}
-    @media (max-width:1450px){.toolbar-row{grid-template-columns:1fr}.toolbar-right{justify-content:stretch}.delivery-filters{grid-template-columns:repeat(5,minmax(130px,1fr))}.delivery-filters .filter-title{grid-column:1/-1}}
-    @media (max-width:900px){.toolbar-left,.toolbar-right,.delivery-filters{grid-template-columns:1fr}}
+    .toolbar-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+    .toolbar-left,.toolbar-right{display:flex;gap:12px;flex-wrap:wrap}
+    .control{min-width:190px;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}
     .summary{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:12px;margin-bottom:18px}
     .stat{border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));padding:16px;box-shadow:var(--shadow);min-height:110px;cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease}
     .stat .label{font-size:12px;color:var(--muted);margin-bottom:8px}.stat .value{font-size:30px;font-weight:800}.stat .sub{font-size:12px;color:#b9d6ff;margin-top:6px}.stat:hover{transform:translateY(-2px);border-color:rgba(96,165,250,.45)}.stat.active{border-color:rgba(34,197,94,.60);background:linear-gradient(180deg,rgba(34,197,94,.12),rgba(255,255,255,.02))}
@@ -312,20 +305,11 @@ function renderShell(){
       <aside class="sidebar" ondblclick="toggleSidebar()">
         <div class="brand">Nodo O&M</div><div class="subbrand">Control y seguimiento</div>
         <nav class="nav">
-          <a href="index.html">Inicio</a>
-          <a href="dashboard.html">Dashboard</a>
-          <a href="https://cacg1022.github.io/LibertyOyM/visormapa.html">Visor</a>
-          <a href="https://cacg1022.github.io/LibertyOyM/seguimiento/nodo.html">Nodo</a>
-          <a href="fallas.html">Tickets / Fallas</a>
-          <a href="mantenimientos.html">Mantenimientos</a>
-          <a href="instalaciones.html">Instalaciones</a>
-          <a href="factibilidades.html" class="active">Factibilidades</a>
-          <a href="traslados.html">Traslados</a>
+          <a href="index.html">Inicio</a><a href="dashboard.html">Dashboard</a><a href="fallas.html">Tickets / Fallas</a><a href="mantenimientos.html">Mantenimientos</a>
+          <a href="instalaciones.html">Instalaciones</a><a href="factibilidades.html" class="active">Factibilidades</a><a href="traslados.html">Traslados</a>
           <a href="materiales.html">Materiales</a>
           <a href="liquidaciones.html">Liquidaciones</a>
-          <a href="gastos.html">Gastos</a>
-          <a href="tareas.html">Tareas y Alertas</a>
-          <a href="reportes.html">Reportes</a>
+<a href="gastos.html">Gastos</a><a href="tareas.html">Tareas y Alertas</a><a href="reportes.html">Reportes</a>
         </nav>
         <div class="session-box"><small>Sesión<br>${email || 'Sin iniciar'}</small><button class="btn secondary" style="width:100%" onclick="safeLogout()">Cerrar sesión</button></div>
       </aside>
@@ -347,19 +331,10 @@ function renderShell(){
             </select>
             <button class="btn ghost import-btn" type="button" onclick="openImportPicker()">Cargar plantilla</button>
             <button class="btn ghost import-btn" type="button" onclick="openEmailTemplateConfig()">Config. plantilla correo</button>
+            <button class="btn ghost import-btn" type="button" onclick="generarReporteDashboard()">Reporte Dashboard</button>
             <button class="btn ghost" onclick="loadFactibilidades()">Actualizar</button>
             <input id="plantillaInput" type="file" accept=".txt,.csv,.tsv,text/plain" style="display:none">
           </div>
-        </div>
-        <div class="delivery-filters">
-          <span class="filter-title">Filtrar por fecha de entrega:</span>
-          <input id="filterFechaEntrega" class="control" type="date" title="Filtrar por fecha exacta de entrega">
-          <input id="filterMesEntrega" class="control" type="month" title="Filtrar por mes de entrega">
-          <select id="filterAnioEntrega" class="control" title="Filtrar por año de entrega">
-            <option value="">Todos los años</option>
-          </select>
-          <input id="filterSemanaEntrega" class="control" type="week" title="Filtrar por semana de entrega">
-          <button type="button" class="small-btn" onclick="clearEntregaFilters()">Limpiar entrega</button>
         </div>
         <div id="summary" class="summary"></div>
         <div class="card"><div class="table-wrap"><table><thead><tr>
@@ -371,7 +346,6 @@ function renderShell(){
           <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('estado_general')">Estado general <span id="sort_estado_general" class="sort-icon"></span></div><select id="filter_col_estado_general" onchange="setColumnFilter('estado_general', this.value)"><option value="">Todos</option></select></div></th>
           <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('estado_permisos')">Permisos <span id="sort_estado_permisos" class="sort-icon"></span></div><select id="filter_col_estado_permisos" onchange="setColumnFilter('estado_permisos', this.value)"><option value="">Todos</option></select></div></th>
           <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('fecha_agendamiento')">Fecha agendamiento <span id="sort_fecha_agendamiento" class="sort-icon"></span></div><select id="filter_col_fecha_agendamiento" onchange="setColumnFilter('fecha_agendamiento', this.value)"><option value="">Todas</option></select></div></th>
-          <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('fecha_entrega')">Fecha entrega <span id="sort_fecha_entrega" class="sort-icon"></span></div><select id="filter_col_fecha_entrega" onchange="setColumnFilter('fecha_entrega', this.value)"><option value="">Todas</option></select></div></th>
           <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('duracion_total')">Duración total <span id="sort_duracion_total" class="sort-icon"></span></div><select id="filter_col_duracion_total" onchange="setColumnFilter('duracion_total', this.value)"><option value="">Todos</option></select></div></th>
           <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('tiempo_muerto')">Tiempo muerto <span id="sort_tiempo_muerto" class="sort-icon"></span></div><select id="filter_col_tiempo_muerto" onchange="setColumnFilter('tiempo_muerto', this.value)"><option value="">Todos</option></select></div></th>
           <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('duracion_efectiva')">Duración efectiva <span id="sort_duracion_efectiva" class="sort-icon"></span></div><select id="filter_col_duracion_efectiva" onchange="setColumnFilter('duracion_efectiva', this.value)"><option value="">Todos</option></select></div></th>
@@ -404,7 +378,7 @@ try{ renderShell(); restoreSidebarState(); }catch(err){ console.error(err); safe
 let clientRef = null, factRows = [];
 let importRowsPending = [];
 let activeKpi = null;
-let columnFilters = {fecha_ingreso:'', id_cambio:'', id_tarea:'', id_cliente:'', cliente:'', estado_general:'', estado_permisos:'', fecha_agendamiento:'', fecha_entrega:'', duracion_total:'', tiempo_muerto:'', duracion_efectiva:'', acciones:''};
+let columnFilters = {fecha_ingreso:'', id_cambio:'', id_tarea:'', id_cliente:'', cliente:'', estado_general:'', estado_permisos:'', fecha_agendamiento:'', duracion_total:'', tiempo_muerto:'', duracion_efectiva:'', acciones:''};
 let sortField = 'fecha_ingreso';
 let sortDir = 'desc';
 function esc(v){ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;"); }
@@ -651,6 +625,85 @@ window.openOutlookSolicitudContratista = function(){
 document.getElementById('emailTemplate')?.addEventListener('input', updateEmailPreview);
 
 function fmtDate(v){ if(!v) return ''; try{return new Date(v+'T00:00:00').toLocaleDateString('es-CO')}catch(e){return v} }
+
+function normalizeEstadoReporte(v){
+  return String(v || '').trim().toUpperCase().replace(/_/g, ' ');
+}
+function formatDateReporte(value, mode='iso'){
+  if(!value) return '';
+  const raw = String(value).trim();
+  const mIso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(mIso){
+    if(mode === 'dmy') return `${parseInt(mIso[3],10)}/${parseInt(mIso[2],10)}/${mIso[1]}`;
+    return `${mIso[1]}-${mIso[2]}-${mIso[3]}`;
+  }
+  const d = new Date(raw);
+  if(isNaN(d)) return raw;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  if(mode === 'dmy') return `${parseInt(dd,10)}/${parseInt(mm,10)}/${yyyy}`;
+  return `${yyyy}-${mm}-${dd}`;
+}
+function getCiudadReporte(row){
+  const ciudad = row?.ciudad || row?.Ciudad || row?.municipio || row?.ciudad_operacion;
+  return ciudad ? String(ciudad).trim().toUpperCase() : 'VILLAVICENCIO';
+}
+function descargarBlob(nombreArchivo, blob){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nombreArchivo;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function generarReporteDashboard(){
+  const estadosValidos = new Set(['ENTREGADA','APROBADA']);
+  const rows = (factRows || [])
+    .filter(r => estadosValidos.has(normalizeEstadoReporte(r.estado_general)))
+    .map(r => ({
+      ciudad: getCiudadReporte(r),
+      id_cliente: r.id_cliente || '',
+      cambio: r.id_cambio || '',
+      cliente: r.cliente || '',
+      direccion: r.direccion || '',
+      fecha_ingreso: formatDateReporte(r.fecha_ingreso, 'dmy'),
+      'Fecha solicitud Permisos': formatDateReporte(r.fecha_solicitud_permisos, 'dmy'),
+      'Fecha aprobacion Permisos': formatDateReporte(r.fecha_aprobacion_permisos, 'dmy'),
+      'Fecha de realizacion viabilidad': formatDateReporte(r.fecha_realizacion_viabilidad || r.fecha_agendamiento, 'dmy'),
+      fecha_entrega: formatDateReporte(r.fecha_entrega, 'dmy'),
+      estado_general: normalizeEstadoReporte(r.estado_general)
+    }));
+
+  if(!rows.length){
+    alert('No hay registros para el reporte. Solo se exportan factibilidades con estado ENTREGADA o APROBADA.');
+    return;
+  }
+
+  const fecha = new Date().toISOString().slice(0,10);
+  const nombreArchivo = `reporte_dashboard_factibilidades_${fecha}.xlsx`;
+
+  if(window.XLSX){
+    const headers = ['ciudad','id_cliente','cambio','cliente','direccion','fecha_ingreso','Fecha solicitud Permisos','Fecha aprobacion Permisos','Fecha de realizacion viabilidad','fecha_entrega','estado_general'];
+    const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+    ws['!cols'] = [
+      {wch:16},{wch:16},{wch:14},{wch:36},{wch:48},{wch:14},{wch:24},{wch:26},{wch:30},{wch:14},{wch:16}
+    ];
+    ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s:{r:0,c:0}, e:{r:rows.length,c:headers.length-1} }) };
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Reporte Dashboard');
+    XLSX.writeFile(wb, nombreArchivo);
+    return;
+  }
+
+  // Respaldo si no carga la librería XLSX por restricción de red: descarga CSV compatible con Excel.
+  const headers = ['ciudad','id_cliente','cambio','cliente','direccion','fecha_ingreso','Fecha solicitud Permisos','Fecha aprobacion Permisos','Fecha de realizacion viabilidad','fecha_entrega','estado_general'];
+  const csv = [headers.join(';')].concat(rows.map(row => headers.map(h => `"${String(row[h] ?? '').replace(/"/g,'""')}"`).join(';'))).join('\r\n');
+  descargarBlob(nombreArchivo.replace('.xlsx','.csv'), new Blob(['\ufeff' + csv], {type:'text/csv;charset=utf-8;'}));
+}
+
 function normalizeHeader(s){
   return String(s || '').replace(/^"+|"+$/g,'').trim();
 }
@@ -982,7 +1035,6 @@ function getColumnValue(r, field){
     case 'estado_general': return r.estado_general || '';
     case 'estado_permisos': return r.estado_permisos || '';
     case 'fecha_agendamiento': return `${fmtDate(r.fecha_agendamiento)} ${r.hora_agendamiento || ''}`.trim();
-    case 'fecha_entrega': return fmtDate(r.fecha_entrega);
     case 'duracion_total': return calcularDuracionTotalRow(r);
     case 'tiempo_muerto': return calcularTiempoMuertoRow(r);
     case 'duracion_efectiva': return calcularDuracionEfectivaRow(r);
@@ -991,8 +1043,8 @@ function getColumnValue(r, field){
   }
 }
 function getSortValue(r, field){
-  if(['fecha_ingreso','fecha_agendamiento','fecha_entrega'].includes(field)){
-    const raw = field === 'fecha_agendamiento' ? r.fecha_agendamiento : field === 'fecha_entrega' ? r.fecha_entrega : r.fecha_ingreso;
+  if(['fecha_ingreso','fecha_agendamiento'].includes(field)){
+    const raw = field === 'fecha_agendamiento' ? r.fecha_agendamiento : r.fecha_ingreso;
     const d = new Date(String(raw || '') + 'T00:00:00');
     return isNaN(d) ? 0 : d.getTime();
   }
@@ -1013,7 +1065,6 @@ function hydrateColumnFilters(baseRows){
     ['estado_general','filter_col_estado_general','Todos'],
     ['estado_permisos','filter_col_estado_permisos','Todos'],
     ['fecha_agendamiento','filter_col_fecha_agendamiento','Todas'],
-    ['fecha_entrega','filter_col_fecha_entrega','Todas'],
     ['duracion_total','filter_col_duracion_total','Todos'],
     ['tiempo_muerto','filter_col_tiempo_muerto','Todos'],
     ['duracion_efectiva','filter_col_duracion_efectiva','Todos'],
@@ -1038,7 +1089,7 @@ function applyColumnFilters(data){
 function setColumnFilter(field, value){ columnFilters[field] = value || ''; renderTable(); }
 function sortColumn(field){
   if(sortField === field){ sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
-  else{ sortField = field; sortDir = ['fecha_ingreso','fecha_agendamiento','fecha_entrega','duracion_total','tiempo_muerto','duracion_efectiva'].includes(field) ? 'desc' : 'asc'; }
+  else{ sortField = field; sortDir = ['fecha_ingreso','fecha_agendamiento','duracion_total','tiempo_muerto','duracion_efectiva'].includes(field) ? 'desc' : 'asc'; }
   renderTable();
 }
 function updateSortIcons(){
@@ -1046,63 +1097,6 @@ function updateSortIcons(){
     const el = document.getElementById('sort_' + field);
     if(el) el.textContent = sortField === field ? (sortDir === 'asc' ? '▲' : '▼') : '';
   });
-}
-
-
-function getDateValueEntrega(value){
-  if(!value) return null;
-  const d = new Date(String(value) + 'T00:00:00');
-  return isNaN(d) ? null : d;
-}
-function getISOWeekKey(value){
-  const d = getDateValueEntrega(value);
-  if(!d) return '';
-  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const dayNum = date.getUTCDay() || 7;
-  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
-  const weekNo = Math.ceil((((date - yearStart) / 86400000) + 1) / 7);
-  return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2,'0')}`;
-}
-function getEntregaYear(value){
-  const d = getDateValueEntrega(value);
-  return d ? String(d.getFullYear()) : '';
-}
-function getEntregaMonth(value){
-  const d = getDateValueEntrega(value);
-  if(!d) return '';
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
-}
-function applyEntregaDateFilters(rows){
-  const fechaEntrega = document.getElementById('filterFechaEntrega')?.value || '';
-  const mesEntrega = document.getElementById('filterMesEntrega')?.value || '';
-  const anioEntrega = document.getElementById('filterAnioEntrega')?.value || '';
-  const semanaEntrega = document.getElementById('filterSemanaEntrega')?.value || '';
-
-  return rows.filter(r => {
-    if(fechaEntrega && r.fecha_entrega !== fechaEntrega) return false;
-    if(mesEntrega && getEntregaMonth(r.fecha_entrega) !== mesEntrega) return false;
-    if(anioEntrega && getEntregaYear(r.fecha_entrega) !== anioEntrega) return false;
-    if(semanaEntrega && getISOWeekKey(r.fecha_entrega) !== semanaEntrega) return false;
-    return true;
-  });
-}
-function hydrateEntregaYearFilter(rows){
-  const select = document.getElementById('filterAnioEntrega');
-  if(!select) return;
-  const current = select.value || '';
-  const years = uniqueSorted((rows || []).map(r => getEntregaYear(r.fecha_entrega)));
-  select.innerHTML = '<option value="">Todos los años</option>' + years.map(y => `<option value="${esc(y)}">${esc(y)}</option>`).join('');
-  select.value = years.includes(current) ? current : '';
-}
-function clearEntregaFilters(){
-  ['filterFechaEntrega','filterMesEntrega','filterSemanaEntrega'].forEach(id => {
-    const el = document.getElementById(id);
-    if(el) el.value = '';
-  });
-  const anio = document.getElementById('filterAnioEntrega');
-  if(anio) anio.value = '';
-  renderTable();
 }
 
 function getFilteredRows(){
@@ -1113,13 +1107,11 @@ function getFilteredRows(){
   let rows = factRows.filter(r => {
     const hayTexto = !txt || [
       r.cliente, r.id_cliente, r.id_cambio, r.id_tarea, r.operador, r.direccion,
-      r.estado_general, r.estado_permisos, r.fecha_entrega, r.fecha_radicacion, r.fecha_respuesta_radicacion
+      r.estado_general, r.estado_permisos, r.fecha_radicacion, r.fecha_respuesta_radicacion
     ].map(x => String(x || '').toLowerCase()).some(v => v.includes(txt));
     return hayTexto && (!estado || r.estado_general === estado) && (!fecha || r.fecha_ingreso === fecha);
   });
 
-  hydrateEntregaYearFilter(rows);
-  rows = applyEntregaDateFilters(rows);
   rows = applyKpiFilter(rows);
   hydrateColumnFilters(rows);
   rows = applyColumnFilters(rows);
@@ -1163,7 +1155,6 @@ function renderTable(){
       <td>${badgeEstado(r.estado_general)}</td>
       <td>${esc(r.estado_permisos || '')}</td>
       <td>${esc(fmtDate(r.fecha_agendamiento))} ${esc(r.hora_agendamiento || '')}</td>
-      <td>${esc(fmtDate(r.fecha_entrega))}</td>
       <td><div class="row-kpi"><span class="rk-label">Total</span><span class="rk-value">${esc(calcularDuracionTotalRow(r))}</span></div></td>
       <td><div class="row-kpi dead"><span class="rk-label">Muerto</span><span class="rk-value">${esc(calcularTiempoMuertoRow(r))}</span></div></td>
       <td><div class="row-kpi effective"><span class="rk-label">Efectiva</span><span class="rk-value">${esc(calcularDuracionEfectivaRow(r))}</span></div></td>
@@ -1180,7 +1171,7 @@ async function loadFactibilidades(){
     renderTable();
   }catch(err){
     console.error(err);
-    document.getElementById('tableBody').innerHTML = `<tr><td colspan="13" style="padding:18px;color:#fecaca">Error cargando factibilidades: ${err.message || err}</td></tr>`;
+    document.getElementById('tableBody').innerHTML = `<tr><td colspan="12" style="padding:18px;color:#fecaca">Error cargando factibilidades: ${err.message || err}</td></tr>`;
   }
 }
 
@@ -1475,7 +1466,7 @@ document.getElementById('factibilidadForm').addEventListener('submit', async fun
   }
 });
 
-['searchFact','filterEstado','filterFecha','filterFechaEntrega','filterMesEntrega','filterAnioEntrega','filterSemanaEntrega','sortBy'].forEach(id => {
+['searchFact','filterEstado','filterFecha','sortBy'].forEach(id => {
   const el = document.getElementById(id);
   if(el){ el.addEventListener('input', renderTable); el.addEventListener('change', renderTable); }
 });
