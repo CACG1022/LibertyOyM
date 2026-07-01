@@ -31,7 +31,7 @@
     .multi-select-menu{position:absolute;top:calc(100% + 8px);left:0;right:0;background:#0c1830;border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:10px;display:none;z-index:45;max-height:260px;overflow:auto}
     .multi-select-menu.show{display:block}
     .multi-select-menu label{display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:13px;color:#dbeafe}
-    .filter-actions{display:grid;grid-template-columns:minmax(180px,220px) minmax(160px,200px) minmax(180px,220px) minmax(120px,160px);gap:12px;align-items:center}
+    .filter-actions{display:grid;grid-template-columns:minmax(150px,190px) minmax(150px,190px) minmax(170px,210px) minmax(180px,220px) minmax(110px,150px);gap:12px;align-items:center}
     .delivery-filter-panel{margin-top:12px;padding:12px;border:1px solid rgba(96,165,250,.20);border-radius:16px;background:rgba(255,255,255,.025)}.delivery-filter-title{font-size:12px;font-weight:800;color:#b9d6ff;margin-bottom:8px}.delivery-filter-grid{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:10px;align-items:center}.delivery-filter-grid .control{padding:10px 12px}.filter-help{font-size:11px;color:var(--muted);margin-top:7px}@media (max-width:1200px){.delivery-filter-grid{grid-template-columns:1fr 1fr}}@media (max-width:700px){.delivery-filter-grid{grid-template-columns:1fr}}
     @media (max-width:1200px){.toolbar-left{grid-template-columns:1fr}.filter-actions{grid-template-columns:1fr}.top-layout{grid-template-columns:1fr}}.import-btn{white-space:nowrap}.preview-table{width:100%;border-collapse:separate;border-spacing:0}.preview-table th,.preview-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px;text-align:left}.preview-table th{color:#9fd0ff;background:#0a1730;position:sticky;top:0}.preview-wrap{max-height:380px;overflow:auto;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02)}.summary-row{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:12px;margin:10px 0 16px}.summary-mini{padding:12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.03)}.summary-mini .n{font-size:24px;font-weight:800}.summary-mini .l{font-size:12px;color:#9ab0d0}.top-layout{display:grid;grid-template-columns:minmax(620px,1fr) minmax(560px,720px);gap:16px;align-items:start;margin-bottom:18px}.weekly-kpis{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px}.weekly-card{border:1px solid rgba(96,165,250,.25);border-radius:16px;padding:12px;background:linear-gradient(180deg,rgba(37,99,235,.12),rgba(15,23,42,.55));box-shadow:var(--shadow);min-height:82px;cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease}.weekly-card:hover{transform:translateY(-2px);border-color:rgba(96,165,250,.55)}.weekly-card.active{border-color:rgba(34,197,94,.65);background:linear-gradient(180deg,rgba(34,197,94,.12),rgba(15,23,42,.55))}.weekly-card .label{font-size:11px;color:#b9d6ff;line-height:1.25}.weekly-card .value{font-size:24px;font-weight:900;margin-top:8px;color:#fff}.weekly-card .unit{font-size:11px;color:#9ab0d0;margin-top:2px}@media (max-width:1450px){.top-layout{grid-template-columns:1fr}.weekly-kpis{grid-template-columns:repeat(4,1fr)}}@media (max-width:900px){.weekly-kpis{grid-template-columns:repeat(2,1fr)}}
     .summary{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:12px;margin-bottom:18px}
@@ -96,6 +96,10 @@
     .audit-value{max-width:320px;white-space:pre-wrap;word-break:break-word;color:#dbeafe}
     .audit-old{color:#fecaca}.audit-new{color:#bbf7d0}.audit-meta{font-size:12px;color:var(--muted);margin-bottom:12px}.audit-empty{padding:22px;text-align:center;color:var(--muted)}
 
+
+    input[name="Linea_base"], .linea-base-text { color:#F59C27 !important; font-weight:800; }
+    input[name="Linea_base"]::placeholder { color:rgba(245,156,39,.65); }
+
     @media (max-width:1400px){.summary{grid-template-columns:repeat(3,minmax(150px,1fr))}}
     @media (max-width:1100px){.grid,.detail-grid{grid-template-columns:repeat(2,1fr)}}
     @media (max-width:900px){.page{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.grid,.summary,.detail-grid{grid-template-columns:1fr}}
@@ -137,6 +141,7 @@
           </select>
         </div>
         <div class="field"><label>Capacidad en (Megas)</label><input name="capacidad"></div>
+        <div class="field"><label>Linea Base</label><input name="Linea_base" class="linea-base-text" placeholder="Ej. COR-ESTANDAR-ETH-100BT-30-MBPS"></div>
         <div class="field"><label>Estado planta externa</label>
           <select name="estado_planta_externa"><option>PENDIENTE</option><option>VIABLE</option><option>EN_GESTION</option><option>COMPLETA</option><option>NO_VIABLE</option><option>N/A</option></select>
         </div>
@@ -452,6 +457,7 @@ function renderShell(){
                   <option value="estado_asc">Estado</option>
                 </select>
                 <button class="btn ghost import-btn" type="button" onclick="openImportPicker()">Cargar plantilla</button>
+                <button class="btn ghost" type="button" onclick="descargarReporteColumbus()">Reporte Columbus</button>
                 <button class="btn ghost" type="button" onclick="openCorreoTemplateConfig()">Config. plantilla correo</button>
                 <button class="btn ghost" onclick="loadInstalaciones()">Actualizar</button>
                 <input id="plantillaInput" type="file" accept=".txt,.csv,.tsv,text/plain" style="display:none">
@@ -525,7 +531,7 @@ let clientRef = null;
 let instalacionesRows = [];
 let activeKpi = null;
 let activeWeeklyKpi = null;
-let importRowsPending = [];
+let importRowsPending = { insert: [], updateLineaBase: [] };
 let columnFilters = {fecha_ingreso:'', id_cambio:'', id_tarea:'', id_cliente:'', cliente:'', operador:'', estado_general:'', estado_permisos:'', fecha_agendamiento:'', fecha_entrega:'', duracion_total:'', tiempo_muerto:'', duracion_efectiva:'', acciones:''};
 let sortField = 'fecha_ingreso';
 let sortDir = 'desc';
@@ -538,7 +544,7 @@ function openImportPicker(){
 }
 function closeImportModal(){
   document.getElementById('importModal')?.classList.remove('show');
-  importRowsPending = [];
+  importRowsPending = { insert: [], updateLineaBase: [] };
 }
 function normalizeHeader(s){
   return String(s || '').replace(/^"+|"+$/g,'').trim();
@@ -613,6 +619,7 @@ function mapTemplateRow(row){
     cliente: cleanCell(row['Ubicacion A']) || null,
     direccion: cleanCell(row['Direccion A']) || null,
     operador: cleanCell(row['Operador']) || null,
+    Linea_base: cleanCell(row['Linea Base']) || null,
     fecha_ingreso: parseTemplateDate(row['Fecha Real Solic']),
     estado_general: 'INGRESADA'
   };
@@ -626,6 +633,7 @@ function renderImportPreview(rows, meta){
     <div class="summary-mini"><div class="n">${meta.filtered}</div><div class="l">Cumplen filtro</div></div>
     <div class="summary-mini"><div class="n">${meta.existing}</div><div class="l">Ya existentes</div></div>
     <div class="summary-mini"><div class="n">${meta.newRows}</div><div class="l">Nuevos a importar</div></div>
+    <div class="summary-mini"><div class="n">${meta.updateRows || 0}</div><div class="l">Actualizar Linea Base</div></div>
   `;
   body.innerHTML = rows.map(r => `
     <tr>
@@ -640,7 +648,7 @@ function renderImportPreview(rows, meta){
     </tr>
   `).join('');
   msg.style.color = '#cbd5e1';
-  msg.textContent = rows.length ? 'Revisa los registros nuevos. Si aceptas, se agregarán a la tabla instalaciones.' : 'No se encontraron registros nuevos para importar.';
+  msg.textContent = rows.length ? 'Revisa los registros. Si aceptas, se agregarán los nuevos y se actualizará Linea Base en los existentes.' : 'No se encontraron registros nuevos ni actualizaciones de Linea Base.';
   const btn = document.getElementById('confirmImportBtn');
   if(btn) btn.disabled = !rows.length;
   document.getElementById('importModal')?.classList.add('show');
@@ -665,36 +673,52 @@ async function processTemplateFile(file){
   const uniqueRows = Array.from(uniqueMap.values());
 
   const client = await resolveClient();
-  const { data: existingData, error } = await client.from('instalaciones').select('id_cambio');
+  const { data: existingData, error } = await client.from('instalaciones').select('id_cambio,Linea_base');
   if(error) throw error;
   const existing = new Set((existingData || []).map(x => String(x.id_cambio || '').trim()).filter(Boolean));
 
   const newRows = uniqueRows.filter(r => !existing.has(String(r.id_cambio || '').trim()));
-  importRowsPending = newRows;
+  const existingRowsToUpdate = uniqueRows
+    .filter(r => existing.has(String(r.id_cambio || '').trim()) && String(r.Linea_base || '').trim())
+    .map(r => ({ id_cambio: r.id_cambio, Linea_base: r.Linea_base }));
 
-  renderImportPreview(newRows, {
+  importRowsPending = { insert: newRows, updateLineaBase: existingRowsToUpdate };
+
+  renderImportPreview([...newRows, ...existingRowsToUpdate.map(r => ({...r, id_tarea:'', id_cliente:'', cliente:'Registro existente', direccion:'Actualizar Linea Base', operador:'', fecha_ingreso:null, estado_general:'ACTUALIZAR LINEA BASE'}))], {
     total: rawRows.length,
     filtered: filteredTemplate.length,
     existing: uniqueRows.length - newRows.length,
-    newRows: newRows.length
+    newRows: newRows.length,
+    updateRows: existingRowsToUpdate.length
   });
 }
 async function confirmImportRows(){
-  if(!importRowsPending.length) return;
+  const inserts = Array.isArray(importRowsPending) ? importRowsPending : (importRowsPending.insert || []);
+  const updates = Array.isArray(importRowsPending) ? [] : (importRowsPending.updateLineaBase || []);
+  if(!inserts.length && !updates.length) return;
   const client = await resolveClient();
   const btn = document.getElementById('confirmImportBtn');
   const msg = document.getElementById('importMsg');
   try{
     if(btn) btn.disabled = true;
-    if(msg){ msg.style.color = '#cbd5e1'; msg.textContent = 'Importando registros...'; }
-    const { error } = await client.from('instalaciones').insert(importRowsPending);
-    if(error) throw error;
+    if(msg){ msg.style.color = '#cbd5e1'; msg.textContent = 'Procesando registros...'; }
+    if(inserts.length){
+      const { error } = await client.from('instalaciones').insert(inserts);
+      if(error) throw error;
+    }
+    for(const item of updates){
+      const { error } = await client
+        .from('instalaciones')
+        .update({ Linea_base: item.Linea_base })
+        .eq('id_cambio', item.id_cambio);
+      if(error) throw error;
+    }
     closeImportModal();
     await loadInstalaciones();
-    alert(`Se importaron ${importRowsPending.length} registros correctamente.`);
+    alert(`Proceso finalizado. Nuevos importados: ${inserts.length}. Linea Base actualizadas: ${updates.length}.`);
   }catch(err){
     console.error(err);
-    if(msg){ msg.style.color = '#fecaca'; msg.textContent = 'Error importando registros: ' + (err.message || err); }
+    if(msg){ msg.style.color = '#fecaca'; msg.textContent = 'Error procesando registros: ' + (err.message || err); }
   }finally{
     if(btn) btn.disabled = false;
   }
@@ -1140,6 +1164,7 @@ function getColumnValue(r, field){
     case 'id_cliente': return r.id_cliente || '';
     case 'cliente': return `${r.cliente || ''}${r.direccion ? ' - ' + r.direccion : ''}`.trim();
     case 'operador': return r.operador || '';
+    case 'Linea_base': return r.Linea_base || '';
     case 'estado_general': return r.estado_general || '';
     case 'estado_permisos': return r.estado_permisos || '';
     case 'fecha_agendamiento': return `${fmtDate(r.fecha_agendamiento_pe)} ${fmtTime(r.hora_agendamiento)}`.trim();
@@ -1220,7 +1245,7 @@ function getFilteredRows(){
   const semanaEntrega = document.getElementById('filterSemanaEntrega')?.value || '';
   let rows = instalacionesRows.filter(r => {
     const hayTexto = !txt || [
-      r.cliente, r.id_cliente, r.id_cambio, r.id_tarea, r.operador, r.direccion,
+      r.cliente, r.id_cliente, r.id_cambio, r.id_tarea, r.operador, r.Linea_base, r.direccion,
       r.estado_general, r.estado_permisos, r.fecha_solicitud_permisos, r.fecha_respuesta_permisos, r.fecha_aprobacion_permisos
     ].map(x => String(x || '').toLowerCase()).some(v => v.includes(txt));
     const hayEstado = !estados.length || estados.includes(r.estado_general);
@@ -1298,7 +1323,7 @@ async function loadInstalaciones(){
     renderTable();
   }catch(err){
     console.error(err);
-    document.getElementById('tableBody').innerHTML = `<tr><td colspan="14" style="padding:18px;color:#fecaca">Error cargando instalaciones: ${esc(err.message || err)}</td></tr>`;
+    document.getElementById('tableBody').innerHTML = `<tr><td colspan="15" style="padding:18px;color:#fecaca">Error cargando instalaciones: ${esc(err.message || err)}</td></tr>`;
   }
 }
 
@@ -1314,7 +1339,8 @@ async function copiarInfoInstalacion(){
     `Dirección: ${(el['direccion']?.value || '').trim()}`,
     `ID Cliente: ${(el['id_cliente']?.value || '').trim()}`,
     `ID Cambio: ${(el['id_cambio']?.value || '').trim()}`,
-    `ID Tarea: ${(el['id_tarea']?.value || '').trim()}`
+    `ID Tarea: ${(el['id_tarea']?.value || '').trim()}`,
+    `Linea Base: ${(el['Linea_base']?.value || '').trim()}`
   ].join('\n');
 
   try{
@@ -1396,7 +1422,7 @@ async function loadCorreoTemplateInstalaciones(){
 }
 function getInstallTemplateVars(row){
   return {
-    cliente: row?.cliente || '', id_cliente: row?.id_cliente || '', id_cambio: row?.id_cambio || '', id_tarea: row?.id_tarea || '', direccion: row?.direccion || '', operador: row?.operador || '', estado_general: row?.estado_general || '', estado_permisos: row?.estado_permisos || '', fecha_ingreso: fmtDate(row?.fecha_ingreso), fecha_agendamiento_pe: fmtDate(row?.fecha_agendamiento_pe), fecha_agendamiento_pi: fmtDate(row?.fecha_agendamiento_pi), hora_agendamiento: fmtTime(row?.hora_agendamiento), fecha_entrega: fmtDate(row?.fecha_entrega), responsable: row?.responsable || '', contratista: row?.contratista || '', capacidad: row?.capacidad || ''
+    cliente: row?.cliente || '', id_cliente: row?.id_cliente || '', id_cambio: row?.id_cambio || '', id_tarea: row?.id_tarea || '', direccion: row?.direccion || '', operador: row?.operador || '', estado_general: row?.estado_general || '', estado_permisos: row?.estado_permisos || '', fecha_ingreso: fmtDate(row?.fecha_ingreso), fecha_agendamiento_pe: fmtDate(row?.fecha_agendamiento_pe), fecha_agendamiento_pi: fmtDate(row?.fecha_agendamiento_pi), hora_agendamiento: fmtTime(row?.hora_agendamiento), fecha_entrega: fmtDate(row?.fecha_entrega), responsable: row?.responsable || '', contratista: row?.contratista || '', capacidad: row?.capacidad || '', Linea_base: row?.Linea_base || ''
   };
 }
 function replaceTemplateVars(template, row){
@@ -1752,6 +1778,89 @@ function descargarOficioRadicacionTelefonica(){
   URL.revokeObjectURL(url);
 }
 
+
+function normalizarTextoReporte(v){
+  return String(v ?? '').trim().replace(/\s+/g, ' ');
+}
+function obtenerMesNombreReporte(fecha){
+  if(!fecha) return '';
+  const d = new Date(String(fecha) + 'T00:00:00');
+  if(isNaN(d)) return '';
+  return d.toLocaleDateString('es-CO', { month:'long' }).toLowerCase();
+}
+function fechaCortaReporte(fecha){
+  if(!fecha) return '';
+  const d = new Date(String(fecha) + 'T00:00:00');
+  if(isNaN(d)) return '';
+  return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
+}
+function valorExcelReporte(v){
+  return String(v ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/\r?\n/g, ' ')
+    .trim();
+}
+function descargarArchivoExcelHtml(nombre, tablaHtml){
+  const contenido = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    table{border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:11pt;}
+    th{background:#d9eaf7;font-weight:bold;}
+    th,td{border:1px solid #999;padding:4px 8px;mso-number-format:\@;}
+  </style>
+</head>
+<body>${tablaHtml}</body>
+</html>`;
+  const blob = new Blob(['\ufeff', contenido], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nombre;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function descargarReporteColumbus(){
+  const rows = (instalacionesRows || []).filter(r =>
+  normalizarTextoReporte(r.operador).toUpperCase() === 'COLUMBUS COLOMBIA' &&
+  normalizarTextoReporte(r.estado_general).toUpperCase() === 'ENTREGADA'
+);
+  if(!rows.length){
+    alert('No hay registros con Operador = COLUMBUS COLOMBIA para exportar.');
+    return;
+  }
+  const headers = ['Ciudad A','Parent Change','Operador','Nombre Serv Cliente','Fin','Linea Base','REGION','MES'];
+  const filasHtml = rows.map(r => {
+    const ciudad = 'VILLAVICENCIO';
+    const fechaFin = r.fecha_entrega || r.fecha_agendamiento_pe || r.fecha_ingreso || '';
+    const valores = [
+      ciudad,
+      r.id_cambio || '',
+      r.operador || '',
+      r.cliente || '',
+      fechaCortaReporte(fechaFin),
+      r.Linea_base || r.linea_base || '',
+      ciudad,
+      obtenerMesNombreReporte(fechaFin)
+    ];
+    return '<tr>' + valores.map(v => `<td>${valorExcelReporte(v)}</td>`).join('') + '</tr>';
+  }).join('');
+
+  const tablaHtml = `
+    <table>
+      <thead><tr>${headers.map(h => `<th>${valorExcelReporte(h)}</th>`).join('')}</tr></thead>
+      <tbody>${filasHtml}</tbody>
+    </table>`;
+
+  descargarArchivoExcelHtml('reporte_columbus_colombia_instalaciones.xls', tablaHtml);
+}
+
 function buildOutlookComposeUrl({to, cc, subject, body}){
   const params = [];
   if(to) params.push('to=' + encodeURIComponent(to));
@@ -1851,6 +1960,7 @@ window.showDetail = function(id){
       <div class="detail-card"><div class="detail-title">FO Externa</div><div class="detail-value">${esc(row.fo_externa || '')}</div></div>
       <div class="detail-card"><div class="detail-title">FO Interna</div><div class="detail-value">${esc(row.fo_interna || '')}</div></div>
       <div class="detail-card"><div class="detail-title">Capacidad</div><div class="detail-value">${esc(row.capacidad || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Linea Base</div><div class="detail-value linea-base-text">${esc(row.Linea_base || '')}</div></div>
       <div class="detail-card"><div class="detail-title">Tipo fibra</div><div class="detail-value">${esc(row.tipo_fibra || '')}</div></div>
 
       <div class="detail-card"><div class="detail-title">Estado general</div><div class="detail-value">${esc(row.estado_general || '')}</div></div>
@@ -2048,6 +2158,7 @@ document.getElementById('instalacionForm').addEventListener('submit', async func
       fo_externa: (el['fo_externa'].value || '').trim() || null,
       fo_interna: (el['fo_interna'].value || '').trim() || null,
       capacidad: (el['capacidad'].value || '').trim() || null,
+      Linea_base: (el['Linea_base']?.value || '').trim() || null,
       tipo_fibra: (el['tipo_fibra'].value || '').trim() || null,
       estado_general: el['estado_general'].value,
       fecha_solicitud_permisos: el['fecha_solicitud_permisos'].value || null,
@@ -2243,6 +2354,7 @@ loadInstalaciones();
             <th>Cliente</th>
             <th>Dirección</th>
             <th>Operador</th>
+            <th>Linea Base</th>
             <th>Estado</th>
           </tr>
         </thead>
@@ -2252,7 +2364,7 @@ loadInstalaciones();
     <div id="importMsg" style="margin-top:12px;color:#cbd5e1"></div>
     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
       <button type="button" class="small-btn" onclick="closeImportModal()">Rechazar</button>
-      <button type="button" class="btn" id="confirmImportBtn" onclick="confirmImportRows()">Aceptar e importar</button>
+      <button type="button" class="btn" id="confirmImportBtn" onclick="confirmImportRows()">Aceptar e importar / actualizar</button>
     </div>
   </div>
 </div>
