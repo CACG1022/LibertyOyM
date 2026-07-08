@@ -29,7 +29,7 @@
     .toolbar-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
     .toolbar-left,.toolbar-right{display:flex;gap:12px;flex-wrap:wrap}
     .control{min-width:190px;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}
-    .summary{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+    .summary{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:12px;margin-bottom:18px}
     .stat{border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));padding:16px;box-shadow:var(--shadow);min-height:110px;cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease}
     .stat .label{font-size:12px;color:var(--muted);margin-bottom:8px}.stat .value{font-size:30px;font-weight:800}.stat .sub{font-size:12px;color:#b9d6ff;margin-top:6px}.stat:hover{transform:translateY(-2px);border-color:rgba(96,165,250,.45)}.stat.active{border-color:rgba(34,197,94,.60);background:linear-gradient(180deg,rgba(34,197,94,.12),rgba(255,255,255,.02))}
     .card{border:1px solid var(--border);border-radius:20px;background:linear-gradient(180deg,#08152c,#0a1730);box-shadow:var(--shadow)}
@@ -183,12 +183,12 @@
         <div class="modal-kpi">
           <div class="k-label">Duración total factibilidad</div>
           <div class="k-value" id="kpiDuracionTotalFact">0 días</div>
-          <div class="k-sub">Fecha entrega - Fecha ingreso</div>
+          <div class="k-sub">Fecha entrega o día actual - Fecha ingreso</div>
         </div>
         <div class="modal-kpi dead">
           <div class="k-label">Tiempo muerto</div>
           <div class="k-value" id="kpiTiempoMuertoFact">0 días</div>
-          <div class="k-sub">Permisos + otros tiempos muertos</div>
+          <div class="k-sub">Permisos + no hábiles/festivos</div>
         </div>
         <div class="modal-kpi effective">
           <div class="k-label">Duración efectiva</div>
@@ -936,6 +936,88 @@ function diasCalendarioEntre(fechaInicio, fechaFin){
   const diff = Math.floor((fin - inicio) / 86400000);
   return diff < 0 ? 0 : diff;
 }
+
+const FESTIVOS_COLOMBIA_2026 = {
+  '2026-01-01': 'Año Nuevo',
+  '2026-01-12': 'Reyes Magos',
+  '2026-03-23': 'Día de San José',
+  '2026-04-02': 'Jueves Santo',
+  '2026-04-03': 'Viernes Santo',
+  '2026-05-01': 'Día del trabajo',
+  '2026-05-18': 'Ascensión de Jesús',
+  '2026-06-08': 'Corpus Christi',
+  '2026-06-15': 'Sagrado Corazón de Jesús',
+  '2026-06-29': 'San Pedro y San Pablo',
+  '2026-07-13': 'Día de la Virgen de Chiquinquirá',
+  '2026-07-20': 'Día de la independencia',
+  '2026-08-07': 'Batalla de Boyacá',
+  '2026-08-17': 'Asunción de la Virgen',
+  '2026-10-12': 'Día de la raza',
+  '2026-11-02': 'Todos los Santos',
+  '2026-11-16': 'Independencia de Cartagena',
+  '2026-12-08': 'Inmaculada Concepción',
+  '2026-12-25': 'Navidad'
+};
+
+function dateToIsoLocal(date){
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+function hoyIsoLocal(){
+  const hoy = new Date();
+  hoy.setHours(0,0,0,0);
+  return dateToIsoLocal(hoy);
+}
+function fechaFinGestion(fechaEntrega){
+  // Si no hay fecha de entrega, la duración se calcula contra el día actual.
+  return fechaEntrega || hoyIsoLocal();
+}
+function parseFechaLocal(fecha){
+  if(!fecha) return null;
+  const raw = String(fecha).trim();
+  const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(iso) return new Date(`${iso[1]}-${iso[2]}-${iso[3]}T00:00:00`);
+  const dmy = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(dmy) return new Date(`${dmy[3]}-${String(dmy[2]).padStart(2,'0')}-${String(dmy[1]).padStart(2,'0')}T00:00:00`);
+  const d = new Date(raw);
+  return isNaN(d) ? null : new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+function obtenerFestivoColombia(iso){
+  return FESTIVOS_COLOMBIA_2026[iso] || '';
+}
+function estaDentroRangoMuerto(date, rangos){
+  return (rangos || []).some(r => {
+    const inicio = parseFechaLocal(r?.inicio);
+    const fin = parseFechaLocal(r?.fin);
+    if(!inicio || !fin) return false;
+    // Mismo criterio de diasCalendarioEntre: no cuenta el día inicial y sí cuenta el día final.
+    return date > inicio && date <= fin;
+  });
+}
+function contarNoHabilesYFestivos(fechaInicio, fechaFin, rangosExcluir=[]){
+  const inicio = parseFechaLocal(fechaInicio);
+  const fin = parseFechaLocal(fechaFin);
+  if(!inicio || !fin || fin <= inicio) return 0;
+
+  let total = 0;
+  const actual = new Date(inicio);
+  actual.setDate(actual.getDate() + 1);
+
+  while(actual <= fin){
+    const iso = dateToIsoLocal(actual);
+    const dia = actual.getDay();
+    const esFinSemana = dia === 0 || dia === 6;
+    const esFestivo = !!obtenerFestivoColombia(iso);
+
+    // Evita duplicar días no hábiles/festivos que ya quedaron incluidos dentro de permisos o radicación.
+    if((esFinSemana || esFestivo) && !estaDentroRangoMuerto(actual, rangosExcluir)) total++;
+    actual.setDate(actual.getDate() + 1);
+  }
+
+  return total;
+}
 function calcularTiemposMuertosFactibilidad(){
   const form = document.getElementById('factibilidadForm');
   if(!form) return;
@@ -948,8 +1030,13 @@ function calcularTiemposMuertosFactibilidad(){
   if(el['tiempo_muerto_permisos']) el['tiempo_muerto_permisos'].value = permiso === '' ? '' : `${permiso} días`;
   if(el['tiempo_muerto_radicacion']) el['tiempo_muerto_radicacion'].value = radicacion === '' ? '' : `${radicacion} días`;
 
-  const total = diasCalendarioEntre(el['fecha_ingreso']?.value, el['fecha_entrega']?.value);
-  const tiempoMuerto = (permiso === '' ? 0 : Number(permiso)) + (radicacion === '' ? 0 : Number(radicacion));
+  const fechaFin = fechaFinGestion(el['fecha_entrega']?.value);
+  const total = diasCalendarioEntre(el['fecha_ingreso']?.value, fechaFin);
+  const rangosMuertos = [];
+  if(permiso !== '') rangosMuertos.push({ inicio: el['fecha_solicitud_permisos']?.value, fin: el['fecha_aprobacion_permisos']?.value });
+  if(radicacion !== '') rangosMuertos.push({ inicio: el['fecha_radicacion']?.value, fin: el['fecha_respuesta_radicacion']?.value });
+  const noHabilesFestivos = total === '' ? 0 : contarNoHabilesYFestivos(el['fecha_ingreso']?.value, fechaFin, rangosMuertos);
+  const tiempoMuerto = (permiso === '' ? 0 : Number(permiso)) + (radicacion === '' ? 0 : Number(radicacion)) + noHabilesFestivos;
   const efectiva = total === '' ? '' : Math.max(0, Number(total) - tiempoMuerto);
 
   const totalEl = document.getElementById('kpiDuracionTotalFact');
@@ -968,20 +1055,48 @@ function parseDiasTexto(v){
   return Number.isFinite(n) ? Math.max(0, n) : 0;
 }
 function calcularDuracionTotalRow(row){
-  const total = diasCalendarioEntre(row?.fecha_ingreso, row?.fecha_entrega);
+  const fechaFin = fechaFinGestion(row?.fecha_entrega);
+  const total = diasCalendarioEntre(row?.fecha_ingreso, fechaFin);
   return total === '' ? '0 días' : `${total} días`;
 }
 function calcularTiempoMuertoRow(row){
+  const fechaFin = fechaFinGestion(row?.fecha_entrega);
   const permiso = diasCalendarioEntre(row?.fecha_solicitud_permisos, row?.fecha_aprobacion_permisos);
   const permisoDias = permiso === '' ? parseDiasTexto(row?.tiempo_muerto_permisos) : Number(permiso);
   const radDias = row?.checklist_radicacion_emsa ? parseDiasTexto(row?.tiempo_muerto_radicacion) : 0;
-  return `${permisoDias + radDias} días`;
+  const rangosMuertos = [];
+  if(permiso !== '') rangosMuertos.push({ inicio: row?.fecha_solicitud_permisos, fin: row?.fecha_aprobacion_permisos });
+  if(row?.checklist_radicacion_emsa && row?.fecha_radicacion && row?.fecha_respuesta_radicacion){
+    rangosMuertos.push({ inicio: row.fecha_radicacion, fin: row.fecha_respuesta_radicacion });
+  }
+  const noHabilesFestivos = contarNoHabilesYFestivos(row?.fecha_ingreso, fechaFin, rangosMuertos);
+  return `${permisoDias + radDias + noHabilesFestivos} días`;
 }
 function calcularDuracionEfectivaRow(row){
-  const total = diasCalendarioEntre(row?.fecha_ingreso, row?.fecha_entrega);
+  const fechaFin = fechaFinGestion(row?.fecha_entrega);
+  const total = diasCalendarioEntre(row?.fecha_ingreso, fechaFin);
   if(total === '') return '0 días';
   const muerto = parseDiasTexto(calcularTiempoMuertoRow(row));
   return `${Math.max(0, Number(total) - muerto)} días`;
+}
+
+function estadoNormalizado(row){
+  return String(row?.estado_general || '').trim().toUpperCase();
+}
+function esEstadoCerradoMas20(row){
+  const estado = estadoNormalizado(row).replace(/_/g, ' ');
+  return [
+    'ENTREGADA',
+    'APROBADA',
+    'APROBADO',
+    'FACTIBILIDAD REALIZADA',
+    'CANCELADA',
+    'RECHAZADA',
+    'NO VIABLE'
+  ].includes(estado);
+}
+function esViabilidadMas20Dias(row){
+  return !esEstadoCerradoMas20(row) && parseDiasTexto(calcularDuracionTotalRow(row)) > 20;
 }
 
 function applyKpiFilter(rows){
@@ -993,6 +1108,8 @@ function applyKpiFilter(rows){
       return rows.filter(r => !['APROBADA','ENTREGADA','RECHAZADA','CANCELADA','FACTIBILIDAD REALIZADA','NO VIABLE','NO_VIABLE'].includes(String(r.estado_general || '').trim().toUpperCase()));
     case 'LISTAS_RADICAR':
       return rows.filter(r => calcularListaParaRadicar(r));
+    case 'MAS_20_DIAS':
+      return rows.filter(r => esViabilidadMas20Dias(r));
     case 'APROBADAS':
       return rows.filter(r => ['APROBADA','ENTREGADA','FACTIBILIDAD REALIZADA'].includes(String(r.estado_general || '').trim().toUpperCase()));
     default:
@@ -1011,12 +1128,14 @@ function bindKpiClicks(){
 function renderSummary(rows){
   const total = rows.length,
         listas = rows.filter(r => calcularListaParaRadicar(r)).length,
+        mas20 = rows.filter(r => esViabilidadMas20Dias(r)).length,
         aprobadas = rows.filter(r => ['APROBADA','ENTREGADA','FACTIBILIDAD REALIZADA'].includes(String(r.estado_general || '').trim().toUpperCase())).length,
         pendientes = rows.filter(r => !['APROBADA','ENTREGADA','RECHAZADA','CANCELADA','FACTIBILIDAD REALIZADA','NO VIABLE','NO_VIABLE'].includes(String(r.estado_general || '').trim().toUpperCase())).length;
   document.getElementById('summary').innerHTML = `
     <div class="stat ${activeKpi==='TOTAL'?'active':''}" data-kpi="TOTAL"><div class="label">Total solicitudes</div><div class="value">${total}</div><div class="sub">Base visible</div></div>
     <div class="stat ${activeKpi==='PENDIENTES'?'active':''}" data-kpi="PENDIENTES"><div class="label">Pendientes</div><div class="value">${pendientes}</div><div class="sub">Aún activas</div></div>
     <div class="stat ${activeKpi==='LISTAS_RADICAR'?'active':''}" data-kpi="LISTAS_RADICAR"><div class="label">Listas para radicar</div><div class="value">${listas}</div><div class="sub">Presupuesto + documentación</div></div>
+    <div class="stat ${activeKpi==='MAS_20_DIAS'?'active':''}" data-kpi="MAS_20_DIAS"><div class="label">Viabilidades &gt; 20 días</div><div class="value">${mas20}</div><div class="sub">Excluye cerradas/no viables</div></div>
     <div class="stat ${activeKpi==='APROBADAS'?'active':''}" data-kpi="APROBADAS"><div class="label">Aprobadas</div><div class="value">${aprobadas}</div><div class="sub">Factibilidades cerradas</div></div>`;
   bindKpiClicks();
 }
@@ -1135,7 +1254,7 @@ function getEstadoRowClass(estado){
   const normalized = String(estado || '').trim().toUpperCase();
   if(normalized === 'APROBADA') return 'row-aprobada';
   if(normalized === 'ENTREGADA') return 'row-entregada';
-  if(normalized === 'NO VIABLE' || normalized === 'NO_VIABLE') return 'row-no-viable';
+  if(['NO VIABLE','NO_VIABLE','CANCELADA','RECHAZADA'].includes(normalized)) return 'row-no-viable';
   return '';
 }
 
@@ -1536,5 +1655,6 @@ loadFactibilidades();
 
 </body>
 </html>
+
 
 
