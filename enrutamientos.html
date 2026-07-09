@@ -77,6 +77,9 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
     .authCard{width:min(430px,100%);background:#111827;border:1px solid #334155;border-radius:18px;padding:18px;box-shadow:0 24px 80px rgba(0,0,0,.6)}
     .clienteCard{border:1px solid #334155;background:#020617;border-radius:14px;padding:10px;margin:8px 0;font-size:13px}
 
+
+.serverPhoto{width:49%;max-height:130px;object-fit:cover;border-radius:10px;margin-top:8px;border:1px solid #334155;background:#111827}
+.serverPhotoLinks{font-size:12px;margin-top:6px;line-height:1.5}
 </style>
 </head>
 
@@ -121,9 +124,9 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
   <div id="map"></div>
   <div class="crosshair"><div class="crosshairCircle"></div></div>
 
-  <button id="toggleBotones" class="toggleButtons" onclick="toggleBotonesLaterales()" title="Ocultar/mostrar botones">☰</button>
+  <button id="toggleBotones" class="toggleButtons" onclick="toggleBotonesLaterales()" title="Mostrar botones">☰</button>
 
-  <div class="floatButtons" id="floatButtons">
+  <div class="floatButtons oculto" id="floatButtons">
     <button class="secondary" onclick="iniciarGPSRealtime()">Ir a mi GPS</button>
     <button onclick="marcarCentro()" style="display:none">Marcar</button>
     <button class="gray" onclick="abrirPanelClientesAsignados()">Mis clientes</button>
@@ -131,6 +134,7 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
     <button class="purple" onclick="abrirPanelAlmacenamiento()">Almacenamiento</button>
     <button class="warning" onclick="sincronizarPendientes()">Enviar datos</button>
     <button class="danger" onclick="reenviarTodo()">Reenviar todo</button>
+    <button class="danger" onclick="finalizarEnrutamiento()">Finalizar enrutamiento</button>
     <button class="purple" onclick="abrirPanelClientesAsignados()">Mis clientes asignados</button>
     <button class="danger" onclick="logoutTecnico()">Cerrar sesión</button>
   </div>
@@ -293,6 +297,7 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
       <div class="buttons">
         <button class="warning" onclick="sincronizarPendientes()">Enviar pendientes</button>
         <button class="danger" onclick="reenviarTodo()">Reenviar todo</button>
+    <button class="danger" onclick="finalizarEnrutamiento()">Finalizar enrutamiento</button>
         <button class="gray" onclick="exportarJSON()">Exportar JSON</button>
       </div>
       <div class="buttons">
@@ -680,12 +685,65 @@ async function seleccionarClienteAsignado(id){
     estado_asignacion:"en_proceso"
   }).eq("id", c.id);
 
-  alert("Cliente cargado. Ya puedes marcar puntos de enrutamiento.");
+  await cargarEmpalmesExistentesDesdeSupabase(c.id);
+  alert("Cliente cargado. Ya puedes marcar puntos de enrutamiento. Si ya existían empalmes en Supabase, fueron cargados en el mapa.");
 }
 
 async function logoutTecnico(){
   await supabaseClient.auth.signOut();
   location.reload();
+}
+
+
+async function cargarEmpalmesExistentesDesdeSupabase(rutaSupabaseId){
+  if(!rutaSupabaseId) return;
+  try{
+    const {data,error}=await supabaseClient.from("empalmes_enrutamiento").select("*").eq("enrutamiento_id",rutaSupabaseId).order("consecutivo_empalme",{ascending:true});
+    if(error) throw error;
+    const remotos=data||[];
+    const ids=remotos.map(e=>e.id).filter(Boolean);
+    let fotosByEmpalme={};
+    if(ids.length){
+      const {data:fotosData,error:fotosError}=await supabaseClient.from("empalmes_enrutamiento_fotos").select("*").in("empalme_id",ids);
+      if(!fotosError){
+        (fotosData||[]).forEach(f=>{
+          fotosByEmpalme[f.empalme_id]=fotosByEmpalme[f.empalme_id]||{};
+          if(f.tipo_foto==="foto1_panoramica") fotosByEmpalme[f.empalme_id].foto1=f;
+          if(f.tipo_foto==="foto2_empalme_fusion") fotosByEmpalme[f.empalme_id].foto2=f;
+        });
+      }
+    }
+    remotos.forEach(e=>{
+      const f=fotosByEmpalme[e.id]||{};
+      const normalizado={
+        offline_id:e.offline_id||crypto.randomUUID(),supabase_id:e.id,enrutamiento_offline_id:enrutamientoActivo.offline_id,
+        id_cliente:enrutamientoActivo.id_cliente,codigo_ruta:enrutamientoActivo.codigo_ruta,nombre_cliente:enrutamientoActivo.nombre_cliente,
+        consecutivo_empalme:e.consecutivo_empalme,etiqueta_empalme:e.etiqueta_empalme||((e.tipo_punto==="Nodo"?"Nodo ":e.tipo_punto==="Cliente"?"Cliente ":"Empalme ")+(e.consecutivo_empalme||"")),
+        fecha_captura_app:e.fecha_captura_app||e.created_at,ambiente:e.ambiente,tipo_punto:e.tipo_punto,zona_interna:e.zona_interna,piso_nivel:e.piso_nivel,
+        torre_bloque:e.torre_bloque,cuarto_rack:e.cuarto_rack,referencia_visual:e.referencia_visual,acceso_requerido:e.acceso_requerido,
+        descripcion_interna:e.descripcion_interna,elemento_externo:e.elemento_externo,id_elemento_externo:e.id_elemento_externo,referencia_externa:e.referencia_externa,
+        nombre_punto:e.nombre_punto,sentido:e.sentido,cable_entrada:e.cable_entrada,cable_salida:e.cable_salida,tubo_entrada:"",hilo_entrada:e.hilo_entrada,tubo_salida:"",hilo_salida:e.hilo_salida,
+        observacion:e.observacion,latitud:Number(e.latitud),longitud:Number(e.longitud),precision_gps:e.precision_gps,
+        foto1_panoramica_url:e.foto1_panoramica_url||f.foto1?.url_foto||null,
+        foto2_empalme_fusion_url:e.foto2_empalme_fusion_url||f.foto2?.url_foto||null,
+        foto1_nombre_archivo:e.foto1_nombre_archivo||f.foto1?.nombre_archivo||null,
+        foto2_nombre_archivo:e.foto2_nombre_archivo||f.foto2?.nombre_archivo||null,
+        sync_status:"enviado",cargado_desde_supabase:true,user_agent:navigator.userAgent
+      };
+      const existente=registros.find(r=>r.supabase_id===e.id||r.offline_id===e.offline_id);
+      if(existente) Object.assign(existente,normalizado); else registros.unshift(normalizado);
+    });
+    guardarLocalStorage(); pintarRegistros();
+    const bounds=remotos.filter(e=>e.latitud&&e.longitud).map(e=>[Number(e.latitud),Number(e.longitud)]);
+    if(bounds.length) map.fitBounds(bounds,{padding:[40,40],maxZoom:19});
+    if(remotos.length) mostrarToast(`${remotos.length} punto(s) cargado(s) desde Supabase`);
+  }catch(err){alert("No se pudieron cargar los empalmes existentes desde Supabase: "+(err.message||err));}
+}
+function obtenerDriveIdTecnico(url){const s=String(url||"");let m=s.match(/\/file\/d\/([^/]+)/);if(m)return m[1];m=s.match(/[?&]id=([^&]+)/);if(m)return m[1];return "";}
+function drivePreviewFromUrl(url){const id=obtenerDriveIdTecnico(url);return id?`https://drive.google.com/thumbnail?id=${id}&sz=w800`:url;}
+function renderFotosServidorRegistro(r){
+  const f1=r.foto1_panoramica_url,f2=r.foto2_empalme_fusion_url;if(!f1&&!f2)return "";
+  return `<div style="margin-top:8px">${f1?`<img class="serverPhoto" src="${escapeAttr(drivePreviewFromUrl(f1))}" onclick="window.open('${escapeAttr(f1)}','_blank')">`:""}${f2?`<img class="serverPhoto" src="${escapeAttr(drivePreviewFromUrl(f2))}" onclick="window.open('${escapeAttr(f2)}','_blank')">`:""}<div class="serverPhotoLinks">${f1?`<a href="${escapeAttr(f1)}" target="_blank">Abrir Foto 1</a><br>`:""}${f2?`<a href="${escapeAttr(f2)}" target="_blank">Abrir Foto 2</a>`:""}</div></div>`;
 }
 
 function iniciarMapa(){
@@ -767,7 +825,7 @@ function actualizarCamposPorTipoPunto(){
 
 function actualizarHeader(){
   if(enrutamientoActivo){
-    document.getElementById("clienteHeader").textContent = `Cliente: ${enrutamientoActivo.id_cliente} · Ruta: ${enrutamientoActivo.codigo_ruta}`;
+    document.getElementById("clienteHeader").textContent = `Cliente: ${enrutamientoActivo.id_cliente} · Ruta: ${enrutamientoActivo.codigo_ruta} · Estado: ${enrutamientoActivo.estado_asignacion || enrutamientoActivo.estado || "en_proceso"}`;
   } else {
     document.getElementById("clienteHeader").textContent = "Sin enrutamiento activo";
   }
@@ -813,20 +871,108 @@ function cargarUltimoEnrutamiento(){
   abrirPanelClientesAsignados();
 }
 
-function finalizarEnrutamiento(){
-  if(!enrutamientoActivo){ alert("No hay enrutamiento activo."); return; }
-  if(!confirm("¿Finalizar este enrutamiento e iniciar luego otro cliente?")) return;
+async function finalizarEnrutamiento(){
+  if(!enrutamientoActivo){
+    alert("No hay enrutamiento activo para finalizar.");
+    return;
+  }
+
+  const empalmesRuta = registros.filter(r => r.enrutamiento_offline_id === enrutamientoActivo.offline_id);
+  const pendientesRuta = empalmesRuta.filter(r => r.sync_status !== "enviado");
+  const resumen = [
+    `Cliente: ${enrutamientoActivo.id_cliente}`,
+    `Ruta/cambio: ${enrutamientoActivo.codigo_ruta}`,
+    `Empalmes registrados: ${empalmesRuta.length}`,
+    `Empalmes pendientes por enviar: ${pendientesRuta.length}`
+  ].join("\\n");
+
+  if(!confirm(`Vas a finalizar este enrutamiento.\\n\\n${resumen}\\n\\nDespués de finalizar ya no podrás seguir marcando puntos sobre este cliente, salvo que lo vuelvas a seleccionar si sigue disponible.\\n\\n¿Deseas continuar?`)){
+    return;
+  }
+
+  const confirmacion = prompt('Para confirmar escribe FINALIZAR:');
+  if(String(confirmacion || "").trim().toUpperCase() !== "FINALIZAR"){
+    alert("Finalización cancelada.");
+    return;
+  }
+
+  const fechaFinalizacion = new Date().toISOString();
+  const rutaOfflineId = enrutamientoActivo.offline_id;
+  const rutaSupabaseId = enrutamientoActivo.supabase_id;
+
   enrutamientoActivo.estado = "finalizado";
-  enrutamientoActivo.fecha_finalizacion = new Date().toISOString();
-  enrutamientoActivo.sync_status = enrutamientoActivo.sync_status === "enviado" ? "pendiente_update" : "pendiente";
-  const idx = enrutamientos.findIndex(r => r.offline_id === enrutamientoActivo.offline_id);
-  if(idx >= 0) enrutamientos[idx] = enrutamientoActivo;
+  enrutamientoActivo.estado_asignacion = "finalizado";
+  enrutamientoActivo.fecha_finalizacion = fechaFinalizacion;
+  enrutamientoActivo.sync_status = "pendiente_finalizacion";
+  enrutamientoActivo.error_sync = null;
+
+  const idx = enrutamientos.findIndex(r => r.offline_id === rutaOfflineId);
+  if(idx >= 0){
+    enrutamientos[idx] = {...enrutamientos[idx], ...enrutamientoActivo};
+  }else{
+    enrutamientos.unshift(enrutamientoActivo);
+  }
+
   guardarEnrutamientos();
+
+  let actualizadoSupabase = false;
+
+  try{
+    // Si hay empalmes pendientes, primero intenta enviarlos.
+    if(pendientesRuta.length > 0){
+      await sincronizarPendientes(false);
+    }
+
+    const rutaActual = enrutamientos.find(r => r.offline_id === rutaOfflineId) || enrutamientoActivo;
+    const idParaActualizar = rutaActual.supabase_id || rutaSupabaseId;
+
+    if(idParaActualizar){
+      const {error} = await supabaseClient
+        .from("enrutamientos_clientes")
+        .update({
+          estado: "finalizado",
+          estado_asignacion: "finalizado",
+          fecha_finalizacion: fechaFinalizacion,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", idParaActualizar);
+
+      if(error) throw error;
+
+      actualizadoSupabase = true;
+      rutaActual.estado = "finalizado";
+      rutaActual.estado_asignacion = "finalizado";
+      rutaActual.fecha_finalizacion = fechaFinalizacion;
+      rutaActual.sync_status = "enviado";
+
+      const idx2 = enrutamientos.findIndex(r => r.offline_id === rutaOfflineId);
+      if(idx2 >= 0) enrutamientos[idx2] = rutaActual;
+    }else{
+      // Si no hay ID de Supabase, quedará pendiente para el próximo envío.
+      actualizadoSupabase = false;
+    }
+  }catch(err){
+    console.error("Error finalizando en Supabase:", err);
+    const rutaError = enrutamientos.find(r => r.offline_id === rutaOfflineId);
+    if(rutaError){
+      rutaError.sync_status = "pendiente_finalizacion";
+      rutaError.error_sync = err.message || String(err);
+    }
+    alert("El enrutamiento quedó finalizado localmente, pero no se pudo actualizar en Supabase. Cuando tengas conexión usa 'Enviar datos'.\\n\\nError: " + (err.message || err));
+  }
+
+  guardarEnrutamientos();
+
   enrutamientoActivo = null;
   localStorage.removeItem("oym_enrutamiento_activo_v2");
+
   actualizarHeader();
+  pintarRegistros();
   cerrarPanelRegistros();
+  await cargarClientesAsignados();
   abrirPanelClientesAsignados();
+
+  alert(actualizadoSupabase ? "Enrutamiento finalizado y actualizado en Supabase." : "Enrutamiento finalizado localmente. Queda pendiente por enviar a Supabase.");
 }
 
 function guardarEnrutamientos(){
@@ -1137,6 +1283,7 @@ async function sincronizarPendientes(forzarReenvio = false){
         direccion_cliente: ruta.direccion_cliente,
         observacion_general: ruta.observacion_general,
         estado: ruta.estado,
+        estado_asignacion: ruta.estado_asignacion || (ruta.estado === "finalizado" ? "finalizado" : "en_proceso"),
         fecha_inicio: ruta.fecha_inicio,
         fecha_finalizacion: ruta.fecha_finalizacion || null,
         dispositivo: "HTML_MOBILE",
@@ -1305,7 +1452,7 @@ function pintarListaRegistros(listaDatos){
   const lista=document.getElementById("listaRegistros");
   const rutaBox=document.getElementById("panelRutaInfo");
   if(rutaBox){
-    rutaBox.innerHTML = enrutamientoActivo ? `<b>ID Cliente:</b> ${enrutamientoActivo.id_cliente}<br><b>Código ruta/cambio:</b> ${enrutamientoActivo.codigo_ruta}<br><b>Cliente:</b> ${enrutamientoActivo.nombre_cliente || "N/A"}<br><b>Empalmes locales de esta ruta:</b> ${listaDatos.length}` : "Sin enrutamiento activo.";
+    rutaBox.innerHTML = enrutamientoActivo ? `<b>ID Cliente:</b> ${enrutamientoActivo.id_cliente}<br><b>Código ruta/cambio:</b> ${enrutamientoActivo.codigo_ruta}<br><b>Cliente:</b> ${enrutamientoActivo.nombre_cliente || "N/A"}<br><b>Estado:</b> ${enrutamientoActivo.estado_asignacion || enrutamientoActivo.estado || "en_proceso"}<br><b>Empalmes locales de esta ruta:</b> ${listaDatos.length}` : "Sin enrutamiento activo.";
   }
 
   if(listaDatos.length===0){ lista.innerHTML=`<div class="gpsBox">Aún no hay empalmes para este enrutamiento.</div>`; return; }
@@ -1642,6 +1789,19 @@ function escapeAttr(value){ return escapeHtml(value); }
 function val(id){const el=document.getElementById(id);return el?String(el.value ?? "").trim():"";}
 function setVal(id,value){const el=document.getElementById(id); if(el) el.value = value ?? "";}
 
+
+function inicializarBotonesLateralesOcultos(){
+  const panel = document.getElementById("floatButtons");
+  const btn = document.getElementById("toggleBotones");
+  if(panel){
+    panel.classList.add("oculto");
+  }
+  if(btn){
+    btn.textContent = "☰";
+    btn.title = "Mostrar botones";
+  }
+}
+
 function toggleBotonesLaterales(){
   const panel = document.getElementById("floatButtons");
   const btn = document.getElementById("toggleBotones");
@@ -1675,7 +1835,7 @@ window.addEventListener("pagehide", function(){
   }
 });
 
-migrarFotosLegacyAIndexedDB().then(() => { iniciarMapa(); iniciarObservadorFab(); verificarSesionTecnico(); }).catch(err => { console.error(err); iniciarMapa(); iniciarObservadorFab(); verificarSesionTecnico(); });
+migrarFotosLegacyAIndexedDB().then(() => { inicializarBotonesLateralesOcultos(); iniciarMapa(); iniciarObservadorFab(); verificarSesionTecnico(); }).catch(err => { console.error(err); inicializarBotonesLateralesOcultos(); iniciarMapa(); iniciarObservadorFab(); verificarSesionTecnico(); });
 </script>
 
 <button id="fabMarcar" class="fabMarcar" onclick="marcarCentro()" title="Marcar ubicación">+</button>
