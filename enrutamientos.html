@@ -259,7 +259,7 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
       <div class="sectionTitle">2. Clasificación</div>
       <div class="row">
         <div><label>Tipo de enrutamiento <span class="required">*</span></label><select id="ambiente" onchange="cambiarAmbiente()"><option value="">Seleccione...</option><option value="externo">Externo</option><option value="interno">Interno</option></select></div>
-        <div><label>Tipo de punto</label><select id="tipoPunto" onchange="actualizarCamposPorTipoPunto()"><option>Empalme</option><option>Caja de empalme</option><option>Manga</option><option>ODF</option><option>Reserva</option><option>Nodo</option><option>Cliente</option><option>Gabinete</option><option>FDH/FDT</option></select></div>
+        <div><label>Tipo de punto</label><select id="tipoPunto" onchange="actualizarCamposPorTipoPunto()"><option>Empalme</option><option>Nodo</option><option>Cliente</option><option>Sangria</option></select></div>
       </div>
 
       <div id="camposInternos" class="hidden">
@@ -288,11 +288,8 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
           <option>Cámara</option>
           <option>Pedestal</option>
           <option>Fachada</option>
-          <option>Canalización</option>
           <option>Armario</option>
           <option>Gabinete exterior</option>
-          <option>Reserva aérea</option>
-          <option>Reserva subterránea</option>
           <option>Otro</option>
         </select>
         <input id="idElementoExterno" type="hidden" value="">
@@ -301,7 +298,7 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
 
       <div class="sectionTitle">4. Datos de fusión</div>
       <div class="row">
-        <div><label id="labelPunto">Nombre punto / caja / manga</label><input id="punto" placeholder="Ej: EMP-012"></div>
+        <div><label id="labelPunto">Nombre punto / caja / manga</label><input id="punto" placeholder="Ej: FOC104532"></div>
         <div><label>Sentido</label><select id="sentido"><option>Nodo → Cliente</option><option>Cliente → Nodo</option><option>Troncal</option><option>Distribución</option><option>Derivación</option></select></div>
       </div>
       <div class="row">
@@ -324,11 +321,13 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
       <input id="tuboSalida" type="hidden" value="">
       <label>Observaciones</label><textarea id="observacion"></textarea>
 
-      <div class="sectionTitle">5. Fotos obligatorias</div>
-      <div class="hint" id="hintFotos">Para registros nuevos debes tomar las dos fotos. En edición puedes conservar las fotos existentes.</div>
-      <div class="photoGrid">
-        <div class="photoCard"><label>Foto 1 panorámica <span class="required">*</span></label><button class="secondary" onclick="abrirCamara('panoramica')">Tomar / reemplazar foto</button><input id="cameraPanoramica" type="file" accept="image/*" capture="environment" style="display:none"><img id="previewPanoramica" class="photoPreview"></div>
-        <div class="photoCard"><label>Foto 2 empalme y fusión <span class="required">*</span></label><button class="secondary" onclick="abrirCamara('fusion')">Tomar / reemplazar foto</button><input id="cameraFusion" type="file" accept="image/*" capture="environment" style="display:none"><img id="previewFusion" class="photoPreview"></div>
+      <div id="seccionFotosObligatorias">
+        <div class="sectionTitle">5. Fotos obligatorias</div>
+        <div class="hint" id="hintFotos">Para registros nuevos debes tomar las dos fotos. En edición puedes conservar las fotos existentes.</div>
+        <div class="photoGrid">
+          <div class="photoCard"><label>Foto 1 panorámica <span class="required">*</span></label><button class="secondary" onclick="abrirCamara('panoramica')">Tomar / reemplazar foto</button><input id="cameraPanoramica" type="file" accept="image/*" capture="environment" style="display:none"><img id="previewPanoramica" class="photoPreview"></div>
+          <div class="photoCard"><label>Foto 2 empalme y fusión <span class="required">*</span></label><button class="secondary" onclick="abrirCamara('fusion')">Tomar / reemplazar foto</button><input id="cameraFusion" type="file" accept="image/*" capture="environment" style="display:none"><img id="previewFusion" class="photoPreview"></div>
+        </div>
       </div>
 
       <div class="buttons">
@@ -976,9 +975,15 @@ function actualizarCamposPorTipoPunto(){
   const cableSalidaInput = document.getElementById("cableSalida");
   const cableSalidaSelect = document.getElementById("cableSalidaSelect");
   const labelPunto = document.getElementById("labelPunto");
+  const puntoInput = document.getElementById("punto");
+  const seccionFotos = document.getElementById("seccionFotosObligatorias");
 
   if(labelPunto){
     labelPunto.textContent = tipo === "Nodo" ? "ODF" : "Nombre punto / caja / manga";
+  }
+
+  if(puntoInput){
+    puntoInput.placeholder = "Ej: FOC104532";
   }
 
   // Estado base
@@ -986,6 +991,10 @@ function actualizarCamposPorTipoPunto(){
   grupoHiloEntrada?.classList.remove("hidden");
   grupoCableSalida?.classList.remove("hidden");
   grupoHiloSalida?.classList.remove("hidden");
+
+  if(seccionFotos){
+    seccionFotos.classList.remove("hidden");
+  }
 
   if(cableSalidaInput && cableSalidaSelect){
     cableSalidaInput.classList.remove("hidden");
@@ -1016,6 +1025,17 @@ function actualizarCamposPorTipoPunto(){
     if(cableSalidaSelect){
       cableSalidaSelect.value = "";
     }
+
+    // Para Nodo no se solicitan fotos.
+    if(seccionFotos){
+      seccionFotos.classList.add("hidden");
+    }
+    fotoPanoramica = "";
+    fotoFusion = "";
+    const p1 = document.getElementById("previewPanoramica");
+    const p2 = document.getElementById("previewFusion");
+    if(p1){ p1.src = ""; p1.style.display = "none"; }
+    if(p2){ p2.src = ""; p2.style.display = "none"; }
   }
 
   actualizarEtiquetaConsecutivo();
@@ -1277,6 +1297,7 @@ function obtenerTipoEtiqueta(){
   const tipo = val("tipoPunto");
   if(tipo === "Nodo") return "Nodo";
   if(tipo === "Cliente") return "Cliente";
+  if(tipo === "Sangria") return "Sangria";
   return "Empalme";
 }
 
@@ -1315,20 +1336,22 @@ async function guardarRegistroLocal(){
   const editId = val("editOfflineId");
   const existente = editId ? registros.find(r => r.offline_id === editId) : null;
 
-  if(!fotoPanoramica && !existente?.foto1_key && !existente?.foto1_panoramica_url){ alert("La Foto 1 panorámica es obligatoria."); return; }
-  if(!fotoFusion && !existente?.foto2_key && !existente?.foto2_empalme_fusion_url){ alert("La Foto 2 empalme y fusión es obligatoria."); return; }
+  const tipoPuntoActual = val("tipoPunto");
+  const requiereFotos = tipoPuntoActual !== "Nodo";
 
-  const foto1Key = existente?.foto1_key || `${editId || crypto.randomUUID()}_foto1`;
-  const foto2Key = existente?.foto2_key || `${editId || crypto.randomUUID()}_foto2`;
+  if(requiereFotos && !fotoPanoramica && !existente?.foto1_key && !existente?.foto1_panoramica_url){ alert("La Foto 1 panorámica es obligatoria."); return; }
+  if(requiereFotos && !fotoFusion && !existente?.foto2_key && !existente?.foto2_empalme_fusion_url){ alert("La Foto 2 empalme y fusión es obligatoria."); return; }
 
-  if(fotoPanoramica){
+  const foto1Key = requiereFotos ? (existente?.foto1_key || `${editId || crypto.randomUUID()}_foto1`) : null;
+  const foto2Key = requiereFotos ? (existente?.foto2_key || `${editId || crypto.randomUUID()}_foto2`) : null;
+
+  if(requiereFotos && fotoPanoramica){
     await guardarFotoIndexedDB(foto1Key, fotoPanoramica);
   }
-  if(fotoFusion){
+  if(requiereFotos && fotoFusion){
     await guardarFotoIndexedDB(foto2Key, fotoFusion);
   }
 
-  const tipoPuntoActual = val("tipoPunto");
   if(tipoPuntoActual === "Cliente"){
     setVal("cableEntrada", "");
     setVal("hiloEntrada", "");
@@ -1375,10 +1398,10 @@ async function guardarRegistroLocal(){
     latitud: selectedLat,
     longitud: selectedLng,
     precision_gps: currentAccuracy,
-    foto1_key: foto1Key,
-    foto2_key: foto2Key,
-    foto1_panoramica_url: existente?.foto1_panoramica_url || null,
-    foto2_empalme_fusion_url: existente?.foto2_empalme_fusion_url || null,
+    foto1_key: requiereFotos ? foto1Key : null,
+    foto2_key: requiereFotos ? foto2Key : null,
+    foto1_panoramica_url: requiereFotos ? (existente?.foto1_panoramica_url || null) : null,
+    foto2_empalme_fusion_url: requiereFotos ? (existente?.foto2_empalme_fusion_url || null) : null,
     user_agent: navigator.userAgent
   };
 
@@ -1418,6 +1441,7 @@ async function editarRegistro(id){
 
   setVal("ambiente", r.ambiente); cambiarAmbiente();
   setVal("tipoPunto", r.tipo_punto);
+  actualizarCamposPorTipoPunto();
   actualizarCamposPorTipoPunto();
   actualizarInfoConsecutivo(r.consecutivo_empalme || 1);
   setVal("zonaInterna", r.zona_interna);
@@ -2040,7 +2064,5 @@ migrarFotosLegacyAIndexedDB().then(() => { inicializarBotonesLateralesOcultos();
 <button id="fabMarcar" class="fabMarcar" onclick="marcarCentro()" title="Marcar ubicación">+</button>
 </body>
 </html>
-
-
 
 
