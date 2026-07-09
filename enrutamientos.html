@@ -679,7 +679,7 @@ function pintarClientesAsignados(){
     cont.innerHTML = `
       <div class="gpsBox">
         No tienes clientes asignados pendientes.<br><br>
-        Verifica en Supabase que <b>tecnico_id</b> sea igual al User ID mostrado arriba y que <b>estado_asignacion</b> sea asignado o en_proceso.
+        Verifica en la base de datos que <b>tecnico_id</b> sea igual al User ID mostrado arriba y que <b>estado_asignacion</b> sea asignado o en_proceso.
       </div>
     `;
     return;
@@ -737,7 +737,7 @@ async function seleccionarClienteAsignado(id){
   }).eq("id", c.id);
 
   await cargarEmpalmesExistentesDesdeSupabase(c.id);
-  alert("Cliente cargado. Ya puedes marcar puntos de enrutamiento. Si ya existían empalmes en Supabase, fueron cargados en el mapa.");
+  alert("Cliente cargado. Ya puedes marcar puntos de enrutamiento. Si ya existían empalmes en la base de datos, fueron cargados en el mapa.");
 }
 
 async function logoutTecnico(){
@@ -882,7 +882,7 @@ async function cargarEmpalmesExistentesDesdeSupabase(rutaSupabaseId){
     }
   }catch(err){
     console.error("Error cargando empalmes existentes:", err);
-    alert("No se pudieron cargar los empalmes existentes desde Supabase: " + (err.message || err));
+    alert("No se pudieron cargar los empalmes existentes desde la base de datos: " + (err.message || err));
   }
 }
 
