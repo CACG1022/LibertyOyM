@@ -7,6 +7,9 @@
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -131,6 +134,12 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
 @media(max-width:700px){
   .serverPhotoGrid{grid-template-columns:1fr}
 }
+
+
+.marker-cluster-small,.marker-cluster-medium,.marker-cluster-large{background:rgba(56,189,248,.25)!important}
+.marker-cluster-small div,.marker-cluster-medium div,.marker-cluster-large div{background:#020617!important;color:#fff!important;border:2px solid #38bdf8!important;font-weight:bold}
+.oymCircleIcon{width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.5)}
+.oymCircleIcon{background:#0ea5e9}
 
 </style>
 </head>
@@ -679,7 +688,7 @@ function pintarClientesAsignados(){
     cont.innerHTML = `
       <div class="gpsBox">
         No tienes clientes asignados pendientes.<br><br>
-        Verifica en la base de datos que <b>tecnico_id</b> sea igual al User ID mostrado arriba y que <b>estado_asignacion</b> sea asignado o en_proceso.
+        Verifica en Supabase que <b>tecnico_id</b> sea igual al User ID mostrado arriba y que <b>estado_asignacion</b> sea asignado o en_proceso.
       </div>
     `;
     return;
@@ -737,7 +746,7 @@ async function seleccionarClienteAsignado(id){
   }).eq("id", c.id);
 
   await cargarEmpalmesExistentesDesdeSupabase(c.id);
-  alert("Cliente cargado. Ya puedes marcar puntos de enrutamiento. Si ya existían empalmes en la base de datos, fueron cargados en el mapa.");
+  alert("Cliente cargado. Ya puedes marcar puntos de enrutamiento. Si ya existían empalmes en Supabase, fueron cargados en el mapa.");
 }
 
 async function logoutTecnico(){
@@ -882,7 +891,7 @@ async function cargarEmpalmesExistentesDesdeSupabase(rutaSupabaseId){
     }
   }catch(err){
     console.error("Error cargando empalmes existentes:", err);
-    alert("No se pudieron cargar los empalmes existentes desde la base de datos: " + (err.message || err));
+    alert("No se pudieron cargar los empalmes existentes desde Supabase: " + (err.message || err));
   }
 }
 
@@ -1645,28 +1654,47 @@ async function guardarFotosTabla(empalmeId,r,fotos){
   await supabaseClient.from("empalmes_enrutamiento_fotos").insert(rows);
 }
 
-function pintarRegistros(){
-  Object.values(registroMarkers).forEach(m=>map.removeLayer(m));
-  registroMarkers={};
-  const visibles = enrutamientoActivo ? registros.filter(r => r.enrutamiento_offline_id === enrutamientoActivo.offline_id) : registros;
 
+function oymTipoIconoTecnico(r){
+  const t = String(r.tipo_punto || r.etiqueta_empalme || "").toLowerCase();
+  if(t.includes("nodo")) return "#22c55e";
+  if(t.includes("cliente")) return "#8b5cf6";
+  if(t.includes("sang")) return "#f59e0b";
+  return "#0ea5e9";
+}
+
+function pintarRegistros(){
+  Object.values(registroMarkers).forEach(m=>{try{layerGroup.removeLayer(m)}catch(e){try{map.removeLayer(m)}catch(_){}}});
+  registroMarkers={};
+  if(window.layerGroup){try{map.removeLayer(layerGroup)}catch(e){}}
+  layerGroup=L.markerClusterGroup({
+    spiderfyOnMaxZoom:true,
+    spiderfyOnEveryZoom:true,
+    zoomToBoundsOnClick:false,
+    disableClusteringAtZoom:21,
+    maxClusterRadius:28
+  }).addTo(map);
+
+  const visibles=enrutamientoActivo?registros.filter(r=>r.enrutamiento_offline_id===enrutamientoActivo.offline_id):registros;
   visibles.forEach(r=>{
-    const color = r.sync_status==="enviado" ? "#16a34a" : r.sync_status==="error" ? "#dc2626" : (r.ambiente==="interno" ? "#7c3aed" : "#0284c7");
-    const marker=L.circleMarker([r.latitud,r.longitud],{radius:10,color:"#fff",weight:2,fillColor:color,fillOpacity:.95}).addTo(map);
+    const marker=L.marker([r.latitud,r.longitud],{
+      icon:L.divIcon({className:'',html:`<div class="oymCircleIcon" style="background:${oymTipoIconoTecnico(r)}"></div>`,iconSize:[26,26],iconAnchor:[13,13]})
+    });
+    marker.bindTooltip(r.etiqueta_empalme||('Empalme '+(r.consecutivo_empalme||'')),{permanent:true,direction:'top',offset:[0,-12],className:'labelEmpalme'});
     marker.bindPopup(`
-      <b>${r.etiqueta_empalme || ("Empalme " + (r.consecutivo_empalme || ""))}</b><br>
-      <b>Punto:</b> ${r.nombre_punto}<br>
+      <b>${r.etiqueta_empalme || ""}</b><br>
+      <b>Punto:</b> ${r.nombre_punto || "N/A"}<br>
       <b>Cliente:</b> ${r.id_cliente || "N/A"}<br>
       <b>Ruta:</b> ${r.codigo_ruta || "N/A"}<br>
-      <b>Ambiente:</b> ${r.ambiente || "N/A"}<br>
-      <b>Fusión:</b> Hilo ${r.hilo_entrada || "N/A"} → ${r.hilo_salida || "N/A"}<br>
-      <b>Sync:</b> ${r.sync_status || "pendiente"}<br>
+      <b>GPS:</b> ${Number(r.latitud).toFixed(7)}, ${Number(r.longitud).toFixed(7)}<br>
       <button onclick="editarRegistro('${r.offline_id}')" style="margin-top:8px;background:#38bdf8;color:#020617;">Ver / modificar</button>
+      <button onclick="moverRegistroConMira('${r.offline_id}')" style="margin-top:8px;background:#f59e0b;color:#020617;">Mover ubicación</button>
       <button onclick="eliminarRegistro('${r.offline_id}')" style="margin-top:8px;background:#ef4444;color:white;">Eliminar</button>
     `);
-    marker.bindTooltip(r.etiqueta_empalme || ("Empalme " + (r.consecutivo_empalme || "")), {permanent:true,direction:"top",offset:[0,-12],className:"labelEmpalme"});
+    layerGroup.addLayer(marker);
     registroMarkers[r.offline_id]=marker;
   });
+  layerGroup.on('clusterclick',e=>e.layer.spiderfy());
   pintarListaRegistros(visibles);
   actualizarSyncStatus();
 }
@@ -1702,10 +1730,72 @@ function pintarListaRegistros(listaDatos){
 }
 
 function irARegistro(id){
-  const r=registros.find(x=>x.offline_id===id); if(!r)return;
-  cerrarPanelRegistros(); map.setView([r.latitud,r.longitud],20);
-  setTimeout(()=>{if(registroMarkers[id]) registroMarkers[id].openPopup();},300);
+ const r=registros.find(x=>x.offline_id===id); if(!r)return;
+ cerrarPanelRegistros();
+ map.setView([r.latitud,r.longitud],20);
+ setTimeout(()=>{
+   const mk=registroMarkers[id];
+   if(layerGroup&&layerGroup.getVisibleParent){
+      const p=layerGroup.getVisibleParent(mk);
+      if(p&&p!==mk&&p.spiderfy)p.spiderfy();
+   }
+   if(mk)mk.openPopup();
+ },400);
 }
+
+
+function moverRegistroConMira(id){
+  const r = registros.find(x => x.offline_id === id);
+  if(!r) return;
+
+  cerrarPanelRegistros();
+
+  const c = map.getCenter();
+  const nuevaLat = Number(c.lat);
+  const nuevaLng = Number(c.lng);
+
+  const mensaje = [
+    `Vas a mover ${r.etiqueta_empalme || "el empalme"} a la posición actual de la mira central.`,
+    ``,
+    `Coordenada anterior:`,
+    `${Number(r.latitud).toFixed(7)}, ${Number(r.longitud).toFixed(7)}`,
+    ``,
+    `Nueva coordenada:`,
+    `${nuevaLat.toFixed(7)}, ${nuevaLng.toFixed(7)}`,
+    ``,
+    `¿Confirmas el cambio de ubicación?`
+  ].join("\\n");
+
+  if(!confirm(mensaje)) return;
+
+  r.latitud = nuevaLat;
+  r.longitud = nuevaLng;
+  r.precision_gps = currentAccuracy;
+  r.fecha_ultima_edicion_app = new Date().toISOString();
+  r.editado_en_app = true;
+  r.sync_status = r.sync_status === "enviado" ? "pendiente_update" : "pendiente";
+  r.error_sync = null;
+
+  selectedLat = nuevaLat;
+  selectedLng = nuevaLng;
+
+  guardarLocalStorage();
+  pintarRegistros();
+  actualizarSyncStatus();
+
+  setTimeout(() => {
+    map.setView([nuevaLat, nuevaLng], 20);
+    const mk = registroMarkers[id];
+    if(layerGroup && layerGroup.getVisibleParent && mk){
+      const p = layerGroup.getVisibleParent(mk);
+      if(p && p !== mk && p.spiderfy) p.spiderfy();
+    }
+    if(mk) mk.openPopup();
+  }, 350);
+
+  mostrarToast("Ubicación actualizada. Recuerda enviar datos para actualizar Supabase.");
+}
+
 
 async function eliminarRegistro(id){
   const r=registros.find(x=>x.offline_id===id);
@@ -2064,5 +2154,6 @@ migrarFotosLegacyAIndexedDB().then(() => { inicializarBotonesLateralesOcultos();
 <button id="fabMarcar" class="fabMarcar" onclick="marcarCentro()" title="Marcar ubicación">+</button>
 </body>
 </html>
+
 
 
