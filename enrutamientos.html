@@ -11,6 +11,9 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css"/>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 
   <style>
     :root{--bg:#020617;--panel:#111827;--accent:#22c55e;--accent2:#38bdf8;--text:#e5e7eb;--muted:#9ca3af;--danger:#ef4444;--warning:#f59e0b;--purple:#7c3aed}
@@ -1148,7 +1151,7 @@ async function finalizarEnrutamiento(){
   try{
     // Si hay empalmes pendientes, primero intenta enviarlos.
     if(pendientesRuta.length > 0){
-      await sincronizarPendientes(false);
+      await sincronizarPendientes(false, false);
     }
 
     const rutaActual = enrutamientos.find(r => r.offline_id === rutaOfflineId) || enrutamientoActivo;
@@ -1191,6 +1194,20 @@ async function finalizarEnrutamiento(){
 
   guardarEnrutamientos();
 
+  const rutaActaFinal = {...(enrutamientos.find(r=>r.offline_id===rutaOfflineId) || enrutamientoActivo)};
+  const registrosActaFinal = registros.filter(r=>r.enrutamiento_offline_id===rutaOfflineId).map(r=>({...r}));
+  try{
+    await generarActaPDF(
+      rutaActaFinal,
+      registrosActaFinal,
+      actualizadoSupabase ? "ACTA DE FINALIZACIÓN" : "ACTA DE FINALIZACIÓN LOCAL PENDIENTE DE SINCRONIZAR",
+      fechaFinalizacion
+    );
+  }catch(errorActa){
+    console.error("Error generando acta PDF:",errorActa);
+    alert("El enrutamiento fue finalizado, pero no se pudo generar el acta PDF: "+(errorActa.message||errorActa));
+  }
+
   enrutamientoActivo = null;
   localStorage.removeItem("oym_enrutamiento_activo_v2");
 
@@ -1200,7 +1217,9 @@ async function finalizarEnrutamiento(){
   await cargarClientesAsignados();
   abrirPanelClientesAsignados();
 
-  alert(actualizadoSupabase ? "Enrutamiento finalizado y actualizado en Supabase." : "Enrutamiento finalizado localmente. Queda pendiente por enviar a Supabase.");
+  alert(actualizadoSupabase
+    ? "Enrutamiento finalizado, actualizado en Supabase y acta PDF generada."
+    : "Enrutamiento finalizado localmente y acta PDF generada. La actualización de Supabase queda pendiente.");
 }
 
 function guardarEnrutamientos(){
@@ -1491,7 +1510,379 @@ async function editarRegistro(id){
   abrirModal();
 }
 
-async function sincronizarPendientes(forzarReenvio = false){
+
+/* ===== ACTA PROFESIONAL PDF ===== */
+let ultimaActaRuta = null;
+let ultimaActaRegistros = [];
+
+function registrosRutaActa(ruta){
+  if(!ruta) return [];
+  return registros.filter(r=>r.enrutamiento_offline_id===ruta.offline_id)
+    .sort((a,b)=>Number(a.consecutivo_empalme||0)-Number(b.consecutivo_empalme||0));
+}
+function tipoConteo(lista,tipo){return lista.filter(r=>String(r.tipo_punto||"").toLowerCase()===tipo).length}
+
+function txtPdf(v){
+  if(v === null || v === undefined || v === "") return "N/A";
+
+  let texto = String(v);
+
+  // Decodifica entidades HTML si existen.
+  try{
+    const area = document.createElement("textarea");
+    area.innerHTML = texto;
+    texto = area.value;
+  }catch(e){}
+
+  // Corrige cadenas dañadas del tipo F&u&s&i&o&n.
+  texto = texto
+    .replace(/&(?=[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9])/g, "")
+    .replace(/(?<=[A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9])&/g, "")
+    .replace(/[→⇒⟶]/g, "->")
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/[–—]/g, "-")
+    .replace(/\u00A0/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return texto || "N/A";
+}
+function fechaPdf(v){try{return v?new Date(v).toLocaleString("es-CO"):"N/A"}catch{return String(v||"N/A")}}
+function nombrePdf(r){
+  const s=v=>String(v||"NA").replace(/[^A-Za-z0-9_-]/g,"_");
+  const d=new Date(), p=n=>String(n).padStart(2,"0");
+  return `ACTA_ENRUTAMIENTO_${s(r?.id_cliente)}_${s(r?.codigo_ruta)}_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.pdf`;
+}
+function abrirModalActaEnvio(ruta,lista){
+  ultimaActaRuta={...ruta}; ultimaActaRegistros=(lista||[]).map(x=>({...x}));
+  const e=tipoConteo(lista,"empalme"), n=tipoConteo(lista,"nodo"), c=tipoConteo(lista,"cliente"), s=tipoConteo(lista,"sangria");
+  document.getElementById("actaEnvioResumen").innerHTML=`<b>Datos enviados correctamente</b><br>Cliente: ${escapeHtml(ruta.id_cliente||"N/A")}<br>Ruta: ${escapeHtml(ruta.codigo_ruta||"N/A")}<br>Total puntos: ${lista.length} · Empalmes: ${e} · Nodos: ${n} · Clientes: ${c} · Sangrías: ${s}`;
+  document.getElementById("modalActaEnvio").style.display="block"; ocultarFabMarcar();
+}
+function cerrarModalActaEnvio(){document.getElementById("modalActaEnvio").style.display="none";actualizarVisibilidadFab()}
+async function descargarActaEnvioActual(){
+  if(!ultimaActaRuta)return alert("No hay información disponible.");
+  await generarActaPDF(ultimaActaRuta,ultimaActaRegistros,"SOPORTE DE ENVÍO",new Date().toISOString());
+}
+
+function detectarFormatoImagen(dataUrl){
+  const s = String(dataUrl || "").toLowerCase();
+  if(s.startsWith("data:image/png")) return "PNG";
+  if(s.startsWith("data:image/webp")) return "WEBP";
+  return "JPEG";
+}
+
+function blobADataUrl(blob){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
+function normalizarBase64Imagen(valor){
+  if(!valor) return null;
+  if(typeof valor !== "string") return null;
+
+  const v = valor.trim();
+  if(v.startsWith("data:image/")) return v;
+
+  // Base64 puro.
+  if(/^[A-Za-z0-9+/=\r\n]+$/.test(v) && v.length > 200){
+    return "data:image/jpeg;base64," + v.replace(/\s+/g,"");
+  }
+
+  return null;
+}
+
+function extraerIdDrive(url){
+  const s = String(url || "");
+  const patrones = [
+    /\/file\/d\/([a-zA-Z0-9_-]+)/,
+    /[?&]id=([a-zA-Z0-9_-]+)/,
+    /\/d\/([a-zA-Z0-9_-]+)/,
+    /uc\?(?:[^#]*&)?id=([a-zA-Z0-9_-]+)/
+  ];
+  for(const p of patrones){
+    const m = s.match(p);
+    if(m?.[1]) return m[1];
+  }
+  return null;
+}
+
+function urlsCandidatasFoto(url){
+  const candidatas = [];
+  const agregar = u => {
+    if(u && !candidatas.includes(u)) candidatas.push(u);
+  };
+
+  agregar(url);
+
+  const id = extraerIdDrive(url);
+  if(id){
+    agregar(`https://lh3.googleusercontent.com/d/${id}=w2000`);
+    agregar(`https://drive.google.com/thumbnail?id=${id}&sz=w2000`);
+    agregar(`https://drive.usercontent.google.com/download?id=${id}&export=view&confirm=t`);
+    agregar(`https://drive.google.com/uc?export=view&id=${id}`);
+    agregar(`https://drive.google.com/uc?export=download&id=${id}`);
+  }
+
+  return candidatas;
+}
+
+async function descargarImagenComoDataUrl(url){
+  if(!url) return null;
+
+  // Primer intento: fetch como Blob.
+  try{
+    const resp = await fetch(url,{
+      method:"GET",
+      mode:"cors",
+      credentials:"omit",
+      cache:"no-store",
+      redirect:"follow"
+    });
+
+    if(resp.ok){
+      const blob = await resp.blob();
+      if(blob && blob.size > 1000 && String(blob.type || "").startsWith("image/")){
+        return await blobADataUrl(blob);
+      }
+    }
+  }catch(e){
+    console.warn("No se pudo obtener imagen con fetch:", url, e);
+  }
+
+  // Segundo intento: elemento Image + canvas.
+  return await new Promise(resolve=>{
+    try{
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.referrerPolicy = "no-referrer";
+
+      const timeout = setTimeout(()=>resolve(null),12000);
+
+      img.onload = ()=>{
+        clearTimeout(timeout);
+        try{
+          const max = 1800;
+          const scale = Math.min(1,max/Math.max(img.naturalWidth || 1,img.naturalHeight || 1));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1,Math.round((img.naturalWidth || img.width)*scale));
+          canvas.height = Math.max(1,Math.round((img.naturalHeight || img.height)*scale));
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img,0,0,canvas.width,canvas.height);
+          resolve(canvas.toDataURL("image/jpeg",0.82));
+        }catch(e){
+          console.warn("Canvas bloqueado para:",url,e);
+          resolve(null);
+        }
+      };
+
+      img.onerror = ()=>{
+        clearTimeout(timeout);
+        resolve(null);
+      };
+
+      img.src = url;
+    }catch(e){
+      resolve(null);
+    }
+  });
+}
+
+async function fotoActa(r,num){
+  const esFoto1 = num === 1;
+
+  const key = esFoto1 ? r.foto1_key : r.foto2_key;
+
+  // 1. IndexedDB local.
+  try{
+    const local = await obtenerFotoIndexedDB(key);
+    const normalizada = normalizarBase64Imagen(local);
+    if(normalizada) return normalizada;
+  }catch(e){
+    console.warn("No se pudo leer foto local de IndexedDB:",e);
+  }
+
+  // 2. Posibles campos base64 que hayan quedado en memoria/localStorage.
+  const camposBase64 = esFoto1
+    ? [
+        r.foto1_panoramica_base64,
+        r.foto1_base64,
+        r.foto1Base64,
+        r.foto1
+      ]
+    : [
+        r.foto2_empalme_fusion_base64,
+        r.foto2_base64,
+        r.foto2Base64,
+        r.foto2
+      ];
+
+  for(const valor of camposBase64){
+    const normalizada = normalizarBase64Imagen(valor);
+    if(normalizada) return normalizada;
+  }
+
+  // 3. Todas las variantes conocidas de URL.
+  const urls = esFoto1
+    ? [
+        r.foto1_panoramica_url,
+        r.foto1_url,
+        r.foto1_panoramica_url_final,
+        r.foto1_webViewLink,
+        r.foto1_downloadLink
+      ]
+    : [
+        r.foto2_empalme_fusion_url,
+        r.foto2_url,
+        r.foto2_empalme_fusion_url_final,
+        r.foto2_webViewLink,
+        r.foto2_downloadLink
+      ];
+
+  for(const urlOriginal of urls.filter(Boolean)){
+    for(const url of urlsCandidatasFoto(urlOriginal)){
+      const dataUrl = await descargarImagenComoDataUrl(url);
+      if(dataUrl) return dataUrl;
+    }
+  }
+
+  return null;
+}
+
+function agregarImagenPdfAjustada(doc,dataUrl,x,y,w,h){
+  if(!dataUrl) return false;
+
+  try{
+    const props = doc.getImageProperties(dataUrl);
+    const iw = Number(props.width || 1);
+    const ih = Number(props.height || 1);
+    const escala = Math.min(w/iw,h/ih);
+    const fw = iw*escala;
+    const fh = ih*escala;
+    const fx = x+(w-fw)/2;
+    const fy = y+(h-fh)/2;
+
+    doc.setFillColor(248,250,252);
+    doc.rect(x,y,w,h,"F");
+    doc.addImage(
+      dataUrl,
+      detectarFormatoImagen(dataUrl),
+      fx,fy,fw,fh,
+      undefined,
+      "FAST"
+    );
+    return true;
+  }catch(e){
+    console.error("No se pudo insertar imagen en el PDF:",e);
+    return false;
+  }
+}
+
+function encabezadoPdf(doc,ruta,titulo){
+  const w=doc.internal.pageSize.getWidth();
+  doc.setFillColor(245,96,2);doc.rect(0,0,w,16,"F");
+  doc.setTextColor(255);doc.setFont("helvetica","bold");doc.setFontSize(15);doc.text("LIBERTY NETWORKS",14,10.5);
+  doc.setTextColor(17,24,39);doc.setFontSize(17);doc.text("ACTA DE ENRUTAMIENTO O&M",14,28);
+  doc.setFontSize(9);doc.setFont("helvetica","normal");doc.setTextColor(71,85,105);
+  doc.text(titulo,14,34);doc.text(`Cliente: ${txtPdf(ruta.id_cliente)}   Ruta: ${txtPdf(ruta.codigo_ruta)}`,14,39);
+  doc.setDrawColor(203,213,225);doc.line(14,43,w-14,43);
+}
+function esquemaPdf(doc,lista,y){
+  const w=doc.internal.pageSize.getWidth(), validos=lista.filter(r=>Number.isFinite(Number(r.latitud))&&Number.isFinite(Number(r.longitud)));
+  doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(30,41,59);doc.text("Esquema del recorrido",14,y);
+  if(!validos.length){doc.setFont("helvetica","normal");doc.setFontSize(9);doc.text("Sin coordenadas válidas.",14,y+8);return y+15}
+  const lats=validos.map(r=>+r.latitud), lngs=validos.map(r=>+r.longitud), minA=Math.min(...lats),maxA=Math.max(...lats),minO=Math.min(...lngs),maxO=Math.max(...lngs);
+  const pts=validos.map(r=>({r,x:20+((+r.longitud-minO)/Math.max(maxO-minO,.000001))*(w-40),y:y+12+(1-((+r.latitud-minA)/Math.max(maxA-minA,.000001)))*55}));
+  doc.setDrawColor(148,163,184);for(let i=1;i<pts.length;i++)doc.line(pts[i-1].x,pts[i-1].y,pts[i].x,pts[i].y);
+  pts.forEach((p,i)=>{const t=String(p.r.tipo_punto||"").toLowerCase();if(t==="nodo")doc.setFillColor(34,197,94);else if(t==="cliente")doc.setFillColor(139,92,246);else if(t.includes("sang"))doc.setFillColor(245,158,11);else doc.setFillColor(14,165,233);doc.circle(p.x,p.y,2.2,"F");doc.setFontSize(6);doc.setTextColor(30,41,59);doc.text(String(p.r.consecutivo_empalme||i+1),p.x,p.y-3,{align:"center"})});
+  doc.setFontSize(7);doc.setTextColor(100,116,139);doc.text("Azul: empalme · Verde: nodo · Morado: cliente · Naranja: sangría",14,y+73);
+  return y+80;
+}
+async function qrData(texto){
+  if(!window.QRCode)return null;
+  try{const c=document.createElement("canvas");await QRCode.toCanvas(c,texto,{width:180,margin:1});return c.toDataURL("image/png")}catch(e){return null}
+}
+function piesPdf(doc,ruta){
+  const pages=doc.internal.getNumberOfPages(),w=doc.internal.pageSize.getWidth(),h=doc.internal.pageSize.getHeight();
+  for(let i=1;i<=pages;i++){doc.setPage(i);doc.setDrawColor(226,232,240);doc.line(14,h-14,w-14,h-14);doc.setFontSize(8);doc.setTextColor(100,116,139);doc.text(`Acta ${txtPdf(ruta.id_cliente)} / ${txtPdf(ruta.codigo_ruta)}`,14,h-8);doc.text(`Página ${i} de ${pages}`,w-14,h-8,{align:"right"})}
+}
+async function generarActaPDF(ruta,lista,titulo="ACTA DE FINALIZACIÓN",fechaDoc=new Date().toISOString()){
+  if(!window.jspdf?.jsPDF)return alert("No se pudo cargar la librería PDF. Verifica la conexión.");
+  const {jsPDF}=window.jspdf,doc=new jsPDF({unit:"mm",format:"a4",compress:true});
+  encabezadoPdf(doc,ruta,titulo);
+  const tecnico=perfilTecnico?.nombre||usuarioTecnico?.email||"N/A", correo=usuarioTecnico?.email||perfilTecnico?.email||"N/A";
+  doc.autoTable({startY:48,theme:"grid",styles:{fontSize:8.5,cellPadding:2.2},headStyles:{fillColor:[15,23,42]},head:[["Información general","Detalle"]],body:[
+    ["ID Cliente / Servicio",txtPdf(ruta.id_cliente)],["Código ruta / cambio",txtPdf(ruta.codigo_ruta)],["Cliente",txtPdf(ruta.nombre_cliente)],["Dirección",txtPdf(ruta.direccion_cliente)],
+    ["Técnico",txtPdf(tecnico)],["Correo",txtPdf(correo)],["Fecha inicio",fechaPdf(ruta.fecha_inicio)],["Fecha documento",fechaPdf(fechaDoc)],["Fecha finalización",fechaPdf(ruta.fecha_finalizacion)],["Estado",txtPdf(ruta.estado_asignacion||ruta.estado)],["Observación general",txtPdf(ruta.observacion_general)]
+  ]});
+  let y=doc.lastAutoTable.finalY+8;
+  const emp=tipoConteo(lista,"empalme"),nod=tipoConteo(lista,"nodo"),cli=tipoConteo(lista,"cliente"),san=lista.filter(r=>String(r.tipo_punto||"").toLowerCase().includes("sang")).length;
+  doc.autoTable({startY:y,theme:"grid",styles:{fontSize:9,halign:"center"},headStyles:{fillColor:[245,96,2]},head:[["Total","Empalmes","Nodos","Clientes","Sangrías"]],body:[[lista.length,emp,nod,cli,san]]});
+  y=esquemaPdf(doc,lista,doc.lastAutoTable.finalY+12);
+  if(y>245){doc.addPage();encabezadoPdf(doc,ruta,titulo);y=49}
+  doc.setFont("helvetica","bold");doc.setFontSize(11);doc.text("Detalle técnico",14,y);
+  doc.autoTable({startY:y+3,theme:"grid",margin:{left:7,right:7},styles:{fontSize:6.2,cellPadding:1.3},headStyles:{fillColor:[15,23,42],fontSize:6.5},head:[["#","Tipo","Punto","Amb.","Cable E.","Hilo E.","Cable S.","Hilo S.","Coordenadas","Observaciones"]],body:lista.map((r,i)=>[
+    r.consecutivo_empalme||i+1,txtPdf(r.tipo_punto),txtPdf(r.nombre_punto),txtPdf(r.ambiente),txtPdf(r.cable_entrada),txtPdf(r.hilo_entrada),txtPdf(r.cable_salida),txtPdf(r.hilo_salida),`${Number(r.latitud).toFixed(7)}, ${Number(r.longitud).toFixed(7)}`,txtPdf(r.observacion)
+  ]),columnStyles:{0:{cellWidth:7},1:{cellWidth:13},2:{cellWidth:20},3:{cellWidth:11},4:{cellWidth:18},5:{cellWidth:11},6:{cellWidth:18},7:{cellWidth:11},8:{cellWidth:31},9:{cellWidth:47}}});
+  for(const r of lista){
+    doc.addPage();encabezadoPdf(doc,ruta,titulo);doc.setFont("helvetica","bold");doc.setFontSize(13);doc.setTextColor(30,41,59);doc.text(`${txtPdf(r.etiqueta_empalme||r.tipo_punto)} — ${txtPdf(r.nombre_punto)}`,14,51);
+    doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.text(`Tipo: ${txtPdf(r.tipo_punto)} | Ambiente: ${txtPdf(r.ambiente)} | GPS: ${Number(r.latitud).toFixed(7)}, ${Number(r.longitud).toFixed(7)}`,14,58);
+    doc.text(`Fusion: hilo ${txtPdf(r.hilo_entrada)} -> hilo ${txtPdf(r.hilo_salida)}`,14,64);
+    if(String(r.tipo_punto||"").toLowerCase()==="nodo"){doc.setFillColor(240,253,244);doc.roundedRect(14,75,182,40,4,4,"F");doc.setTextColor(22,101,52);doc.setFont("helvetica","bold");doc.setFontSize(12);doc.text("Registro tipo NODO",105,91,{align:"center"});doc.setFont("helvetica","normal");doc.setFontSize(9);doc.text("Las fotografías no aplican para este tipo de punto.",105,100,{align:"center"})}
+    else{
+      const f1=await fotoActa(r,1),f2=await fotoActa(r,2);
+      console.log("ACTA PDF - Fotos",{
+        punto:r.etiqueta_empalme || r.nombre_punto,
+        foto1:!!f1,
+        foto2:!!f2,
+        foto1_key:r.foto1_key,
+        foto2_key:r.foto2_key,
+        foto1_url:r.foto1_panoramica_url,
+        foto2_url:r.foto2_empalme_fusion_url
+      });doc.setTextColor(30,41,59);doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text("Foto 1 — Panorámica",14,74);doc.text("Foto 2 — Empalme y fusión",108,74);
+      const foto1Insertada = agregarImagenPdfAjustada(doc,f1,14,78,88,78);
+      if(!foto1Insertada){
+        doc.setDrawColor(203,213,225);
+        doc.rect(14,78,88,78);
+        doc.setFont("helvetica","bold");
+        doc.setFontSize(9);
+        doc.setTextColor(71,85,105);
+        doc.text("Foto no disponible",58,117,{align:"center"});
+      }
+
+      const foto2Insertada = agregarImagenPdfAjustada(doc,f2,108,78,88,78);
+      if(!foto2Insertada){
+        doc.setDrawColor(203,213,225);
+        doc.rect(108,78,88,78);
+        doc.setFont("helvetica","bold");
+        doc.setFontSize(9);
+        doc.setTextColor(71,85,105);
+        doc.text("Foto no disponible",152,117,{align:"center"});
+      }
+    }
+    doc.autoTable({startY:174,theme:"grid",styles:{fontSize:8,cellPadding:2},body:[
+      ["Ubicacion interna",txtPdf([r.zona_interna,r.piso_nivel,r.torre_bloque,r.cuarto_rack].filter(Boolean).join(" - ")||"N/A")],
+      ["Ubicacion externa",txtPdf([r.elemento_externo,r.referencia_externa].filter(Boolean).join(" - ")||"N/A")],
+      ["Referencia visual",txtPdf(r.referencia_visual)],["Acceso requerido",txtPdf(r.acceso_requerido)],["Observaciones",txtPdf(r.observacion)]
+    ],columnStyles:{0:{cellWidth:38,fontStyle:"bold"},1:{cellWidth:144}}});
+  }
+  doc.addPage();encabezadoPdf(doc,ruta,titulo);doc.setFont("helvetica","bold");doc.setFontSize(13);doc.text("Cierre y certificación",14,52);doc.setFont("helvetica","normal");doc.setFontSize(9);
+  doc.text(doc.splitTextToSize("El técnico responsable certifica que la información contenida en esta acta corresponde al enrutamiento registrado y enviado desde el aplicativo O&M. Los puntos, coordenadas, datos de fusión y evidencias fotográficas fueron validados durante la ejecución en campo.",182),14,62);
+  const qr=await qrData(JSON.stringify({tipo:"ACTA_ENRUTAMIENTO_OYM",cliente:ruta.id_cliente,ruta:ruta.codigo_ruta,id:ruta.supabase_id||ruta.offline_id,fecha:fechaDoc}));
+  if(qr)doc.addImage(qr,"PNG",154,80,40,40);
+  doc.setDrawColor(100,116,139);doc.line(20,175,90,175);doc.line(120,175,190,175);doc.setTextColor(30,41,59);doc.setFontSize(9);doc.text("Técnico responsable",55,181,{align:"center"});doc.text(txtPdf(tecnico),55,187,{align:"center"});doc.text("Supervisor / recibido a conformidad",155,181,{align:"center"});
+  piesPdf(doc,ruta);doc.save(nombrePdf(ruta));
+}
+
+async function sincronizarPendientes(forzarReenvio = false, mostrarActaOpcional = true){
+  const rutaActaEnvio = enrutamientoActivo ? {...enrutamientoActivo} : null;
+  const registrosActaEnvio = rutaActaEnvio ? registrosRutaActa(rutaActaEnvio).map(r=>({...r})) : [];
+
   const pendientesRutas = forzarReenvio
     ? enrutamientos.filter(r => enrutamientoActivo && r.offline_id === enrutamientoActivo.offline_id)
     : enrutamientos.filter(r => r.sync_status !== "enviado" || r.estado === "finalizado");
@@ -1501,7 +1892,8 @@ async function sincronizarPendientes(forzarReenvio = false){
     : registros.filter(r => r.sync_status !== "enviado");
 
   if(pendientesRutas.length === 0 && pendientesEmpalmes.length === 0){
-    alert("No hay datos para enviar.");
+    alert("No hay datos pendientes para enviar.");
+    if(mostrarActaOpcional && rutaActaEnvio && registrosActaEnvio.length) abrirModalActaEnvio(rutaActaEnvio,registrosActaEnvio);
     return;
   }
 
@@ -1577,8 +1969,12 @@ async function sincronizarPendientes(forzarReenvio = false){
         observacion: r.observacion,
         foto1_panoramica_url: r.foto1_panoramica_url,
         foto2_empalme_fusion_url: r.foto2_empalme_fusion_url,
-        foto1_nombre_archivo: fotos.foto1_nombre_archivo || `${r.offline_id}_foto1_panoramica.jpg`,
-        foto2_nombre_archivo: fotos.foto2_nombre_archivo || `${r.offline_id}_foto2_empalme_fusion.jpg`,
+        foto1_nombre_archivo: String(r.tipo_punto || "").toLowerCase() === "nodo"
+          ? null
+          : (fotos.foto1_nombre_archivo || r.foto1_nombre_archivo || `${r.offline_id}_foto1_panoramica.jpg`),
+        foto2_nombre_archivo: String(r.tipo_punto || "").toLowerCase() === "nodo"
+          ? null
+          : (fotos.foto2_nombre_archivo || r.foto2_nombre_archivo || `${r.offline_id}_foto2_empalme_fusion.jpg`),
         fecha_captura_app: r.fecha_captura_app,
         fecha_envio_app: new Date().toISOString(),
         editado_en_app: r.editado_en_app || false,
@@ -1590,7 +1986,12 @@ async function sincronizarPendientes(forzarReenvio = false){
       const {data,error} = await supabaseClient.from("empalmes_enrutamiento").upsert(payload,{onConflict:"offline_id"}).select().single();
       if(error) throw error;
       r.supabase_id = data.id;
-      await guardarFotosTabla(data.id, r, fotos);
+
+      const esNodo = String(r.tipo_punto || "").toLowerCase() === "nodo";
+      if(!esNodo){
+        await guardarFotosTabla(data.id, r, fotos);
+      }
+
       r.sync_status = "enviado";
       r.error_sync = null;
       guardarLocalStorage();
@@ -1605,15 +2006,53 @@ async function sincronizarPendientes(forzarReenvio = false){
 
   guardarEnrutamientos();
   actualizarSyncStatus();
-  alert("Proceso de envío terminado.");
+  const erroresEnvio = pendientesEmpalmes.filter(r => r.sync_status === "error");
+  if(erroresEnvio.length){
+    const detalle = erroresEnvio
+      .map(r => `${r.etiqueta_empalme || r.tipo_punto || r.offline_id}: ${r.error_sync || "Error desconocido"}`)
+      .join("\n");
+    alert(`Proceso de envío terminado con ${erroresEnvio.length} error(es):\n\n${detalle}`);
+  }else{
+    if(mostrarActaOpcional && rutaActaEnvio) abrirModalActaEnvio(rutaActaEnvio,registrosRutaActa(rutaActaEnvio));
+    else alert("Proceso de envío terminado correctamente.");
+  }
 }
 
 async function enviarFotosN8N(r){
+  const esNodo = String(r.tipo_punto || "").toLowerCase() === "nodo";
+
+  // Los nodos no requieren fotografías.
+  if(esNodo){
+    return {
+      sin_fotos: true,
+      tipo_punto: "Nodo",
+      foto1_url: null,
+      foto2_url: null,
+      foto1_panoramica_url: null,
+      foto2_empalme_fusion_url: null,
+      foto1_nombre_archivo: null,
+      foto2_nombre_archivo: null
+    };
+  }
+
   const foto1Base64 = await obtenerFotoIndexedDB(r.foto1_key);
   const foto2Base64 = await obtenerFotoIndexedDB(r.foto2_key);
 
+  // Si ya existen URLs en Supabase/Drive, se reutilizan.
+  if((!foto1Base64 || !foto2Base64) && r.foto1_panoramica_url && r.foto2_empalme_fusion_url){
+    return {
+      reutilizadas_desde_supabase: true,
+      foto1_url: r.foto1_panoramica_url,
+      foto2_url: r.foto2_empalme_fusion_url,
+      foto1_panoramica_url: r.foto1_panoramica_url,
+      foto2_empalme_fusion_url: r.foto2_empalme_fusion_url,
+      foto1_nombre_archivo: r.foto1_nombre_archivo || `${r.offline_id}_foto1_panoramica.jpg`,
+      foto2_nombre_archivo: r.foto2_nombre_archivo || `${r.offline_id}_foto2_empalme_fusion.jpg`
+    };
+  }
+
   if(!foto1Base64 || !foto2Base64){
-    throw new Error("No se encontraron las fotos locales de este empalme. Revisa que no hayas limpiado los datos del navegador.");
+    throw new Error(`No se encontraron las fotos locales de ${r.etiqueta_empalme || r.tipo_punto || "este punto"}.`);
   }
 
   const payload = {
@@ -1622,6 +2061,7 @@ async function enviarFotosN8N(r){
     id_cliente: r.id_cliente,
     codigo_ruta: r.codigo_ruta,
     nombre_punto: r.nombre_punto,
+    tipo_punto: r.tipo_punto,
     consecutivo_empalme: r.consecutivo_empalme,
     etiqueta_empalme: r.etiqueta_empalme,
     latitud: r.latitud,
@@ -1633,13 +2073,27 @@ async function enviarFotosN8N(r){
     foto2_empalme_fusion_base64: foto2Base64,
     metadata: r
   };
-  const resp = await fetch(N8N_WEBHOOK_FOTOS,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+
+  const resp = await fetch(N8N_WEBHOOK_FOTOS,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(payload)
+  });
+
   if(!resp.ok) throw new Error("n8n respondió error HTTP " + resp.status);
+
   const text = await resp.text();
-  try{return text ? JSON.parse(text) : {};}catch{return {respuesta_texto:text};}
+  try{
+    return text ? JSON.parse(text) : {};
+  }catch{
+    return {respuesta_texto:text};
+  }
 }
 
 async function guardarFotosTabla(empalmeId,r,fotos){
+  if(String(r.tipo_punto || "").toLowerCase() === "nodo"){
+    return;
+  }
   // Si se reenvía un empalme ya existente, se eliminan las referencias antiguas
   // para que Supabase quede actualizado con las fotos más recientes.
   await supabaseClient
@@ -2152,8 +2606,24 @@ migrarFotosLegacyAIndexedDB().then(() => { inicializarBotonesLateralesOcultos();
 </script>
 
 <button id="fabMarcar" class="fabMarcar" onclick="marcarCentro()" title="Marcar ubicación">+</button>
+
+<div class="modalOverlay" id="modalActaEnvio">
+  <div class="modal" style="max-width:620px">
+    <div class="modalHeader">
+      <h2>Envío completado</h2>
+      <button class="closeBtn" onclick="cerrarModalActaEnvio()">Cerrar</button>
+    </div>
+    <div class="modalBody">
+      <div class="gpsBox" id="actaEnvioResumen"></div>
+      <div class="hint">La descarga del acta es opcional después del envío. Al finalizar el enrutamiento se genera automáticamente.</div>
+      <div class="buttons">
+        <button class="secondary" onclick="descargarActaEnvioActual()">Descargar acta PDF</button>
+        <button class="gray" onclick="cerrarModalActaEnvio()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
-
-
 
