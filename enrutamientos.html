@@ -1061,6 +1061,44 @@ async function cargarEmpalmesExistentesDesdeSupabase(rutaSupabaseId){
         hilo_salida: e.hilo_salida,
         observacion: e.observacion,
 
+        // Datos GPON cargados desde Supabase.
+        // Son necesarios al abrir o reasignar un enrutamiento existente.
+        tipo_red: String(
+          e.tipo_red ||
+          enrutamientoActivo?.tipo_red ||
+          "PUNTO_A_PUNTO"
+        ).toUpperCase(),
+
+        gpon_contenedor: e.gpon_contenedor ?? null,
+        gpon_contenedor_id: e.gpon_contenedor_id ?? null,
+
+        olt_nombre: e.olt_nombre ?? null,
+        olt_marca: e.olt_marca ?? null,
+        olt_frame: e.olt_frame ?? null,
+        olt_slot: e.olt_slot ?? null,
+        olt_tarjeta: e.olt_tarjeta ?? null,
+        olt_puerto_pon: e.olt_puerto_pon ?? null,
+
+        splitter_nivel: e.splitter_nivel ?? null,
+        splitter_relacion: e.splitter_relacion ?? null,
+        splitter_puerto_entrada: e.splitter_puerto_entrada ?? null,
+        splitter_puerto_salida: e.splitter_puerto_salida ?? null,
+
+        caja_tipo: e.caja_tipo ?? null,
+        caja_capacidad: e.caja_capacidad ?? null,
+        caja_puerto_utilizado: e.caja_puerto_utilizado ?? null,
+        splitter_integrado: e.splitter_integrado ?? false,
+        splitter_integrado_relacion: e.splitter_integrado_relacion ?? null,
+        splitter_integrado_puerto_salida: e.splitter_integrado_puerto_salida ?? null,
+
+        ont_serial: e.ont_serial ?? null,
+        ont_modelo: e.ont_modelo ?? null,
+        ont_potencia_rx: e.ont_potencia_rx ?? null,
+        ont_puerto_origen: e.ont_puerto_origen ?? null,
+
+        gpon_validado: e.gpon_validado ?? false,
+        gpon_observacion_validacion: e.gpon_observacion_validacion ?? null,
+
         latitud: Number(e.latitud),
         longitud: Number(e.longitud),
         precision_gps: e.precision_gps,
@@ -1077,6 +1115,27 @@ async function cargarEmpalmesExistentesDesdeSupabase(rutaSupabaseId){
 
       const existente = registros.find(r => r.supabase_id === e.id || r.offline_id === e.offline_id);
       if(existente){
+        const camposGpon = [
+          "gpon_contenedor","gpon_contenedor_id",
+          "olt_nombre","olt_marca","olt_frame","olt_slot","olt_tarjeta","olt_puerto_pon",
+          "splitter_nivel","splitter_relacion","splitter_puerto_entrada","splitter_puerto_salida",
+          "caja_tipo","caja_capacidad","caja_puerto_utilizado",
+          "splitter_integrado","splitter_integrado_relacion","splitter_integrado_puerto_salida",
+          "ont_serial","ont_modelo","ont_potencia_rx","ont_puerto_origen",
+          "gpon_validado","gpon_observacion_validacion"
+        ];
+
+        camposGpon.forEach(campo => {
+          if(
+            (normalizado[campo] === null || normalizado[campo] === undefined || normalizado[campo] === "") &&
+            existente[campo] !== null &&
+            existente[campo] !== undefined &&
+            existente[campo] !== ""
+          ){
+            normalizado[campo] = existente[campo];
+          }
+        });
+
         Object.assign(existente, normalizado);
       }else{
         registros.unshift(normalizado);
@@ -1846,6 +1905,19 @@ async function guardarRegistroLocal(){
 
 async function editarRegistro(id){
   const r = registros.find(x => x.offline_id === id); if(!r) return;
+
+  const tipoRedRegistro = String(
+    r.tipo_red ||
+    enrutamientoActivo?.tipo_red ||
+    "PUNTO_A_PUNTO"
+  ).toUpperCase();
+
+  if(enrutamientoActivo){
+    enrutamientoActivo.tipo_red = tipoRedRegistro;
+  }
+  setVal("tipoRedActivo", tipoRedRegistro);
+  actualizarOpcionesTipoPunto();
+
   selectedLat = r.latitud; selectedLng = r.longitud;
   if(fixedMarker) map.removeLayer(fixedMarker);
   fixedMarker = L.marker([selectedLat, selectedLng]).addTo(map).bindPopup("Empalme en edición").openPopup();
@@ -1856,7 +1928,6 @@ async function editarRegistro(id){
 
   setVal("ambiente", r.ambiente); cambiarAmbiente();
   setVal("tipoPunto", r.tipo_punto);
-  actualizarCamposPorTipoPunto();
   actualizarCamposPorTipoPunto();
   actualizarInfoConsecutivo(r.consecutivo_empalme || 1);
   setVal("zonaInterna", r.zona_interna);
@@ -1903,7 +1974,16 @@ async function editarRegistro(id){
   setVal("gponObservacionValidacion", r.gpon_observacion_validacion);
   setVal("gponContenedor", r.gpon_contenedor);
   setVal("gponContenedorId", r.gpon_contenedor_id);
+
   mostrarSoloGrupoGpon(r.tipo_punto);
+  actualizarPuertosSplitter();
+  setVal("splitterPuertoEntrada", r.splitter_puerto_entrada || 1);
+  setVal("splitterPuertoSalida", r.splitter_puerto_salida);
+  actualizarPuertosCaja();
+  setVal("cajaPuertoUtilizado", r.caja_puerto_utilizado);
+  actualizarSplitterIntegrado();
+  actualizarPuertosSplitterIntegrado();
+  setVal("splitterIntegradoPuertoSalida", r.splitter_integrado_puerto_salida);
 
   fotoPanoramica = await obtenerFotoIndexedDB(r.foto1_key);
   fotoFusion = await obtenerFotoIndexedDB(r.foto2_key);
@@ -2207,6 +2287,231 @@ function encabezadoPdf(doc,ruta,titulo){
   doc.text(titulo,14,34);doc.text(`Cliente: ${txtPdf(ruta.id_cliente)}   Ruta: ${txtPdf(ruta.codigo_ruta)}`,14,39);
   doc.setDrawColor(203,213,225);doc.line(14,43,w-14,43);
 }
+
+function oymLatLngATile(lat,lng,zoom){
+  const n = Math.pow(2,zoom);
+  const x = (lng + 180) / 360 * n;
+  const latRad = lat * Math.PI / 180;
+  const y = (1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2 * n;
+  return {x,y};
+}
+
+function oymTileALatLng(x,y,zoom){
+  const n = Math.pow(2,zoom);
+  const lng = x / n * 360 - 180;
+  const latRad = Math.atan(Math.sinh(Math.PI * (1 - 2 * y / n)));
+  return {lat:latRad * 180 / Math.PI,lng};
+}
+
+function oymCargarImagenMapa(url){
+  return new Promise(resolve=>{
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.referrerPolicy = "no-referrer";
+    const timeout = setTimeout(()=>resolve(null),10000);
+    img.onload = ()=>{clearTimeout(timeout);resolve(img);};
+    img.onerror = ()=>{clearTimeout(timeout);resolve(null);};
+    img.src = url;
+  });
+}
+
+function oymZoomParaLimites(minLat,maxLat,minLng,maxLng,anchoPx,altoPx){
+  for(let z=19;z>=3;z--){
+    const a = oymLatLngATile(maxLat,minLng,z);
+    const b = oymLatLngATile(minLat,maxLng,z);
+    const width = Math.abs(b.x-a.x)*256;
+    const height = Math.abs(b.y-a.y)*256;
+    if(width <= anchoPx*0.78 && height <= altoPx*0.72) return z;
+  }
+  return 3;
+}
+
+async function oymCrearMapaBaseDataUrl(lista){
+  const validos = (lista || []).filter(r =>
+    Number.isFinite(Number(r.latitud)) &&
+    Number.isFinite(Number(r.longitud))
+  );
+  if(!validos.length) return null;
+
+  const ancho = 1500;
+  const alto = 720;
+  const canvas = document.createElement("canvas");
+  canvas.width = ancho;
+  canvas.height = alto;
+  const ctx = canvas.getContext("2d");
+
+  ctx.fillStyle = "#e5e7eb";
+  ctx.fillRect(0,0,ancho,alto);
+
+  const lats = validos.map(r=>Number(r.latitud));
+  const lngs = validos.map(r=>Number(r.longitud));
+  let minLat = Math.min(...lats), maxLat = Math.max(...lats);
+  let minLng = Math.min(...lngs), maxLng = Math.max(...lngs);
+
+  // Agrega margen para que los puntos no queden pegados al borde.
+  const margenLat = Math.max((maxLat-minLat)*0.22,0.0007);
+  const margenLng = Math.max((maxLng-minLng)*0.22,0.0007);
+  minLat -= margenLat;
+  maxLat += margenLat;
+  minLng -= margenLng;
+  maxLng += margenLng;
+
+  const zoom = oymZoomParaLimites(minLat,maxLat,minLng,maxLng,ancho,alto);
+  const nw = oymLatLngATile(maxLat,minLng,zoom);
+  const se = oymLatLngATile(minLat,maxLng,zoom);
+
+  const centerX = (nw.x+se.x)/2;
+  const centerY = (nw.y+se.y)/2;
+  const tilesWide = Math.ceil(ancho/256)+2;
+  const tilesHigh = Math.ceil(alto/256)+2;
+  const startX = Math.floor(centerX-tilesWide/2);
+  const startY = Math.floor(centerY-tilesHigh/2);
+  const originPixelX = startX*256;
+  const originPixelY = startY*256;
+  const centerPixelX = centerX*256;
+  const centerPixelY = centerY*256;
+  const offsetX = ancho/2-centerPixelX+originPixelX;
+  const offsetY = alto/2-centerPixelY+originPixelY;
+  const maxTile = Math.pow(2,zoom);
+
+  const cargas = [];
+  for(let tx=0;tx<tilesWide;tx++){
+    for(let ty=0;ty<tilesHigh;ty++){
+      const tileXRaw = startX+tx;
+      const tileY = startY+ty;
+      if(tileY < 0 || tileY >= maxTile) continue;
+      const tileX = ((tileXRaw % maxTile)+maxTile)%maxTile;
+      const url = `https://tile.openstreetmap.org/${zoom}/${tileX}/${tileY}.png`;
+      cargas.push(
+        oymCargarImagenMapa(url).then(img=>({
+          img,
+          x:tileXRaw*256-originPixelX+offsetX,
+          y:tileY*256-originPixelY+offsetY
+        }))
+      );
+    }
+  }
+
+  const teselas = await Promise.all(cargas);
+  teselas.forEach(t=>{
+    if(t.img) ctx.drawImage(t.img,t.x,t.y,256,256);
+  });
+
+  function puntoCanvas(lat,lng){
+    const t = oymLatLngATile(lat,lng,zoom);
+    return {
+      x:t.x*256-originPixelX+offsetX,
+      y:t.y*256-originPixelY+offsetY
+    };
+  }
+
+  const puntos = validos.map((r,i)=>({
+    r,
+    numero:r.consecutivo_empalme || i+1,
+    ...puntoCanvas(Number(r.latitud),Number(r.longitud))
+  }));
+
+  // Línea del recorrido.
+  ctx.save();
+  ctx.strokeStyle = "#f56002";
+  ctx.lineWidth = 7;
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  puntos.forEach((p,i)=>{
+    if(i===0) ctx.moveTo(p.x,p.y);
+    else ctx.lineTo(p.x,p.y);
+  });
+  ctx.stroke();
+  ctx.restore();
+
+  // Puntos y etiquetas.
+  puntos.forEach(p=>{
+    const tipo = String(p.r.tipo_punto || "").toLowerCase();
+    let color = "#0ea5e9";
+    if(tipo==="nodo") color="#22c55e";
+    else if(tipo==="cliente") color="#8b5cf6";
+    else if(tipo==="olt") color="#f56002";
+    else if(tipo==="splitter") color="#06b6d4";
+    else if(tipo.includes("sang")) color="#f59e0b";
+
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,17,0,Math.PI*2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = "#ffffff";
+    ctx.stroke();
+
+    ctx.font = "bold 20px Arial";
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(String(p.numero),p.x,p.y);
+
+    const etiqueta = `${p.r.etiqueta_empalme || p.r.tipo_punto || "Punto"}${p.r.gpon_contenedor_id ? " - "+p.r.gpon_contenedor_id : ""}`;
+    ctx.font = "bold 18px Arial";
+    const anchoTexto = ctx.measureText(etiqueta).width+18;
+    const labelY = p.y-39;
+    ctx.fillStyle = "rgba(15,23,42,.88)";
+    ctx.fillRect(p.x-anchoTexto/2,labelY-16,anchoTexto,27);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(etiqueta,p.x,labelY-2);
+  });
+
+  // Caja de título y leyenda.
+  ctx.fillStyle = "rgba(255,255,255,.94)";
+  ctx.fillRect(18,18,520,70);
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(18,18,520,70);
+  ctx.fillStyle = "#0f172a";
+  ctx.textAlign = "left";
+  ctx.font = "bold 26px Arial";
+  ctx.fillText("Mapa del recorrido del enrutamiento",35,48);
+  ctx.font = "18px Arial";
+  ctx.fillText(`Puntos: ${validos.length} | Zoom: ${zoom}`,35,76);
+
+  ctx.fillStyle = "rgba(255,255,255,.94)";
+  ctx.fillRect(18,alto-54,620,36);
+  ctx.fillStyle = "#475569";
+  ctx.font = "16px Arial";
+  ctx.fillText("Mapa base: OpenStreetMap | Línea naranja: recorrido registrado",30,alto-30);
+
+  try{
+    return canvas.toDataURL("image/jpeg",0.86);
+  }catch(e){
+    console.warn("No se pudo convertir el mapa base a imagen:",e);
+    return null;
+  }
+}
+
+async function mapaBasePdf(doc,lista,y){
+  const w = doc.internal.pageSize.getWidth();
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(11);
+  doc.setTextColor(30,41,59);
+  doc.text("Mapa del recorrido",14,y);
+
+  const mapaData = await oymCrearMapaBaseDataUrl(lista);
+  if(!mapaData){
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(9);
+    doc.setTextColor(100,116,139);
+    doc.text("No fue posible cargar el mapa base. Se muestra el esquema vectorial.",14,y+7);
+    return esquemaPdf(doc,lista,y+12);
+  }
+
+  doc.setDrawColor(203,213,225);
+  doc.rect(14,y+4,w-28,82);
+  doc.addImage(mapaData,"JPEG",14,y+4,w-28,82,undefined,"FAST");
+  doc.setFont("helvetica","normal");
+  doc.setFontSize(7);
+  doc.setTextColor(100,116,139);
+  doc.text("© OpenStreetMap contributors",14,y+91);
+  return y+97;
+}
+
 function esquemaPdf(doc,lista,y){
   const w=doc.internal.pageSize.getWidth(), validos=lista.filter(r=>Number.isFinite(Number(r.latitud))&&Number.isFinite(Number(r.longitud)));
   doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(30,41,59);doc.text("Esquema del recorrido",14,y);
@@ -2238,16 +2543,49 @@ async function generarActaPDF(ruta,lista,titulo="ACTA DE FINALIZACIÓN",fechaDoc
   let y=doc.lastAutoTable.finalY+8;
   const emp=tipoConteo(lista,"empalme"),nod=tipoConteo(lista,"nodo"),cli=tipoConteo(lista,"cliente"),san=lista.filter(r=>String(r.tipo_punto||"").toLowerCase().includes("sang")).length;
   doc.autoTable({startY:y,theme:"grid",styles:{fontSize:9,halign:"center"},headStyles:{fillColor:[245,96,2]},head:[["Total","Empalmes","Nodos","Clientes","Sangrías"]],body:[[lista.length,emp,nod,cli,san]]});
-  y=esquemaPdf(doc,lista,doc.lastAutoTable.finalY+12);
+  y=await mapaBasePdf(doc,lista,doc.lastAutoTable.finalY+12);
   if(y>245){doc.addPage();encabezadoPdf(doc,ruta,titulo);y=49}
   doc.setFont("helvetica","bold");doc.setFontSize(11);doc.text("Detalle técnico",14,y);
-  doc.autoTable({startY:y+3,theme:"grid",margin:{left:7,right:7},styles:{fontSize:6.2,cellPadding:1.3},headStyles:{fillColor:[15,23,42],fontSize:6.5},head:[["#","Tipo","Punto","Amb.","Cable E.","Hilo E.","Cable S.","Hilo S.","Coordenadas","Observaciones"]],body:lista.map((r,i)=>[
-    r.consecutivo_empalme||i+1,txtPdf(r.tipo_punto),txtPdf(r.nombre_punto),txtPdf(r.ambiente),txtPdf(r.cable_entrada),txtPdf(r.hilo_entrada),txtPdf(r.cable_salida),txtPdf(r.hilo_salida),`${Number(r.latitud).toFixed(7)}, ${Number(r.longitud).toFixed(7)}`,txtPdf(r.observacion)
-  ]),columnStyles:{0:{cellWidth:7},1:{cellWidth:13},2:{cellWidth:20},3:{cellWidth:11},4:{cellWidth:18},5:{cellWidth:11},6:{cellWidth:18},7:{cellWidth:11},8:{cellWidth:31},9:{cellWidth:47}}});
+  doc.autoTable({startY:y+3,theme:"grid",margin:{left:5,right:5},styles:{fontSize:5.6,cellPadding:1.1},headStyles:{fillColor:[15,23,42],fontSize:5.8},head:[["#","Tipo","Punto","Cont.","ID cont.","Cable E.","Hilo E.","Cable S.","Hilo S.","Coordenadas","Observaciones"]],body:lista.map((r,i)=>[
+    r.consecutivo_empalme||i+1,
+    txtPdf(r.tipo_punto),
+    txtPdf(r.nombre_punto),
+    txtPdf(r.gpon_contenedor),
+    txtPdf(r.gpon_contenedor_id),
+    txtPdf(r.cable_entrada),
+    txtPdf(r.hilo_entrada),
+    txtPdf(r.cable_salida),
+    txtPdf(r.hilo_salida),
+    `${Number(r.latitud).toFixed(7)}, ${Number(r.longitud).toFixed(7)}`,
+    txtPdf(r.observacion)
+  ]),columnStyles:{
+    0:{cellWidth:6},
+    1:{cellWidth:12},
+    2:{cellWidth:17},
+    3:{cellWidth:13},
+    4:{cellWidth:20},
+    5:{cellWidth:16},
+    6:{cellWidth:9},
+    7:{cellWidth:16},
+    8:{cellWidth:9},
+    9:{cellWidth:29},
+    10:{cellWidth:43}
+  }});
   for(const r of lista){
     doc.addPage();encabezadoPdf(doc,ruta,titulo);doc.setFont("helvetica","bold");doc.setFontSize(13);doc.setTextColor(30,41,59);doc.text(`${txtPdf(r.etiqueta_empalme||r.tipo_punto)} — ${txtPdf(r.nombre_punto)}`,14,51);
     doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.text(`Tipo: ${txtPdf(r.tipo_punto)} | Ambiente: ${txtPdf(r.ambiente)} | GPS: ${Number(r.latitud).toFixed(7)}, ${Number(r.longitud).toFixed(7)}`,14,58);
     doc.text(`Fusion: hilo ${txtPdf(r.hilo_entrada)} -> hilo ${txtPdf(r.hilo_salida)}`,14,64);
+    if(String(r.tipo_red||ruta.tipo_red||"").toUpperCase()==="GPON"){
+      doc.setTextColor(3,105,161);
+      doc.setFont("helvetica","bold");
+      doc.text(
+        `Contenedor: ${txtPdf(r.gpon_contenedor)} | Nombre o ID: ${txtPdf(r.gpon_contenedor_id)}`,
+        14,
+        69
+      );
+      doc.setFont("helvetica","normal");
+      doc.setTextColor(30,41,59);
+    }
     if(String(r.tipo_red||ruta.tipo_red||"").toUpperCase()==="GPON"){
       const detalleGpon = [
         r.gpon_contenedor ? `Contenedor ${txtPdf(r.gpon_contenedor)} / ${txtPdf(r.gpon_contenedor_id)}` : "",
@@ -2256,9 +2594,9 @@ async function generarActaPDF(ruta,lista,titulo="ACTA DE FINALIZACIÓN",fechaDoc
         ["NAP","CTO"].includes(r.tipo_punto) ? `${r.tipo_punto} ${txtPdf(r.caja_capacidad)} puertos / Puerto ${txtPdf(r.caja_puerto_utilizado)}` : "",
         r.tipo_punto==="Cliente" && r.ont_serial ? `ONT ${txtPdf(r.ont_serial)} / RX ${txtPdf(r.ont_potencia_rx)} dBm` : ""
       ].filter(Boolean).join(" | ");
-      if(detalleGpon){doc.setTextColor(3,105,161);doc.text(detalleGpon,14,69);}
+      if(detalleGpon){doc.setTextColor(3,105,161);doc.text(detalleGpon,14,74);}
     }
-    if(["nodo","olt"].includes(String(r.tipo_punto||"").toLowerCase())){doc.setFillColor(240,253,244);doc.roundedRect(14,75,182,40,4,4,"F");doc.setTextColor(22,101,52);doc.setFont("helvetica","bold");doc.setFontSize(12);doc.text(`Registro tipo ${txtPdf(r.tipo_punto).toUpperCase()}`,105,91,{align:"center"});doc.setFont("helvetica","normal");doc.setFontSize(9);doc.text("Las fotografías no aplican para este tipo de punto.",105,100,{align:"center"})}
+    if(["nodo","olt"].includes(String(r.tipo_punto||"").toLowerCase())){doc.setFillColor(240,253,244);doc.roundedRect(14,82,182,40,4,4,"F");doc.setTextColor(22,101,52);doc.setFont("helvetica","bold");doc.setFontSize(12);doc.text(`Registro tipo ${txtPdf(r.tipo_punto).toUpperCase()}`,105,98,{align:"center"});doc.setFont("helvetica","normal");doc.setFontSize(9);doc.text("Las fotografías no aplican para este tipo de punto.",105,107,{align:"center"})}
     else{
       const f1=await fotoActa(r,1),f2=await fotoActa(r,2);
       console.log("ACTA PDF - Fotos",{
@@ -2269,25 +2607,25 @@ async function generarActaPDF(ruta,lista,titulo="ACTA DE FINALIZACIÓN",fechaDoc
         foto2_key:r.foto2_key,
         foto1_url:r.foto1_panoramica_url,
         foto2_url:r.foto2_empalme_fusion_url
-      });doc.setTextColor(30,41,59);doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text("Foto 1 — Panorámica",14,74);doc.text("Foto 2 — Empalme y fusión",108,74);
-      const foto1Insertada = agregarImagenPdfAjustada(doc,f1,14,78,88,78);
+      });doc.setTextColor(30,41,59);doc.setFont("helvetica","bold");doc.setFontSize(9);doc.text("Foto 1 — Panorámica",14,79);doc.text("Foto 2 — Empalme y fusión",108,79);
+      const foto1Insertada = agregarImagenPdfAjustada(doc,f1,14,83,88,75);
       if(!foto1Insertada){
         doc.setDrawColor(203,213,225);
-        doc.rect(14,78,88,78);
+        doc.rect(14,83,88,75);
         doc.setFont("helvetica","bold");
         doc.setFontSize(9);
         doc.setTextColor(71,85,105);
-        doc.text("Foto no disponible",58,117,{align:"center"});
+        doc.text("Foto no disponible",58,120,{align:"center"});
       }
 
-      const foto2Insertada = agregarImagenPdfAjustada(doc,f2,108,78,88,78);
+      const foto2Insertada = agregarImagenPdfAjustada(doc,f2,108,83,88,75);
       if(!foto2Insertada){
         doc.setDrawColor(203,213,225);
-        doc.rect(108,78,88,78);
+        doc.rect(108,83,88,75);
         doc.setFont("helvetica","bold");
         doc.setFontSize(9);
         doc.setTextColor(71,85,105);
-        doc.text("Foto no disponible",152,117,{align:"center"});
+        doc.text("Foto no disponible",152,120,{align:"center"});
       }
     }
     doc.autoTable({startY:174,theme:"grid",styles:{fontSize:8,cellPadding:2},body:[
@@ -3092,5 +3430,6 @@ migrarFotosLegacyAIndexedDB().then(() => { inicializarBotonesLateralesOcultos();
 
 </body>
 </html>
+
 
 
