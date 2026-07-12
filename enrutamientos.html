@@ -144,6 +144,36 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
 .oymCircleIcon{width:24px;height:24px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,.5)}
 .oymCircleIcon{background:#0ea5e9}
 
+
+/* ===== CAMPOS GPON ===== */
+.gponBox{
+  border:1px solid #0ea5e9;
+  background:linear-gradient(180deg,rgba(14,165,233,.08),rgba(2,6,23,.35));
+  border-radius:14px;
+  padding:12px;
+  margin-top:12px;
+}
+.gponBadge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:#0369a1;
+  color:white;
+  border-radius:999px;
+  padding:4px 9px;
+  font-weight:800;
+  font-size:11px;
+}
+.gponValidation{
+  border-left:4px solid #f59e0b;
+  background:#451a03;
+  color:#fde68a;
+  border-radius:8px;
+  padding:8px;
+  font-size:12px;
+  margin-top:8px;
+}
+
 </style>
 </head>
 
@@ -267,11 +297,12 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
 
       <div class="sectionTitle">1. Enrutamiento activo</div>
       <div class="gpsBox" id="infoRutaActivaFormulario"></div>
+      <input id="tipoRedActivo" type="hidden" value="PUNTO_A_PUNTO">
 
       <div class="sectionTitle">2. Clasificación</div>
       <div class="row">
         <div><label>Tipo de enrutamiento <span class="required">*</span></label><select id="ambiente" onchange="cambiarAmbiente()"><option value="">Seleccione...</option><option value="externo">Externo</option><option value="interno">Interno</option></select></div>
-        <div><label>Tipo de punto</label><select id="tipoPunto" onchange="actualizarCamposPorTipoPunto()"><option>Empalme</option><option>Nodo</option><option>Cliente</option><option>Sangria</option></select></div>
+        <div><label>Tipo de punto</label><select id="tipoPunto" onchange="actualizarCamposPorTipoPunto()"></select></div>
       </div>
 
       <div id="camposInternos" class="hidden">
@@ -332,6 +363,90 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
       <input id="tuboEntrada" type="hidden" value="">
       <input id="tuboSalida" type="hidden" value="">
       <label>Observaciones</label><textarea id="observacion"></textarea>
+
+
+      <div id="seccionGpon" class="gponBox hidden">
+        <div class="sectionTitle">5. Datos GPON</div>
+        <div class="gponValidation">
+          Estos campos cambian según el tipo de punto. El sistema valida capacidades, puertos y datos mínimos.
+        </div>
+
+
+        <div id="camposGponContenedor">
+          <div class="row">
+            <div>
+              <label>Contenedor <span class="required">*</span></label>
+              <select id="gponContenedor">
+                <option value="">Seleccione...</option>
+                <option value="EMPALME">EMPALME</option>
+                <option value="CTO">CTO</option>
+                <option value="NAP">NAP</option>
+              </select>
+            </div>
+            <div>
+              <label>Nombre o ID de contenedor <span class="required">*</span></label>
+              <input id="gponContenedorId" placeholder="Ej: FOC-00052">
+            </div>
+          </div>
+        </div>
+
+        <div id="camposGponOlt" class="hidden">
+          <div class="row">
+            <div><label>Nombre OLT <span class="required">*</span></label><input id="oltNombre" placeholder="Ej: VVC_OLT_01"></div>
+            <div><label>Marca OLT</label><select id="oltMarca"><option value="">Seleccione...</option><option>Huawei</option><option>ZTE</option><option>Nokia</option><option>FiberHome</option><option>Otra</option></select></div>
+          </div>
+          <div class="row">
+            <div><label>Frame</label><input id="oltFrame" type="number" min="0" max="99" placeholder="Ej: 0"></div>
+            <div><label>Slot <span class="required">*</span></label><input id="oltSlot" type="number" min="0" max="31" placeholder="Ej: 3"></div>
+          </div>
+          <div class="row">
+            <div><label>Tarjeta</label><input id="oltTarjeta" placeholder="Ej: GPFD / GTGH"></div>
+            <div><label>Puerto PON <span class="required">*</span></label><input id="oltPuertoPon" type="number" min="0" max="31" placeholder="Ej: 7"></div>
+          </div>
+        </div>
+
+        <div id="camposGponSplitter" class="hidden">
+          <div class="row">
+            <div><label>Nivel del splitter <span class="required">*</span></label><select id="splitterNivel"><option value="">Seleccione...</option><option>Único</option><option>Primario</option><option>Secundario</option></select></div>
+            <div><label>Relación <span class="required">*</span></label><select id="splitterRelacion" onchange="actualizarPuertosSplitter()"><option value="">Seleccione...</option><option value="1:4">1:4</option><option value="1:8">1:8</option><option value="1:16">1:16</option></select></div>
+          </div>
+          <div class="row">
+            <div><label>Puerto de entrada</label><select id="splitterPuertoEntrada"><option value="1">Entrada 1</option></select></div>
+            <div><label>Puerto de salida utilizado <span class="required">*</span></label><select id="splitterPuertoSalida"><option value="">Seleccione relación...</option></select></div>
+          </div>
+        </div>
+
+        <div id="camposGponCaja" class="hidden">
+          <div class="row">
+            <div><label>Tipo de caja</label><input id="cajaTipo" readonly></div>
+            <div><label>Capacidad <span class="required">*</span></label><select id="cajaCapacidad" onchange="actualizarPuertosCaja()"><option value="">Seleccione...</option><option value="4">4 puertos</option><option value="8">8 puertos</option><option value="16">16 puertos</option><option value="32">32 puertos</option></select></div>
+          </div>
+          <div class="row">
+            <div><label>Puerto utilizado <span class="required">*</span></label><select id="cajaPuertoUtilizado"><option value="">Seleccione capacidad...</option></select></div>
+            <div><label>¿Splitter integrado?</label><select id="splitterIntegrado" onchange="actualizarSplitterIntegrado()"><option value="false">No</option><option value="true">Sí</option></select></div>
+          </div>
+          <div id="camposSplitterIntegrado" class="hidden">
+            <div class="row">
+              <div><label>Relación splitter integrado</label><select id="splitterIntegradoRelacion" onchange="actualizarPuertosSplitterIntegrado()"><option value="">Seleccione...</option><option value="1:4">1:4</option><option value="1:8">1:8</option><option value="1:16">1:16</option></select></div>
+              <div><label>Puerto salida splitter integrado</label><select id="splitterIntegradoPuertoSalida"><option value="">Seleccione relación...</option></select></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="camposGponOnt" class="hidden">
+          <div class="row">
+            <div><label>Serial ONT</label><input id="ontSerial" placeholder="Ej: HWTC12345678"></div>
+            <div><label>Modelo ONT</label><input id="ontModelo" placeholder="Ej: HG8245H"></div>
+          </div>
+          <div class="row">
+            <div><label>Potencia RX (dBm)</label><input id="ontPotenciaRx" type="number" step="0.01" placeholder="Ej: -19.50"></div>
+            <div><label>Puerto NAP/CTO de origen</label><input id="ontPuertoOrigen" type="number" min="1" placeholder="Ej: 5"></div>
+          </div>
+        </div>
+
+        <label>Observación de validación GPON</label>
+        <textarea id="gponObservacionValidacion" placeholder="Cambios, validaciones o diferencias encontradas en campo."></textarea>
+      </div>
 
       <div id="seccionFotosObligatorias">
         <div class="sectionTitle">5. Fotos obligatorias</div>
@@ -420,6 +535,14 @@ let selectedLat = null, selectedLng = null, currentAccuracy = null;
 let fotoPanoramica = null, fotoFusion = null;
 let registroMarkers = {};
 let enrutamientoActivo = JSON.parse(localStorage.getItem("oym_enrutamiento_activo_v2") || "null");
+if(enrutamientoActivo){
+  enrutamientoActivo.tipo_red = String(
+    enrutamientoActivo.tipo_red ||
+    enrutamientoActivo.tecnologia ||
+    enrutamientoActivo.tipo_tecnologia ||
+    "PUNTO_A_PUNTO"
+  ).toUpperCase();
+}
 let enrutamientos = JSON.parse(localStorage.getItem("oym_enrutamientos_v2") || "[]");
 let registros = JSON.parse(localStorage.getItem("oym_empalmes_offline_v2") || "[]");
 const defaultLat = 4.142, defaultLng = -73.6266;
@@ -575,6 +698,7 @@ async function verificarSesionTecnico(){
     await cargarPerfilTecnico();
     document.getElementById("authOverlay").style.display = "none";
     await cargarClientesAsignados();
+    await corregirTipoRedEnrutamientoActivo();
   }else{
     document.getElementById("authOverlay").style.display = "flex";
   }
@@ -623,6 +747,32 @@ async function cargarPerfilTecnico(){
   if(box) box.innerHTML = `<b>Usuario:</b> ${perfilTecnico.nombre || usuarioTecnico.email}<br><b>Correo:</b> ${usuarioTecnico.email}<br><b>Rol:</b> ${perfilTecnico.rol}`;
 }
 
+
+async function corregirTipoRedEnrutamientoActivo(){
+  if(!enrutamientoActivo?.supabase_id || !usuarioTecnico) return;
+
+  const {data,error} = await supabaseClient
+    .from("enrutamientos_clientes")
+    .select("id,tipo_red")
+    .eq("id",enrutamientoActivo.supabase_id)
+    .maybeSingle();
+
+  if(error || !data) return;
+
+  const tipo = String(data.tipo_red || "PUNTO_A_PUNTO").toUpperCase();
+  if(enrutamientoActivo.tipo_red !== tipo){
+    enrutamientoActivo.tipo_red = tipo;
+    const idx = enrutamientos.findIndex(r =>
+      r.supabase_id === enrutamientoActivo.supabase_id ||
+      r.offline_id === enrutamientoActivo.offline_id
+    );
+    if(idx >= 0) enrutamientos[idx].tipo_red = tipo;
+    guardarEnrutamientos();
+    localStorage.setItem("oym_enrutamiento_activo_v2",JSON.stringify(enrutamientoActivo));
+    actualizarHeader();
+  }
+}
+
 async function cargarClientesAsignados(){
   if(!usuarioTecnico) return;
 
@@ -644,10 +794,20 @@ async function cargarClientesAsignados(){
     return;
   }
 
-  clientesAsignados = (data || []).filter(c => {
-    const estado = String(c.estado_asignacion || "asignado").toLowerCase();
-    return estado === "asignado" || estado === "en_proceso" || estado === "activo";
-  });
+  clientesAsignados = (data || [])
+    .map(c => ({
+      ...c,
+      tipo_red: String(
+        c.tipo_red ||
+        c.tecnologia ||
+        c.tipo_tecnologia ||
+        "PUNTO_A_PUNTO"
+      ).toUpperCase()
+    }))
+    .filter(c => {
+      const estado = String(c.estado_asignacion || "asignado").toLowerCase();
+      return estado === "asignado" || estado === "en_proceso" || estado === "activo";
+    });
 
   console.log("Usuario técnico:", usuarioTecnico.id, usuarioTecnico.email);
   console.log("Perfil técnico:", perfilTecnico);
@@ -701,6 +861,7 @@ function pintarClientesAsignados(){
     <div class="clienteCard">
       <b>${escapeHtml(c.id_cliente || "Sin ID")}</b> · Ruta ${escapeHtml(c.codigo_ruta || "N/A")}<br>
       <b>Cliente:</b> ${escapeHtml(c.nombre_cliente || "N/A")}<br>
+      <b>Tecnología:</b> <span class="gponBadge">${String(c.tipo_red || "").toUpperCase() === "GPON" ? "GPON" : "PUNTO A PUNTO"}</span><br>
       <b>Dirección:</b> ${escapeHtml(c.direccion_cliente || "N/A")}<br>
       <b>Estado asignación:</b> ${escapeHtml(c.estado_asignacion || "asignado")}<br>
       <b>Asignado a:</b> ${escapeHtml(c.tecnico_nombre || c.tecnico_email || "N/A")}<br>
@@ -717,39 +878,83 @@ async function seleccionarClienteAsignado(id){
     if(!confirm("Ya tienes un cliente activo. ¿Deseas cambiar al cliente seleccionado?")) return;
   }
 
-  const localExistente = enrutamientos.find(r => r.supabase_id === c.id || r.offline_id === c.offline_id);
+  const tipoRedSupabase = String(
+    c.tipo_red ||
+    c.tecnologia ||
+    c.tipo_tecnologia ||
+    "PUNTO_A_PUNTO"
+  ).toUpperCase();
 
-  enrutamientoActivo = localExistente || {
-    offline_id: c.offline_id || crypto.randomUUID(),
-    sync_status: "enviado",
-    supabase_id: c.id,
-    id_cliente: c.id_cliente,
-    codigo_ruta: c.codigo_ruta,
-    nombre_cliente: c.nombre_cliente,
-    direccion_cliente: c.direccion_cliente,
-    observacion_general: c.observacion_general || "",
-    estado: c.estado || "activo",
-    fecha_inicio: c.fecha_inicio || new Date().toISOString(),
-    user_agent: navigator.userAgent,
-    asignado_desde_master: true
-  };
+  const localExistente = enrutamientos.find(
+    r => r.supabase_id === c.id || r.offline_id === c.offline_id
+  );
 
-  if(!localExistente){
+  if(localExistente){
+    // Supabase es la fuente de verdad para los datos asignados desde el Master.
+    Object.assign(localExistente,{
+      supabase_id: c.id,
+      id_cliente: c.id_cliente,
+      codigo_ruta: c.codigo_ruta,
+      nombre_cliente: c.nombre_cliente,
+      direccion_cliente: c.direccion_cliente,
+      observacion_general: c.observacion_general || localExistente.observacion_general || "",
+      estado: c.estado || localExistente.estado || "activo",
+      estado_asignacion: c.estado_asignacion || localExistente.estado_asignacion || "en_proceso",
+      fecha_inicio: c.fecha_inicio || localExistente.fecha_inicio || new Date().toISOString(),
+      tipo_red: tipoRedSupabase,
+      asignado_desde_master: true
+    });
+
+    enrutamientoActivo = localExistente;
+  }else{
+    enrutamientoActivo = {
+      offline_id: c.offline_id || crypto.randomUUID(),
+      sync_status: "enviado",
+      supabase_id: c.id,
+      id_cliente: c.id_cliente,
+      codigo_ruta: c.codigo_ruta,
+      nombre_cliente: c.nombre_cliente,
+      direccion_cliente: c.direccion_cliente,
+      observacion_general: c.observacion_general || "",
+      estado: c.estado || "activo",
+      estado_asignacion: c.estado_asignacion || "en_proceso",
+      fecha_inicio: c.fecha_inicio || new Date().toISOString(),
+      tipo_red: tipoRedSupabase,
+      user_agent: navigator.userAgent,
+      asignado_desde_master: true
+    };
+
     enrutamientos.unshift(enrutamientoActivo);
   }
 
+  // Persist the corrected technology so an old local record cannot force Punto a Punto.
   localStorage.setItem("oym_enrutamiento_activo_v2", JSON.stringify(enrutamientoActivo));
   guardarEnrutamientos();
+
+  document.getElementById("tipoRedActivo").value = tipoRedSupabase;
+  actualizarOpcionesTipoPunto();
   actualizarHeader();
   pintarRegistros();
   cerrarPanelClientesAsignados();
 
-  await supabaseClient.from("enrutamientos_clientes").update({
-    estado_asignacion:"en_proceso"
-  }).eq("id", c.id);
+  const {error:updateError} = await supabaseClient
+    .from("enrutamientos_clientes")
+    .update({
+      estado_asignacion:"en_proceso",
+      tipo_red: tipoRedSupabase
+    })
+    .eq("id", c.id);
+
+  if(updateError){
+    console.warn("No se pudo actualizar estado/tipo de red:",updateError);
+  }
 
   await cargarEmpalmesExistentesDesdeSupabase(c.id);
-  alert("Cliente cargado. Ya puedes marcar puntos de enrutamiento. Si ya existían empalmes en Supabase, fueron cargados en el mapa.");
+
+  alert(
+    `Cliente cargado como ${tipoRedSupabase === "GPON" ? "GPON" : "Punto a punto"}. ` +
+    "Ya puedes marcar puntos de enrutamiento."
+  );
 }
 
 async function logoutTecnico(){
@@ -977,8 +1182,134 @@ function actualizarCentroInfo(){
 }
 
 
+
+function tipoRedActual(){
+  return String(
+    enrutamientoActivo?.tipo_red ||
+    enrutamientoActivo?.tecnologia ||
+    enrutamientoActivo?.tipo_tecnologia ||
+    document.getElementById("tipoRedActivo")?.value ||
+    "PUNTO_A_PUNTO"
+  ).toUpperCase();
+}
+
+function actualizarOpcionesTipoPunto(){
+  const select = document.getElementById("tipoPunto");
+  if(!select) return;
+
+  const valorActual = select.value;
+  const esGpon = tipoRedActual() === "GPON";
+
+  const opciones = esGpon
+    ? ["OLT","Nodo","Empalme","Splitter","Cliente","Sangria"]
+    : ["Empalme","Nodo","Cliente","Sangria"];
+
+  select.innerHTML = opciones.map(o => `<option value="${o}">${o}</option>`).join("");
+  select.value = opciones.includes(valorActual) ? valorActual : opciones[0];
+}
+
+function capacidadRelacionSplitter(relacion){
+  return {"1:4":4,"1:8":8,"1:16":16}[relacion] || 0;
+}
+
+function llenarSelectNumerico(id,max,prefijo="Puerto"){
+  const select = document.getElementById(id);
+  if(!select) return;
+  const actual = Number(select.value || 0);
+  select.innerHTML = `<option value="">Seleccione...</option>`;
+  for(let i=1;i<=max;i++){
+    select.insertAdjacentHTML("beforeend",`<option value="${i}">${prefijo} ${i}</option>`);
+  }
+  if(actual >= 1 && actual <= max) select.value = String(actual);
+}
+
+function actualizarPuertosSplitter(){
+  llenarSelectNumerico("splitterPuertoSalida",capacidadRelacionSplitter(val("splitterRelacion")));
+}
+
+function actualizarPuertosCaja(){
+  llenarSelectNumerico("cajaPuertoUtilizado",Number(val("cajaCapacidad") || 0));
+}
+
+function actualizarSplitterIntegrado(){
+  const activo = val("splitterIntegrado") === "true";
+  document.getElementById("camposSplitterIntegrado")?.classList.toggle("hidden",!activo);
+  if(!activo){
+    setVal("splitterIntegradoRelacion","");
+    setVal("splitterIntegradoPuertoSalida","");
+  }
+}
+
+function actualizarPuertosSplitterIntegrado(){
+  llenarSelectNumerico("splitterIntegradoPuertoSalida",capacidadRelacionSplitter(val("splitterIntegradoRelacion")));
+}
+
+function mostrarSoloGrupoGpon(tipo){
+  const esGpon = tipoRedActual() === "GPON";
+  document.getElementById("seccionGpon")?.classList.toggle("hidden",!esGpon);
+
+  const grupos = {
+    OLT:"camposGponOlt",
+    Splitter:"camposGponSplitter",
+    Cliente:"camposGponOnt"
+  };
+
+  ["camposGponOlt","camposGponSplitter","camposGponCaja","camposGponOnt"].forEach(id=>{
+    document.getElementById(id)?.classList.add("hidden");
+  });
+
+  if(esGpon && grupos[tipo]){
+    document.getElementById(grupos[tipo])?.classList.remove("hidden");
+  }
+
+}
+
+function validarCamposGpon(tipo){
+  if(tipoRedActual() !== "GPON") return true;
+
+  if(!val("gponContenedor") || !val("gponContenedorId")){
+    alert("Debes seleccionar el contenedor y diligenciar el Nombre o ID de contenedor.");
+    return false;
+  }
+
+  if(tipo === "OLT"){
+    if(!val("oltNombre") || val("oltSlot")==="" || val("oltPuertoPon")===""){
+      alert("Para OLT debes diligenciar nombre, slot y puerto PON.");
+      return false;
+    }
+  }
+
+  if(tipo === "Splitter"){
+    const relacion = val("splitterRelacion");
+    const max = capacidadRelacionSplitter(relacion);
+    const puerto = Number(val("splitterPuertoSalida") || 0);
+    if(!val("splitterNivel") || !relacion || puerto < 1 || puerto > max){
+      alert("Completa nivel, relación y un puerto de salida válido para el splitter.");
+      return false;
+    }
+
+    const duplicado = registrosDeRutaActual().some(r =>
+      r.offline_id !== val("editOfflineId") &&
+      r.tipo_punto === "Splitter" &&
+      String(r.nombre_punto || "").trim().toLowerCase() === String(val("punto") || "").trim().toLowerCase() &&
+      Number(r.splitter_puerto_salida) === puerto
+    );
+    if(duplicado){
+      alert("Ese puerto del splitter ya está utilizado en este enrutamiento.");
+      return false;
+    }
+  }
+
+
+
+  return true;
+}
+
 function actualizarCamposPorTipoPunto(){
+  actualizarOpcionesTipoPunto();
+
   const tipo = val("tipoPunto");
+  const esGpon = tipoRedActual() === "GPON";
 
   const grupoCableEntrada = document.getElementById("grupoCableEntrada");
   const grupoHiloEntrada = document.getElementById("grupoHiloEntrada");
@@ -990,23 +1321,30 @@ function actualizarCamposPorTipoPunto(){
   const puntoInput = document.getElementById("punto");
   const seccionFotos = document.getElementById("seccionFotosObligatorias");
 
+  mostrarSoloGrupoGpon(tipo);
+
   if(labelPunto){
-    labelPunto.textContent = tipo === "Nodo" ? "ODF" : "Nombre punto / caja / manga";
+    if(tipo === "Nodo") labelPunto.textContent = "ODF";
+    else if(tipo === "OLT") labelPunto.textContent = "Nombre / identificación OLT";
+    else if(tipo === "Splitter") labelPunto.textContent = "Nombre / identificación splitter";
+    else if(tipo === "NAP" || tipo === "CTO") labelPunto.textContent = `Nombre / código ${tipo}`;
+    else labelPunto.textContent = "Nombre punto / caja / manga";
   }
 
   if(puntoInput){
-    puntoInput.placeholder = "Ej: FOC104532";
+    const placeholders = {
+      OLT:"Ej: VVC_OLT_01",
+      Splitter:"Ej: SPL-PRIMARIO-01",
+      Nodo:"Ej: ODF-01"
+    };
+    puntoInput.placeholder = placeholders[tipo] || "Ej: FOC104532";
   }
 
-  // Estado base
   grupoCableEntrada?.classList.remove("hidden");
   grupoHiloEntrada?.classList.remove("hidden");
   grupoCableSalida?.classList.remove("hidden");
   grupoHiloSalida?.classList.remove("hidden");
-
-  if(seccionFotos){
-    seccionFotos.classList.remove("hidden");
-  }
+  seccionFotos?.classList.remove("hidden");
 
   if(cableSalidaInput && cableSalidaSelect){
     cableSalidaInput.classList.remove("hidden");
@@ -1016,11 +1354,10 @@ function actualizarCamposPorTipoPunto(){
   if(tipo === "Cliente"){
     grupoCableEntrada?.classList.add("hidden");
     grupoHiloEntrada?.classList.add("hidden");
+    setVal("cableEntrada","");
+    setVal("hiloEntrada","");
 
-    setVal("cableEntrada", "");
-    setVal("hiloEntrada", "");
-
-    if(cableSalidaInput && cableSalidaSelect){
+    if(cableSalidaInput && cableSalidaSelect && !esGpon){
       cableSalidaInput.classList.add("hidden");
       cableSalidaSelect.classList.remove("hidden");
       cableSalidaSelect.value = val("cableSalida") || "";
@@ -1030,33 +1367,50 @@ function actualizarCamposPorTipoPunto(){
   if(tipo === "Nodo"){
     grupoCableSalida?.classList.add("hidden");
     grupoHiloSalida?.classList.add("hidden");
+    setVal("cableSalida","");
+    setVal("hiloSalida","");
+    if(cableSalidaSelect) cableSalidaSelect.value="";
+    seccionFotos?.classList.add("hidden");
+  }
 
-    setVal("cableSalida", "");
-    setVal("hiloSalida", "");
+  if(esGpon && tipo === "OLT"){
+    grupoCableEntrada?.classList.add("hidden");
+    grupoHiloEntrada?.classList.add("hidden");
+    setVal("cableEntrada","");
+    setVal("hiloEntrada","");
 
-    if(cableSalidaSelect){
-      cableSalidaSelect.value = "";
-    }
-
-    // Para Nodo no se solicitan fotos.
-    if(seccionFotos){
-      seccionFotos.classList.add("hidden");
-    }
+    // La OLT no requiere fotografías.
+    seccionFotos?.classList.add("hidden");
     fotoPanoramica = "";
     fotoFusion = "";
     const p1 = document.getElementById("previewPanoramica");
     const p2 = document.getElementById("previewFusion");
-    if(p1){ p1.src = ""; p1.style.display = "none"; }
-    if(p2){ p2.src = ""; p2.style.display = "none"; }
+    if(p1){ p1.src=""; p1.style.display="none"; }
+    if(p2){ p2.src=""; p2.style.display="none"; }
+  }
+
+  if(esGpon && tipo === "Splitter"){
+    // Hilo entrada y salida física se conservan; adicionalmente se valida el puerto óptico.
+    actualizarPuertosSplitter();
+  }
+
+  if(tipo !== "Nodo"){
+    // No limpiar fotos al cambiar entre otros tipos.
+  }else{
+    fotoPanoramica="";
+    fotoFusion="";
+    const p1=document.getElementById("previewPanoramica");
+    const p2=document.getElementById("previewFusion");
+    if(p1){p1.src="";p1.style.display="none";}
+    if(p2){p2.src="";p2.style.display="none";}
   }
 
   actualizarEtiquetaConsecutivo();
 }
 
-
 function actualizarHeader(){
   if(enrutamientoActivo){
-    document.getElementById("clienteHeader").textContent = `Cliente: ${enrutamientoActivo.id_cliente} · Ruta: ${enrutamientoActivo.codigo_ruta} · Estado: ${enrutamientoActivo.estado_asignacion || enrutamientoActivo.estado || "en_proceso"}`;
+    document.getElementById("clienteHeader").textContent = `Cliente: ${enrutamientoActivo.id_cliente} · Ruta: ${enrutamientoActivo.codigo_ruta} · Red: ${tipoRedActual() === "GPON" ? "GPON" : "Punto a punto"} · Estado: ${enrutamientoActivo.estado_asignacion || enrutamientoActivo.estado || "en_proceso"}`;
   } else {
     document.getElementById("clienteHeader").textContent = "Sin enrutamiento activo";
   }
@@ -1270,7 +1624,9 @@ function abrirModalEmpalmeNuevo(){
 
 function abrirModal(){
   document.getElementById("modalGpsInfo").innerHTML = `<b>Coordenada fijada:</b> ${selectedLat.toFixed(7)}, ${selectedLng.toFixed(7)}<br><b>Fecha:</b> ${new Date().toLocaleString()}<br><b>Origen:</b> mira central.`;
-  document.getElementById("infoRutaActivaFormulario").innerHTML = `<b>ID Cliente:</b> ${enrutamientoActivo.id_cliente}<br><b>Código ruta/cambio:</b> ${enrutamientoActivo.codigo_ruta}<br><b>Cliente:</b> ${enrutamientoActivo.nombre_cliente || "N/A"}`;
+  document.getElementById("tipoRedActivo").value = enrutamientoActivo.tipo_red || "PUNTO_A_PUNTO";
+  actualizarOpcionesTipoPunto();
+  document.getElementById("infoRutaActivaFormulario").innerHTML = `<b>ID Cliente:</b> ${enrutamientoActivo.id_cliente}<br><b>Código ruta/cambio:</b> ${enrutamientoActivo.codigo_ruta}<br><b>Cliente:</b> ${enrutamientoActivo.nombre_cliente || "N/A"}<br><span class="gponBadge">${tipoRedActual() === "GPON" ? "RED GPON" : "PUNTO A PUNTO"}</span>`;
   document.getElementById("modalFormulario").style.display = "block";
   ocultarFabMarcar();
 }
@@ -1326,6 +1682,8 @@ function obtenerTipoEtiqueta(){
   if(tipo === "Nodo") return "Nodo";
   if(tipo === "Cliente") return "Cliente";
   if(tipo === "Sangria") return "Sangria";
+  if(tipo === "OLT") return "OLT";
+  if(tipo === "Splitter") return "Splitter";
   return "Empalme";
 }
 
@@ -1359,13 +1717,17 @@ async function guardarRegistroLocal(){
   if(!val("ambiente")){ alert("Debes seleccionar Externo o Interno."); return; }
   if(val("ambiente") === "externo" && !val("elementoExterno")){ alert("El campo Elemento externo es obligatorio."); return; }
   if(val("tipoPunto") === "Cliente" && !val("cableSalida")){ alert("Para Cliente debes seleccionar Cable nuevo o Habilitación de hilos."); return; }
-  if(val("tipoPunto") !== "Nodo" && val("tipoPunto") !== "Cliente" && (!val("hiloEntrada") || !val("hiloSalida"))){ alert("Para empalmes debes diligenciar hilo de entrada e hilo de salida."); return; }
+  if(!["Nodo","Cliente","OLT","NAP","CTO"].includes(val("tipoPunto")) && (!val("hiloEntrada") || !val("hiloSalida"))){ alert("Debes diligenciar hilo de entrada e hilo de salida."); return; }
+  if(val("tipoPunto") === "OLT" && !val("hiloSalida")){ alert("Para OLT debes diligenciar el hilo de salida."); return; }
+  if(["NAP","CTO"].includes(val("tipoPunto")) && !val("hiloEntrada")){ alert(`Para ${val("tipoPunto")} debes diligenciar el hilo de entrada.`); return; }
+
+  if(!validarCamposGpon(val("tipoPunto"))) return;
 
   const editId = val("editOfflineId");
   const existente = editId ? registros.find(r => r.offline_id === editId) : null;
 
   const tipoPuntoActual = val("tipoPunto");
-  const requiereFotos = tipoPuntoActual !== "Nodo";
+  const requiereFotos = !["Nodo","OLT"].includes(tipoPuntoActual);
 
   if(requiereFotos && !fotoPanoramica && !existente?.foto1_key && !existente?.foto1_panoramica_url){ alert("La Foto 1 panorámica es obligatoria."); return; }
   if(requiereFotos && !fotoFusion && !existente?.foto2_key && !existente?.foto2_empalme_fusion_url){ alert("La Foto 2 empalme y fusión es obligatoria."); return; }
@@ -1404,6 +1766,31 @@ async function guardarRegistroLocal(){
     fecha_captura_app: existente?.fecha_captura_app || new Date().toISOString(),
     ambiente: val("ambiente"),
     tipo_punto: val("tipoPunto"),
+    tipo_red: tipoRedActual(),
+    gpon_contenedor: val("gponContenedor") || null,
+    gpon_contenedor_id: val("gponContenedorId") || null,
+    olt_nombre: val("oltNombre") || null,
+    olt_marca: val("oltMarca") || null,
+    olt_frame: val("oltFrame") !== "" ? Number(val("oltFrame")) : null,
+    olt_slot: val("oltSlot") !== "" ? Number(val("oltSlot")) : null,
+    olt_tarjeta: val("oltTarjeta") || null,
+    olt_puerto_pon: val("oltPuertoPon") !== "" ? Number(val("oltPuertoPon")) : null,
+    splitter_nivel: val("splitterNivel") || null,
+    splitter_relacion: val("splitterRelacion") || null,
+    splitter_puerto_entrada: val("splitterPuertoEntrada") !== "" ? Number(val("splitterPuertoEntrada")) : null,
+    splitter_puerto_salida: val("splitterPuertoSalida") !== "" ? Number(val("splitterPuertoSalida")) : null,
+    caja_tipo: val("cajaTipo") || null,
+    caja_capacidad: val("cajaCapacidad") !== "" ? Number(val("cajaCapacidad")) : null,
+    caja_puerto_utilizado: val("cajaPuertoUtilizado") !== "" ? Number(val("cajaPuertoUtilizado")) : null,
+    splitter_integrado: val("splitterIntegrado") === "true",
+    splitter_integrado_relacion: val("splitterIntegradoRelacion") || null,
+    splitter_integrado_puerto_salida: val("splitterIntegradoPuertoSalida") !== "" ? Number(val("splitterIntegradoPuertoSalida")) : null,
+    ont_serial: val("ontSerial") || null,
+    ont_modelo: val("ontModelo") || null,
+    ont_potencia_rx: val("ontPotenciaRx") !== "" ? Number(val("ontPotenciaRx")) : null,
+    ont_puerto_origen: val("ontPuertoOrigen") !== "" ? Number(val("ontPuertoOrigen")) : null,
+    gpon_validado: tipoRedActual() === "GPON",
+    gpon_observacion_validacion: val("gponObservacionValidacion") || null,
     zona_interna: val("zonaInterna"),
     piso_nivel: val("pisoNivel"),
     torre_bloque: val("torreBloque"),
@@ -1489,6 +1876,34 @@ async function editarRegistro(id){
   setVal("hiloEntrada", r.hilo_entrada);
   setVal("hiloSalida", r.hilo_salida);
   setVal("observacion", r.observacion);
+  setVal("oltNombre", r.olt_nombre);
+  setVal("oltMarca", r.olt_marca);
+  setVal("oltFrame", r.olt_frame);
+  setVal("oltSlot", r.olt_slot);
+  setVal("oltTarjeta", r.olt_tarjeta);
+  setVal("oltPuertoPon", r.olt_puerto_pon);
+  setVal("splitterNivel", r.splitter_nivel);
+  setVal("splitterRelacion", r.splitter_relacion);
+  actualizarPuertosSplitter();
+  setVal("splitterPuertoEntrada", r.splitter_puerto_entrada || 1);
+  setVal("splitterPuertoSalida", r.splitter_puerto_salida);
+  setVal("cajaTipo", r.caja_tipo || r.tipo_punto);
+  setVal("cajaCapacidad", r.caja_capacidad);
+  actualizarPuertosCaja();
+  setVal("cajaPuertoUtilizado", r.caja_puerto_utilizado);
+  setVal("splitterIntegrado", String(!!r.splitter_integrado));
+  actualizarSplitterIntegrado();
+  setVal("splitterIntegradoRelacion", r.splitter_integrado_relacion);
+  actualizarPuertosSplitterIntegrado();
+  setVal("splitterIntegradoPuertoSalida", r.splitter_integrado_puerto_salida);
+  setVal("ontSerial", r.ont_serial);
+  setVal("ontModelo", r.ont_modelo);
+  setVal("ontPotenciaRx", r.ont_potencia_rx);
+  setVal("ontPuertoOrigen", r.ont_puerto_origen);
+  setVal("gponObservacionValidacion", r.gpon_observacion_validacion);
+  setVal("gponContenedor", r.gpon_contenedor);
+  setVal("gponContenedorId", r.gpon_contenedor_id);
+  mostrarSoloGrupoGpon(r.tipo_punto);
 
   fotoPanoramica = await obtenerFotoIndexedDB(r.foto1_key);
   fotoFusion = await obtenerFotoIndexedDB(r.foto2_key);
@@ -1817,7 +2232,7 @@ async function generarActaPDF(ruta,lista,titulo="ACTA DE FINALIZACIÓN",fechaDoc
   encabezadoPdf(doc,ruta,titulo);
   const tecnico=perfilTecnico?.nombre||usuarioTecnico?.email||"N/A", correo=usuarioTecnico?.email||perfilTecnico?.email||"N/A";
   doc.autoTable({startY:48,theme:"grid",styles:{fontSize:8.5,cellPadding:2.2},headStyles:{fillColor:[15,23,42]},head:[["Información general","Detalle"]],body:[
-    ["ID Cliente / Servicio",txtPdf(ruta.id_cliente)],["Código ruta / cambio",txtPdf(ruta.codigo_ruta)],["Cliente",txtPdf(ruta.nombre_cliente)],["Dirección",txtPdf(ruta.direccion_cliente)],
+    ["ID Cliente / Servicio",txtPdf(ruta.id_cliente)],["Código ruta / cambio",txtPdf(ruta.codigo_ruta)],["Tipo de red",ruta.tipo_red==="GPON"?"GPON":"Punto a punto"],["Cliente",txtPdf(ruta.nombre_cliente)],["Dirección",txtPdf(ruta.direccion_cliente)],
     ["Técnico",txtPdf(tecnico)],["Correo",txtPdf(correo)],["Fecha inicio",fechaPdf(ruta.fecha_inicio)],["Fecha documento",fechaPdf(fechaDoc)],["Fecha finalización",fechaPdf(ruta.fecha_finalizacion)],["Estado",txtPdf(ruta.estado_asignacion||ruta.estado)],["Observación general",txtPdf(ruta.observacion_general)]
   ]});
   let y=doc.lastAutoTable.finalY+8;
@@ -1833,7 +2248,17 @@ async function generarActaPDF(ruta,lista,titulo="ACTA DE FINALIZACIÓN",fechaDoc
     doc.addPage();encabezadoPdf(doc,ruta,titulo);doc.setFont("helvetica","bold");doc.setFontSize(13);doc.setTextColor(30,41,59);doc.text(`${txtPdf(r.etiqueta_empalme||r.tipo_punto)} — ${txtPdf(r.nombre_punto)}`,14,51);
     doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.text(`Tipo: ${txtPdf(r.tipo_punto)} | Ambiente: ${txtPdf(r.ambiente)} | GPS: ${Number(r.latitud).toFixed(7)}, ${Number(r.longitud).toFixed(7)}`,14,58);
     doc.text(`Fusion: hilo ${txtPdf(r.hilo_entrada)} -> hilo ${txtPdf(r.hilo_salida)}`,14,64);
-    if(String(r.tipo_punto||"").toLowerCase()==="nodo"){doc.setFillColor(240,253,244);doc.roundedRect(14,75,182,40,4,4,"F");doc.setTextColor(22,101,52);doc.setFont("helvetica","bold");doc.setFontSize(12);doc.text("Registro tipo NODO",105,91,{align:"center"});doc.setFont("helvetica","normal");doc.setFontSize(9);doc.text("Las fotografías no aplican para este tipo de punto.",105,100,{align:"center"})}
+    if(String(r.tipo_red||ruta.tipo_red||"").toUpperCase()==="GPON"){
+      const detalleGpon = [
+        r.gpon_contenedor ? `Contenedor ${txtPdf(r.gpon_contenedor)} / ${txtPdf(r.gpon_contenedor_id)}` : "",
+        r.tipo_punto==="OLT" ? `OLT ${txtPdf(r.olt_nombre)} / Slot ${txtPdf(r.olt_slot)} / PON ${txtPdf(r.olt_puerto_pon)}` : "",
+        r.tipo_punto==="Splitter" ? `Splitter ${txtPdf(r.splitter_relacion)} / Salida ${txtPdf(r.splitter_puerto_salida)}` : "",
+        ["NAP","CTO"].includes(r.tipo_punto) ? `${r.tipo_punto} ${txtPdf(r.caja_capacidad)} puertos / Puerto ${txtPdf(r.caja_puerto_utilizado)}` : "",
+        r.tipo_punto==="Cliente" && r.ont_serial ? `ONT ${txtPdf(r.ont_serial)} / RX ${txtPdf(r.ont_potencia_rx)} dBm` : ""
+      ].filter(Boolean).join(" | ");
+      if(detalleGpon){doc.setTextColor(3,105,161);doc.text(detalleGpon,14,69);}
+    }
+    if(["nodo","olt"].includes(String(r.tipo_punto||"").toLowerCase())){doc.setFillColor(240,253,244);doc.roundedRect(14,75,182,40,4,4,"F");doc.setTextColor(22,101,52);doc.setFont("helvetica","bold");doc.setFontSize(12);doc.text(`Registro tipo ${txtPdf(r.tipo_punto).toUpperCase()}`,105,91,{align:"center"});doc.setFont("helvetica","normal");doc.setFontSize(9);doc.text("Las fotografías no aplican para este tipo de punto.",105,100,{align:"center"})}
     else{
       const f1=await fotoActa(r,1),f2=await fotoActa(r,2);
       console.log("ACTA PDF - Fotos",{
@@ -1905,6 +2330,7 @@ async function sincronizarPendientes(forzarReenvio = false, mostrarActaOpcional 
         codigo_ruta: ruta.codigo_ruta,
         nombre_cliente: ruta.nombre_cliente,
         direccion_cliente: ruta.direccion_cliente,
+        tipo_red: ruta.tipo_red || "PUNTO_A_PUNTO",
         observacion_general: ruta.observacion_general,
         estado: ruta.estado,
         estado_asignacion: ruta.estado_asignacion || (ruta.estado === "finalizado" ? "finalizado" : "en_proceso"),
@@ -1943,6 +2369,42 @@ async function sincronizarPendientes(forzarReenvio = false, mostrarActaOpcional 
         etiqueta_empalme: r.etiqueta_empalme,
         ambiente: r.ambiente,
         tipo_punto: r.tipo_punto,
+        tipo_red: r.tipo_red || ruta.tipo_red || "PUNTO_A_PUNTO",
+        gpon_contenedor: r.gpon_contenedor || null,
+        gpon_contenedor_id: r.gpon_contenedor_id || null,
+
+        // Datos OLT
+        olt_nombre: r.olt_nombre || null,
+        olt_marca: r.olt_marca || null,
+        olt_frame: r.olt_frame ?? null,
+        olt_slot: r.olt_slot ?? null,
+        olt_tarjeta: r.olt_tarjeta || null,
+        olt_puerto_pon: r.olt_puerto_pon ?? null,
+
+        // Datos Splitter
+        splitter_nivel: r.splitter_nivel || null,
+        splitter_relacion: r.splitter_relacion || null,
+        splitter_puerto_entrada: r.splitter_puerto_entrada ?? null,
+        splitter_puerto_salida: r.splitter_puerto_salida ?? null,
+
+        // Datos NAP / CTO
+        caja_tipo: r.caja_tipo || null,
+        caja_capacidad: r.caja_capacidad ?? null,
+        caja_puerto_utilizado: r.caja_puerto_utilizado ?? null,
+        splitter_integrado: !!r.splitter_integrado,
+        splitter_integrado_relacion: r.splitter_integrado_relacion || null,
+        splitter_integrado_puerto_salida: r.splitter_integrado_puerto_salida ?? null,
+
+        // Datos ONT / Cliente GPON
+        ont_serial: r.ont_serial || null,
+        ont_modelo: r.ont_modelo || null,
+        ont_potencia_rx: r.ont_potencia_rx ?? null,
+        ont_puerto_origen: r.ont_puerto_origen ?? null,
+
+        // Validación GPON
+        gpon_validado: !!r.gpon_validado,
+        gpon_observacion_validacion: r.gpon_observacion_validacion || null,
+
         latitud: r.latitud,
         longitud: r.longitud,
         precision_gps: r.precision_gps,
@@ -1969,10 +2431,10 @@ async function sincronizarPendientes(forzarReenvio = false, mostrarActaOpcional 
         observacion: r.observacion,
         foto1_panoramica_url: r.foto1_panoramica_url,
         foto2_empalme_fusion_url: r.foto2_empalme_fusion_url,
-        foto1_nombre_archivo: String(r.tipo_punto || "").toLowerCase() === "nodo"
+        foto1_nombre_archivo: ["nodo","olt"].includes(String(r.tipo_punto || "").toLowerCase())
           ? null
           : (fotos.foto1_nombre_archivo || r.foto1_nombre_archivo || `${r.offline_id}_foto1_panoramica.jpg`),
-        foto2_nombre_archivo: String(r.tipo_punto || "").toLowerCase() === "nodo"
+        foto2_nombre_archivo: ["nodo","olt"].includes(String(r.tipo_punto || "").toLowerCase())
           ? null
           : (fotos.foto2_nombre_archivo || r.foto2_nombre_archivo || `${r.offline_id}_foto2_empalme_fusion.jpg`),
         fecha_captura_app: r.fecha_captura_app,
@@ -1987,8 +2449,10 @@ async function sincronizarPendientes(forzarReenvio = false, mostrarActaOpcional 
       if(error) throw error;
       r.supabase_id = data.id;
 
-      const esNodo = String(r.tipo_punto || "").toLowerCase() === "nodo";
-      if(!esNodo){
+      const tipoSinFotos = ["nodo","olt"].includes(
+        String(r.tipo_punto || "").toLowerCase()
+      );
+      if(!tipoSinFotos){
         await guardarFotosTabla(data.id, r, fotos);
       }
 
@@ -2014,18 +2478,20 @@ async function sincronizarPendientes(forzarReenvio = false, mostrarActaOpcional 
     alert(`Proceso de envío terminado con ${erroresEnvio.length} error(es):\n\n${detalle}`);
   }else{
     if(mostrarActaOpcional && rutaActaEnvio) abrirModalActaEnvio(rutaActaEnvio,registrosRutaActa(rutaActaEnvio));
-    else alert("Proceso de envío terminado correctamente.");
+    else alert("Proceso de envío terminado correctamente. Los datos GPON fueron actualizados en Supabase.");
   }
 }
 
 async function enviarFotosN8N(r){
-  const esNodo = String(r.tipo_punto || "").toLowerCase() === "nodo";
+  const tipoSinFotos = ["nodo","olt"].includes(
+    String(r.tipo_punto || "").toLowerCase()
+  );
 
-  // Los nodos no requieren fotografías.
-  if(esNodo){
+  // Los nodos y las OLT no requieren fotografías.
+  if(tipoSinFotos){
     return {
       sin_fotos: true,
-      tipo_punto: "Nodo",
+      tipo_punto: r.tipo_punto || null,
       foto1_url: null,
       foto2_url: null,
       foto1_panoramica_url: null,
@@ -2091,7 +2557,7 @@ async function enviarFotosN8N(r){
 }
 
 async function guardarFotosTabla(empalmeId,r,fotos){
-  if(String(r.tipo_punto || "").toLowerCase() === "nodo"){
+  if(["nodo","olt"].includes(String(r.tipo_punto || "").toLowerCase())){
     return;
   }
   // Si se reenvía un empalme ya existente, se eliminan las referencias antiguas
@@ -2626,4 +3092,5 @@ migrarFotosLegacyAIndexedDB().then(() => { inicializarBotonesLateralesOcultos();
 
 </body>
 </html>
+
 
