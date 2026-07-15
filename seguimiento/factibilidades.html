@@ -646,33 +646,46 @@ function formatDateReporte(value, mode='iso'){
   return `${yyyy}-${mm}-${dd}`;
 }
 
-// Convierte el valor a un objeto Date real para que Excel lo reconozca como fecha,
-// no como texto. Se crea al mediodía para evitar cambios de día por zona horaria.
+// Convierte la fecha a un número serial entero de Excel.
+// Al ser entero, la celda contiene únicamente la fecha, sin fracción de hora.
 function excelDateReporte(value){
   if(!value) return '';
-  if(value instanceof Date && !isNaN(value)){
-    return new Date(value.getFullYear(), value.getMonth(), value.getDate(), 12, 0, 0);
-  }
 
-  const raw = String(value).trim();
   let yyyy, mm, dd;
 
-  const iso = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if(iso){
-    yyyy = Number(iso[1]); mm = Number(iso[2]); dd = Number(iso[3]);
+  if(value instanceof Date && !isNaN(value)){
+    yyyy = value.getFullYear();
+    mm = value.getMonth() + 1;
+    dd = value.getDate();
   }else{
-    const dmy = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
-    if(dmy){
-      dd = Number(dmy[1]); mm = Number(dmy[2]); yyyy = Number(dmy[3]);
+    const raw = String(value).trim();
+    const iso = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+
+    if(iso){
+      yyyy = Number(iso[1]);
+      mm = Number(iso[2]);
+      dd = Number(iso[3]);
     }else{
-      const parsed = new Date(raw);
-      if(isNaN(parsed)) return '';
-      yyyy = parsed.getFullYear(); mm = parsed.getMonth() + 1; dd = parsed.getDate();
+      const dmy = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+      if(dmy){
+        dd = Number(dmy[1]);
+        mm = Number(dmy[2]);
+        yyyy = Number(dmy[3]);
+      }else{
+        const parsed = new Date(raw);
+        if(isNaN(parsed)) return '';
+        yyyy = parsed.getFullYear();
+        mm = parsed.getMonth() + 1;
+        dd = parsed.getDate();
+      }
     }
   }
 
-  const result = new Date(yyyy, mm - 1, dd, 12, 0, 0);
-  return isNaN(result) ? '' : result;
+  const utc = Date.UTC(yyyy, mm - 1, dd);
+  const check = new Date(utc);
+  if(check.getUTCFullYear() !== yyyy || check.getUTCMonth() + 1 !== mm || check.getUTCDate() !== dd) return '';
+
+  return Math.floor(utc / 86400000) + 25569;
 }
 function getCiudadReporte(row){
   const ciudad = row?.ciudad || row?.Ciudad || row?.municipio || row?.ciudad_operacion;
@@ -718,7 +731,7 @@ function generarReporteDashboard(){
     const headers = ['ciudad','id_cliente','cambio','cliente','direccion','fecha_ingreso','Fecha solicitud Permisos','Fecha aprobacion Permisos','Fecha de realizacion viabilidad','fecha_entrega','estado_general'];
     const ws = XLSX.utils.json_to_sheet(rows, {
       header: headers,
-      cellDates: true,
+      cellDates: false,
       dateNF: 'dd/mm/yyyy'
     });
 
@@ -728,8 +741,8 @@ function generarReporteDashboard(){
       for(let rowIndex = 1; rowIndex <= rows.length; rowIndex++){
         const ref = XLSX.utils.encode_cell({ r: rowIndex, c: col });
         const cell = ws[ref];
-        if(cell && cell.v instanceof Date){
-          cell.t = 'd';
+        if(cell && typeof cell.v === 'number'){
+          cell.t = 'n';
           cell.z = 'dd/mm/yyyy';
         }
       }
@@ -1708,6 +1721,5 @@ loadFactibilidades();
 
 </body>
 </html>
-
 
 
