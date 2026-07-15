@@ -645,6 +645,35 @@ function formatDateReporte(value, mode='iso'){
   if(mode === 'dmy') return `${parseInt(dd,10)}/${parseInt(mm,10)}/${yyyy}`;
   return `${yyyy}-${mm}-${dd}`;
 }
+
+// Convierte el valor a un objeto Date real para que Excel lo reconozca como fecha,
+// no como texto. Se crea al mediodía para evitar cambios de día por zona horaria.
+function excelDateReporte(value){
+  if(!value) return '';
+  if(value instanceof Date && !isNaN(value)){
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate(), 12, 0, 0);
+  }
+
+  const raw = String(value).trim();
+  let yyyy, mm, dd;
+
+  const iso = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(iso){
+    yyyy = Number(iso[1]); mm = Number(iso[2]); dd = Number(iso[3]);
+  }else{
+    const dmy = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
+    if(dmy){
+      dd = Number(dmy[1]); mm = Number(dmy[2]); yyyy = Number(dmy[3]);
+    }else{
+      const parsed = new Date(raw);
+      if(isNaN(parsed)) return '';
+      yyyy = parsed.getFullYear(); mm = parsed.getMonth() + 1; dd = parsed.getDate();
+    }
+  }
+
+  const result = new Date(yyyy, mm - 1, dd, 12, 0, 0);
+  return isNaN(result) ? '' : result;
+}
 function getCiudadReporte(row){
   const ciudad = row?.ciudad || row?.Ciudad || row?.municipio || row?.ciudad_operacion;
   return ciudad ? String(ciudad).trim().toUpperCase() : 'VILLAVICENCIO';
@@ -669,11 +698,11 @@ function generarReporteDashboard(){
       cambio: r.id_cambio || '',
       cliente: r.cliente || '',
       direccion: r.direccion || '',
-      fecha_ingreso: formatDateReporte(r.fecha_ingreso, 'dmy'),
-      'Fecha solicitud Permisos': formatDateReporte(r.fecha_solicitud_permisos, 'dmy'),
-      'Fecha aprobacion Permisos': formatDateReporte(r.fecha_aprobacion_permisos, 'dmy'),
-      'Fecha de realizacion viabilidad': formatDateReporte(r.fecha_realizacion_viabilidad || r.fecha_agendamiento, 'dmy'),
-      fecha_entrega: formatDateReporte(r.fecha_entrega, 'dmy'),
+      fecha_ingreso: excelDateReporte(r.fecha_ingreso),
+      'Fecha solicitud Permisos': excelDateReporte(r.fecha_solicitud_permisos),
+      'Fecha aprobacion Permisos': excelDateReporte(r.fecha_aprobacion_permisos),
+      'Fecha de realizacion viabilidad': excelDateReporte(r.fecha_realizacion_viabilidad || r.fecha_agendamiento),
+      fecha_entrega: excelDateReporte(r.fecha_entrega),
       estado_general: normalizeEstadoReporte(r.estado_general)
     }));
 
@@ -687,7 +716,25 @@ function generarReporteDashboard(){
 
   if(window.XLSX){
     const headers = ['ciudad','id_cliente','cambio','cliente','direccion','fecha_ingreso','Fecha solicitud Permisos','Fecha aprobacion Permisos','Fecha de realizacion viabilidad','fecha_entrega','estado_general'];
-    const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+    const ws = XLSX.utils.json_to_sheet(rows, {
+      header: headers,
+      cellDates: true,
+      dateNF: 'dd/mm/yyyy'
+    });
+
+    // Columnas de fecha: F, G, H, I y J. Se fuerza el tipo fecha y el formato visible.
+    const dateColumns = [5, 6, 7, 8, 9];
+    dateColumns.forEach(col => {
+      for(let rowIndex = 1; rowIndex <= rows.length; rowIndex++){
+        const ref = XLSX.utils.encode_cell({ r: rowIndex, c: col });
+        const cell = ws[ref];
+        if(cell && cell.v instanceof Date){
+          cell.t = 'd';
+          cell.z = 'dd/mm/yyyy';
+        }
+      }
+    });
+
     ws['!cols'] = [
       {wch:16},{wch:16},{wch:14},{wch:36},{wch:48},{wch:14},{wch:24},{wch:26},{wch:30},{wch:14},{wch:16}
     ];
@@ -700,7 +747,13 @@ function generarReporteDashboard(){
 
   // Respaldo si no carga la librería XLSX por restricción de red: descarga CSV compatible con Excel.
   const headers = ['ciudad','id_cliente','cambio','cliente','direccion','fecha_ingreso','Fecha solicitud Permisos','Fecha aprobacion Permisos','Fecha de realizacion viabilidad','fecha_entrega','estado_general'];
-  const csv = [headers.join(';')].concat(rows.map(row => headers.map(h => `"${String(row[h] ?? '').replace(/"/g,'""')}"`).join(';'))).join('\r\n');
+  const dateHeaders = new Set(['fecha_ingreso','Fecha solicitud Permisos','Fecha aprobacion Permisos','Fecha de realizacion viabilidad','fecha_entrega']);
+  const csv = [headers.join(';')].concat(rows.map(row => headers.map(h => {
+    const value = dateHeaders.has(h) && row[h] instanceof Date
+      ? `${row[h].getDate()}/${row[h].getMonth()+1}/${row[h].getFullYear()}`
+      : (row[h] ?? '');
+    return `"${String(value).replace(/"/g,'""')}"`;
+  }).join(';'))).join('\r\n');
   descargarBlob(nombreArchivo.replace('.xlsx','.csv'), new Blob(['\ufeff' + csv], {type:'text/csv;charset=utf-8;'}));
 }
 
