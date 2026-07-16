@@ -756,6 +756,29 @@
       100%{box-shadow:0 0 0 12px rgba(34,197,94,0)}
     }
 
+
+    /* Validación de códigos SAP duplicados dentro del modal */
+    #materialLinesBody tr.sap-duplicate-row{
+      background:rgba(245,158,11,.11) !important;
+      box-shadow:inset 4px 0 0 #f59e0b;
+    }
+    #materialLinesBody tr.sap-duplicate-row .line-sap,
+    #materialLinesBody tr.sap-duplicate-row .line-material{
+      border-color:#f59e0b !important;
+      box-shadow:0 0 0 2px rgba(245,158,11,.18) !important;
+    }
+    .sap-duplicate-warning{
+      display:none;
+      margin-top:6px;
+      color:#fbbf24;
+      font-size:10px;
+      font-weight:800;
+      line-height:1.2;
+    }
+    #materialLinesBody tr.sap-duplicate-row .sap-duplicate-warning{
+      display:block;
+    }
+
 </style>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 </head>
@@ -1984,6 +2007,66 @@ function actualizarRequeridosBodegasPorLinea(){
 }
 
 
+
+let cargandoLineasMovimiento = false;
+
+function normalizarSapModal(v){
+  return String(v || '').trim().toUpperCase().replace(/\s+/g,'');
+}
+
+function validarCodigosSapDuplicadosEnModal({enfocar = false} = {}){
+  const rows = Array.from(document.querySelectorAll('#materialLinesBody tr'));
+  const groups = new Map();
+
+  rows.forEach(tr => {
+    tr.classList.remove('sap-duplicate-row');
+    const input = tr.querySelector('.line-sap');
+    const codigo = normalizarSapModal(input?.value);
+    if(!codigo) return;
+    if(!groups.has(codigo)) groups.set(codigo, []);
+    groups.get(codigo).push(tr);
+  });
+
+  const duplicados = [];
+  groups.forEach((filas, codigo) => {
+    if(filas.length > 1){
+      duplicados.push({ codigo, filas });
+      filas.forEach(tr => tr.classList.add('sap-duplicate-row'));
+    }
+  });
+
+  if(duplicados.length && enfocar){
+    const input = duplicados[0].filas[1]?.querySelector('.line-sap')
+      || duplicados[0].filas[0]?.querySelector('.line-sap');
+    input?.focus();
+    input?.select?.();
+  }
+
+  const msg = document.getElementById('movMsg');
+  if(msg && duplicados.length){
+    msg.style.color = '#fbbf24';
+    msg.textContent = `No se permiten códigos SAP repetidos dentro del mismo movimiento. Revisa: ${duplicados.map(x => x.codigo).join(', ')}.`;
+  }else if(msg && msg.textContent?.startsWith('No se permiten códigos SAP repetidos')){
+    msg.textContent = '';
+  }
+
+  return duplicados;
+}
+
+function asegurarSinCodigosSapDuplicados(){
+  const duplicados = validarCodigosSapDuplicadosEnModal({enfocar:true});
+  if(duplicados.length){
+    throw new Error(`No se permiten códigos SAP repetidos dentro del mismo movimiento: ${duplicados.map(x => x.codigo).join(', ')}.`);
+  }
+}
+
+function onSapModalChanged(input){
+  syncMaterialLineBySap(input);
+  if(!cargandoLineasMovimiento){
+    validarCodigosSapDuplicadosEnModal();
+  }
+}
+
 function addMaterialLine(data = {}){
   const body = document.getElementById('materialLinesBody');
   if(!body) return;
@@ -1997,8 +2080,9 @@ function addMaterialLine(data = {}){
 
   tr.innerHTML = `
     <td>
-      <input class="control line-sap" list="sapList" value="${esc(data.codigo_sap || '')}" oninput="syncMaterialLineBySap(this)" onchange="syncMaterialLineBySap(this)">
+      <input class="control line-sap" list="sapList" value="${esc(data.codigo_sap || '')}" oninput="onSapModalChanged(this)" onchange="onSapModalChanged(this)">
       <div class="sap-warning">Este material no se encuentra relacionado en STOCK SAP</div>
+      <div class="sap-duplicate-warning">Código SAP repetido en este movimiento. Elimina una de las filas duplicadas.</div>
     </td>
     <td><input class="control line-material" list="materialList" value="${esc(data.material_nombre || data.material || '')}" required oninput="syncMaterialLineByName(this)" onchange="syncMaterialLineByName(this)"></td>
     <td><input class="control line-cantidad" type="number" step="0.01" min="0.01" value="${esc(data.cantidad || '')}" required></td>
@@ -2035,6 +2119,7 @@ function addMaterialLine(data = {}){
 
   actualizarRequeridosBodegasPorLinea();
   actualizarReservaInputs();
+  if(!cargandoLineasMovimiento) validarCodigosSapDuplicadosEnModal();
 }
 
 
@@ -2043,6 +2128,7 @@ function removeMaterialLine(btn){
   const tr = btn.closest('tr');
   if(tr) tr.remove();
   if(body && !body.children.length) addMaterialLine();
+  validarCodigosSapDuplicadosEnModal();
 }
 
 function getStockRowsPorSap(codigo){
@@ -2140,6 +2226,7 @@ function syncMaterialLineBySap(input){
     input.classList.add('sap-not-found');
     if(warning) warning.style.display = 'block';
   }
+  if(!cargandoLineasMovimiento) validarCodigosSapDuplicadosEnModal();
 }
 
 function syncMaterialLineByName(input){
@@ -2150,11 +2237,13 @@ function syncMaterialLineByName(input){
     tr.querySelector('.line-sap').value = item.codigo_sap || '';
     setUnidadSelectValue(tr.querySelector('.line-unidad'), item.unidad || 'Unidades');
     cargarBodegasStockEnLinea(tr, getBodegasStockPorSap(item.codigo_sap));
+    validarCodigosSapDuplicadosEnModal();
   }
 }
 
 
 function getMaterialLineItems(){
+  asegurarSinCodigosSapDuplicados();
   const tipo = getTipoMovimientoActual();
   const rows = Array.from(document.querySelectorAll('#materialLinesBody tr'));
   const items = rows.map(tr => {
@@ -2441,6 +2530,7 @@ function openMovModal(row = null){
     form.elements['hora'].value = principal.hora ? String(principal.hora).slice(0,5) : '';
     form.elements['estado'].value = principal.estado || 'RECIBIDO';
 
+    cargandoLineasMovimiento = true;
     grupoRows.forEach(r => {
       addMaterialLine({
         codigo_sap: r.codigo_sap || '',
@@ -2454,6 +2544,8 @@ function openMovModal(row = null){
         cod_reserva: r.cod_reserva || ''
       });
     });
+    cargandoLineasMovimiento = false;
+    validarCodigosSapDuplicadosEnModal();
 
     form.elements['bodega_origen_id'].value = principal.bodega_origen_id || '';
     form.elements['bodega_destino_id'].value = principal.bodega_destino_id || '';
@@ -3570,6 +3662,8 @@ document.addEventListener('keydown', function(e){
 
 </body>
 </html>
+
+
 
 
 
