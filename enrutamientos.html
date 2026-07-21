@@ -174,10 +174,589 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
   margin-top:8px;
 }
 
+
+
+/* =========================================================
+   INTERFAZ MÓVIL OYM — TEMA OSCURO / TEMA CLARO
+   ========================================================= */
+:root{
+  --app-bg:#07111f;
+  --app-surface:#0b1728;
+  --app-surface-2:#101f32;
+  --app-card:rgba(5,17,31,.94);
+  --app-text:#f8fafc;
+  --app-muted:#9fb0c4;
+  --app-border:rgba(148,163,184,.22);
+  --app-primary:#16b8b0;
+  --app-primary-strong:#089f99;
+  --app-map-filter:none;
+  --app-shadow:0 14px 38px rgba(0,0,0,.38);
+  --bottom-nav-bg:rgba(5,17,31,.96);
+}
+
+body[data-theme="light"]{
+  --bg:#eef5f3;
+  --panel:#ffffff;
+  --text:#132238;
+  --muted:#6b7b8f;
+  --app-bg:#edf5f2;
+  --app-surface:#ffffff;
+  --app-surface-2:#f5f9f8;
+  --app-card:rgba(255,255,255,.95);
+  --app-text:#142238;
+  --app-muted:#64748b;
+  --app-border:rgba(15,118,110,.16);
+  --app-primary:#16b8b0;
+  --app-primary-strong:#0f9f99;
+  --app-map-filter:none;
+  --app-shadow:0 12px 34px rgba(15,23,42,.14);
+  --bottom-nav-bg:rgba(255,255,255,.96);
+  color-scheme:light;
+}
+
+body{
+  background:var(--app-bg)!important;
+  color:var(--app-text)!important;
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif!important;
+}
+
+header{
+  height:70px!important;
+  padding:10px 14px!important;
+  background:var(--app-card)!important;
+  border-bottom:1px solid var(--app-border)!important;
+  box-shadow:0 6px 24px rgba(0,0,0,.15)!important;
+  backdrop-filter:blur(16px)!important;
+}
+header h1{font-size:15px!important;letter-spacing:.1px}
+header span{color:var(--app-muted)!important}
+.mapWrap{inset:70px 0 64px 0!important}
+#map{filter:var(--app-map-filter);transition:filter .3s ease}
+
+.oymBrand{display:flex;align-items:center;gap:9px;min-width:0}
+.oymBrandMark{
+  width:26px;height:26px;border-radius:50%;position:relative;flex:0 0 auto;
+  border:5px solid var(--app-primary);box-shadow:inset 0 0 0 3px var(--app-card);
+}
+.oymBrandText{font-weight:900;font-size:18px;letter-spacing:.5px}
+.oymHeaderData{display:flex;align-items:center;gap:9px;min-width:0}
+.oymHeaderMain{min-width:0}
+.oymHeaderMain h1,.oymHeaderMain span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.themeQuickButton{
+  width:38px!important;height:38px!important;min-width:38px!important;padding:0!important;border-radius:50%!important;
+  background:var(--app-surface-2)!important;color:var(--app-primary)!important;
+  border:1px solid var(--app-border)!important;box-shadow:none!important;font-size:18px!important;
+}
+
+.floatButtons{
+  top:auto!important;right:14px!important;bottom:84px!important;width:195px!important;gap:7px!important;
+  padding:9px!important;background:var(--app-card)!important;border:1px solid var(--app-border)!important;
+  border-radius:18px!important;box-shadow:var(--app-shadow)!important;backdrop-filter:blur(16px)!important;
+}
+.floatButtons.oculto{transform:translateX(225px)!important;opacity:0!important}
+.floatButtons button{
+  background:var(--app-surface-2)!important;color:var(--app-text)!important;border:1px solid var(--app-border)!important;
+  border-radius:11px!important;padding:9px 11px!important;box-shadow:none!important;text-align:left!important;
+  font-size:12px!important;display:flex!important;align-items:center!important;gap:9px!important;
+}
+.floatButtons button::after{content:"›";margin-left:auto;color:var(--app-muted);font-size:18px;line-height:1}
+.floatButtons button:hover{background:color-mix(in srgb,var(--app-primary) 12%,var(--app-surface-2))!important}
+.toggleButtons{
+  right:14px!important;top:auto!important;bottom:78px!important;width:48px!important;height:48px!important;
+  background:var(--app-primary)!important;color:white!important;border:0!important;box-shadow:0 10px 24px rgba(15,159,153,.35)!important;
+}
+
+.bottomLeft{left:14px!important;bottom:82px!important;width:auto!important;flex-direction:row!important;gap:6px!important}
+.bottomLeft button{width:auto!important;padding:8px 11px!important;border-radius:999px!important;font-size:11px!important;box-shadow:var(--app-shadow)!important}
+.bottomLeft .warning{background:var(--app-primary)!important;color:white!important}
+.bottomLeft .purple{background:var(--app-card)!important;color:var(--app-text)!important;border:1px solid var(--app-border)!important}
+
+.centerInfo{
+  left:14px!important;right:14px!important;bottom:18px!important;transform:none!important;width:auto!important;
+  background:var(--app-card)!important;color:var(--app-text)!important;border:1px solid var(--app-border)!important;
+  border-radius:14px!important;box-shadow:var(--app-shadow)!important;text-align:left!important;padding:10px 12px!important;
+  backdrop-filter:blur(15px)!important;
+}
+
+.fabMarcar{
+  width:58px!important;height:58px!important;right:16px!important;bottom:142px!important;font-size:38px!important;
+  background:var(--app-primary)!important;border:3px solid var(--app-surface)!important;
+  box-shadow:0 12px 28px rgba(15,159,153,.4)!important;
+}
+
+.modalOverlay,.panelOverlay{background:rgba(2,8,23,.66)!important;backdrop-filter:blur(8px)!important}
+.modal,.panel,.authCard{
+  background:var(--app-surface)!important;color:var(--app-text)!important;border:1px solid var(--app-border)!important;
+  box-shadow:var(--app-shadow)!important;
+}
+.modalHeader,.panelHeader{
+  background:var(--app-surface)!important;border-bottom:1px solid var(--app-border)!important;
+}
+.modalBody,.panelBody{background:var(--app-surface)!important}
+label{color:var(--app-muted)!important}
+input,select,textarea{
+  background:var(--app-surface-2)!important;color:var(--app-text)!important;border-color:var(--app-border)!important;
+}
+.gpsBox,.hint,.photoCard,.listItem,.clienteCard,.serverPhotoBox,.serverPhotoCard{
+  background:var(--app-surface-2)!important;color:var(--app-text)!important;border-color:var(--app-border)!important;
+}
+.sectionTitle{color:var(--app-primary)!important;border-color:var(--app-border)!important}
+.closeBtn{background:#ef4444!important;color:#fff!important}
+button:not(.themeQuickButton):not(.toggleButtons){border-radius:11px}
+button.secondary{background:var(--app-primary)!important;color:white!important}
+.gponBox{background:color-mix(in srgb,var(--app-primary) 7%,var(--app-surface))!important;border-color:var(--app-primary)!important}
+
+/* Barra inferior similar a la referencia */
+.oymBottomNav{
+  position:fixed;left:0;right:0;bottom:0;height:64px;z-index:8500;
+  display:grid;grid-template-columns:repeat(4,1fr);background:var(--bottom-nav-bg);
+  border-top:1px solid var(--app-border);box-shadow:0 -8px 25px rgba(0,0,0,.12);backdrop-filter:blur(16px);
+}
+.oymBottomNav button{
+  width:auto!important;height:64px!important;padding:6px 4px!important;background:transparent!important;color:var(--app-muted)!important;
+  border:0!important;border-radius:0!important;box-shadow:none!important;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;font-size:10px!important;font-weight:700!important;
+}
+.oymBottomNav button .navIcon{font-size:18px;line-height:1;color:var(--app-primary)}
+.oymBottomNav button.active{color:var(--app-primary)!important}
+
+/* Selector de tema */
+.themeSheet{display:none;position:fixed;inset:0;z-index:40000;background:rgba(2,8,23,.58);backdrop-filter:blur(7px);padding:14px}
+.themeSheet.open{display:flex;align-items:flex-end;justify-content:center}
+.themeSheetCard{width:min(480px,100%);background:var(--app-surface);border:1px solid var(--app-border);border-radius:22px;padding:16px;box-shadow:var(--app-shadow);color:var(--app-text)}
+.themeSheetCard h3{margin:0 0 5px}.themeSheetCard p{margin:0 0 14px;color:var(--app-muted);font-size:13px}
+.themeOption{display:grid;grid-template-columns:58px 1fr 24px;align-items:center;gap:12px;padding:12px;border:1px solid var(--app-border);border-radius:14px;margin-top:9px;cursor:pointer;background:var(--app-surface-2)}
+.themeOption.active{border-color:var(--app-primary);box-shadow:0 0 0 2px color-mix(in srgb,var(--app-primary) 22%,transparent)}
+.themePreview{height:42px;border-radius:9px;border:1px solid rgba(148,163,184,.3);position:relative;overflow:hidden}
+.themePreview.dark{background:linear-gradient(145deg,#07111f 0 42%,#1f3449 42%)}
+.themePreview.light{background:linear-gradient(145deg,#fff 0 42%,#dcebe7 42%)}
+.themeCheck{font-size:19px;color:var(--app-primary)}
+.themeClose{margin-top:12px;background:var(--app-primary)!important;color:#fff!important}
+
+body[data-theme="light"] .leaflet-control-zoom a,
+body[data-theme="light"] .leaflet-control-layers-toggle{background-color:#fff!important;color:#162238!important}
+body[data-theme="light"] .labelEmpalme{background:#fff;color:#132238;border-color:var(--app-primary)}
+body[data-theme="light"] .leaflet-popup-content-wrapper,
+body[data-theme="light"] .leaflet-popup-tip{background:#fff;color:#132238}
+
+@media(max-width:700px){
+  header{height:70px!important;padding:8px 10px!important}
+  .mapWrap{inset:70px 0 64px 0!important}
+  .floatButtons{width:188px!important;bottom:82px!important;right:10px!important}
+  .floatButtons.oculto{transform:translateX(215px)!important}
+  .toggleButtons{right:10px!important;bottom:76px!important}
+  .centerInfo{bottom:16px!important;left:10px!important;right:10px!important;font-size:11px!important}
+  .bottomLeft{left:10px!important;bottom:80px!important}
+  .fabMarcar{right:12px!important;bottom:140px!important}
+  .oymBrandText{font-size:16px}
+  .oymHeaderMain h1{font-size:12px!important}
+  .oymHeaderMain span{font-size:10px!important;max-width:210px}
+}
+
+
+/* Corrección del botón flotante principal del menú */
+#oymMenuToggle,
+.oym-menu-toggle,
+.menu-toggle-oym,
+.floating-menu-toggle{
+  position:fixed!important;
+  right:18px!important;
+  bottom:92px!important;
+  width:58px!important;
+  height:58px!important;
+  min-width:58px!important;
+  min-height:58px!important;
+  display:flex!important;
+  visibility:visible!important;
+  opacity:1!important;
+  align-items:center!important;
+  justify-content:center!important;
+  border:0!important;
+  border-radius:50%!important;
+  background:#0891b2!important;
+  color:#ffffff!important;
+  font-size:25px!important;
+  font-weight:900!important;
+  line-height:1!important;
+  cursor:pointer!important;
+  box-shadow:0 10px 30px rgba(0,0,0,.38)!important;
+  z-index:2147483000!important;
+  transform:none!important;
+  overflow:visible!important;
+}
+
+#oymMenuToggle:hover,
+.oym-menu-toggle:hover,
+.menu-toggle-oym:hover,
+.floating-menu-toggle:hover{
+  background:#0e7490!important;
+}
+
+/* Menú desplegable: queda encima del mapa y de la barra inferior */
+#oymFloatingMenu,
+.oym-floating-menu,
+.floating-actions-oym{
+  position:fixed!important;
+  right:18px!important;
+  bottom:160px!important;
+  z-index:2147482999!important;
+  max-height:calc(100vh - 220px)!important;
+  overflow-y:auto!important;
+}
+
+/* El botón + de marcar permanece separado */
+#btnMarcar,
+.btn-marcar,
+.fab-add{
+  right:18px!important;
+  bottom:168px!important;
+  z-index:2147482000!important;
+}
+
+/* En pantallas pequeñas se conserva por encima de la navegación inferior */
+@media(max-width:768px){
+  #oymMenuToggle,
+  .oym-menu-toggle,
+  .menu-toggle-oym,
+  .floating-menu-toggle{
+    right:16px!important;
+    bottom:84px!important;
+    width:56px!important;
+    height:56px!important;
+  }
+
+  #oymFloatingMenu,
+  .oym-floating-menu,
+  .floating-actions-oym{
+    right:16px!important;
+    bottom:150px!important;
+    max-height:calc(100vh - 210px)!important;
+  }
+}
+
+
+/* ===== MENÚ LATERAL DERECHO OYM ===== */
+#oymSideMenuToggle{
+  position:fixed!important;
+  right:18px!important;
+  bottom:92px!important;
+  width:58px!important;
+  height:58px!important;
+  border:none!important;
+  border-radius:50%!important;
+  background:#0f9aa8!important;
+  color:#fff!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  font-size:26px!important;
+  font-weight:900!important;
+  cursor:pointer!important;
+  box-shadow:0 10px 30px rgba(0,0,0,.32)!important;
+  z-index:2147483000!important;
+}
+
+#oymSideMenuToggle:hover{
+  background:#0b7f8a!important;
+}
+
+#oymRightSideMenu{
+  position:fixed!important;
+  right:18px!important;
+  top:50%!important;
+  transform:translateY(-50%) translateX(calc(100% + 40px))!important;
+  width:270px!important;
+  max-height:calc(100vh - 130px)!important;
+  overflow-y:auto!important;
+  background:#ffffff!important;
+  border:1px solid #dbe3ea!important;
+  border-radius:14px!important;
+  box-shadow:0 18px 50px rgba(15,23,42,.28)!important;
+  z-index:2147482999!important;
+  opacity:0!important;
+  pointer-events:none!important;
+  transition:transform .25s ease, opacity .25s ease!important;
+}
+
+#oymRightSideMenu.oym-open{
+  transform:translateY(-50%) translateX(0)!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+}
+
+.oymSideMenuItem{
+  width:100%!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:12px!important;
+  min-height:54px!important;
+  padding:0 15px!important;
+  border:0!important;
+  border-bottom:1px solid #edf1f5!important;
+  background:#fff!important;
+  color:#1f2937!important;
+  font-size:15px!important;
+  font-weight:700!important;
+  text-align:left!important;
+  cursor:pointer!important;
+}
+
+.oymSideMenuItem:last-child{
+  border-bottom:0!important;
+}
+
+.oymSideMenuItem:hover{
+  background:#f5f8fa!important;
+}
+
+.oymSideMenuIcon{
+  width:25px!important;
+  min-width:25px!important;
+  text-align:center!important;
+  font-size:20px!important;
+}
+
+.oymSideMenuLabel{
+  flex:1!important;
+}
+
+.oymSideMenuArrow{
+  color:#64748b!important;
+  font-size:22px!important;
+  font-weight:400!important;
+}
+
+.oym-color-gps{color:#0f9aa8!important;}
+.oym-color-clientes{color:#0f9aa8!important;}
+.oym-color-empalmes{color:#3b82f6!important;}
+.oym-color-storage{color:#8b5cf6!important;}
+.oym-color-send{color:#f59e0b!important;}
+.oym-color-resend{color:#ef4444!important;}
+.oym-color-finish{color:#0f9aa8!important;}
+.oym-color-assigned{color:#6366f1!important;}
+.oym-color-logout{color:#ef4444!important;}
+
+body[data-theme="dark"] #oymRightSideMenu{
+  background:#0f172a!important;
+  border-color:#334155!important;
+}
+body[data-theme="dark"] .oymSideMenuItem{
+  background:#0f172a!important;
+  color:#f8fafc!important;
+  border-bottom-color:#243244!important;
+}
+body[data-theme="dark"] .oymSideMenuItem:hover{
+  background:#172033!important;
+}
+body[data-theme="dark"] .oymSideMenuArrow{
+  color:#94a3b8!important;
+}
+
+@media(max-width:768px){
+  #oymRightSideMenu{
+    right:14px!important;
+    width:min(270px,calc(100vw - 28px))!important;
+    max-height:calc(100vh - 170px)!important;
+  }
+  #oymSideMenuToggle{
+    right:16px!important;
+    bottom:84px!important;
+  }
+}
+
+/* Oculta menús flotantes anteriores para evitar duplicados */
+#oymFloatingMenu,
+.oym-floating-menu,
+.floating-actions-oym,
+#oymMenuToggle,
+.oym-menu-toggle,
+.menu-toggle-oym,
+.floating-menu-toggle{
+  display:none!important;
+}
+
+
+/* Posición final del botón del menú: debajo del selector de mapa base */
+#oymSideMenuToggle{
+  position:fixed!important;
+  top:132px!important;
+  right:18px!important;
+  bottom:auto!important;
+  width:52px!important;
+  height:52px!important;
+  min-width:52px!important;
+  min-height:52px!important;
+  z-index:2147483000!important;
+}
+
+/* El panel se abre debajo del botón y alineado al lateral derecho */
+#oymRightSideMenu{
+  top:194px!important;
+  right:18px!important;
+  bottom:auto!important;
+  transform:translateX(calc(100% + 40px))!important;
+  max-height:calc(100vh - 215px)!important;
+}
+
+#oymRightSideMenu.oym-open{
+  transform:translateX(0)!important;
+}
+
+/* El botón + permanece abajo y separado del menú */
+#btnMarcar,
+.btn-marcar,
+.fab-add{
+  position:fixed!important;
+  right:18px!important;
+  bottom:78px!important;
+  top:auto!important;
+  z-index:2147482000!important;
+}
+
+@media(max-width:768px){
+  #oymSideMenuToggle{
+    top:126px!important;
+    right:14px!important;
+    width:50px!important;
+    height:50px!important;
+  }
+
+  #oymRightSideMenu{
+    top:186px!important;
+    right:14px!important;
+    width:min(270px,calc(100vw - 28px))!important;
+    max-height:calc(100vh - 200px)!important;
+  }
+
+  #btnMarcar,
+  .btn-marcar,
+  .fab-add{
+    right:14px!important;
+    bottom:82px!important;
+  }
+}
+
+
+/* Ocultar controles del mapa durante autenticación */
+body:has(#authOverlay[style*="display: flex"]) #oymSideMenuToggle,
+body:has(#authOverlay[style*="display: flex"]) #oymRightSideMenu,
+body:has(#authOverlay[style*="display: flex"]) #fabMarcar{
+  display:none!important;
+}
+
+
+/* Corrección definitiva del botón Marcar */
+#fabMarcar,
+#btnMarcar,
+.fab-add,
+.btn-marcar{
+  right:18px!important;
+  bottom:86px!important;
+  top:auto!important;
+  z-index:2147482500!important;
+}
+
+@media(max-width:768px){
+  #fabMarcar,
+  #btnMarcar,
+  .fab-add,
+  .btn-marcar{
+    right:14px!important;
+    bottom:84px!important;
+  }
+}
+
+
+/* Lógica dinámica Entrada/Salida por tipo de punto y sentido */
+.oym-campo-oculto{display:none!important;}
+.oym-campo-visible{display:block!important;}
+
+
+
+/* ===== ALERTAS PERSONALIZADAS PDR APP ===== */
+.pdrAlertOverlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  z-index:2147483647;
+  background:rgba(2,6,23,.72);
+  backdrop-filter:blur(4px);
+  padding:18px;
+  align-items:center;
+  justify-content:center;
+}
+.pdrAlertOverlay.open{display:flex;}
+.pdrAlertDialog{
+  width:min(520px,100%);
+  background:var(--app-surface,#fff);
+  color:var(--app-text,#172033);
+  border:1px solid var(--app-border,rgba(148,163,184,.28));
+  border-radius:24px;
+  box-shadow:0 24px 70px rgba(0,0,0,.42);
+  overflow:hidden;
+  animation:pdrAlertIn .18s ease-out;
+}
+@keyframes pdrAlertIn{
+  from{opacity:0;transform:translateY(10px) scale(.98)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.pdrAlertHeader{
+  padding:20px 22px 10px;
+  font-size:22px;
+  font-weight:800;
+  color:var(--app-text,#172033);
+}
+.pdrAlertBody{
+  padding:12px 22px 22px;
+  font-size:16px;
+  line-height:1.5;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  max-height:55vh;
+  overflow:auto;
+}
+.pdrAlertFooter{
+  display:flex;
+  justify-content:flex-end;
+  padding:12px 18px 18px;
+}
+.pdrAlertAccept{
+  width:auto!important;
+  min-width:110px;
+  padding:11px 20px!important;
+  border-radius:12px!important;
+  background:var(--app-primary,#0f9aa8)!important;
+  color:#fff!important;
+  box-shadow:none!important;
+  border:0!important;
+  font-size:15px!important;
+  font-weight:800!important;
+}
+body[data-theme="light"] .pdrAlertDialog{
+  background:#fff;
+  color:#172033;
+}
+body[data-theme="dark"] .pdrAlertDialog{
+  background:#0f172a;
+  color:#f8fafc;
+}
+
 </style>
 </head>
 
 <body>
+
+<!-- ALERTA PERSONALIZADA PDR APP -->
+<div id="pdrAlertOverlay" class="pdrAlertOverlay" role="dialog" aria-modal="true" aria-labelledby="pdrAlertTitle" aria-describedby="pdrAlertMessage">
+  <div class="pdrAlertDialog">
+    <div id="pdrAlertTitle" class="pdrAlertHeader">PDR APP dice:</div>
+    <div id="pdrAlertMessage" class="pdrAlertBody"></div>
+    <div class="pdrAlertFooter">
+      <button id="pdrAlertAccept" class="pdrAlertAccept" type="button">Aceptar</button>
+    </div>
+  </div>
+</div>
+
 
 <div class="authOverlay" id="authOverlay">
   <div class="authCard">
@@ -207,11 +786,20 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
 </div>
 
 <header>
-  <div>
-    <h1 id="tituloApp">Enrutamiento OYM</h1>
-    <span id="clienteHeader">Sin enrutamiento activo</span>
+  <div class="oymHeaderData">
+    <div class="oymBrand">
+      <span class="oymBrandMark" aria-hidden="true"></span>
+      <span class="oymBrandText">OYM</span>
+    </div>
+    <div class="oymHeaderMain">
+      <h1 id="tituloApp">Enrutamiento OYM</h1>
+      <span id="clienteHeader">Sin enrutamiento activo</span>
+    </div>
   </div>
-  <span id="syncStatus">Pendientes: 0</span>
+  <div style="display:flex;align-items:center;gap:8px">
+    <span id="syncStatus">Pendientes: 0</span>
+    <button class="themeQuickButton" type="button" onclick="alternarTemaRapido()" title="Cambiar tema" aria-label="Cambiar tema">◐</button>
+  </div>
 </header>
 
 <section class="mapWrap">
@@ -221,16 +809,16 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
   <button id="toggleBotones" class="toggleButtons" onclick="toggleBotonesLaterales()" title="Mostrar botones">☰</button>
 
   <div class="floatButtons oculto" id="floatButtons">
-    <button class="secondary" onclick="iniciarGPSRealtime()">Ir a mi GPS</button>
+    <button class="secondary" onclick="iniciarGPSRealtime()">📍 <span>Ir a mi GPS</span></button>
     <button onclick="marcarCentro()" style="display:none">Marcar</button>
-    <button class="gray" onclick="abrirPanelClientesAsignados()">Mis clientes</button>
-    <button class="gray" onclick="abrirPanelRegistros()">Empalmes</button>
-    <button class="purple" onclick="abrirPanelAlmacenamiento()">Almacenamiento</button>
-    <button class="warning" onclick="sincronizarPendientes()">Enviar datos</button>
-    <button class="danger" onclick="reenviarTodo()">Reenviar todo</button>
-    <button class="danger" onclick="finalizarEnrutamiento()">Finalizar enrutamiento</button>
-    <button class="purple" onclick="abrirPanelClientesAsignados()">Mis clientes asignados</button>
-    <button class="danger" onclick="logoutTecnico()">Cerrar sesión</button>
+    <button class="gray" onclick="abrirPanelClientesAsignados()">👥 <span>Mis clientes</span></button>
+    <button class="gray" onclick="abrirPanelRegistros()">🧵 <span>Empalmes</span></button>
+    <button class="purple" onclick="abrirPanelAlmacenamiento()">📦 <span>Almacenamiento</span></button>
+    <button class="warning" onclick="sincronizarPendientes()">➤ <span>Enviar datos</span></button>
+    <button class="danger" onclick="reenviarTodo()">⟳ <span>Reenviar todo</span></button>
+    <button class="danger" onclick="finalizarEnrutamiento()">✓ <span>Finalizar enrutamiento</span></button>
+    <button class="purple" onclick="abrirPanelClientesAsignados()">♟ <span>Mis clientes asignados</span></button>
+    <button class="danger" onclick="logoutTecnico()">⏻ <span>Cerrar sesión</span></button>
   </div>
 
   <div class="bottomLeft">
@@ -240,6 +828,32 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
 
   <div class="centerInfo" id="centerInfo">Centro del mapa: --</div>
 </section>
+
+
+<nav class="oymBottomNav" aria-label="Navegación principal">
+  <button type="button" class="active" onclick="cerrarTodosLosPanelesTema()"><span class="navIcon">⌂</span><span>Mapa</span></button>
+  <button type="button" onclick="abrirPanelClientesAsignados()"><span class="navIcon">▣</span><span>Clientes</span></button>
+  <button type="button" onclick="abrirPanelRegistros()"><span class="navIcon">▥</span><span>Registros</span></button>
+  <button type="button" onclick="abrirSelectorTema()"><span class="navIcon">⚙</span><span>Ajustes</span></button>
+</nav>
+
+<div class="themeSheet" id="themeSheet" onclick="cerrarSelectorTema(event)">
+  <div class="themeSheetCard" role="dialog" aria-modal="true" aria-labelledby="themeTitle" onclick="event.stopPropagation()">
+    <h3 id="themeTitle">Apariencia</h3>
+    <p>Selecciona el estilo que utilizará el técnico.</p>
+    <div class="themeOption" id="themeOptionDark" onclick="aplicarTemaOym('dark')">
+      <div class="themePreview dark"></div>
+      <div><b>Oscuro profesional</b><br><small style="color:var(--app-muted)">Moderno y tecnológico</small></div>
+      <span class="themeCheck"></span>
+    </div>
+    <div class="themeOption" id="themeOptionLight" onclick="aplicarTemaOym('light')">
+      <div class="themePreview light"></div>
+      <div><b>Claro minimalista</b><br><small style="color:var(--app-muted)">Limpio y fácil de leer</small></div>
+      <span class="themeCheck"></span>
+    </div>
+    <button type="button" class="themeClose" onclick="cerrarSelectorTema()">Listo</button>
+  </div>
+</div>
 
 <!-- MODAL ENRUTAMIENTO -->
 <div class="modalOverlay" id="modalEnrutamiento">
@@ -342,7 +956,13 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
       <div class="sectionTitle">4. Datos de fusión</div>
       <div class="row">
         <div><label id="labelPunto">Nombre punto / caja / manga</label><input id="punto" placeholder="Ej: FOC104532"></div>
-        <div><label>Sentido</label><select id="sentido"><option>Nodo → Cliente</option><option>Cliente → Nodo</option><option>Troncal</option><option>Distribución</option><option>Derivación</option></select></div>
+        <div><label>Sentido</label><select id="sentido" onchange="actualizarCamposPorTipoPunto()"><option>Nodo → Cliente</option><option>Cliente → Nodo</option><option>Troncal</option><option>Distribución</option><option>Derivación</option></select></div>
+      </div>
+      <div class="row">
+        <div id="grupoPuertoOdf" class="hidden">
+          <label>Puerto del ODF <span class="required">*</span></label>
+          <input id="puertoOdf" placeholder="Ej: Puerto 12 / Bandeja 2 - Puerto 6">
+        </div>
       </div>
       <div class="row">
         <div id="grupoCableEntrada"><label>Cable entrada</label><input id="cableEntrada"></div>
@@ -374,16 +994,15 @@ box-shadow:0 8px 20px rgba(0,0,0,.35);cursor:pointer}
 
         <div id="camposGponContenedor">
           <div class="row">
-            <div>
+            <div id="grupoContenedor">
               <label>Contenedor <span class="required">*</span></label>
               <select id="gponContenedor">
                 <option value="">Seleccione...</option>
                 <option value="EMPALME">EMPALME</option>
-                <option value="CTO">CTO</option>
-                <option value="NAP">NAP</option>
+                <option value="CTO/NAP">CTO/NAP</option>
               </select>
             </div>
-            <div>
+            <div id="grupoIdContenedor">
               <label>Nombre o ID de contenedor <span class="required">*</span></label>
               <input id="gponContenedorId" placeholder="Ej: FOC-00052">
             </div>
@@ -1052,6 +1671,7 @@ async function cargarEmpalmesExistentesDesdeSupabase(rutaSupabaseId){
         referencia_externa: e.referencia_externa,
 
         nombre_punto: e.nombre_punto,
+        puerto_odf: e.puerto_odf ?? null,
         sentido: e.sentido,
         cable_entrada: e.cable_entrada,
         cable_salida: e.cable_salida,
@@ -1142,6 +1762,8 @@ async function cargarEmpalmesExistentesDesdeSupabase(rutaSupabaseId){
       }
     });
 
+    // Corrige consecutivos repetidos o separados por tipo dentro del cliente/ruta actual.
+    normalizarConsecutivosRutaActual(true);
     guardarLocalStorage();
     pintarRegistros();
 
@@ -1326,7 +1948,8 @@ function mostrarSoloGrupoGpon(tipo){
 function validarCamposGpon(tipo){
   if(tipoRedActual() !== "GPON") return true;
 
-  if(!val("gponContenedor") || !val("gponContenedorId")){
+  const tiposSinContenedor = ["Nodo","OLT","Cliente"];
+  if(!tiposSinContenedor.includes(tipo) && (!val("gponContenedor") || !val("gponContenedorId"))){
     alert("Debes seleccionar el contenedor y diligenciar el Nombre o ID de contenedor.");
     return false;
   }
@@ -1379,6 +2002,7 @@ function actualizarCamposPorTipoPunto(){
   const labelPunto = document.getElementById("labelPunto");
   const puntoInput = document.getElementById("punto");
   const seccionFotos = document.getElementById("seccionFotosObligatorias");
+  const grupoPuertoOdf = document.getElementById("grupoPuertoOdf");
 
   mostrarSoloGrupoGpon(tipo);
 
@@ -1404,6 +2028,8 @@ function actualizarCamposPorTipoPunto(){
   grupoCableSalida?.classList.remove("hidden");
   grupoHiloSalida?.classList.remove("hidden");
   seccionFotos?.classList.remove("hidden");
+  grupoPuertoOdf?.classList.toggle("hidden", tipo !== "Nodo");
+  if(tipo !== "Nodo") setVal("puertoOdf","");
 
   if(cableSalidaInput && cableSalidaSelect){
     cableSalidaInput.classList.remove("hidden");
@@ -1465,6 +2091,11 @@ function actualizarCamposPorTipoPunto(){
   }
 
   actualizarEtiquetaConsecutivo();
+  setTimeout(()=>{
+    if(typeof window.aplicarLogicaEntradaSalidaOym === "function") {
+      window.aplicarLogicaEntradaSalidaOym();
+    }
+  },0);
 }
 
 function actualizarHeader(){
@@ -1755,12 +2386,75 @@ function actualizarEtiquetaConsecutivo(){
   actualizarInfoConsecutivo(c);
 }
 
+function registroPerteneceRutaActual(r){
+  if(!enrutamientoActivo || !r) return false;
+
+  const porOffline = r.enrutamiento_offline_id && enrutamientoActivo.offline_id &&
+    String(r.enrutamiento_offline_id) === String(enrutamientoActivo.offline_id);
+
+  const porSupabase = r.enrutamiento_id && enrutamientoActivo.supabase_id &&
+    String(r.enrutamiento_id) === String(enrutamientoActivo.supabase_id);
+
+  const porClienteRuta =
+    String(r.id_cliente || "").trim() === String(enrutamientoActivo.id_cliente || "").trim() &&
+    String(r.codigo_ruta || "").trim() === String(enrutamientoActivo.codigo_ruta || "").trim();
+
+  return Boolean(porOffline || porSupabase || porClienteRuta);
+}
+
 function registrosDeRutaActual(){
   if(!enrutamientoActivo) return [];
-  return registros.filter(r => r.enrutamiento_offline_id === enrutamientoActivo.offline_id);
+  return registros.filter(registroPerteneceRutaActual);
 }
+
+function etiquetaTipoRegistro(r){
+  const tipo = String(r?.tipo_punto || "Empalme").trim();
+  if(tipo.toLowerCase() === "sangria") return "Sangria";
+  return tipo || "Empalme";
+}
+
+function normalizarConsecutivosRutaActual(marcarCambios = true){
+  const lista = registrosDeRutaActual();
+  if(!lista.length) return false;
+
+  lista.sort((a,b) => {
+    const fa = new Date(a.fecha_captura_app || a.created_at || 0).getTime();
+    const fb = new Date(b.fecha_captura_app || b.created_at || 0).getTime();
+    if(fa !== fb) return fa - fb;
+
+    const ca = Number(a.consecutivo_empalme || 0);
+    const cb = Number(b.consecutivo_empalme || 0);
+    if(ca !== cb) return ca - cb;
+
+    return String(a.offline_id || a.supabase_id || "").localeCompare(String(b.offline_id || b.supabase_id || ""));
+  });
+
+  let huboCambios = false;
+  lista.forEach((r,index) => {
+    const nuevo = index + 1;
+    const etiquetaNueva = `${etiquetaTipoRegistro(r)} ${nuevo}`;
+    const cambio = Number(r.consecutivo_empalme) !== nuevo || r.etiqueta_empalme !== etiquetaNueva;
+
+    if(cambio){
+      r.consecutivo_empalme = nuevo;
+      r.etiqueta_empalme = etiquetaNueva;
+      huboCambios = true;
+
+      if(marcarCambios && r.sync_status === "enviado"){
+        r.sync_status = "pendiente_update";
+        r.editado_en_app = true;
+        r.fecha_ultima_edicion_app = new Date().toISOString();
+      }
+    }
+  });
+
+  return huboCambios;
+}
+
 function obtenerSiguienteConsecutivo(){
-  const nums = registrosDeRutaActual().map(r => Number(r.consecutivo_empalme || 0)).filter(n => n > 0);
+  const nums = registrosDeRutaActual()
+    .map(r => Number(r.consecutivo_empalme || 0))
+    .filter(n => Number.isInteger(n) && n > 0);
   return nums.length ? Math.max(...nums) + 1 : 1;
 }
 function actualizarInfoConsecutivo(consecutivo){
@@ -1775,15 +2469,43 @@ async function guardarRegistroLocal(){
   if(!selectedLat || !selectedLng){ alert("Debes fijar el empalme."); return; }
   if(!val("ambiente")){ alert("Debes seleccionar Externo o Interno."); return; }
   if(val("ambiente") === "externo" && !val("elementoExterno")){ alert("El campo Elemento externo es obligatorio."); return; }
-  if(val("tipoPunto") === "Cliente" && !val("cableSalida")){ alert("Para Cliente debes seleccionar Cable nuevo o Habilitación de hilos."); return; }
+  if(val("tipoPunto") === "Cliente"){
+    const sentidoCliente = val("sentido").replace(/\s+/g,"").toLowerCase();
+    const requiereEntradaCliente = ["nodo→cliente","nodo->cliente","nodo-cliente"].includes(sentidoCliente);
+    const requiereSalidaCliente = ["cliente→nodo","cliente->nodo","cliente-nodo"].includes(sentidoCliente);
+    if(requiereEntradaCliente && (!val("cableEntrada") || !val("hiloEntrada"))){
+      alert("Para Cliente en sentido Nodo → Cliente debes diligenciar cable de entrada e hilo de entrada.");
+      return;
+    }
+    if(requiereSalidaCliente && (!val("cableSalida") || !val("hiloSalida"))){
+      alert("Para Cliente en sentido Cliente → Nodo debes diligenciar cable de salida e hilo de salida.");
+      return;
+    }
+  }
+  if(val("tipoPunto") === "Nodo" && !val("puertoOdf")){ alert("Para Nodo debes diligenciar el Puerto del ODF."); return; }
   if(!["Nodo","Cliente","OLT","NAP","CTO"].includes(val("tipoPunto")) && (!val("hiloEntrada") || !val("hiloSalida"))){ alert("Debes diligenciar hilo de entrada e hilo de salida."); return; }
-  if(val("tipoPunto") === "OLT" && !val("hiloSalida")){ alert("Para OLT debes diligenciar el hilo de salida."); return; }
+  if(val("tipoPunto") === "OLT"){
+    const sentidoOlt = val("sentido").replace(/\s+/g,"").toLowerCase();
+    const requiereSalida = ["nodo→cliente","nodo->cliente","nodo-cliente"].includes(sentidoOlt);
+    const requiereEntrada = ["cliente→nodo","cliente->nodo","cliente-nodo"].includes(sentidoOlt);
+    if(requiereSalida && (!val("cableSalida") || !val("hiloSalida"))){ alert("Para OLT en sentido Nodo → Cliente debes diligenciar cable e hilo de salida."); return; }
+    if(requiereEntrada && (!val("cableEntrada") || !val("hiloEntrada"))){ alert("Para OLT en sentido Cliente → Nodo debes diligenciar cable e hilo de entrada."); return; }
+  }
   if(["NAP","CTO"].includes(val("tipoPunto")) && !val("hiloEntrada")){ alert(`Para ${val("tipoPunto")} debes diligenciar el hilo de entrada.`); return; }
 
   if(!validarCamposGpon(val("tipoPunto"))) return;
 
   const editId = val("editOfflineId");
   const existente = editId ? registros.find(r => r.offline_id === editId) : null;
+
+  // En registros nuevos el consecutivo se recalcula justo antes de guardar.
+  // Así se evita repetir números si durante la captura se cargaron otros puntos desde Supabase.
+  if(!editId){
+    normalizarConsecutivosRutaActual(false);
+    const consecutivoUnico = obtenerSiguienteConsecutivo();
+    setVal("consecutivoEmpalme", consecutivoUnico);
+    actualizarInfoConsecutivo(consecutivoUnico);
+  }
 
   const tipoPuntoActual = val("tipoPunto");
   const requiereFotos = !["Nodo","OLT"].includes(tipoPuntoActual);
@@ -1802,12 +2524,34 @@ async function guardarRegistroLocal(){
   }
 
   if(tipoPuntoActual === "Cliente"){
-    setVal("cableEntrada", "");
-    setVal("hiloEntrada", "");
+    const sentidoCliente = val("sentido").replace(/\s+/g,"").toLowerCase();
+    if(["nodo→cliente","nodo->cliente","nodo-cliente"].includes(sentidoCliente)){
+      setVal("cableSalida", "");
+      setVal("hiloSalida", "");
+    }else if(["cliente→nodo","cliente->nodo","cliente-nodo"].includes(sentidoCliente)){
+      setVal("cableEntrada", "");
+      setVal("hiloEntrada", "");
+    }
   }
   if(tipoPuntoActual === "Nodo"){
-    setVal("cableSalida", "");
-    setVal("hiloSalida", "");
+    const sentidoNodo = val("sentido").replace(/\s+/g,"").toLowerCase();
+    if(["nodo→cliente","nodo->cliente","nodo-cliente"].includes(sentidoNodo)){
+      setVal("cableEntrada", "");
+      setVal("hiloEntrada", "");
+    }else if(["cliente→nodo","cliente->nodo","cliente-nodo"].includes(sentidoNodo)){
+      setVal("cableSalida", "");
+      setVal("hiloSalida", "");
+    }
+  }
+  if(tipoPuntoActual === "OLT"){
+    const sentidoOlt = val("sentido").replace(/\s+/g,"").toLowerCase();
+    if(["nodo→cliente","nodo->cliente","nodo-cliente"].includes(sentidoOlt)){
+      setVal("cableEntrada", "");
+      setVal("hiloEntrada", "");
+    }else if(["cliente→nodo","cliente->nodo","cliente-nodo"].includes(sentidoOlt)){
+      setVal("cableSalida", "");
+      setVal("hiloSalida", "");
+    }
   }
 
   const base = {
@@ -1861,6 +2605,7 @@ async function guardarRegistroLocal(){
     id_elemento_externo: val("idElementoExterno"),
     referencia_externa: val("referenciaExterna"),
     nombre_punto: val("punto") || "Punto sin nombre",
+    puerto_odf: val("puertoOdf") || null,
     sentido: val("sentido"),
     cable_entrada: val("cableEntrada"),
     cable_salida: val("cableSalida"),
@@ -1890,6 +2635,7 @@ async function guardarRegistroLocal(){
     registros.unshift(registroGuardado);
   }
 
+  normalizarConsecutivosRutaActual(true);
   guardarLocalStorage();
 
   const verificacion = JSON.parse(localStorage.getItem("oym_empalmes_offline_v2") || "[]");
@@ -1941,6 +2687,7 @@ async function editarRegistro(id){
   setVal("idElementoExterno", r.id_elemento_externo);
   setVal("referenciaExterna", r.referencia_externa);
   setVal("punto", r.nombre_punto);
+  setVal("puertoOdf", r.puerto_odf);
   setVal("sentido", r.sentido);
   setVal("cableEntrada", r.cable_entrada);
   setVal("cableSalida", r.cable_salida);
@@ -2575,6 +3322,11 @@ async function generarActaPDF(ruta,lista,titulo="ACTA DE FINALIZACIÓN",fechaDoc
     doc.addPage();encabezadoPdf(doc,ruta,titulo);doc.setFont("helvetica","bold");doc.setFontSize(13);doc.setTextColor(30,41,59);doc.text(`${txtPdf(r.etiqueta_empalme||r.tipo_punto)} — ${txtPdf(r.nombre_punto)}`,14,51);
     doc.setFont("helvetica","normal");doc.setFontSize(8.5);doc.text(`Tipo: ${txtPdf(r.tipo_punto)} | Ambiente: ${txtPdf(r.ambiente)} | GPS: ${Number(r.latitud).toFixed(7)}, ${Number(r.longitud).toFixed(7)}`,14,58);
     doc.text(`Fusion: hilo ${txtPdf(r.hilo_entrada)} -> hilo ${txtPdf(r.hilo_salida)}`,14,64);
+    if(String(r.tipo_punto||"").toLowerCase()==="nodo"){
+      doc.setFont("helvetica","bold");
+      doc.text(`Puerto ODF: ${txtPdf(r.puerto_odf)}`,14,69);
+      doc.setFont("helvetica","normal");
+    }
     if(String(r.tipo_red||ruta.tipo_red||"").toUpperCase()==="GPON"){
       doc.setTextColor(3,105,161);
       doc.setFont("helvetica","bold");
@@ -2759,6 +3511,7 @@ async function sincronizarPendientes(forzarReenvio = false, mostrarActaOpcional 
         id_cliente: r.id_cliente,
         codigo_ruta: r.codigo_ruta,
         nombre_punto: r.nombre_punto,
+        puerto_odf: r.puerto_odf || null,
         sentido: r.sentido,
         cable_entrada: r.cable_entrada,
         cable_salida: r.cable_salida,
@@ -2972,6 +3725,7 @@ function pintarListaRegistros(listaDatos){
       <span class="badge ${statusClass}">${(r.sync_status||"pendiente").toUpperCase()}</span>
       ${r.editado_en_app ? `<span class="badge editado">EDITADO</span>` : ""}<br>
       <b>${r.etiqueta_empalme || ("Empalme " + (r.consecutivo_empalme || ""))}</b> · ${r.nombre_punto} · ${r.tipo_punto || ""}<br>
+      ${r.tipo_punto === "Nodo" ? `<b>Puerto ODF:</b> ${escapeHtml(r.puerto_odf || "N/A")}<br>` : ""}
       <b>Fusión:</b> Hilo entrada ${r.hilo_entrada || "N/A"} → Hilo salida ${r.hilo_salida || "N/A"}<br>
       <b>GPS:</b> ${Number(r.latitud).toFixed(7)}, ${Number(r.longitud).toFixed(7)}<br>
       ${r.error_sync ? `<b style="color:#f87171">Error:</b> ${r.error_sync}<br>` : ""}
@@ -3137,7 +3891,7 @@ function limpiarDespuesDeGuardar(){
   limpiarFormulario();
 }
 function limpiarFormulario(){
-  ["editOfflineId","ambiente","zonaInterna","pisoNivel","torreBloque","cuartoRack","referenciaVisual","descripcionInterna","elementoExterno","idElementoExterno","referenciaExterna","punto","cableEntrada","cableSalida","tuboEntrada","hiloEntrada","tuboSalida","hiloSalida","observacion"].forEach(id=>setVal(id,""));
+  ["editOfflineId","ambiente","zonaInterna","pisoNivel","torreBloque","cuartoRack","referenciaVisual","descripcionInterna","elementoExterno","idElementoExterno","referenciaExterna","punto","puertoOdf","cableEntrada","cableSalida","tuboEntrada","hiloEntrada","tuboSalida","hiloSalida","observacion"].forEach(id=>setVal(id,""));
   cambiarAmbiente();
   actualizarCamposPorTipoPunto();
 }
@@ -3407,6 +4161,59 @@ window.addEventListener("pagehide", function(){
 });
 
 migrarFotosLegacyAIndexedDB().then(() => { inicializarBotonesLateralesOcultos(); iniciarMapa(); iniciarObservadorFab(); verificarSesionTecnico(); }).catch(err => { console.error(err); inicializarBotonesLateralesOcultos(); iniciarMapa(); iniciarObservadorFab(); verificarSesionTecnico(); });
+
+
+/* ===== CONTROL DE APARIENCIA OYM ===== */
+function aplicarTemaOym(tema){
+  const valor = tema === "light" ? "light" : "dark";
+  document.body.setAttribute("data-theme",valor);
+  localStorage.setItem("oym_tecnico_tema",valor);
+
+  const oscuro = document.getElementById("themeOptionDark");
+  const claro = document.getElementById("themeOptionLight");
+  if(oscuro){
+    oscuro.classList.toggle("active",valor === "dark");
+    const check = oscuro.querySelector(".themeCheck");
+    if(check) check.textContent = valor === "dark" ? "✓" : "";
+  }
+  if(claro){
+    claro.classList.toggle("active",valor === "light");
+    const check = claro.querySelector(".themeCheck");
+    if(check) check.textContent = valor === "light" ? "✓" : "";
+  }
+
+  setTimeout(()=>{
+    try{ map?.invalidateSize?.(); }catch(e){}
+  },160);
+}
+
+function alternarTemaRapido(){
+  const actual = document.body.getAttribute("data-theme") || "dark";
+  aplicarTemaOym(actual === "dark" ? "light" : "dark");
+}
+
+function abrirSelectorTema(){
+  const sheet = document.getElementById("themeSheet");
+  if(sheet) sheet.classList.add("open");
+  aplicarTemaOym(document.body.getAttribute("data-theme") || "dark");
+}
+
+function cerrarSelectorTema(evento){
+  if(evento && evento.target !== evento.currentTarget) return;
+  document.getElementById("themeSheet")?.classList.remove("open");
+}
+
+function cerrarTodosLosPanelesTema(){
+  document.querySelectorAll(".modalOverlay,.panelOverlay").forEach(el=>el.style.display="none");
+  document.getElementById("themeSheet")?.classList.remove("open");
+  setTimeout(()=>{ try{map?.invalidateSize?.();}catch(e){} },100);
+}
+
+(function iniciarTemaOym(){
+  const guardado = localStorage.getItem("oym_tecnico_tema") || "dark";
+  aplicarTemaOym(guardado);
+})();
+
 </script>
 
 <button id="fabMarcar" class="fabMarcar" onclick="marcarCentro()" title="Marcar ubicación">+</button>
@@ -3427,6 +4234,1541 @@ migrarFotosLegacyAIndexedDB().then(() => { inicializarBotonesLateralesOcultos();
     </div>
   </div>
 </div>
+
+
+<script>
+(function(){
+  function asegurarBotonMenuVisible(){
+    const candidatos = [
+      document.getElementById("oymMenuToggle"),
+      document.querySelector(".oym-menu-toggle"),
+      document.querySelector(".menu-toggle-oym"),
+      document.querySelector(".floating-menu-toggle")
+    ].filter(Boolean);
+
+    const boton = candidatos[0];
+    if(!boton) return;
+
+    if(!boton.id) boton.id = "oymMenuToggle";
+
+    Object.assign(boton.style,{
+      position:"fixed",
+      right:"18px",
+      bottom: window.innerWidth <= 768 ? "84px" : "92px",
+      width:"58px",
+      height:"58px",
+      display:"flex",
+      visibility:"visible",
+      opacity:"1",
+      alignItems:"center",
+      justifyContent:"center",
+      borderRadius:"50%",
+      zIndex:"2147483000",
+      transform:"none"
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", asegurarBotonMenuVisible);
+  window.addEventListener("resize", asegurarBotonMenuVisible);
+
+  const observer = new MutationObserver(asegurarBotonMenuVisible);
+  observer.observe(document.documentElement,{childList:true,subtree:true});
+
+  setTimeout(asegurarBotonMenuVisible,300);
+  setTimeout(asegurarBotonMenuVisible,1200);
+})();
+</script>
+
+
+<div id="oymRightSideMenu" aria-hidden="true">
+  <button class="oymSideMenuItem" type="button" data-action="gps">
+    <span class="oymSideMenuIcon oym-color-gps">📍</span>
+    <span class="oymSideMenuLabel">Ir a mi GPS</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+
+  <button class="oymSideMenuItem" type="button" data-action="clientes">
+    <span class="oymSideMenuIcon oym-color-clientes">👥</span>
+    <span class="oymSideMenuLabel">Mis clientes</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+
+  <button class="oymSideMenuItem" type="button" data-action="empalmes">
+    <span class="oymSideMenuIcon oym-color-empalmes">🧵</span>
+    <span class="oymSideMenuLabel">Empalmes</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+
+  <button class="oymSideMenuItem" type="button" data-action="almacenamiento">
+    <span class="oymSideMenuIcon oym-color-storage">📦</span>
+    <span class="oymSideMenuLabel">Almacenamiento</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+
+  <button class="oymSideMenuItem" type="button" data-action="enviar">
+    <span class="oymSideMenuIcon oym-color-send">➤</span>
+    <span class="oymSideMenuLabel">Enviar datos</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+
+  <button class="oymSideMenuItem" type="button" data-action="reenviar">
+    <span class="oymSideMenuIcon oym-color-resend">⟳</span>
+    <span class="oymSideMenuLabel">Reenviar todo</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+
+  <button class="oymSideMenuItem" type="button" data-action="finalizar">
+    <span class="oymSideMenuIcon oym-color-finish">✓</span>
+    <span class="oymSideMenuLabel">Finalizar enrutamiento</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+
+  <button class="oymSideMenuItem" type="button" data-action="asignados">
+    <span class="oymSideMenuIcon oym-color-assigned">👥</span>
+    <span class="oymSideMenuLabel">Mis clientes asignados</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+
+  <button class="oymSideMenuItem" type="button" data-action="logout">
+    <span class="oymSideMenuIcon oym-color-logout">⏻</span>
+    <span class="oymSideMenuLabel">Cerrar sesión</span>
+    <span class="oymSideMenuArrow">›</span>
+  </button>
+</div>
+
+<button id="oymSideMenuToggle" type="button" aria-label="Mostrar menú" aria-expanded="false">☰</button>
+
+
+<script>
+(function(){
+  "use strict";
+
+  const menu = document.getElementById("oymRightSideMenu");
+  const toggle = document.getElementById("oymSideMenuToggle");
+
+  function setMenu(abierto){
+    if(!menu || !toggle) return;
+    menu.classList.toggle("oym-open",abierto);
+    menu.setAttribute("aria-hidden",abierto ? "false" : "true");
+    toggle.setAttribute("aria-expanded",abierto ? "true" : "false");
+    toggle.textContent = abierto ? "×" : "☰";
+  }
+
+  function buscarYClick(selectores){
+    for(const selector of selectores){
+      const el = document.querySelector(selector);
+      if(el && el.offsetParent !== null){
+        el.click();
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function ejecutarAccion(accion){
+    const acciones = {
+      gps: () => {
+        if(typeof window.irAMiGPS === "function") return window.irAMiGPS();
+        if(typeof window.centrarEnGPS === "function") return window.centrarEnGPS();
+        buscarYClick(['#btnGPS','#btnIrGPS','[data-action="gps"]','.btn-gps']);
+      },
+
+      clientes: () => {
+        if(typeof window.abrirMisClientes === "function") return window.abrirMisClientes();
+        buscarYClick(['#btnMisClientes','#btnClientes','.btn-clientes']);
+      },
+
+      empalmes: () => {
+        if(typeof window.abrirListaRegistros === "function") return window.abrirListaRegistros();
+        if(typeof window.abrirEmpalmes === "function") return window.abrirEmpalmes();
+        buscarYClick(['#btnEmpalmes','#btnRegistros','.btn-empalmes']);
+      },
+
+      almacenamiento: () => {
+        if(typeof window.abrirAlmacenamiento === "function") return window.abrirAlmacenamiento();
+        if(typeof window.mostrarAlmacenamiento === "function") return window.mostrarAlmacenamiento();
+        buscarYClick(['#btnAlmacenamiento','.btn-almacenamiento']);
+      },
+
+      enviar: () => {
+        if(typeof window.enviarDatos === "function") return window.enviarDatos();
+        if(typeof window.enviarPendientes === "function") return window.enviarPendientes();
+        buscarYClick(['#btnEnviarDatos','.btn-enviar']);
+      },
+
+      reenviar: () => {
+        if(typeof window.reenviarTodo === "function") return window.reenviarTodo();
+        buscarYClick(['#btnReenviarTodo','.btn-reenviar']);
+      },
+
+      finalizar: () => {
+        if(typeof window.finalizarEnrutamiento === "function") return window.finalizarEnrutamiento();
+        buscarYClick(['#btnFinalizarEnrutamiento','.btn-finalizar']);
+      },
+
+      asignados: () => {
+        if(typeof window.abrirMisClientesAsignados === "function") return window.abrirMisClientesAsignados();
+        if(typeof window.abrirModalClientesAsignados === "function") return window.abrirModalClientesAsignados();
+        buscarYClick(['#btnMisClientesAsignados','.btn-asignados']);
+      },
+
+      logout: () => {
+        if(typeof window.cerrarSesion === "function") return window.cerrarSesion();
+        if(typeof window.logout === "function") return window.logout();
+        buscarYClick(['#btnCerrarSesion','.btn-logout']);
+      }
+    };
+
+    const fn = acciones[accion];
+    if(fn) fn();
+  }
+
+  toggle?.addEventListener("click",function(e){
+    e.stopPropagation();
+    setMenu(!menu.classList.contains("oym-open"));
+  });
+
+  menu?.addEventListener("click",function(e){
+    const item = e.target.closest(".oymSideMenuItem");
+    if(!item) return;
+    ejecutarAccion(item.dataset.action);
+    setMenu(false);
+  });
+
+  document.addEventListener("click",function(e){
+    if(!menu?.classList.contains("oym-open")) return;
+    if(menu.contains(e.target) || toggle.contains(e.target)) return;
+    setMenu(false);
+  });
+
+  document.addEventListener("keydown",function(e){
+    if(e.key === "Escape") setMenu(false);
+  });
+
+  setMenu(false);
+})();
+</script>
+
+
+<script>
+(function(){
+  function posicionarMenuOym(){
+    const boton = document.getElementById("oymSideMenuToggle");
+    const menu = document.getElementById("oymRightSideMenu");
+    const marcar =
+      document.getElementById("btnMarcar") ||
+      document.querySelector(".btn-marcar") ||
+      document.querySelector(".fab-add");
+
+    const mobile = window.innerWidth <= 768;
+
+    if(boton){
+      Object.assign(boton.style,{
+        position:"fixed",
+        top: mobile ? "126px" : "132px",
+        right: mobile ? "14px" : "18px",
+        bottom:"auto",
+        width: mobile ? "50px" : "52px",
+        height: mobile ? "50px" : "52px",
+        zIndex:"2147483000"
+      });
+    }
+
+    if(menu){
+      Object.assign(menu.style,{
+        position:"fixed",
+        top: mobile ? "186px" : "194px",
+        right: mobile ? "14px" : "18px",
+        bottom:"auto",
+        maxHeight: mobile ? "calc(100vh - 200px)" : "calc(100vh - 215px)"
+      });
+    }
+
+    if(marcar){
+      Object.assign(marcar.style,{
+        position:"fixed",
+        right: mobile ? "14px" : "18px",
+        bottom: mobile ? "82px" : "78px",
+        top:"auto"
+      });
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded",posicionarMenuOym);
+  window.addEventListener("resize",posicionarMenuOym);
+
+  const observer = new MutationObserver(posicionarMenuOym);
+  observer.observe(document.documentElement,{childList:true,subtree:true});
+
+  setTimeout(posicionarMenuOym,300);
+  setTimeout(posicionarMenuOym,1000);
+})();
+</script>
+
+
+<script>
+(function(){
+  "use strict";
+
+  function obtenerControlesOym(){
+    return {
+      auth: document.getElementById("authOverlay"),
+      menu: document.getElementById("oymRightSideMenu"),
+      toggle: document.getElementById("oymSideMenuToggle"),
+      fab: document.getElementById("fabMarcar"),
+      toggleOriginal: document.getElementById("toggleBotones"),
+      botonesOriginales: document.getElementById("floatButtons")
+    };
+  }
+
+  function sesionTecnicoVisible(){
+    const {auth} = obtenerControlesOym();
+    if(!auth) return true;
+
+    const estilo = window.getComputedStyle(auth);
+    return estilo.display === "none" ||
+           estilo.visibility === "hidden" ||
+           estilo.opacity === "0";
+  }
+
+  function actualizarControlesSegunSesion(){
+    const {
+      menu,
+      toggle,
+      fab,
+      toggleOriginal,
+      botonesOriginales
+    } = obtenerControlesOym();
+
+    const autenticado = sesionTecnicoVisible();
+
+    if(toggle){
+      toggle.style.setProperty(
+        "display",
+        autenticado ? "flex" : "none",
+        "important"
+      );
+    }
+
+    if(fab){
+      const rutaActiva = Boolean(window.enrutamientoActivo);
+      fab.style.setProperty(
+        "display",
+        autenticado && rutaActiva ? "flex" : "none",
+        "important"
+      );
+    }
+
+    if(menu){
+      if(!autenticado){
+        menu.classList.remove("oym-open");
+        menu.setAttribute("aria-hidden","true");
+        menu.style.setProperty("display","none","important");
+      }else{
+        menu.style.removeProperty("display");
+      }
+    }
+
+    // El menú antiguo se mantiene oculto para evitar duplicados.
+    if(toggleOriginal){
+      toggleOriginal.style.setProperty("display","none","important");
+    }
+    if(botonesOriginales){
+      botonesOriginales.classList.add("oculto");
+      botonesOriginales.style.setProperty("display","none","important");
+    }
+  }
+
+  function cerrarMenuOym(){
+    const {menu,toggle} = obtenerControlesOym();
+    if(menu){
+      menu.classList.remove("oym-open");
+      menu.setAttribute("aria-hidden","true");
+    }
+    if(toggle){
+      toggle.setAttribute("aria-expanded","false");
+      toggle.textContent = "☰";
+    }
+  }
+
+  async function ejecutarAccionOym(accion){
+    if(!sesionTecnicoVisible()) return;
+
+    try{
+      switch(accion){
+        case "gps":
+          if(typeof window.iniciarGPSRealtime === "function"){
+            window.iniciarGPSRealtime();
+          }else if(typeof window.activarSeguimiento === "function"){
+            window.activarSeguimiento();
+          }
+          break;
+
+        case "clientes":
+          if(typeof window.abrirPanelClientesAsignados === "function"){
+            await window.abrirPanelClientesAsignados();
+          }
+          break;
+
+        case "empalmes":
+          if(typeof window.abrirPanelRegistros === "function"){
+            window.abrirPanelRegistros();
+          }
+          break;
+
+        case "almacenamiento":
+          if(typeof window.abrirPanelAlmacenamiento === "function"){
+            await window.abrirPanelAlmacenamiento();
+          }
+          break;
+
+        case "enviar":
+          if(typeof window.sincronizarPendientes === "function"){
+            await window.sincronizarPendientes();
+          }
+          break;
+
+        case "reenviar":
+          if(typeof window.reenviarTodo === "function"){
+            await window.reenviarTodo();
+          }
+          break;
+
+        case "finalizar":
+          if(typeof window.finalizarEnrutamiento === "function"){
+            await window.finalizarEnrutamiento();
+          }
+          break;
+
+        case "asignados":
+          if(typeof window.abrirPanelClientesAsignados === "function"){
+            await window.abrirPanelClientesAsignados();
+          }
+          break;
+
+        case "logout":
+          if(typeof window.logoutTecnico === "function"){
+            await window.logoutTecnico();
+          }
+          break;
+
+        default:
+          console.warn("Acción de menú no reconocida:",accion);
+      }
+    }catch(error){
+      console.error("Error ejecutando acción del menú OYM:",error);
+      alert("No se pudo ejecutar la opción seleccionada: " + (error.message || error));
+    }finally{
+      cerrarMenuOym();
+      setTimeout(actualizarControlesSegunSesion,100);
+      setTimeout(actualizarControlesSegunSesion,600);
+    }
+  }
+
+  function reinstalarEventosMenu(){
+    const {menu,toggle} = obtenerControlesOym();
+    if(!menu || !toggle) return;
+
+    // Clonar elimina listeners anteriores que podían llamar funciones incorrectas.
+    if(!toggle.dataset.oymEventosCorregidos){
+      const nuevoToggle = toggle.cloneNode(true);
+      toggle.replaceWith(nuevoToggle);
+      nuevoToggle.dataset.oymEventosCorregidos = "1";
+
+      nuevoToggle.addEventListener("click",function(event){
+        event.preventDefault();
+        event.stopPropagation();
+
+        if(!sesionTecnicoVisible()) return;
+
+        const menuActual = document.getElementById("oymRightSideMenu");
+        const abierto = !menuActual.classList.contains("oym-open");
+
+        menuActual.classList.toggle("oym-open",abierto);
+        menuActual.setAttribute("aria-hidden",abierto ? "false" : "true");
+        nuevoToggle.setAttribute("aria-expanded",abierto ? "true" : "false");
+        nuevoToggle.textContent = abierto ? "×" : "☰";
+      });
+    }
+
+    if(!menu.dataset.oymEventosCorregidos){
+      menu.dataset.oymEventosCorregidos = "1";
+      menu.addEventListener("click",function(event){
+        const item = event.target.closest(".oymSideMenuItem");
+        if(!item) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        ejecutarAccionOym(item.dataset.action);
+      });
+    }
+  }
+
+  function inicializarCorreccionOym(){
+    reinstalarEventosMenu();
+    actualizarControlesSegunSesion();
+
+    const {auth} = obtenerControlesOym();
+    if(auth){
+      const authObserver = new MutationObserver(function(){
+        actualizarControlesSegunSesion();
+      });
+      authObserver.observe(auth,{
+        attributes:true,
+        attributeFilter:["style","class"]
+      });
+    }
+
+    const domObserver = new MutationObserver(function(){
+      reinstalarEventosMenu();
+      actualizarControlesSegunSesion();
+    });
+    domObserver.observe(document.body,{
+      childList:true,
+      subtree:true
+    });
+
+    document.addEventListener("click",function(event){
+      const {menu,toggle} = obtenerControlesOym();
+      if(!menu || !menu.classList.contains("oym-open")) return;
+      if(menu.contains(event.target) || toggle?.contains(event.target)) return;
+      cerrarMenuOym();
+    });
+
+    document.addEventListener("keydown",function(event){
+      if(event.key === "Escape") cerrarMenuOym();
+    });
+
+    if(window.supabaseClient?.auth?.onAuthStateChange){
+      window.supabaseClient.auth.onAuthStateChange(function(){
+        setTimeout(actualizarControlesSegunSesion,100);
+        setTimeout(actualizarControlesSegunSesion,600);
+      });
+    }
+
+    setInterval(actualizarControlesSegunSesion,1200);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded",inicializarCorreccionOym);
+  }else{
+    inicializarCorreccionOym();
+  }
+})();
+</script>
+
+
+<script>
+(function(){
+  "use strict";
+
+  function loginEstaOculto(){
+    const auth = document.getElementById("authOverlay");
+    if(!auth) return true;
+
+    const cs = getComputedStyle(auth);
+    return (
+      cs.display === "none" ||
+      cs.visibility === "hidden" ||
+      cs.opacity === "0"
+    );
+  }
+
+  function forzarVisibilidadFab(){
+    const autenticado = loginEstaOculto();
+
+    const fab =
+      document.getElementById("fabMarcar") ||
+      document.getElementById("btnMarcar") ||
+      document.querySelector(".fab-add") ||
+      document.querySelector(".btn-marcar");
+
+    const menu = document.getElementById("oymSideMenuToggle");
+
+    if(menu){
+      menu.style.setProperty(
+        "display",
+        autenticado ? "flex" : "none",
+        "important"
+      );
+    }
+
+    if(fab){
+      fab.style.setProperty(
+        "display",
+        autenticado ? "flex" : "none",
+        "important"
+      );
+
+      if(autenticado){
+        Object.assign(fab.style,{
+          position:"fixed",
+          right:"18px",
+          bottom:"86px",
+          top:"auto",
+          width:"58px",
+          height:"58px",
+          minWidth:"58px",
+          minHeight:"58px",
+          alignItems:"center",
+          justifyContent:"center",
+          borderRadius:"16px",
+          zIndex:"2147482500",
+          visibility:"visible",
+          opacity:"1",
+          transform:"none"
+        });
+      }
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded",forzarVisibilidadFab);
+  window.addEventListener("resize",forzarVisibilidadFab);
+
+  const observer = new MutationObserver(forzarVisibilidadFab);
+  observer.observe(document.documentElement,{
+    childList:true,
+    subtree:true,
+    attributes:true,
+    attributeFilter:["style","class"]
+  });
+
+  setTimeout(forzarVisibilidadFab,200);
+  setTimeout(forzarVisibilidadFab,800);
+  setTimeout(forzarVisibilidadFab,1800);
+})();
+</script>
+
+
+<script>
+/* ============================================================
+   PROTECCIÓN DE DATOS MÓVILES OYM
+   - Respaldo de empalmes en IndexedDB
+   - Borrador automático del formulario
+   - Compresión de fotos antes de guardarlas
+   - Restauración tras cambio de aplicación o recarga
+   ============================================================ */
+(function(){
+  "use strict";
+
+  const OYM_SAFE_DB = "oym_enrutamiento_respaldo_movil_v1";
+  const OYM_SAFE_VERSION = 1;
+  const STORE_STATE = "estado";
+  const STORE_DRAFT = "borradores";
+  const STATE_KEY = "estado_principal";
+  const DRAFT_PREFIX = "borrador_";
+
+  let guardadoProgramado = null;
+  let restaurandoBorrador = false;
+  let ultimaRutaRestaurada = null;
+  let omitirRestauracionUnaVez = false;
+  let autoguardadoSuspendido = false;
+
+  function abrirDBSeguro(){
+    return new Promise((resolve,reject)=>{
+      const req = indexedDB.open(OYM_SAFE_DB,OYM_SAFE_VERSION);
+
+      req.onupgradeneeded = event=>{
+        const db = event.target.result;
+
+        if(!db.objectStoreNames.contains(STORE_STATE)){
+          db.createObjectStore(STORE_STATE,{keyPath:"key"});
+        }
+        if(!db.objectStoreNames.contains(STORE_DRAFT)){
+          db.createObjectStore(STORE_DRAFT,{keyPath:"key"});
+        }
+      };
+
+      req.onsuccess = ()=>resolve(req.result);
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+
+  async function idbPut(storeName,data){
+    const db = await abrirDBSeguro();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(storeName,"readwrite");
+      tx.objectStore(storeName).put(data);
+      tx.oncomplete = ()=>resolve(data);
+      tx.onerror = ()=>reject(tx.error);
+      tx.onabort = ()=>reject(tx.error || new Error("Transacción cancelada"));
+    });
+  }
+
+  async function idbGet(storeName,key){
+    const db = await abrirDBSeguro();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(storeName,"readonly");
+      const req = tx.objectStore(storeName).get(key);
+      req.onsuccess = ()=>resolve(req.result || null);
+      req.onerror = ()=>reject(req.error);
+    });
+  }
+
+  async function idbDelete(storeName,key){
+    const db = await abrirDBSeguro();
+    return new Promise((resolve,reject)=>{
+      const tx = db.transaction(storeName,"readwrite");
+      tx.objectStore(storeName).delete(key);
+      tx.oncomplete = ()=>resolve();
+      tx.onerror = ()=>reject(tx.error);
+    });
+  }
+
+  function rutaActualKey(){
+    const ruta = window.enrutamientoActivo || enrutamientoActivo;
+    if(!ruta) return null;
+
+    return DRAFT_PREFIX + [
+      ruta.offline_id || "",
+      ruta.id_cliente || "",
+      ruta.codigo_ruta || ""
+    ].join("_");
+  }
+
+  function clonarSeguro(valor){
+    try{
+      return structuredClone(valor);
+    }catch(e){
+      return JSON.parse(JSON.stringify(valor));
+    }
+  }
+
+  async function guardarEstadoCompletoSeguro(){
+    try{
+      const estado = {
+        key:STATE_KEY,
+        registros:clonarSeguro(window.registros || registros || []),
+        enrutamientos:clonarSeguro(window.enrutamientos || enrutamientos || []),
+        enrutamientoActivo:clonarSeguro(window.enrutamientoActivo || enrutamientoActivo || null),
+        updated_at:new Date().toISOString(),
+        url_location:location.href
+      };
+
+      await idbPut(STORE_STATE,estado);
+      return true;
+    }catch(error){
+      console.error("No se pudo respaldar el estado en IndexedDB:",error);
+      return false;
+    }
+  }
+
+  function obtenerValorCampo(id){
+    const el = document.getElementById(id);
+    if(!el) return "";
+    if(el.type === "checkbox") return Boolean(el.checked);
+    return el.value ?? "";
+  }
+
+  function construirBorradorFormulario(){
+    const ruta = window.enrutamientoActivo || enrutamientoActivo;
+    if(!ruta) return null;
+
+    const ids = [
+      "editOfflineId","tipoRedActivo","ambiente","tipoPunto",
+      "zonaInterna","pisoNivel","torreBloque","cuartoRack",
+      "referenciaVisual","accesoRequerido","descripcionInterna",
+      "elementoExterno","idElementoExterno","referenciaExterna",
+      "punto","puertoOdf","sentido","cableEntrada","hiloEntrada",
+      "cableSalida","hiloSalida","observacion",
+      "gponContenedor","gponContenedorId",
+      "oltNombre","oltMarca","oltFrame","oltSlot","oltTarjeta","oltPuertoPon",
+      "splitterNivel","splitterRelacion","splitterPuertoEntrada","splitterPuertoSalida",
+      "cajaTipo","cajaCapacidad","cajaPuertoUtilizado",
+      "splitterIntegrado","splitterIntegradoRelacion","splitterIntegradoPuertoSalida",
+      "ontSerial","ontModelo","ontPotenciaRx","ontPuertoOrigen",
+      "gponObservacionValidacion","consecutivoEmpalme"
+    ];
+
+    const campos = {};
+    ids.forEach(id=>campos[id] = obtenerValorCampo(id));
+
+    return {
+      key:rutaActualKey(),
+      route_offline_id:ruta.offline_id || null,
+      id_cliente:ruta.id_cliente || null,
+      codigo_ruta:ruta.codigo_ruta || null,
+      campos,
+      selectedLat:Number.isFinite(Number(window.selectedLat ?? selectedLat))
+        ? Number(window.selectedLat ?? selectedLat)
+        : null,
+      selectedLng:Number.isFinite(Number(window.selectedLng ?? selectedLng))
+        ? Number(window.selectedLng ?? selectedLng)
+        : null,
+      currentAccuracy:Number.isFinite(Number(window.currentAccuracy ?? currentAccuracy))
+        ? Number(window.currentAccuracy ?? currentAccuracy)
+        : null,
+      fotoPanoramica:window.fotoPanoramica || fotoPanoramica || null,
+      fotoFusion:window.fotoFusion || fotoFusion || null,
+      updated_at:new Date().toISOString()
+    };
+  }
+
+  async function guardarBorradorFormularioSeguro(){
+    if(restaurandoBorrador || autoguardadoSuspendido) return false;
+
+    const modal = document.getElementById("modalFormulario");
+    const borrador = construirBorradorFormulario();
+
+    if(!borrador?.key) return false;
+
+    // Se guarda aunque el modal esté temporalmente oculto por la cámara,
+    // siempre que tenga datos útiles.
+    const tieneDatos = Object.values(borrador.campos || {}).some(v=>String(v ?? "").trim() !== "") ||
+      borrador.fotoPanoramica ||
+      borrador.fotoFusion ||
+      borrador.selectedLat !== null;
+
+    if(!tieneDatos) return false;
+
+    try{
+      await idbPut(STORE_DRAFT,borrador);
+      return true;
+    }catch(error){
+      console.error("No se pudo guardar el borrador:",error);
+      return false;
+    }
+  }
+
+  function programarGuardadoBorrador(){
+    if(autoguardadoSuspendido) return;
+    clearTimeout(guardadoProgramado);
+    guardadoProgramado = setTimeout(()=>{
+      if(autoguardadoSuspendido) return;
+      guardarBorradorFormularioSeguro();
+      guardarEstadoCompletoSeguro();
+    },350);
+  }
+
+  async function restaurarBorradorFormulario(forzar=false){
+    if(omitirRestauracionUnaVez && !forzar){
+      omitirRestauracionUnaVez = false;
+      return false;
+    }
+
+    const key = rutaActualKey();
+    if(!key) return false;
+
+    if(!forzar && ultimaRutaRestaurada === key) return false;
+
+    const borrador = await idbGet(STORE_DRAFT,key).catch(()=>null);
+    if(!borrador) return false;
+
+    restaurandoBorrador = true;
+
+    try{
+      Object.entries(borrador.campos || {}).forEach(([id,valor])=>{
+        const el = document.getElementById(id);
+        if(!el) return;
+
+        if(el.type === "checkbox"){
+          el.checked = Boolean(valor);
+        }else{
+          el.value = valor ?? "";
+        }
+      });
+
+      if(Number.isFinite(Number(borrador.selectedLat))){
+        selectedLat = Number(borrador.selectedLat);
+        window.selectedLat = selectedLat;
+      }
+      if(Number.isFinite(Number(borrador.selectedLng))){
+        selectedLng = Number(borrador.selectedLng);
+        window.selectedLng = selectedLng;
+      }
+      if(Number.isFinite(Number(borrador.currentAccuracy))){
+        currentAccuracy = Number(borrador.currentAccuracy);
+        window.currentAccuracy = currentAccuracy;
+      }
+
+      if(borrador.fotoPanoramica){
+        fotoPanoramica = borrador.fotoPanoramica;
+        window.fotoPanoramica = fotoPanoramica;
+        const preview = document.getElementById("previewPanoramica");
+        if(preview){
+          preview.src = fotoPanoramica;
+          preview.style.display = "block";
+        }
+      }
+
+      if(borrador.fotoFusion){
+        fotoFusion = borrador.fotoFusion;
+        window.fotoFusion = fotoFusion;
+        const preview = document.getElementById("previewFusion");
+        if(preview){
+          preview.src = fotoFusion;
+          preview.style.display = "block";
+        }
+      }
+
+      if(typeof cambiarAmbiente === "function") cambiarAmbiente();
+      if(typeof actualizarOpcionesTipoPunto === "function") actualizarOpcionesTipoPunto();
+      if(typeof actualizarCamposPorTipoPunto === "function") actualizarCamposPorTipoPunto();
+
+      const tipo = document.getElementById("tipoPunto")?.value;
+      if(typeof mostrarSoloGrupoGpon === "function" && tipo){
+        mostrarSoloGrupoGpon(tipo);
+      }
+      if(typeof actualizarPuertosSplitter === "function") actualizarPuertosSplitter();
+      if(typeof actualizarPuertosCaja === "function") actualizarPuertosCaja();
+
+      ultimaRutaRestaurada = key;
+
+      if(typeof mostrarToast === "function"){
+        mostrarToast("Borrador recuperado automáticamente");
+      }
+
+      return true;
+    }finally{
+      restaurandoBorrador = false;
+    }
+  }
+
+  async function eliminarBorradorRutaActual(){
+    const key = rutaActualKey();
+    if(!key) return;
+
+    await idbDelete(STORE_DRAFT,key).catch(()=>{});
+    ultimaRutaRestaurada = null;
+  }
+
+  async function restaurarEstadoCompletoSeguro(){
+    try{
+      const respaldo = await idbGet(STORE_STATE,STATE_KEY);
+      if(!respaldo) return false;
+
+      const actuales = Array.isArray(window.registros || registros)
+        ? (window.registros || registros)
+        : [];
+
+      const respaldados = Array.isArray(respaldo.registros)
+        ? respaldo.registros
+        : [];
+
+      const mapa = new Map();
+      [...respaldados,...actuales].forEach(registro=>{
+        if(!registro?.offline_id) return;
+
+        const anterior = mapa.get(registro.offline_id);
+        const fechaAnterior = new Date(
+          anterior?.fecha_ultima_edicion_app ||
+          anterior?.fecha_captura_app ||
+          anterior?.created_at ||
+          0
+        ).getTime();
+
+        const fechaNueva = new Date(
+          registro?.fecha_ultima_edicion_app ||
+          registro?.fecha_captura_app ||
+          registro?.created_at ||
+          0
+        ).getTime();
+
+        if(!anterior || fechaNueva >= fechaAnterior){
+          mapa.set(registro.offline_id,registro);
+        }
+      });
+
+      const combinados = [...mapa.values()];
+
+      if(combinados.length > actuales.length){
+        registros = combinados;
+        window.registros = registros;
+
+        try{
+          localStorage.setItem("oym_empalmes_offline_v2",JSON.stringify(registros));
+        }catch(e){
+          console.warn("No se pudo reflejar el respaldo en localStorage:",e);
+        }
+
+        if(typeof pintarRegistros === "function") pintarRegistros();
+        if(typeof actualizarSyncStatus === "function") actualizarSyncStatus();
+
+        if(typeof mostrarToast === "function"){
+          mostrarToast(`Se recuperaron ${combinados.length - actuales.length} registro(s) del respaldo`);
+        }
+      }
+
+      if(!enrutamientoActivo && respaldo.enrutamientoActivo){
+        enrutamientoActivo = respaldo.enrutamientoActivo;
+        window.enrutamientoActivo = enrutamientoActivo;
+      }
+
+      return true;
+    }catch(error){
+      console.error("No se pudo restaurar el respaldo persistente:",error);
+      return false;
+    }
+  }
+
+  function dataUrlDesdeBlob(blob){
+    return new Promise((resolve,reject)=>{
+      const reader = new FileReader();
+      reader.onload = ()=>resolve(reader.result);
+      reader.onerror = ()=>reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function comprimirFotoMovil(file,tipo){
+    if(!file) return null;
+
+    // Guardar el formulario antes de entregar el control a la cámara/galería.
+    await guardarBorradorFormularioSeguro();
+    await guardarEstadoCompletoSeguro();
+
+    const objectUrl = URL.createObjectURL(file);
+
+    try{
+      const img = await new Promise((resolve,reject)=>{
+        const imagen = new Image();
+        imagen.onload = ()=>resolve(imagen);
+        imagen.onerror = ()=>reject(new Error("No se pudo leer la fotografía"));
+        imagen.src = objectUrl;
+      });
+
+      const maxDimension = 1280;
+      const escala = Math.min(
+        1,
+        maxDimension / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height)
+      );
+
+      const ancho = Math.max(1,Math.round((img.naturalWidth || img.width) * escala));
+      const alto = Math.max(1,Math.round((img.naturalHeight || img.height) * escala));
+
+      const canvas = document.createElement("canvas");
+      canvas.width = ancho;
+      canvas.height = alto;
+
+      const ctx = canvas.getContext("2d",{alpha:false});
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0,0,ancho,alto);
+      ctx.drawImage(img,0,0,ancho,alto);
+
+      const titulo = tipo === "panoramica"
+        ? "FOTO 1 PANORÁMICA"
+        : "FOTO 2 EMPALME Y FUSIÓN";
+
+      const ambiente = val("ambiente") || "N/A";
+      const ubicacion = ambiente === "interno"
+        ? `${val("zonaInterna")} ${val("pisoNivel")} ${val("torreBloque")} ${val("cuartoRack")}`.trim()
+        : `${val("elementoExterno")} ${val("idElementoExterno")}`.trim();
+
+      const consecutivoActual = val("consecutivoEmpalme") || obtenerSiguienteConsecutivo();
+      const ruta = enrutamientoActivo || {};
+
+      const etiqueta = [
+        titulo,
+        `Cliente: ${ruta.id_cliente || "N/A"} | Ruta: ${ruta.codigo_ruta || "N/A"}`,
+        `${construirEtiquetaPunto(consecutivoActual)} | Punto: ${val("punto") || "Punto sin nombre"} (${ambiente.toUpperCase()})`,
+        `Ubicación: ${ubicacion || "N/A"}`,
+        `Fusión: Hilo ${val("hiloEntrada") || "N/A"} entrada → Hilo ${val("hiloSalida") || "N/A"} salida`,
+        `GPS: ${Number(selectedLat).toFixed(7)}, ${Number(selectedLng).toFixed(7)}`,
+        `Fecha: ${new Date().toLocaleString()}`
+      ];
+
+      const fontSize = Math.max(14,Math.round(ancho / 58));
+      const lineHeight = Math.round(fontSize * 1.35);
+      const boxH = Math.min(alto,Math.max(130,(etiqueta.length + 1) * lineHeight));
+
+      ctx.fillStyle = "rgba(0,0,0,.76)";
+      ctx.fillRect(0,alto - boxH,ancho,boxH);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = `${fontSize}px Arial`;
+
+      etiqueta.forEach((linea,index)=>{
+        ctx.fillText(
+          linea,
+          16,
+          alto - boxH + lineHeight + (index * lineHeight)
+        );
+      });
+
+      const blob = await new Promise((resolve,reject)=>{
+        canvas.toBlob(
+          resultado=>resultado ? resolve(resultado) : reject(new Error("No se pudo comprimir la fotografía")),
+          "image/jpeg",
+          0.72
+        );
+      });
+
+      const dataUrl = await dataUrlDesdeBlob(blob);
+
+      // Liberar memoria inmediatamente.
+      canvas.width = 1;
+      canvas.height = 1;
+      ctx.clearRect(0,0,1,1);
+
+      return dataUrl;
+    }finally{
+      URL.revokeObjectURL(objectUrl);
+    }
+  }
+
+  // Reemplaza el procesamiento anterior, que cargaba la foto original completa
+  // en Base64 y podía duplicar varias veces el uso de memoria.
+  window.procesarFoto = procesarFoto = async function(evento,tipo){
+    const input = evento?.target;
+    const file = input?.files?.[0];
+    if(!file) return;
+
+    try{
+      if(typeof mostrarToast === "function"){
+        mostrarToast("Procesando y comprimiendo fotografía...");
+      }
+
+      const data = await comprimirFotoMovil(file,tipo);
+
+      if(tipo === "panoramica"){
+        fotoPanoramica = data;
+        window.fotoPanoramica = data;
+
+        const preview = document.getElementById("previewPanoramica");
+        if(preview){
+          preview.src = data;
+          preview.style.display = "block";
+        }
+      }else{
+        fotoFusion = data;
+        window.fotoFusion = data;
+
+        const preview = document.getElementById("previewFusion");
+        if(preview){
+          preview.src = data;
+          preview.style.display = "block";
+        }
+      }
+
+      await guardarBorradorFormularioSeguro();
+      await guardarEstadoCompletoSeguro();
+
+      if(typeof mostrarToast === "function"){
+        mostrarToast("Fotografía guardada en el borrador");
+      }
+    }catch(error){
+      console.error("Error procesando fotografía:",error);
+      alert(
+        "No fue posible procesar la fotografía. " +
+        "El borrador del formulario quedó guardado. " +
+        "Cierra otras aplicaciones y vuelve a intentarlo."
+      );
+    }finally{
+      if(input) input.value = "";
+    }
+  };
+
+  // Guardar borrador ANTES de abrir la aplicación de cámara.
+  const abrirCamaraAnterior = window.abrirCamara || abrirCamara;
+  window.abrirCamara = abrirCamara = async function(tipo){
+    if(!selectedLat || !selectedLng){
+      alert("Primero fija el empalme con Marcar.");
+      return;
+    }
+
+    await guardarBorradorFormularioSeguro();
+    await guardarEstadoCompletoSeguro();
+
+    const input = document.getElementById(
+      tipo === "panoramica" ? "cameraPanoramica" : "cameraFusion"
+    );
+
+    if(input) input.click();
+    else if(typeof abrirCamaraAnterior === "function") abrirCamaraAnterior(tipo);
+  };
+
+  // Respaldo adicional cada vez que la aplicación guarda registros.
+  const guardarLocalStorageAnterior = window.guardarLocalStorage || guardarLocalStorage;
+  window.guardarLocalStorage = guardarLocalStorage = function(){
+    const resultado = guardarLocalStorageAnterior.apply(this,arguments);
+    guardarEstadoCompletoSeguro();
+    return resultado;
+  };
+
+  // Cuando el usuario marca deliberadamente un punto nuevo, el formulario debe
+  // abrir completamente limpio. El borrador solo se recupera después de una
+  // interrupción real (cámara, segundo plano, recarga o cierre inesperado).
+  const abrirModalEmpalmeNuevoAnterior = window.abrirModalEmpalmeNuevo || abrirModalEmpalmeNuevo;
+  window.abrirModalEmpalmeNuevo = abrirModalEmpalmeNuevo = async function(){
+    autoguardadoSuspendido = true;
+    omitirRestauracionUnaVez = true;
+    clearTimeout(guardadoProgramado);
+
+    await eliminarBorradorRutaActual();
+
+    fotoPanoramica = null;
+    fotoFusion = null;
+    window.fotoPanoramica = null;
+    window.fotoFusion = null;
+
+    ["previewPanoramica","previewFusion"].forEach(id=>{
+      const preview = document.getElementById(id);
+      if(preview){
+        preview.removeAttribute("src");
+        preview.style.display = "none";
+      }
+    });
+
+    ["cameraPanoramica","cameraFusion"].forEach(id=>{
+      const input = document.getElementById(id);
+      if(input) input.value = "";
+    });
+
+    try{
+      return abrirModalEmpalmeNuevoAnterior.apply(this,arguments);
+    }finally{
+      setTimeout(()=>{ autoguardadoSuspendido = false; },250);
+    }
+  };
+
+  // Al abrir el formulario, recuperar el borrador únicamente cuando no se está
+  // creando deliberadamente un punto nuevo ni editando un registro existente.
+  const abrirModalAnterior = window.abrirModal || abrirModal;
+  window.abrirModal = abrirModal = function(){
+    const resultado = abrirModalAnterior.apply(this,arguments);
+
+    setTimeout(()=>{
+      const editId = document.getElementById("editOfflineId")?.value;
+      if(!editId && !autoguardadoSuspendido){
+        restaurarBorradorFormulario();
+      }else if(omitirRestauracionUnaVez){
+        omitirRestauracionUnaVez = false;
+      }
+    },80);
+
+    return resultado;
+  };
+
+  // Al guardar correctamente un punto, se cancela cualquier guardado pendiente
+  // antes de limpiar. Así el temporizador no vuelve a crear el borrador anterior.
+  const limpiarDespuesAnterior = window.limpiarDespuesDeGuardar || limpiarDespuesDeGuardar;
+  window.limpiarDespuesDeGuardar = limpiarDespuesDeGuardar = function(){
+    autoguardadoSuspendido = true;
+    clearTimeout(guardadoProgramado);
+
+    const resultado = limpiarDespuesAnterior.apply(this,arguments);
+
+    eliminarBorradorRutaActual()
+      .then(()=>guardarEstadoCompletoSeguro())
+      .finally(()=>{
+        setTimeout(()=>{ autoguardadoSuspendido = false; },250);
+      });
+
+    return resultado;
+  };
+
+  function instalarEventosAutoguardado(){
+    const modal = document.getElementById("modalFormulario");
+    if(modal && !modal.dataset.oymAutoguardado){
+      modal.dataset.oymAutoguardado = "1";
+      modal.addEventListener("input",programarGuardadoBorrador,true);
+      modal.addEventListener("change",programarGuardadoBorrador,true);
+    }
+
+    document.addEventListener("visibilitychange",()=>{
+      if(document.hidden){
+        guardarBorradorFormularioSeguro();
+        guardarEstadoCompletoSeguro();
+      }else{
+        restaurarEstadoCompletoSeguro();
+      }
+    });
+
+    window.addEventListener("pagehide",()=>{
+      guardarBorradorFormularioSeguro();
+      guardarEstadoCompletoSeguro();
+    });
+
+    window.addEventListener("pageshow",event=>{
+      restaurarEstadoCompletoSeguro().then(()=>{
+        if(event.persisted){
+          restaurarBorradorFormulario(true);
+        }
+      });
+    });
+
+    window.addEventListener("online",()=>{
+      if(typeof mostrarToast === "function"){
+        mostrarToast("Conexión recuperada. Tus datos locales siguen guardados.");
+      }
+    });
+  }
+
+  async function solicitarPersistencia(){
+    try{
+      if(navigator.storage?.persist){
+        await navigator.storage.persist();
+      }
+    }catch(e){
+      console.warn("No se pudo solicitar almacenamiento persistente:",e);
+    }
+  }
+
+  async function iniciarProteccionMovil(){
+    instalarEventosAutoguardado();
+    await solicitarPersistencia();
+    await restaurarEstadoCompletoSeguro();
+    await guardarEstadoCompletoSeguro();
+
+    // Respaldo periódico por si Android suspende la pestaña sin eventos.
+    setInterval(()=>{
+      guardarBorradorFormularioSeguro();
+      guardarEstadoCompletoSeguro();
+    },15000);
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded",iniciarProteccionMovil);
+  }else{
+    iniciarProteccionMovil();
+  }
+
+  // Exponer para diagnóstico y recuperación manual.
+  window.oymGuardarRespaldoAhora = async function(){
+    await guardarBorradorFormularioSeguro();
+    await guardarEstadoCompletoSeguro();
+    alert("Respaldo local actualizado correctamente.");
+  };
+
+  window.oymRestaurarRespaldoAhora = async function(){
+    await restaurarEstadoCompletoSeguro();
+    await restaurarBorradorFormulario(true);
+  };
+})();
+</script>
+
+
+<script>
+(function(){
+  "use strict";
+
+  function valor(id){
+    return String(document.getElementById(id)?.value || "").trim();
+  }
+
+  function mostrarGrupo(id,mostrar){
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.classList.toggle("oym-campo-oculto",!mostrar);
+    el.classList.toggle("oym-campo-visible",mostrar);
+  }
+
+  function convertirCableClienteEnSelect(id,activar){
+    const actual = document.getElementById(id);
+    if(!actual) return;
+
+    const valorActual = actual.value || "";
+
+    if(activar && actual.tagName !== "SELECT"){
+      const select = document.createElement("select");
+      select.id = id;
+      select.name = actual.name || id;
+      select.className = actual.className;
+      select.innerHTML = `
+        <option value="">Seleccione...</option>
+        <option value="CABLE NUEVO">CABLE NUEVO</option>
+        <option value="HABILITACIÓN DE HILOS">HABILITACIÓN DE HILOS</option>
+      `;
+      if(["CABLE NUEVO","HABILITACIÓN DE HILOS"].includes(valorActual)){
+        select.value = valorActual;
+      }
+      actual.replaceWith(select);
+      return;
+    }
+
+    if(!activar && actual.tagName === "SELECT"){
+      const input = document.createElement("input");
+      input.id = id;
+      input.name = actual.name || id;
+      input.className = actual.className;
+      input.type = "text";
+      input.value = actual.value || "";
+      actual.replaceWith(input);
+    }
+  }
+
+  function normalizarContenedor(){
+    const contenedor = document.getElementById("gponContenedor");
+    if(!contenedor) return;
+
+    const actual = String(contenedor.value || "").toUpperCase();
+    if(actual === "CTO" || actual === "NAP"){
+      contenedor.value = "CTO/NAP";
+    }
+
+    if(![...contenedor.options].some(o=>o.value === "CTO/NAP")){
+      const opt = document.createElement("option");
+      opt.value = "CTO/NAP";
+      opt.textContent = "CTO/NAP";
+      contenedor.appendChild(opt);
+    }
+
+    [...contenedor.options].forEach(o=>{
+      if(["CTO","NAP"].includes(String(o.value).toUpperCase())) o.remove();
+    });
+  }
+
+  function aplicarLogicaEntradaSalida(){
+    const tipo = valor("tipoPunto").toLowerCase();
+    const sentido = valor("sentido").replace(/\s+/g,"").toLowerCase();
+
+    const nodoCliente = ["nodo→cliente","nodo->cliente","nodo-cliente"].includes(sentido);
+    const clienteNodo = ["cliente→nodo","cliente->nodo","cliente-nodo"].includes(sentido);
+
+    let mostrarEntrada = true;
+    let mostrarSalida = true;
+
+    if(tipo === "cliente"){
+      // Para Cliente la cara visible depende del sentido del recorrido.
+      // Nodo → Cliente: cable e hilo de entrada.
+      // Cliente → Nodo: cable e hilo de salida.
+      if(nodoCliente){
+        mostrarEntrada = true;
+        mostrarSalida = false;
+      }else if(clienteNodo){
+        mostrarEntrada = false;
+        mostrarSalida = true;
+      }
+
+      convertirCableClienteEnSelect("cableEntrada",mostrarEntrada);
+      convertirCableClienteEnSelect("cableSalida",mostrarSalida);
+    }else{
+      convertirCableClienteEnSelect("cableEntrada",false);
+      convertirCableClienteEnSelect("cableSalida",false);
+    }
+
+    if(tipo === "nodo" || tipo === "olt"){
+      if(nodoCliente){
+        mostrarEntrada = false;
+        mostrarSalida = true;
+      }else if(clienteNodo){
+        mostrarEntrada = true;
+        mostrarSalida = false;
+      }
+    }
+
+    mostrarGrupo("grupoCableEntrada",mostrarEntrada);
+    mostrarGrupo("grupoHiloEntrada",mostrarEntrada);
+    mostrarGrupo("grupoCableSalida",mostrarSalida);
+    mostrarGrupo("grupoHiloSalida",mostrarSalida);
+
+    if(!mostrarEntrada){
+      const c = document.getElementById("cableEntrada");
+      const h = document.getElementById("hiloEntrada");
+      if(c) c.value = "";
+      if(h) h.value = "";
+    }
+    if(!mostrarSalida){
+      const c = document.getElementById("cableSalida");
+      const h = document.getElementById("hiloSalida");
+      if(c) c.value = "";
+      if(h) h.value = "";
+    }
+
+    mostrarGrupo("grupoPuertoOdf", tipo === "nodo");
+    if(tipo !== "nodo"){
+      const puertoOdf = document.getElementById("puertoOdf");
+      if(puertoOdf) puertoOdf.value = "";
+    }
+
+    const ocultarContenedor = ["cliente","nodo","olt"].includes(tipo);
+    mostrarGrupo("camposGponContenedor", !ocultarContenedor);
+    mostrarGrupo("grupoContenedor", !ocultarContenedor);
+    mostrarGrupo("grupoIdContenedor", !ocultarContenedor);
+
+    if(ocultarContenedor){
+      const c = document.getElementById("gponContenedor");
+      const i = document.getElementById("gponContenedorId") || document.getElementById("nombreContenedor");
+      if(c) c.value = "";
+      if(i) i.value = "";
+    }
+    normalizarContenedor();
+  }
+
+  function instalar(){
+    const tipo = document.getElementById("tipoPunto");
+    const sentido = document.getElementById("sentido");
+
+    if(tipo && !tipo.dataset.oymSentido){
+      tipo.dataset.oymSentido = "1";
+      tipo.addEventListener("change",()=>setTimeout(aplicarLogicaEntradaSalida,0));
+    }
+    if(sentido && !sentido.dataset.oymSentido){
+      sentido.dataset.oymSentido = "1";
+      sentido.addEventListener("change",()=>setTimeout(aplicarLogicaEntradaSalida,0));
+    }
+
+    aplicarLogicaEntradaSalida();
+  }
+
+  document.addEventListener("DOMContentLoaded",instalar);
+
+  const observer = new MutationObserver(instalar);
+  observer.observe(document.documentElement,{childList:true,subtree:true});
+
+  window.aplicarLogicaEntradaSalidaOym = aplicarLogicaEntradaSalida;
+})();
+</script>
+
+
+
+<script>
+/* ===== CONTROL GLOBAL DE ALERTAS PDR APP ===== */
+(function configurarAlertasPdrApp(){
+  "use strict";
+
+  const cola = [];
+  let mostrando = false;
+
+  function elementos(){
+    return {
+      overlay: document.getElementById("pdrAlertOverlay"),
+      mensaje: document.getElementById("pdrAlertMessage"),
+      aceptar: document.getElementById("pdrAlertAccept")
+    };
+  }
+
+  function mostrarSiguiente(){
+    const {overlay,mensaje,aceptar} = elementos();
+    if(!overlay || !mensaje || !aceptar || mostrando || cola.length === 0) return;
+
+    mostrando = true;
+    mensaje.textContent = cola.shift();
+    overlay.classList.add("open");
+    document.body.style.setProperty("overflow","hidden");
+    setTimeout(()=>aceptar.focus(),30);
+  }
+
+  function cerrarAlerta(){
+    const {overlay} = elementos();
+    if(overlay) overlay.classList.remove("open");
+    document.body.style.removeProperty("overflow");
+    mostrando = false;
+    setTimeout(mostrarSiguiente,40);
+  }
+
+  window.pdrAlert = function(mensaje){
+    cola.push(String(mensaje ?? ""));
+    mostrarSiguiente();
+  };
+
+  // Sustituye todas las llamadas existentes a alert() sin tener que modificar
+  // individualmente cada proceso del aplicativo.
+  window.alert = window.pdrAlert;
+
+  document.addEventListener("DOMContentLoaded",function(){
+    const {overlay,aceptar} = elementos();
+    aceptar?.addEventListener("click",cerrarAlerta);
+    overlay?.addEventListener("click",function(evento){
+      if(evento.target === overlay) cerrarAlerta();
+    });
+    document.addEventListener("keydown",function(evento){
+      if(evento.key === "Escape" && mostrando) cerrarAlerta();
+      if(evento.key === "Enter" && mostrando) cerrarAlerta();
+    });
+    mostrarSiguiente();
+  });
+})();
+</script>
 
 </body>
 </html>
