@@ -619,6 +619,13 @@ function badgePriority(v){return `<span class="badge priority-${esc(v)}">${esc(v
 function badgeEstado(v){return `<span class="badge status-${esc(v)}">${esc(v||'')}</span>`}
 function calcularDuracionTexto(fi,hi,ff,hf){if(!fi||!hi||!ff||!hf)return ''; const ini=new Date(`${fi}T${hi}`), fin=new Date(`${ff}T${hf}`); if(Number.isNaN(ini.getTime())||Number.isNaN(fin.getTime())||fin<ini)return ''; const dm=Math.floor((fin-ini)/60000), d=Math.floor(dm/1440), h=Math.floor((dm%1440)/60), m=dm%60; const p=[]; if(d)p.push(`${d} d`); if(h||d)p.push(`${h} h`); p.push(`${m} min`); return p.join(' ')}
 function calcularDuracionMinutos(fi,hi,ff,hf){if(!fi||!hi||!ff||!hf)return null; const ini=new Date(`${fi}T${hi}`), fin=new Date(`${ff}T${hf}`); if(Number.isNaN(ini.getTime())||Number.isNaN(fin.getTime())||fin<ini)return null; return Math.floor((fin-ini)/60000)}
+function calcularMinutosDateTime(inicio,fin){
+  if(!inicio || !fin) return null;
+  const ini=new Date(inicio);
+  const end=new Date(fin);
+  if(Number.isNaN(ini.getTime()) || Number.isNaN(end.getTime()) || end<ini) return null;
+  return Math.floor((end-ini)/60000);
+}
 function minutosTexto(minutos){minutos=Math.max(0,Number(minutos)||0); const d=Math.floor(minutos/1440),h=Math.floor((minutos%1440)/60),m=minutos%60; const p=[]; if(d)p.push(`${d} d`); if(h||d)p.push(`${h} h`); p.push(`${m} min`); return p.join(' ');}
 function getTiempoMuertoMinutosRow(row){if(Number.isFinite(Number(row?.tiempo_muerto_minutos)))return Math.max(0,Number(row.tiempo_muerto_minutos)||0); const rangos=getTiemposMuertosRow(row); return rangos.reduce((sum,x)=>sum+(Number(x.minutos)||calcularMinutosDateTime(x.inicio,x.fin)||0),0);}
 function getTiempoEfectivoMinutosRow(row){const total=Number(row?.duracion_falla_minutos); const dur=Number.isFinite(total)?total:calcularDuracionMinutos(row?.fecha_inicio,row?.hora_inicio,row?.fecha_fin,row?.hora_fin); if(dur==null)return null; return Math.max(0,dur-getTiempoMuertoMinutosRow(row));}
@@ -634,7 +641,26 @@ window.eliminarRangoTiempoMuerto=function(id){tiemposMuertosForm=tiemposMuertosF
 window.actualizarRangoTiempoMuerto=function(id,campo,valor){const r=tiemposMuertosForm.find(x=>x.id===id); if(r){r[campo]=valor; actualizarTotalesTiemposMuertos();}}
 function renderTiemposMuertosForm(){const list=document.getElementById('tiemposMuertosList'); if(!list)return; list.innerHTML=tiemposMuertosForm.map((r,i)=>{const calc=calcularDuracionEntreDateTimes(r.inicio,r.fin); return `<div class="tm-row"><div class="field"><label>Inicio rango ${i+1}</label><input type="datetime-local" value="${esc(r.inicio)}" onchange="actualizarRangoTiempoMuerto('${r.id}','inicio',this.value)" oninput="actualizarRangoTiempoMuerto('${r.id}','inicio',this.value)" required></div><div class="field"><label>Fin rango ${i+1}</label><input type="datetime-local" value="${esc(r.fin)}" onchange="actualizarRangoTiempoMuerto('${r.id}','fin',this.value)" oninput="actualizarRangoTiempoMuerto('${r.id}','fin',this.value)" required></div><div class="field"><label>Duración</label><input value="${esc(calc.texto)}" readonly placeholder="Automático"></div><div class="field"><label>Motivo</label><select onchange="actualizarRangoTiempoMuerto('${r.id}','motivo',this.value)" required><option value="">Seleccione...</option>${MOTIVOS_TIEMPO_MUERTO.map(m=>`<option ${r.motivo===m?'selected':''}>${esc(m)}</option>`).join('')}</select></div><button type="button" class="small-btn danger remove-tm" title="Eliminar rango" onclick="eliminarRangoTiempoMuerto('${r.id}')">✕</button></div>`}).join(''); actualizarTotalesTiemposMuertos();}
 function obtenerTiemposMuertosValidados(){let total=0; const rangos=[]; for(let i=0;i<tiemposMuertosForm.length;i++){const r=tiemposMuertosForm[i], calc=calcularDuracionEntreDateTimes(r.inicio,r.fin); if(!r.inicio||!r.fin||!r.motivo)return {ok:false,error:`Completa inicio, fin y motivo del rango ${i+1}.`}; if(calc.minutos===null)return {ok:false,error:`El rango ${i+1} es inválido. La fecha/hora final debe ser posterior a la inicial.`}; total+=calc.minutos; rangos.push({inicio:r.inicio,fin:r.fin,motivo:r.motivo,minutos:calc.minutos,total:calc.texto});} return {ok:true,rangos,minutos:total,texto:formatearMinutos(total)};}
-function actualizarTotalesTiemposMuertos(){const el=document.getElementById('tiempoMuertoTotalAcumulado'); if(!el)return; let total=0; tiemposMuertosForm.forEach(r=>{const c=calcularDuracionEntreDateTimes(r.inicio,r.fin); if(c.minutos!==null)total+=c.minutos;}); el.textContent=formatearMinutos(total); document.querySelectorAll('.tm-row').forEach((row,i)=>{const input=row.querySelector('input[readonly]'),r=tiemposMuertosForm[i],c=r?calcularDuracionEntreDateTimes(r.inicio,r.fin):{texto:''}; if(input)input.value=c.texto;});}
+function actualizarTotalesTiemposMuertos(){
+  const el=document.getElementById('tiempoMuertoTotalAcumulado');
+  let total=0;
+
+  tiemposMuertosForm.forEach(r=>{
+    const c=calcularDuracionEntreDateTimes(r.inicio,r.fin);
+    if(c.minutos!==null) total+=c.minutos;
+  });
+
+  if(el) el.textContent=formatearMinutos(total);
+
+  document.querySelectorAll('.tm-row').forEach((row,i)=>{
+    const input=row.querySelector('input[readonly]');
+    const r=tiemposMuertosForm[i];
+    const c=r ? calcularDuracionEntreDateTimes(r.inicio,r.fin) : {texto:''};
+    if(input) input.value=c.texto;
+  });
+
+  updateTiempoEfectivoForm();
+}
 function toggleTiempoMuertoFields(){const form=document.getElementById('ticketForm'); if(!form)return; const activo=form.elements['hubo_tiempo_muerto']?.value==='SI', section=document.getElementById('tiempoMuertoSection'); section?.classList.toggle('show',activo); if(activo&&!tiemposMuertosForm.length){tiemposMuertosForm=[crearRangoTiempoMuerto()]; renderTiemposMuertosForm();} if(!activo){tiemposMuertosForm=[]; const list=document.getElementById('tiemposMuertosList'); if(list)list.innerHTML=''; const total=document.getElementById('tiempoMuertoTotalAcumulado'); if(total)total.textContent='0 min'; updateTiempoEfectivoForm();}}
 function toDateTimeLocalValue(value){if(!value)return ''; const d=new Date(value); if(Number.isNaN(d.getTime()))return String(value).slice(0,16); const pad=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;}
 function formatDateTimeValue(value){if(!value)return ''; const d=new Date(value); return Number.isNaN(d.getTime())?String(value):d.toLocaleString('es-CO',{dateStyle:'short',timeStyle:'short'});}
@@ -1201,8 +1227,8 @@ window.openTicketModal=function(row=null){
     console.error('Error abriendo el formulario de edición:',error,row);
     modal.classList.add('show');
     if(msg){
-      msg.textContent='El formulario se abrió, pero algunos datos antiguos no pudieron cargarse automáticamente.';
-      msg.style.color='#fde68a';
+      msg.textContent='No fue posible calcular o mostrar completamente el formulario. Revisa la consola del navegador.';
+      msg.style.color='#fecaca';
     }
   }
 };
@@ -1369,4 +1395,3 @@ loadTickets();
 </script>
 </body>
 </html>
-
