@@ -30,8 +30,16 @@
     .stat .label{font-size:12px;color:var(--muted);margin-bottom:8px}.stat .value{font-size:30px;font-weight:800}.stat .sub{font-size:12px;color:#b9d6ff;margin-top:6px}
     .card{border:1px solid var(--border);border-radius:20px;background:linear-gradient(180deg,#08152c,#0a1730);box-shadow:var(--shadow)}
     .table-wrap{overflow:auto} table{width:100%;border-collapse:separate;border-spacing:0}
-    thead th{position:sticky;top:0;background:#0a1730;color:#9fd0ff;padding:14px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+    thead th{position:relative;background:#0a1730;color:#9fd0ff;padding:14px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;z-index:1}
     tbody td{padding:14px 12px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
+    tbody tr.ticket-row{cursor:pointer;transition:box-shadow .15s ease,filter .15s ease,background .15s ease}
+    tbody tr.ticket-row:hover{filter:brightness(1.08)}
+    tbody tr.ticket-row.row-selected{
+      background:linear-gradient(90deg,rgba(37,99,235,.52),rgba(14,165,233,.25)) !important;
+      box-shadow:inset 5px 0 0 #60a5fa,inset 0 0 0 2px rgba(96,165,250,.72);
+      filter:brightness(1.12);
+    }
+    tbody tr.ticket-row.row-selected td{border-bottom-color:rgba(147,197,253,.42)}
     tr:hover{background:rgba(255,255,255,.03)} tr.completed{background:linear-gradient(90deg, rgba(20,120,55,.38), rgba(34,197,94,.12))}
     .title{font-weight:700;margin-bottom:4px}.desc{font-size:12px;color:var(--muted);max-width:360px;white-space:pre-wrap}
     .badge{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--border)}
@@ -82,14 +90,73 @@ body.sidebar-hidden .sidebar-toggle{
     .close-btn{width:40px;height:40px;border:none;border-radius:12px;background:rgba(255,255,255,.05);color:#fff;cursor:pointer}
     .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.field{margin-bottom:8px}.field label{display:block;margin-bottom:6px;font-size:13px;color:#cfe0ff}
     .field input,.field select,.field textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}.field input:invalid{border-color:rgba(239,68,68,.75)}.field textarea{min-height:100px;resize:vertical}.help{display:block;margin-top:6px;font-size:12px;color:var(--muted);line-height:1.35}
-    .span-2{grid-column:span 2}.span-4{grid-column:1/-1}.footer-note{margin-top:10px;font-size:13px;color:#86efac}.muted-note{font-size:12px;color:var(--muted)}
+    .span-2{grid-column:span 2}.span-4{grid-column:1/-1}
+    .form-section{grid-column:1/-1;border:1px solid var(--border);border-radius:18px;padding:16px;background:rgba(255,255,255,.025);overflow:hidden}
+    .form-section-header{display:flex;align-items:center;gap:10px;margin:-16px -16px 16px;padding:13px 16px;border-bottom:1px solid var(--border);font-weight:800;font-size:14px}
+    .form-section-header .section-icon{width:28px;height:28px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.10)}
+    .section-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+    .section-general{border-color:rgba(59,130,246,.34)}.section-general .form-section-header{background:rgba(37,99,235,.13);color:#bfdbfe}
+    .section-client{border-color:rgba(6,182,212,.32)}.section-client .form-section-header{background:rgba(6,182,212,.11);color:#a5f3fc}
+    .section-network{border-color:rgba(168,85,247,.32)}.section-network .form-section-header{background:rgba(168,85,247,.11);color:#e9d5ff}
+    .section-diagnosis{border-color:rgba(245,158,11,.34)}.section-diagnosis .form-section-header{background:rgba(245,158,11,.11);color:#fde68a}
+    .section-operation{border-color:rgba(34,197,94,.32)}.section-operation .form-section-header{background:rgba(34,197,94,.10);color:#bbf7d0}
+    .section-close{border-color:rgba(244,63,94,.32)}.section-close .form-section-header{background:rgba(244,63,94,.10);color:#fecdd3}
+    .conditional-section{grid-column:1/-1;display:none;border:1px solid rgba(45,212,191,.32);border-radius:16px;padding:16px;background:rgba(20,184,166,.07)}.conditional-section.show{display:block}.section-title{font-weight:800;margin:0 0 12px;color:#99f6e4}.tm-list{display:grid;gap:12px}.tm-row{display:grid;grid-template-columns:1.25fr 1.25fr 1fr 1fr auto;gap:10px;align-items:end;padding:12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.025)}.tm-row .field{margin:0}.tm-total-box{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px;padding:12px;border-radius:12px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25)}.tm-total-box strong{font-size:18px}.remove-tm{height:43px;min-width:43px}.required-note{display:none;margin-top:6px;font-size:12px;color:#fecaca}.required-note.show{display:block}.footer-note{margin-top:10px;font-size:13px;color:#86efac}.muted-note{font-size:12px;color:var(--muted)}
     .timeline{display:grid;gap:12px}.timeline-item{border:1px solid var(--border);border-radius:14px;padding:14px;background:rgba(255,255,255,.03)}
     .timeline-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.timeline-title{font-weight:700}.timeline-date{font-size:12px;color:#b9d6ff}
     .timeline-detail{font-size:13px;color:#dce7f8;margin-top:8px;white-space:pre-wrap}.timeline-meta{font-size:12px;color:var(--muted);margin-top:6px}
+    .effective-box input{font-weight:800;color:#86efac;border-color:rgba(34,197,94,.45);background:rgba(34,197,94,.08)}
+    .effective-value{font-weight:800;color:#86efac;white-space:nowrap}
     @media (max-width:1400px){.summary{grid-template-columns:repeat(3,minmax(150px,1fr))}}
-    @media (max-width:1250px){.grid{grid-template-columns:repeat(2,1fr)}}
-    @media (max-width:900px){.page{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.grid,.summary{grid-template-columns:1fr}}
-  </style>
+    @media (max-width:1250px){.grid,.section-grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:900px){.page{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.grid,.section-grid,.summary{grid-template-columns:1fr}.span-2{grid-column:1/-1}.tm-row{grid-template-columns:1fr}}
+  
+    #ticketsTableBody{position:relative;z-index:2}
+    #ticketsTableBody tr.ticket-row{position:relative;z-index:2}
+    #ticketsTableBody td{position:relative}
+    #ticketsTableBody .actions,
+    #ticketsTableBody .small-btn,
+    #ticketsTableBody .select-status{position:relative;z-index:5;pointer-events:auto}
+
+
+    #ticketsTableBody{
+      position:relative;
+      z-index:10;
+    }
+    #ticketsTableBody tr.ticket-row,
+    #ticketsTableBody td,
+    #ticketsTableBody .actions,
+    #ticketsTableBody button,
+    #ticketsTableBody select{
+      position:relative;
+      z-index:11;
+      pointer-events:auto;
+    }
+
+
+    .table-wrap{position:relative;overflow:auto}
+    #ticketsTable{position:relative;border-collapse:separate;border-spacing:0}
+    #ticketsTable thead,
+    #ticketsTable thead tr,
+    #ticketsTable thead th{
+      position:static !important;
+      z-index:auto !important;
+    }
+    #ticketsTableBody,
+    #ticketsTableBody tr,
+    #ticketsTableBody td{
+      position:static !important;
+      z-index:auto !important;
+      pointer-events:auto !important;
+    }
+    #ticketsTableBody button,
+    #ticketsTableBody select{
+      position:relative !important;
+      z-index:50 !important;
+      pointer-events:auto !important;
+    }
+
+</style>
 </head>
 <body>
 <button id="sidebarToggle" class="sidebar-toggle" type="button" onclick="toggleSidebar()">☰</button>
@@ -107,31 +174,83 @@ body.sidebar-hidden .sidebar-toggle{
     <form id="ticketForm" action="javascript:void(0);" method="post">
       <input type="hidden" name="id">
       <div class="grid">
-        <div class="field"><label>Fecha inicio</label><input type="date" name="fecha_inicio" required></div>
-        <div class="field"><label>Hora inicio</label><input type="time" name="hora_inicio" required></div>
-        <div class="field"><label>Ticket</label><input name="ticket" required></div>
-        <div class="field"><label>ID del cliente</label><input name="id_cliente"></div>
-        <div class="field span-2"><label>Nombre cliente</label><input name="nombre_cliente" required></div>
-        <div class="field span-2"><label>Dirección cliente</label><input name="direccion_cliente"></div>
-        <div class="field span-2"><label>Coordenada cliente</label><input name="coordenada_cliente"></div>
-        <div class="field"><label>Demónico</label><input name="demonico"></div>
-        <div class="field"><label>Equipo / Switch</label><input name="equipo_switch"></div>
-        <div class="field"><label>Puerto switch</label><input name="puerto_switch"></div>
-        <div class="field"><label>ODF espejo</label><input name="odf_espejo"></div>
-        <div class="field"><label>ODF salida</label><input name="odf_salida"></div>
-        <div class="field"><label>Puerto ODF salida</label><input name="puerto_odf_salida"></div>
-        <div class="field"><label>Responsable</label><input name="responsable"></div>
-        <div class="field"><label>Estado</label><select name="estado"><option>ABIERTO</option><option>EN_GESTION</option><option>ESCALADO</option><option>CERRADO</option></select></div>
-        <div class="field"><label>Prioridad</label><select name="prioridad"><option>MEDIA</option><option>BAJA</option><option>ALTA</option><option>CRITICA</option></select></div>
-        <div class="field"><label>Tipo de falla</label><select name="tipo_falla" id="tipoFallaSelect"><option value="">Seleccione...</option></select></div>
-        <div class="field"><label>Subcausa / subcategoría</label><select name="subcausa_falla" id="subcausaFallaSelect"><option value="">Seleccione primero el tipo</option></select></div>
-        <div class="field"><label>Fecha fin</label><input type="date" name="fecha_fin"></div>
-        <div class="field"><label>Hora fin</label><input type="time" name="hora_fin"></div>
-        <div class="field"><label>Duración falla</label><input name="duracion_falla" readonly></div>
-        <div class="field"><label>Coord falla / daño <span style="color:#fecaca">*</span></label><input name="coord_dano" id="coordDanoInput" required placeholder="Ej: 4.127203, -73.620803" autocomplete="off" title="Ingrese latitud y longitud en formato decimal: 4.127203, -73.620803"><small class="help">Formato estándar para mapa: latitud, longitud. Ejemplo: 4.127203, -73.620803</small></div>
-        <div class="field span-2"><label>Causa</label><textarea name="causa"></textarea></div>
-        <div class="field span-2"><label>Solución</label><textarea name="solucion"></textarea></div>
-        <div class="field span-4"><label>Observación</label><textarea name="observacion"></textarea></div>
+        <section class="form-section section-general">
+          <div class="form-section-header"><span class="section-icon">①</span>Datos generales del ticket</div>
+          <div class="section-grid">
+            <div class="field"><label>Fecha inicio</label><input type="date" name="fecha_inicio" required></div>
+            <div class="field"><label>Hora inicio</label><input type="time" name="hora_inicio" required></div>
+            <div class="field"><label>Ticket</label><input name="ticket" required></div>
+            <div class="field"><label>Responsable</label><input name="responsable"></div>
+            <div class="field"><label>Estado</label><select name="estado" id="estadoTicketSelect"><option>ABIERTO</option><option>EN_GESTION</option><option>ESCALADO</option><option>CERRADO</option></select></div>
+            <div class="field"><label>Prioridad</label><select name="prioridad"><option>MEDIA</option><option>BAJA</option><option>ALTA</option><option>CRITICA</option></select></div>
+          </div>
+        </section>
+
+        <section class="form-section section-client">
+          <div class="form-section-header"><span class="section-icon">②</span>Información del cliente</div>
+          <div class="section-grid">
+            <div class="field"><label>ID del cliente</label><input name="id_cliente"></div>
+            <div class="field span-2"><label>Nombre cliente</label><input name="nombre_cliente" required></div>
+            <div class="field span-2"><label>Dirección cliente</label><input name="direccion_cliente"></div>
+            <div class="field span-2"><label>Coordenada cliente</label><input name="coordenada_cliente"></div>
+          </div>
+        </section>
+
+        <section class="form-section section-network">
+          <div class="form-section-header"><span class="section-icon">③</span>Infraestructura y datos técnicos</div>
+          <div class="section-grid">
+            <div class="field"><label>Demónico</label><input name="demonico"></div>
+            <div class="field"><label>Equipo / Switch</label><input name="equipo_switch"></div>
+            <div class="field"><label>Puerto switch</label><input name="puerto_switch"></div>
+            <div class="field"><label>ODF espejo</label><input name="odf_espejo"></div>
+            <div class="field"><label>ODF salida</label><input name="odf_salida"></div>
+            <div class="field"><label>Puerto ODF salida</label><input name="puerto_odf_salida"></div>
+          </div>
+        </section>
+
+        <section class="form-section section-diagnosis">
+          <div class="form-section-header"><span class="section-icon">④</span>Clasificación y diagnóstico</div>
+          <div class="section-grid">
+            <div class="field"><label>Tipo de falla</label><select name="tipo_falla" id="tipoFallaSelect"><option value="">Seleccione...</option></select></div>
+            <div class="field"><label>Subcausa / subcategoría</label><select name="subcausa_falla" id="subcausaFallaSelect"><option value="">Seleccione primero el tipo</option></select></div>
+            <div class="field span-2"><label>Causa</label><textarea name="causa"></textarea></div>
+          </div>
+        </section>
+
+        <section class="form-section section-operation">
+          <div class="form-section-header"><span class="section-icon">⑤</span>Tiempos operativos y mediciones</div>
+          <div class="section-grid">
+            <div class="field"><label>Fecha y hora de medida con OTDR</label><input type="datetime-local" name="fecha_hora_medida_otdr"></div>
+            <div class="field"><label>Fecha y hora de llegada al punto de afectación</label><input type="datetime-local" name="fecha_hora_llegada_afectacion"></div>
+            <div class="field span-2"><label>¿Hubo tiempos muertos / parada de reloj?</label><select name="hubo_tiempo_muerto" id="huboTiempoMuertoSelect"><option value="NO">NO</option><option value="SI">SÍ</option></select></div>
+            <div id="tiempoMuertoSection" class="conditional-section">
+              <div class="section-title">Rangos de tiempo muerto / paradas de reloj</div>
+              <div id="tiemposMuertosList" class="tm-list"></div>
+              <div class="tm-total-box">
+                <div><span class="muted-note">Total acumulado de todos los rangos</span><br><strong id="tiempoMuertoTotalAcumulado">0 min</strong></div>
+                <button type="button" class="small-btn info" onclick="agregarRangoTiempoMuerto()">+ Agregar otro rango</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="form-section section-close">
+          <div class="form-section-header"><span class="section-icon">⑥</span>Cierre de la falla</div>
+          <div class="section-grid">
+            <div class="field"><label>Fecha fin</label><input type="date" name="fecha_fin"></div>
+            <div class="field"><label>Hora fin</label><input type="time" name="hora_fin"></div>
+            <div class="field"><label>Duración falla</label><input name="duracion_falla" readonly></div>
+            <div class="field effective-box"><label>Tiempo efectivo</label><input name="tiempo_efectivo" readonly title="Duración total menos tiempos muertos"></div>
+            <div class="field">
+              <label>Coord falla / daño <span id="coordRequiredMark" style="color:#fecaca;display:none">*</span></label>
+              <input name="coord_dano" id="coordDanoInput" placeholder="Ej: 4.127203, -73.620803" autocomplete="off" title="Ingrese latitud y longitud en formato decimal: 4.127203, -73.620803">
+              <small class="help">Formato estándar para mapa: latitud, longitud. Ejemplo: 4.127203, -73.620803</small>
+              <small id="coordRequiredNote" class="required-note">Obligatoria para cerrar el ticket.</small>
+            </div>
+            <div class="field span-2"><label>Solución</label><textarea name="solucion"></textarea></div>
+            <div class="field span-4"><label>Observación</label><textarea name="observacion"></textarea></div>
+          </div>
+        </section>
       </div>
       <div class="actions" style="justify-content:flex-end;margin-top:10px">
         <button type="button" class="small-btn" onclick="closeTicketModal()">Cancelar</button>
@@ -186,6 +305,7 @@ function renderShell(){
             <input id="searchTicket" class="control" placeholder="Buscar por ticket, cliente, ID cliente, equipo o responsable">
             <select id="filterEstado" class="control"><option value="">Todos los estados</option><option>ABIERTO</option><option>EN_GESTION</option><option>ESCALADO</option><option>CERRADO</option></select>
             <select id="filterPrioridad" class="control"><option value="">Todas las prioridades</option><option>CRITICA</option><option>ALTA</option><option>MEDIA</option><option>BAJA</option></select>
+            <select id="filterMes" class="control"><option value="">Todos los meses</option></select>
           </div>
           <div class="toolbar-right">
             <select id="sortBy" class="control"><option value="fecha_inicio_desc">Más recientes</option><option value="prioridad_desc">Prioridad alta primero</option><option value="prioridad_asc">Prioridad baja primero</option><option value="duracion_desc">Mayor duración</option><option value="ticket_asc">Ticket A-Z</option><option value="estado_asc">Estado</option></select>
@@ -193,7 +313,7 @@ function renderShell(){
           </div>
         </div>
         <div id="ticketSummary" class="summary"></div>
-        <div class="card"><div class="table-wrap"><table><thead><tr><th>Fecha / Hora</th><th>Ticket</th><th>ID cliente</th><th>Cliente</th><th>Equipo</th><th>Puerto</th><th>Responsable</th><th>Estado</th><th>Prioridad</th><th>Duración</th><th>Tipo de falla</th><th>Subcausa</th><th>Coord falla</th><th>Acciones</th></tr></thead><tbody id="ticketsTableBody"></tbody></table></div><div id="ticketEmpty" class="empty">No hay tickets para mostrar.</div></div>
+        <div class="card"><div class="table-wrap"><table id="ticketsTable"><thead><tr><th>Fecha / Hora</th><th>Ticket</th><th>ID cliente</th><th>Cliente</th><th>Equipo</th><th>Puerto</th><th>Responsable</th><th>Estado</th><th>Prioridad</th><th>Duración</th><th>Tiempo efectivo</th><th>Tiempos operativos</th><th>Tipo de falla</th><th>Subcausa</th><th>Coord falla</th><th>Acciones</th></tr></thead><tbody id="ticketsTableBody"></tbody></table></div><div id="ticketEmpty" class="empty">No hay tickets para mostrar.</div></div>
         <button class="floating-add" title="Nuevo ticket" onclick="openTicketModal()">+</button>
       </main>
     </div>`;
@@ -400,9 +520,97 @@ const FALLA_TIPIFICACION={
   }
 };
 
-let clientRef=null,ticketRows=[]; const PRIORITY_ORDER={CRITICA:4,ALTA:3,MEDIA:2,BAJA:1};
-const LABELS={ticket:'Ticket',id_cliente:'ID cliente',nombre_cliente:'Nombre cliente',direccion_cliente:'Dirección cliente',coordenada_cliente:'Coordenada cliente',demonico:'Demónico',equipo_switch:'Equipo / Switch',puerto_switch:'Puerto switch',odf_espejo:'ODF espejo',odf_salida:'ODF salida',puerto_odf_salida:'Puerto ODF salida',responsable:'Responsable',fecha_inicio:'Fecha inicio',hora_inicio:'Hora inicio',fecha_fin:'Fecha fin',hora_fin:'Hora fin',duracion_falla:'Duración falla',estado:'Estado',prioridad:'Prioridad',tipo_falla:'Tipo de falla',subcausa_falla:'Subcausa / subcategoría',causa:'Causa',solucion:'Solución',coord_dano:'Coord falla / daño',observacion:'Observación'};
+let clientRef=null,ticketRows=[],renderedTicketRows=[],selectedTicketId=null; const PRIORITY_ORDER={CRITICA:4,ALTA:3,MEDIA:2,BAJA:1};
+const LABELS={ticket:'Ticket',id_cliente:'ID cliente',nombre_cliente:'Nombre cliente',direccion_cliente:'Dirección cliente',coordenada_cliente:'Coordenada cliente',demonico:'Demónico',equipo_switch:'Equipo / Switch',puerto_switch:'Puerto switch',odf_espejo:'ODF espejo',odf_salida:'ODF salida',puerto_odf_salida:'Puerto ODF salida',responsable:'Responsable',fecha_inicio:'Fecha inicio',hora_inicio:'Hora inicio',fecha_fin:'Fecha fin',hora_fin:'Hora fin',duracion_falla:'Duración falla',tiempo_efectivo:'Tiempo efectivo',fecha_hora_medida_otdr:'Fecha/hora medida OTDR',fecha_hora_llegada_afectacion:'Fecha/hora llegada al punto de afectación',hubo_tiempo_muerto:'Hubo tiempo muerto',tiempo_muerto_inicio:'Inicio tiempo muerto',tiempo_muerto_fin:'Fin tiempo muerto',tiempo_muerto_total:'Total tiempo muerto',motivo_tiempo_muerto:'Motivo tiempo muerto',tiempos_muertos:'Rangos de tiempos muertos',estado:'Estado',prioridad:'Prioridad',tipo_falla:'Tipo de falla',subcausa_falla:'Subcausa / subcategoría',causa:'Causa',solucion:'Solución',coord_dano:'Coord falla / daño',observacion:'Observación'};
 
+function getRenderedTicket(index){
+  const numericIndex=Number(index);
+  return Number.isInteger(numericIndex) ? renderedTicketRows[numericIndex] || null : null;
+}
+function getTicketSelectionKey(row,index){
+  if(row && row.id !== null && row.id !== undefined && String(row.id) !== '') return String(row.id);
+  return `__row_${index}`;
+}
+window.selectTicketRow=function(index,event){
+  if(event && event.target && event.target.closest('button,select,input,a,textarea,label')) return;
+  const row=getRenderedTicket(index);
+  if(!row) return;
+  selectedTicketId=getTicketSelectionKey(row,index);
+  document.querySelectorAll('#ticketsTableBody tr.ticket-row').forEach(tr=>{
+    tr.classList.toggle('row-selected',tr.dataset.selectionKey===selectedTicketId);
+  });
+};
+window.openTicketFromRow=function(index,event){
+  if(event && event.target && event.target.closest('button,select,input,a,textarea,label')) return;
+  if(event){
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  selectTicketRow(index);
+  const row=getRenderedTicket(index);
+  if(!row){
+    console.error('No se encontró la fila para editar por doble clic:', index);
+    return;
+  }
+  try{
+    openTicketModal(row);
+  }catch(error){
+    console.error('Error al abrir la edición por doble clic:',error,row);
+    alert('No fue posible abrir este registro. Revisa la consola del navegador para identificar el campo incompatible.');
+  }
+};
+window.editTicketByIndex=function(index,event){
+  if(event){
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  const row=getRenderedTicket(index);
+  if(!row){
+    console.error('No se encontró la fila visible para editar. Índice:',index);
+    alert('No fue posible abrir este registro. Presiona Actualizar e inténtalo nuevamente.');
+    return;
+  }
+  selectedTicketId=getTicketSelectionKey(row,index);
+  try{
+    openTicketModal(row);
+  }catch(error){
+    console.error('Error al abrir la edición desde el botón:',error,row);
+    alert('No fue posible abrir este registro. Se detectó un dato con formato incompatible.');
+  }
+};
+window.historyTicketByIndex=function(index,event){
+  if(event){event.preventDefault();event.stopPropagation();}
+  const row=getRenderedTicket(index);
+  if(row) showHistory(row.id,row.ticket||'');
+};
+window.deleteTicketByIndex=function(index,event){
+  if(event){event.preventDefault();event.stopPropagation();}
+  const row=getRenderedTicket(index);
+  if(row) deleteTicket(row.id);
+};
+window.copyInicioByIndex=async function(index,event){
+  if(event){event.preventDefault();event.stopPropagation();}
+  const row=getRenderedTicket(index);
+  if(!row){
+    alert('No fue posible localizar el registro.');
+    return;
+  }
+  const ok=await copyToClipboardText(buildMensajeInicio(row));
+  alert(ok ? 'Mensaje de Inicio copiado para WhatsApp.' : 'No fue posible copiar el mensaje.');
+};
+window.copyFinByIndex=async function(index,event){
+  if(event){event.preventDefault();event.stopPropagation();}
+  const row=getRenderedTicket(index);
+  if(!row){
+    alert('No fue posible localizar el registro.');
+    return;
+  }
+  const ok=await copyToClipboardText(buildMensajeFin(row));
+  alert(ok ? 'Mensaje FIN copiado para WhatsApp.' : 'No fue posible copiar el mensaje.');
+};
+function findTicketById(id){
+  return ticketRows.find(row => String(row?.id) === String(id));
+}
 function esc(v){return String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;")}
 function formatDate(v){if(!v)return ''; try{return new Date(v+'T00:00:00').toLocaleDateString('es-CO')}catch(e){return v}}
 function formatTime(v){if(!v)return ''; try{const [h,m]=String(v).split(':'); const d=new Date(); d.setHours(Number(h),Number(m),0,0); return d.toLocaleTimeString('es-CO',{hour:'numeric',minute:'2-digit'})}catch(e){return v}}
@@ -411,7 +619,40 @@ function badgePriority(v){return `<span class="badge priority-${esc(v)}">${esc(v
 function badgeEstado(v){return `<span class="badge status-${esc(v)}">${esc(v||'')}</span>`}
 function calcularDuracionTexto(fi,hi,ff,hf){if(!fi||!hi||!ff||!hf)return ''; const ini=new Date(`${fi}T${hi}`), fin=new Date(`${ff}T${hf}`); if(Number.isNaN(ini.getTime())||Number.isNaN(fin.getTime())||fin<ini)return ''; const dm=Math.floor((fin-ini)/60000), d=Math.floor(dm/1440), h=Math.floor((dm%1440)/60), m=dm%60; const p=[]; if(d)p.push(`${d} d`); if(h||d)p.push(`${h} h`); p.push(`${m} min`); return p.join(' ')}
 function calcularDuracionMinutos(fi,hi,ff,hf){if(!fi||!hi||!ff||!hf)return null; const ini=new Date(`${fi}T${hi}`), fin=new Date(`${ff}T${hf}`); if(Number.isNaN(ini.getTime())||Number.isNaN(fin.getTime())||fin<ini)return null; return Math.floor((fin-ini)/60000)}
-function updateDuracionForm(){const form=document.getElementById('ticketForm'); const el=form.elements; if(el['duracion_falla']) el['duracion_falla'].value=calcularDuracionTexto(el['fecha_inicio']?.value||'',el['hora_inicio']?.value||'',el['fecha_fin']?.value||'',el['hora_fin']?.value||'')}
+function minutosTexto(minutos){minutos=Math.max(0,Number(minutos)||0); const d=Math.floor(minutos/1440),h=Math.floor((minutos%1440)/60),m=minutos%60; const p=[]; if(d)p.push(`${d} d`); if(h||d)p.push(`${h} h`); p.push(`${m} min`); return p.join(' ');}
+function getTiempoMuertoMinutosRow(row){if(Number.isFinite(Number(row?.tiempo_muerto_minutos)))return Math.max(0,Number(row.tiempo_muerto_minutos)||0); const rangos=getTiemposMuertosRow(row); return rangos.reduce((sum,x)=>sum+(Number(x.minutos)||calcularMinutosDateTime(x.inicio,x.fin)||0),0);}
+function getTiempoEfectivoMinutosRow(row){const total=Number(row?.duracion_falla_minutos); const dur=Number.isFinite(total)?total:calcularDuracionMinutos(row?.fecha_inicio,row?.hora_inicio,row?.fecha_fin,row?.hora_fin); if(dur==null)return null; return Math.max(0,dur-getTiempoMuertoMinutosRow(row));}
+function updateTiempoEfectivoForm(){const form=document.getElementById('ticketForm'); if(!form)return; const el=form.elements; const total=calcularDuracionMinutos(el['fecha_inicio']?.value||'',el['hora_inicio']?.value||'',el['fecha_fin']?.value||'',el['hora_fin']?.value||''); const tm=tiemposMuertosForm.reduce((sum,r)=>sum+(calcularMinutosDateTime(r.inicio,r.fin)||0),0); if(el['tiempo_efectivo']) el['tiempo_efectivo'].value=total==null?'':minutosTexto(Math.max(0,total-tm));}
+function updateDuracionForm(){const form=document.getElementById('ticketForm'); const el=form.elements; if(el['duracion_falla']) el['duracion_falla'].value=calcularDuracionTexto(el['fecha_inicio']?.value||'',el['hora_inicio']?.value||'',el['fecha_fin']?.value||'',el['hora_fin']?.value||''); updateTiempoEfectivoForm();}
+function calcularDuracionEntreDateTimes(inicio,fin){if(!inicio||!fin)return {minutos:null,texto:''}; const ini=new Date(inicio), end=new Date(fin); if(Number.isNaN(ini.getTime())||Number.isNaN(end.getTime())||end<ini)return {minutos:null,texto:''}; const dm=Math.floor((end-ini)/60000); return {minutos:dm,texto:formatearMinutos(dm)}}
+function formatearMinutos(dm){dm=Number(dm)||0; const d=Math.floor(dm/1440), h=Math.floor((dm%1440)/60), m=dm%60; const p=[]; if(d)p.push(`${d} d`); if(h||d)p.push(`${h} h`); p.push(`${m} min`); return p.join(' ')}
+const MOTIVOS_TIEMPO_MUERTO=['Acceso a cliente','Acompañamiento','Posiciones en ODF','Vigilancia','Factor climático o desastre natural','Orden público'];
+let tiemposMuertosForm=[];
+function crearRangoTiempoMuerto(data={}){return {id:data.id||`tm_${Date.now()}_${Math.random().toString(16).slice(2)}`,inicio:toDateTimeLocalValue(data.inicio||data.tiempo_muerto_inicio||''),fin:toDateTimeLocalValue(data.fin||data.tiempo_muerto_fin||''),motivo:data.motivo||data.motivo_tiempo_muerto||''};}
+window.agregarRangoTiempoMuerto=function(data={}){tiemposMuertosForm.push(crearRangoTiempoMuerto(data)); renderTiemposMuertosForm();}
+window.eliminarRangoTiempoMuerto=function(id){tiemposMuertosForm=tiemposMuertosForm.filter(x=>x.id!==id); if(!tiemposMuertosForm.length) tiemposMuertosForm.push(crearRangoTiempoMuerto()); renderTiemposMuertosForm();}
+window.actualizarRangoTiempoMuerto=function(id,campo,valor){const r=tiemposMuertosForm.find(x=>x.id===id); if(r){r[campo]=valor; actualizarTotalesTiemposMuertos();}}
+function renderTiemposMuertosForm(){const list=document.getElementById('tiemposMuertosList'); if(!list)return; list.innerHTML=tiemposMuertosForm.map((r,i)=>{const calc=calcularDuracionEntreDateTimes(r.inicio,r.fin); return `<div class="tm-row"><div class="field"><label>Inicio rango ${i+1}</label><input type="datetime-local" value="${esc(r.inicio)}" onchange="actualizarRangoTiempoMuerto('${r.id}','inicio',this.value)" oninput="actualizarRangoTiempoMuerto('${r.id}','inicio',this.value)" required></div><div class="field"><label>Fin rango ${i+1}</label><input type="datetime-local" value="${esc(r.fin)}" onchange="actualizarRangoTiempoMuerto('${r.id}','fin',this.value)" oninput="actualizarRangoTiempoMuerto('${r.id}','fin',this.value)" required></div><div class="field"><label>Duración</label><input value="${esc(calc.texto)}" readonly placeholder="Automático"></div><div class="field"><label>Motivo</label><select onchange="actualizarRangoTiempoMuerto('${r.id}','motivo',this.value)" required><option value="">Seleccione...</option>${MOTIVOS_TIEMPO_MUERTO.map(m=>`<option ${r.motivo===m?'selected':''}>${esc(m)}</option>`).join('')}</select></div><button type="button" class="small-btn danger remove-tm" title="Eliminar rango" onclick="eliminarRangoTiempoMuerto('${r.id}')">✕</button></div>`}).join(''); actualizarTotalesTiemposMuertos();}
+function obtenerTiemposMuertosValidados(){let total=0; const rangos=[]; for(let i=0;i<tiemposMuertosForm.length;i++){const r=tiemposMuertosForm[i], calc=calcularDuracionEntreDateTimes(r.inicio,r.fin); if(!r.inicio||!r.fin||!r.motivo)return {ok:false,error:`Completa inicio, fin y motivo del rango ${i+1}.`}; if(calc.minutos===null)return {ok:false,error:`El rango ${i+1} es inválido. La fecha/hora final debe ser posterior a la inicial.`}; total+=calc.minutos; rangos.push({inicio:r.inicio,fin:r.fin,motivo:r.motivo,minutos:calc.minutos,total:calc.texto});} return {ok:true,rangos,minutos:total,texto:formatearMinutos(total)};}
+function actualizarTotalesTiemposMuertos(){const el=document.getElementById('tiempoMuertoTotalAcumulado'); if(!el)return; let total=0; tiemposMuertosForm.forEach(r=>{const c=calcularDuracionEntreDateTimes(r.inicio,r.fin); if(c.minutos!==null)total+=c.minutos;}); el.textContent=formatearMinutos(total); document.querySelectorAll('.tm-row').forEach((row,i)=>{const input=row.querySelector('input[readonly]'),r=tiemposMuertosForm[i],c=r?calcularDuracionEntreDateTimes(r.inicio,r.fin):{texto:''}; if(input)input.value=c.texto;});}
+function toggleTiempoMuertoFields(){const form=document.getElementById('ticketForm'); if(!form)return; const activo=form.elements['hubo_tiempo_muerto']?.value==='SI', section=document.getElementById('tiempoMuertoSection'); section?.classList.toggle('show',activo); if(activo&&!tiemposMuertosForm.length){tiemposMuertosForm=[crearRangoTiempoMuerto()]; renderTiemposMuertosForm();} if(!activo){tiemposMuertosForm=[]; const list=document.getElementById('tiemposMuertosList'); if(list)list.innerHTML=''; const total=document.getElementById('tiempoMuertoTotalAcumulado'); if(total)total.textContent='0 min'; updateTiempoEfectivoForm();}}
+function toDateTimeLocalValue(value){if(!value)return ''; const d=new Date(value); if(Number.isNaN(d.getTime()))return String(value).slice(0,16); const pad=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;}
+function formatDateTimeValue(value){if(!value)return ''; const d=new Date(value); return Number.isNaN(d.getTime())?String(value):d.toLocaleString('es-CO',{dateStyle:'short',timeStyle:'short'});}
+
+function updateCoordRequirement(){
+  const form=document.getElementById('ticketForm');
+  if(!form)return;
+  const cerrado=form.elements['estado']?.value==='CERRADO';
+  const input=form.elements['coord_dano'];
+  if(input){
+    input.required=cerrado;
+    if(!cerrado) input.setCustomValidity('');
+  }
+  const mark=document.getElementById('coordRequiredMark');
+  const note=document.getElementById('coordRequiredNote');
+  if(mark) mark.style.display=cerrado?'inline':'none';
+  note?.classList.toggle('show',cerrado);
+}
 
 function normalizarCoordenadaFalla(valor){
   const raw = String(valor || '').trim();
@@ -526,19 +767,99 @@ async function logTicketAudit(row,accion,detalle){
 }
 function buildChangeDetail(oldRow,payload){ const changes=[]; Object.keys(payload).forEach(k=>{ const oldVal=oldRow?.[k]??''; const newVal=payload?.[k]??''; if(String(oldVal)!==String(newVal)){ changes.push(`${LABELS[k]||k}: "${oldVal}" → "${newVal}"`); } }); return changes.length ? 'Cambios realizados:\n'+changes.join('\n') : 'Se actualizó el ticket sin cambios detectados en campos visibles.'; }
 
-function getFilteredRows(){ const txt=(document.getElementById('searchTicket')?.value||'').trim().toLowerCase(), estado=document.getElementById('filterEstado')?.value||'', prioridad=document.getElementById('filterPrioridad')?.value||'', sort=document.getElementById('sortBy')?.value||'fecha_inicio_desc'; let rows=ticketRows.filter(r=>{ const hayTexto=!txt||[r.ticket,r.nombre_cliente,r.id_cliente,r.equipo_switch,r.responsable,r.demonico,r.direccion_cliente,getTipoFallaTexto(r.tipo_falla),r.subcausa_falla,r.causa].map(x=>String(x||'').toLowerCase()).some(v=>v.includes(txt)); return hayTexto&&(!estado||r.estado===estado)&&(!prioridad||r.prioridad===prioridad); }); rows.sort((a,b)=>{ switch(sort){ case 'prioridad_desc': return (PRIORITY_ORDER[b.prioridad]||0)-(PRIORITY_ORDER[a.prioridad]||0); case 'prioridad_asc': return (PRIORITY_ORDER[a.prioridad]||0)-(PRIORITY_ORDER[b.prioridad]||0); case 'duracion_desc': return (Number(b.duracion_falla_minutos)||0)-(Number(a.duracion_falla_minutos)||0); case 'ticket_asc': return String(a.ticket||'').localeCompare(String(b.ticket||'')); case 'estado_asc': return String(a.estado||'').localeCompare(String(b.estado||'')); default: return `${b.fecha_inicio||''} ${b.hora_inicio||''}`.localeCompare(`${a.fecha_inicio||''} ${a.hora_inicio||''}`); } }); return rows; }
-function renderSummary(rows){ const total=rows.length, abiertos=rows.filter(r=>r.estado==='ABIERTO').length, gestion=rows.filter(r=>r.estado==='EN_GESTION').length, escalados=rows.filter(r=>r.estado==='ESCALADO').length, cerrados=rows.filter(r=>r.estado==='CERRADO').length; const resueltos=rows.filter(r=>Number(r.duracion_falla_minutos)>0); const promedio=resueltos.length?Math.round(resueltos.reduce((a,b)=>a+Number(b.duracion_falla_minutos||0),0)/resueltos.length):0; const promHoras=promedio?`${Math.floor(promedio/60)} h ${promedio%60} min`:'0 min'; document.getElementById('ticketSummary').innerHTML=`<div class="stat"><div class="label">Total tickets</div><div class="value">${total}</div><div class="sub">Registros visibles</div></div><div class="stat"><div class="label">Abiertos</div><div class="value">${abiertos}</div><div class="sub">Pendientes</div></div><div class="stat"><div class="label">En gestión</div><div class="value">${gestion}</div><div class="sub">Trabajo activo</div></div><div class="stat"><div class="label">Escalados</div><div class="value">${escalados}</div><div class="sub">Requieren apoyo</div></div><div class="stat"><div class="label">Cerrados</div><div class="value">${cerrados}</div><div class="sub">Resueltos</div></div><div class="stat"><div class="label">Promedio resolución</div><div class="value">${promHoras}</div><div class="sub">${resueltos.length} tickets medidos</div></div>`; }
+
+function cargarFiltroMes(){
+  const select=document.getElementById('filterMes');
+  if(!select) return;
+  const actual=select.value;
+  const meses=[...new Set(ticketRows
+    .map(r=>String(r.fecha_inicio||'').slice(0,7))
+    .filter(v=>/^\d{4}-\d{2}$/.test(v))
+  )].sort().reverse();
+  select.innerHTML='<option value="">Todos los meses</option>'+meses.map(valor=>{
+    const [anio,mes]=valor.split('-').map(Number);
+    const etiqueta=new Date(anio,mes-1,1).toLocaleDateString('es-CO',{month:'long',year:'numeric'});
+    return `<option value="${valor}">${etiqueta.charAt(0).toUpperCase()+etiqueta.slice(1)}</option>`;
+  }).join('');
+  if(meses.includes(actual)) select.value=actual;
+}
+
+function getFilteredRows(){
+  const txt=normalizarFiltro(document.getElementById('searchTicket')?.value||'');
+  const estado=document.getElementById('filterEstado')?.value||'';
+  const prioridad=document.getElementById('filterPrioridad')?.value||'';
+  const mes=document.getElementById('filterMes')?.value||'';
+  const sort=document.getElementById('sortBy')?.value||'fecha_inicio_desc';
+
+  const rows=ticketRows.filter(r=>{
+    const textoRegistro=normalizarFiltro([
+      r.ticket,r.id_cliente,r.nombre_cliente,r.direccion_cliente,r.equipo_switch,
+      r.demonico,r.puerto_switch,r.responsable,r.estado,r.prioridad,
+      getTipoFallaTexto(r.tipo_falla),r.subcausa_falla,r.coord_dano,
+      formatDateTime(r.fecha_inicio,r.hora_inicio)
+    ].join(' '));
+    const coincideTexto=!txt||textoRegistro.includes(txt);
+    const coincideEstado=!estado||r.estado===estado;
+    const coincidePrioridad=!prioridad||r.prioridad===prioridad;
+    const coincideMes=!mes||String(r.fecha_inicio||'').slice(0,7)===mes;
+    return coincideTexto&&coincideEstado&&coincidePrioridad&&coincideMes;
+  });
+
+  rows.sort((a,b)=>{
+    switch(sort){
+      case 'prioridad_desc': return (PRIORITY_ORDER[b.prioridad]||0)-(PRIORITY_ORDER[a.prioridad]||0);
+      case 'prioridad_asc': return (PRIORITY_ORDER[a.prioridad]||0)-(PRIORITY_ORDER[b.prioridad]||0);
+      case 'duracion_desc': return (Number(b.duracion_falla_minutos)||0)-(Number(a.duracion_falla_minutos)||0);
+      case 'ticket_asc': return String(a.ticket||'').localeCompare(String(b.ticket||''),'es',{numeric:true});
+      case 'estado_asc': return String(a.estado||'').localeCompare(String(b.estado||''),'es');
+      default:
+        return `${b.fecha_inicio||''} ${b.hora_inicio||''}`.localeCompare(`${a.fecha_inicio||''} ${a.hora_inicio||''}`);
+    }
+  });
+  return rows;
+}
+
+function renderSummary(rows){
+  const total=rows.length;
+  const abiertos=rows.filter(r=>r.estado==='ABIERTO').length;
+  const gestion=rows.filter(r=>r.estado==='EN_GESTION').length;
+  const escalados=rows.filter(r=>r.estado==='ESCALADO').length;
+  const cerrados=rows.filter(r=>r.estado==='CERRADO').length;
+  const medidos=rows.filter(r=>Number(r.duracion_falla_minutos)>0);
+  const promedio=medidos.length
+    ? Math.round(medidos.reduce((sum,r)=>sum+Number(r.duracion_falla_minutos||0),0)/medidos.length)
+    : 0;
+  const resumen=document.getElementById('ticketSummary');
+  if(!resumen) return;
+  resumen.innerHTML=`
+    <div class="stat"><div class="label">Total tickets</div><div class="value">${total}</div><div class="sub">Registros visibles</div></div>
+    <div class="stat"><div class="label">Abiertos</div><div class="value">${abiertos}</div><div class="sub">Pendientes</div></div>
+    <div class="stat"><div class="label">En gestión</div><div class="value">${gestion}</div><div class="sub">Trabajo activo</div></div>
+    <div class="stat"><div class="label">Escalados</div><div class="value">${escalados}</div><div class="sub">Requieren apoyo</div></div>
+    <div class="stat"><div class="label">Cerrados</div><div class="value">${cerrados}</div><div class="sub">Resueltos</div></div>
+    <div class="stat"><div class="label">Promedio resolución</div><div class="value">${promedio?minutosTexto(promedio):'0 min'}</div><div class="sub">${medidos.length} tickets medidos</div></div>`;
+}
+
+function normalizarFiltro(v){return String(v??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
+function valorColumna(r,col){const dur=r.duracion_falla||calcularDuracionTexto(r.fecha_inicio,r.hora_inicio,r.fecha_fin,r.hora_fin)||''; const ef=getTiempoEfectivoMinutosRow(r); const map={fecha:formatDateTime(r.fecha_inicio,r.hora_inicio),ticket:r.ticket,id_cliente:r.id_cliente,cliente:`${r.nombre_cliente||''} ${r.direccion_cliente||''}`,equipo:`${r.equipo_switch||''} ${r.demonico||''}`,puerto:`${r.puerto_switch||''} ${r.odf_salida||''} ${r.puerto_odf_salida||''}`,responsable:r.responsable,estado:r.estado,prioridad:r.prioridad,duracion:dur,efectivo:ef==null?'':minutosTexto(ef),operativos:`${formatDateTimeValue(r.fecha_hora_medida_otdr)||''} ${formatDateTimeValue(r.fecha_hora_llegada_afectacion)||''} ${r.tiempo_muerto_total||''} ${r.motivo_tiempo_muerto||''}`,tipo:getTipoFallaTexto(r.tipo_falla),subcausa:r.subcausa_falla,coord:r.coord_dano}; return map[col]??'';}
+
+function getTiemposMuertosRow(row){if(Array.isArray(row?.tiempos_muertos)&&row.tiempos_muertos.length)return row.tiempos_muertos; if(row?.tiempo_muerto_inicio&&row?.tiempo_muerto_fin)return [{inicio:row.tiempo_muerto_inicio,fin:row.tiempo_muerto_fin,motivo:row.motivo_tiempo_muerto,minutos:row.tiempo_muerto_minutos,total:row.tiempo_muerto_total}]; return [];}
+function formatTiemposMuertosMensaje(row){const rangos=getTiemposMuertosRow(row); if(!rangos.length)return row?.hubo_tiempo_muerto==='SI'?'Sin detalle':'No'; return rangos.map((r,i)=>`${i+1}. ${formatDateTimeValue(r.inicio)} a ${formatDateTimeValue(r.fin)} | ${r.total||formatearMinutos(r.minutos||0)} | ${r.motivo||''}`).join(' ; ');}
 
 function buildMensajeInicio(row){
   return [
     '*Mensaje de Inicio:*',
-    `*ID ticket:* ${row.ticket || ''}`,
-    `*Nombre del cliente:* ${row.nombre_cliente || ''}`,
-    `*Fecha inicio:* ${formatDate(row.fecha_inicio) || ''}`,
-    `*Hora inicio:* ${formatTime(row.hora_inicio) || ''}`,
-    `*Responsable:* ${row.responsable || ''}`
+    `*ID ticket:* ${row?.ticket || ''}`,
+    `*ID cliente:* ${row?.id_cliente || ''}`,
+    `*Nombre del cliente:* ${row?.nombre_cliente || ''}`,
+    `*Fecha inicio:* ${formatDate(row?.fecha_inicio) || ''}`,
+    `*Hora inicio:* ${formatTime(row?.hora_inicio) || ''}`,
+    `*Responsable:* ${row?.responsable || ''}`,
+    `*Equipo / Switch:* ${row?.equipo_switch || ''}`,
+    `*Puerto:* ${row?.puerto_switch || ''}`
   ].join('\n');
 }
+
 function buildMensajeFin(row){
   return [
     '*Mensaje FIN:*',
@@ -549,6 +870,11 @@ function buildMensajeFin(row){
     `*Fecha fin:* ${formatDate(row.fecha_fin) || ''}`,
     `*Hora fin:* ${formatTime(row.hora_fin) || ''}`,
     `*Duración Falla:* ${row.duracion_falla || calcularDuracionTexto(row.fecha_inicio,row.hora_inicio,row.fecha_fin,row.hora_fin) || ''}`,
+    `*Tiempo efectivo:* ${getTiempoEfectivoMinutosRow(row)==null?'':minutosTexto(getTiempoEfectivoMinutosRow(row))}`,
+    `*Medida OTDR:* ${formatDateTimeValue(row.fecha_hora_medida_otdr) || ''}`,
+    `*Llegada al punto de afectación:* ${formatDateTimeValue(row.fecha_hora_llegada_afectacion) || ''}`,
+    `*Tiempo muerto:* ${row.hubo_tiempo_muerto==='SI' ? (row.tiempo_muerto_total || 'Sí') : 'No'}`,
+    `*Detalle tiempos muertos:* ${formatTiemposMuertosMensaje(row)}`, 
     `*Tipo de falla:* ${getTipoFallaTexto(row.tipo_falla) || ''}`,
     `*Subcausa:* ${row.subcausa_falla || ''}`,
     `*Causa:* ${row.causa || ''}`,
@@ -579,32 +905,307 @@ async function copyToClipboardText(text){
   }
 }
 window.copyMensajeInicio = async function(id){
-  const row = ticketRows.find(x => x.id === id);
+  const row = findTicketById(id);
   if(!row) return;
   const ok = await copyToClipboardText(buildMensajeInicio(row));
   alert(ok ? 'Mensaje de Inicio copiado para WhatsApp.' : 'No fue posible copiar el mensaje.');
 }
 window.copyMensajeFin = async function(id){
-  const row = ticketRows.find(x => x.id === id);
+  const row = findTicketById(id);
   if(!row) return;
   const ok = await copyToClipboardText(buildMensajeFin(row));
   alert(ok ? 'Mensaje FIN copiado para WhatsApp.' : 'No fue posible copiar el mensaje.');
 }
 
-function renderTickets(){ const rows=getFilteredRows(); renderSummary(rows); const body=document.getElementById('ticketsTableBody'), empty=document.getElementById('ticketEmpty'); if(!rows.length){ body.innerHTML=''; empty.style.display='block'; return; } empty.style.display='none'; body.innerHTML=rows.map(r=>`<tr class="${r.estado==='CERRADO'?'completed':''}"><td>${esc(formatDateTime(r.fecha_inicio,r.hora_inicio))}</td><td><div class="title">${esc(r.ticket)}</div></td><td>${esc(r.id_cliente||'')}</td><td><div class="title">${esc(r.nombre_cliente||'')}</div><div class="desc">${esc(r.direccion_cliente||'')}</div></td><td><div class="title">${esc(r.equipo_switch||'')}</div><div class="desc">${esc(r.demonico||'')}</div></td><td><div>${esc(r.puerto_switch||'')}</div><div class="desc">ODF ${esc(r.odf_salida||'')} / P ${esc(r.puerto_odf_salida||'')}</div></td><td>${esc(r.responsable||'')}</td><td>${badgeEstado(r.estado)}<div style="margin-top:8px"><select class="select-status" onchange="changeTicketStatus('${r.id}', this.value)"><option value="ABIERTO" ${r.estado==='ABIERTO'?'selected':''}>ABIERTO</option><option value="EN_GESTION" ${r.estado==='EN_GESTION'?'selected':''}>EN_GESTION</option><option value="ESCALADO" ${r.estado==='ESCALADO'?'selected':''}>ESCALADO</option><option value="CERRADO" ${r.estado==='CERRADO'?'selected':''}>CERRADO</option></select></div></td><td>${badgePriority(r.prioridad||'')}</td><td>${esc(r.duracion_falla||calcularDuracionTexto(r.fecha_inicio,r.hora_inicio,r.fecha_fin,r.hora_fin)||'')}</td><td><div class="title">${esc(getTipoFallaTexto(r.tipo_falla)||'')}</div></td><td><div class="desc">${esc(r.subcausa_falla||'')}</div></td><td>${esc(r.coord_dano||'')}</td><td><div class="actions">
-<div class="row top-row">
-<button class="small-btn info" onclick="showHistory('${r.id}','${esc(r.ticket)}')">Historial</button>
-<button class="small-btn" onclick="editTicket('${r.id}')">Editar</button>
-<button class="small-btn danger" onclick="deleteTicket('${r.id}')">Eliminar</button>
-</div>
-<div class="row">
-<button class="small-btn whatsapp" onclick="copyMensajeInicio('${r.id}')">Mensaje Inicio</button>
-<button class="small-btn whatsapp" onclick="copyMensajeFin('${r.id}')">Mensaje FIN</button>
-</div>
-</div></td></tr>`).join(''); }
-async function loadTickets(){ try{ const client=await resolveClient(); const {data,error}=await client.from('om_tickets').select('*').order('fecha_inicio',{ascending:false}).order('hora_inicio',{ascending:false}); if(error) throw error; ticketRows=data||[]; renderTickets(); }catch(err){ console.error(err); document.getElementById('ticketsTableBody').innerHTML=`<tr><td colspan="14" style="padding:18px;color:#fecaca">Error cargando tickets: ${esc(err.message||err)}</td></tr>`; } }
 
-window.openTicketModal=function(row=null){ const modal=document.getElementById('ticketModal'), form=document.getElementById('ticketForm'), el=form.elements, msg=document.getElementById('ticketMsg'); form.reset(); msg.textContent=''; if(el['id']) el['id'].value=''; document.getElementById('modalTitle').textContent=row?'Editar falla / ticket':'Nueva falla / ticket'; document.getElementById('saveBtn').textContent=row?'Actualizar ticket':'Guardar ticket'; initTipoFallaOptions(); updateSubcausaOptions(); if(row){ Object.keys(row).forEach(k=>{ if(el[k]) el[k].value=row[k]??''; }); updateSubcausaOptions(row.subcausa_falla||''); if(el['duracion_falla']) el['duracion_falla'].value=row.duracion_falla||calcularDuracionTexto(row.fecha_inicio,row.hora_inicio,row.fecha_fin,row.hora_fin); } else { updateSubcausaOptions(); } updateDuracionForm(); modal.classList.add('show'); }
+function bindTicketRowEvents(){
+  const body=document.getElementById('ticketsTableBody');
+  if(!body) return;
+
+  body.querySelectorAll('tr.ticket-row').forEach(tr=>{
+    const index=Number(tr.dataset.rowIndex);
+
+    tr.addEventListener('click',event=>{
+      if(event.target.closest('button,select,input,textarea,a,label')) return;
+      selectTicketRow(index,event);
+    });
+
+    tr.addEventListener('dblclick',event=>{
+      if(event.target.closest('button,select,input,textarea,a,label')) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const row=getRenderedTicket(index);
+      if(row) openTicketModal(row);
+    });
+  });
+
+  body.querySelectorAll('[data-action="edit"]').forEach(button=>{
+    button.addEventListener('click',event=>{
+      event.preventDefault();
+      event.stopPropagation();
+      const row=getRenderedTicket(Number(button.dataset.index));
+      if(!row){
+        alert('No fue posible localizar el ticket para editar.');
+        return;
+      }
+      openTicketModal(row);
+    });
+  });
+
+  body.querySelectorAll('[data-action="history"]').forEach(button=>{
+    button.addEventListener('click',event=>{
+      event.preventDefault();
+      event.stopPropagation();
+      const row=getRenderedTicket(Number(button.dataset.index));
+      if(row) showHistory(row.id,row.ticket||'');
+    });
+  });
+
+  body.querySelectorAll('[data-action="delete"]').forEach(button=>{
+    button.addEventListener('click',event=>{
+      event.preventDefault();
+      event.stopPropagation();
+      const row=getRenderedTicket(Number(button.dataset.index));
+      if(row) deleteTicket(row.id);
+    });
+  });
+
+  body.querySelectorAll('[data-action="inicio"]').forEach(button=>{
+    button.addEventListener('click',event=>{
+      copyInicioByIndex(Number(button.dataset.index),event);
+    });
+  });
+
+  body.querySelectorAll('[data-action="fin"]').forEach(button=>{
+    button.addEventListener('click',event=>{
+      copyFinByIndex(Number(button.dataset.index),event);
+    });
+  });
+
+  body.querySelectorAll('[data-action="status"]').forEach(select=>{
+    select.addEventListener('click',event=>event.stopPropagation());
+    select.addEventListener('dblclick',event=>event.stopPropagation());
+    select.addEventListener('change',event=>{
+      event.stopPropagation();
+      changeTicketStatusByIndex(Number(select.dataset.index),select.value,select,event);
+    });
+  });
+}
+
+function renderTickets(){
+  const rows=getFilteredRows();
+  renderedTicketRows=rows;
+  renderSummary(rows);
+
+  const body=document.getElementById('ticketsTableBody');
+  const empty=document.getElementById('ticketEmpty');
+
+  if(!rows.length){
+    body.innerHTML='';
+    empty.style.display='block';
+    return;
+  }
+
+  empty.style.display='none';
+
+  body.innerHTML=rows.map((r,rowIndex)=>{
+    const selectionKey=getTicketSelectionKey(r,rowIndex);
+    const selected=selectionKey===selectedTicketId ? ' row-selected' : '';
+
+    return `<tr class="ticket-row ${r.estado==='CERRADO'?'completed':''}${selected}"
+      data-row-index="${rowIndex}"
+      data-selection-key="${esc(selectionKey)}"
+      title="Haz clic para seleccionar y doble clic para editar">
+      <td>${esc(formatDateTime(r.fecha_inicio,r.hora_inicio))}</td>
+      <td><div class="title">${esc(r.ticket)}</div></td>
+      <td>${esc(r.id_cliente||'')}</td>
+      <td><div class="title">${esc(r.nombre_cliente||'')}</div><div class="desc">${esc(r.direccion_cliente||'')}</div></td>
+      <td><div class="title">${esc(r.equipo_switch||'')}</div><div class="desc">${esc(r.demonico||'')}</div></td>
+      <td><div>${esc(r.puerto_switch||'')}</div><div class="desc">ODF ${esc(r.odf_salida||'')} / P ${esc(r.puerto_odf_salida||'')}</div></td>
+      <td>${esc(r.responsable||'')}</td>
+      <td>${badgeEstado(r.estado)}
+        <div style="margin-top:8px">
+          <select class="select-status" data-action="status" data-index="${rowIndex}">
+            <option value="ABIERTO" ${r.estado==='ABIERTO'?'selected':''}>ABIERTO</option>
+            <option value="EN_GESTION" ${r.estado==='EN_GESTION'?'selected':''}>EN_GESTION</option>
+            <option value="ESCALADO" ${r.estado==='ESCALADO'?'selected':''}>ESCALADO</option>
+            <option value="CERRADO" ${r.estado==='CERRADO'?'selected':''}>CERRADO</option>
+          </select>
+        </div>
+      </td>
+      <td>${badgePriority(r.prioridad||'')}</td>
+      <td>${esc(r.duracion_falla||calcularDuracionTexto(r.fecha_inicio,r.hora_inicio,r.fecha_fin,r.hora_fin)||'')}</td>
+      <td><span class="effective-value">${getTiempoEfectivoMinutosRow(r)==null?'—':esc(minutosTexto(getTiempoEfectivoMinutosRow(r)))}</span></td>
+      <td><div class="desc"><strong>OTDR:</strong> ${esc(formatDateTimeValue(r.fecha_hora_medida_otdr)||'—')}<br><strong>Llegada:</strong> ${esc(formatDateTimeValue(r.fecha_hora_llegada_afectacion)||'—')}<br><strong>T. muerto:</strong> ${r.hubo_tiempo_muerto==='SI'?esc(r.tiempo_muerto_total||'Sí'):'No'}${r.motivo_tiempo_muerto?`<br>${esc(r.motivo_tiempo_muerto)}`:''}</div></td>
+      <td><div class="title">${esc(getTipoFallaTexto(r.tipo_falla)||'')}</div></td>
+      <td><div class="desc">${esc(r.subcausa_falla||'')}</div></td>
+      <td>${esc(r.coord_dano||'')}</td>
+      <td>
+        <div class="actions">
+          <div class="row top-row">
+            <button type="button" class="small-btn info" data-action="history" data-index="${rowIndex}">Historial</button>
+            <button type="button" class="small-btn" data-action="edit" data-index="${rowIndex}">Editar</button>
+            <button type="button" class="small-btn danger" data-action="delete" data-index="${rowIndex}">Eliminar</button>
+          </div>
+          <div class="row">
+            <button type="button" class="small-btn whatsapp" data-action="inicio" data-index="${rowIndex}">Mensaje Inicio</button>
+            <button type="button" class="small-btn whatsapp" data-action="fin" data-index="${rowIndex}">Mensaje FIN</button>
+          </div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  bindTicketRowEvents();
+}
+async function loadTickets(){ try{ const client=await resolveClient(); const {data,error}=await client.from('om_tickets').select('*').order('fecha_inicio',{ascending:false}).order('hora_inicio',{ascending:false}); if(error) throw error; ticketRows=data||[]; cargarFiltroMes(); renderTickets(); }catch(err){ console.error(err); document.getElementById('ticketsTableBody').innerHTML=`<tr><td colspan="16" style="padding:18px;color:#fecaca">Error cargando tickets: ${esc(err.message||err)}</td></tr>`; } }
+
+
+function normalizarListaTiemposMuertos(valor){
+  if(Array.isArray(valor)) return valor.filter(x=>x && typeof x==='object');
+
+  if(typeof valor==='string'){
+    const limpio=valor.trim();
+    if(!limpio || limpio==='[]' || limpio==='null') return [];
+    try{
+      const parsed=JSON.parse(limpio);
+      return Array.isArray(parsed) ? parsed.filter(x=>x && typeof x==='object') : [];
+    }catch(error){
+      console.warn('No se pudo interpretar tiempos_muertos:',valor,error);
+      return [];
+    }
+  }
+
+  if(valor && typeof valor==='object'){
+    return Array.isArray(valor.rangos) ? valor.rangos : [];
+  }
+
+  return [];
+}
+
+function asignarValorFormularioSeguro(elemento,valor){
+  if(!elemento) return;
+  try{
+    if(elemento.type==='datetime-local'){
+      elemento.value=toDateTimeLocalValue(valor);
+    }else if(elemento.type==='date'){
+      elemento.value=valor ? String(valor).slice(0,10) : '';
+    }else if(elemento.type==='time'){
+      elemento.value=valor ? String(valor).slice(0,5) : '';
+    }else if(elemento.tagName==='SELECT'){
+      const texto=valor==null ? '' : String(valor);
+      const existe=[...elemento.options].some(op=>op.value===texto);
+      if(existe) elemento.value=texto;
+    }else{
+      elemento.value=valor==null ? '' : String(valor);
+    }
+  }catch(error){
+    console.warn('No se pudo asignar un campo del formulario:',elemento.name,valor,error);
+  }
+}
+
+window.openTicketModal=function(row=null){
+  const modal=document.getElementById('ticketModal');
+  const form=document.getElementById('ticketForm');
+  const msg=document.getElementById('ticketMsg');
+
+  if(!modal || !form){
+    console.error('No se encontró el modal o el formulario de tickets.');
+    alert('No fue posible abrir el formulario.');
+    return;
+  }
+
+  const el=form.elements;
+
+  try{
+    form.reset();
+    tiemposMuertosForm=[];
+    if(msg) msg.textContent='';
+    if(el['id']) el['id'].value='';
+
+    document.getElementById('modalTitle').textContent=row?'Editar falla / ticket':'Nueva falla / ticket';
+    document.getElementById('saveBtn').textContent=row?'Actualizar ticket':'Guardar ticket';
+
+    initTipoFallaOptions();
+    updateSubcausaOptions();
+
+    if(row){
+      // Abrir primero el modal para que un dato incompatible no impida visualizarlo.
+      modal.classList.add('show');
+
+      Object.keys(row).forEach(k=>{
+        if(!el[k]) return;
+        if(['tiempos_muertos','fecha_hora_medida_otdr','fecha_hora_llegada_afectacion'].includes(k)) return;
+        asignarValorFormularioSeguro(el[k],row[k]);
+      });
+
+      ['fecha_hora_medida_otdr','fecha_hora_llegada_afectacion'].forEach(k=>{
+        if(el[k]) asignarValorFormularioSeguro(el[k],row[k]);
+      });
+
+      let rangos=normalizarListaTiemposMuertos(row.tiempos_muertos);
+
+      if(!rangos.length && row.tiempo_muerto_inicio && row.tiempo_muerto_fin){
+        rangos=[{
+          inicio:row.tiempo_muerto_inicio,
+          fin:row.tiempo_muerto_fin,
+          motivo:row.motivo_tiempo_muerto||''
+        }];
+      }
+
+      tiemposMuertosForm=rangos.map(item=>{
+        try{
+          return crearRangoTiempoMuerto(item);
+        }catch(error){
+          console.warn('Rango de tiempo muerto omitido por formato incompatible:',item,error);
+          return null;
+        }
+      }).filter(Boolean);
+
+      if(el['hubo_tiempo_muerto']){
+        const tieneTM=
+          row.hubo_tiempo_muerto===true ||
+          String(row.hubo_tiempo_muerto||'').toUpperCase()==='SI' ||
+          tiemposMuertosForm.length>0;
+        el['hubo_tiempo_muerto'].value=tieneTM?'SI':'NO';
+      }
+
+      updateSubcausaOptions(row.subcausa_falla||'');
+
+      if(el['duracion_falla']){
+        el['duracion_falla'].value=
+          row.duracion_falla ||
+          calcularDuracionTexto(row.fecha_inicio,row.hora_inicio,row.fecha_fin,row.hora_fin) ||
+          '';
+      }
+    }else{
+      if(el['hubo_tiempo_muerto']) el['hubo_tiempo_muerto'].value='NO';
+      updateSubcausaOptions();
+      modal.classList.add('show');
+    }
+
+    try{
+      toggleTiempoMuertoFields();
+      if(tiemposMuertosForm.length) renderTiemposMuertosForm();
+    }catch(error){
+      console.warn('No se pudieron cargar todos los tiempos muertos, pero el formulario seguirá abierto.',error);
+      tiemposMuertosForm=[];
+      if(el['hubo_tiempo_muerto']) el['hubo_tiempo_muerto'].value='NO';
+      const section=document.getElementById('tiempoMuertoSection');
+      if(section) section.classList.remove('show');
+    }
+
+    updateDuracionForm();
+    updateCoordRequirement();
+  }catch(error){
+    console.error('Error abriendo el formulario de edición:',error,row);
+    modal.classList.add('show');
+    if(msg){
+      msg.textContent='El formulario se abrió, pero algunos datos antiguos no pudieron cargarse automáticamente.';
+      msg.style.color='#fde68a';
+    }
+  }
+};
 window.closeTicketModal=function(){ document.getElementById('ticketModal').classList.remove('show'); }
 document.getElementById('ticketModal').addEventListener('click', function(e){ if(e.target.id==='ticketModal'){ /* no cerrar */ } });
 
@@ -612,6 +1213,7 @@ window.closeHistoryModal=function(){ document.getElementById('historyModal').cla
 document.getElementById('historyModal').addEventListener('click', function(e){ if(e.target.id==='historyModal'){ /* no cerrar */ } });
 
 ['fecha_inicio','hora_inicio','fecha_fin','hora_fin'].forEach(name=>{ document.addEventListener('input',e=>{ if(e.target&&e.target.name===name) updateDuracionForm(); }); document.addEventListener('change',e=>{ if(e.target&&e.target.name===name) updateDuracionForm(); }); });
+document.addEventListener('change',e=>{if(e.target&&e.target.name==='hubo_tiempo_muerto') toggleTiempoMuertoFields();});
 
 document.addEventListener('blur', e=>{
   if(e.target && e.target.name === 'coord_dano') validarYNormalizarCoordFalla(e.target, false);
@@ -619,7 +1221,7 @@ document.addEventListener('blur', e=>{
 document.addEventListener('input', e=>{
   if(e.target && e.target.name === 'coord_dano') e.target.setCustomValidity('');
 });
-document.addEventListener('change',e=>{ if(e.target&&e.target.name==='tipo_falla') updateSubcausaOptions(); });
+document.addEventListener('change',e=>{ if(e.target&&e.target.name==='tipo_falla') updateSubcausaOptions(); if(e.target&&e.target.name==='estado') updateCoordRequirement(); });
 initTipoFallaOptions();
 
 document.getElementById('ticketForm').addEventListener('submit', async function(e){
@@ -629,17 +1231,32 @@ document.getElementById('ticketForm').addEventListener('submit', async function(
   try{
     const client=await resolveClient();
     const fechaInicio=el['fecha_inicio']?.value||'', horaInicio=el['hora_inicio']?.value||'', fechaFin=el['fecha_fin']?.value||'', horaFin=el['hora_fin']?.value||'';
-    if(!validarYNormalizarCoordFalla(el['coord_dano'], true)){
-      msg.textContent='Debes registrar la coordenada de la falla en formato decimal: latitud, longitud.';
+    const estadoTicket=el['estado']?.value||'ABIERTO';
+    const requiereCoord=estadoTicket==='CERRADO';
+    const coordIngresada=(el['coord_dano']?.value||'').trim();
+    if(requiereCoord && !coordIngresada){
+      updateCoordRequirement();
+      el['coord_dano']?.focus();
+      el['coord_dano']?.reportValidity();
+      msg.textContent='Para cerrar el ticket debes registrar la coordenada de la falla o daño.';
       msg.style.color='#fecaca';
       return;
     }
-    const coordFallaNormalizada = el['coord_dano']?.value || '';
+    if(coordIngresada && !validarYNormalizarCoordFalla(el['coord_dano'], true)){
+      msg.textContent='La coordenada debe estar en formato decimal: latitud, longitud.';
+      msg.style.color='#fecaca';
+      return;
+    }
+    const coordFallaNormalizada = coordIngresada ? (el['coord_dano']?.value || '') : null;
     const durMin=calcularDuracionMinutos(fechaInicio,horaInicio,fechaFin,horaFin);
-    const payload={ticket:(el['ticket']?.value||'').trim(),id_cliente:(el['id_cliente']?.value||'').trim()||null,nombre_cliente:(el['nombre_cliente']?.value||'').trim(),direccion_cliente:(el['direccion_cliente']?.value||'').trim()||null,coordenada_cliente:(el['coordenada_cliente']?.value||'').trim()||null,demonico:(el['demonico']?.value||'').trim()||null,equipo_switch:(el['equipo_switch']?.value||'').trim()||null,puerto_switch:(el['puerto_switch']?.value||'').trim()||null,odf_espejo:(el['odf_espejo']?.value||'').trim()||null,odf_salida:(el['odf_salida']?.value||'').trim()||null,puerto_odf_salida:(el['puerto_odf_salida']?.value||'').trim()||null,responsable:(el['responsable']?.value||'').trim()||null,fecha_inicio:fechaInicio,hora_inicio:horaInicio,fecha_fin:fechaFin||null,hora_fin:horaFin||null,duracion_falla_minutos:durMin,duracion_falla:el['duracion_falla']?.value||null,estado:el['estado']?.value||'ABIERTO',prioridad:el['prioridad']?.value||'MEDIA',tipo_falla:(el['tipo_falla']?.value||'').trim()||null,subcausa_falla:(el['subcausa_falla']?.value||'').trim()||null,causa:(el['causa']?.value||'').trim()||null,solucion:(el['solucion']?.value||'').trim()||null,coord_dano:coordFallaNormalizada,observacion:(el['observacion']?.value||'').trim()||null};
+    const huboTiempoMuerto=el['hubo_tiempo_muerto']?.value==='SI';
+    const tm=huboTiempoMuerto?obtenerTiemposMuertosValidados():{ok:true,rangos:[],minutos:0,texto:null};
+    if(!tm.ok){ msg.textContent=tm.error; msg.style.color='#fecaca'; return; }
+    const primerRango=tm.rangos[0]||{};
+    const payload={ticket:(el['ticket']?.value||'').trim(),id_cliente:(el['id_cliente']?.value||'').trim()||null,nombre_cliente:(el['nombre_cliente']?.value||'').trim(),direccion_cliente:(el['direccion_cliente']?.value||'').trim()||null,coordenada_cliente:(el['coordenada_cliente']?.value||'').trim()||null,demonico:(el['demonico']?.value||'').trim()||null,equipo_switch:(el['equipo_switch']?.value||'').trim()||null,puerto_switch:(el['puerto_switch']?.value||'').trim()||null,odf_espejo:(el['odf_espejo']?.value||'').trim()||null,odf_salida:(el['odf_salida']?.value||'').trim()||null,puerto_odf_salida:(el['puerto_odf_salida']?.value||'').trim()||null,responsable:(el['responsable']?.value||'').trim()||null,fecha_inicio:fechaInicio,hora_inicio:horaInicio,fecha_fin:fechaFin||null,hora_fin:horaFin||null,duracion_falla_minutos:durMin,duracion_falla:el['duracion_falla']?.value||null,estado:estadoTicket,prioridad:el['prioridad']?.value||'MEDIA',tipo_falla:(el['tipo_falla']?.value||'').trim()||null,subcausa_falla:(el['subcausa_falla']?.value||'').trim()||null,causa:(el['causa']?.value||'').trim()||null,solucion:(el['solucion']?.value||'').trim()||null,coord_dano:coordFallaNormalizada,fecha_hora_medida_otdr:el['fecha_hora_medida_otdr']?.value||null,fecha_hora_llegada_afectacion:el['fecha_hora_llegada_afectacion']?.value||null,hubo_tiempo_muerto:huboTiempoMuerto?'SI':'NO',tiempos_muertos:huboTiempoMuerto?tm.rangos:[],tiempo_muerto_inicio:huboTiempoMuerto?(primerRango.inicio||null):null,tiempo_muerto_fin:huboTiempoMuerto?(primerRango.fin||null):null,tiempo_muerto_minutos:huboTiempoMuerto?tm.minutos:0,tiempo_muerto_total:huboTiempoMuerto?tm.texto:null,motivo_tiempo_muerto:huboTiempoMuerto?(primerRango.motivo||null):null,observacion:(el['observacion']?.value||'').trim()||null};
     let result; const rowId=el['id']?.value||'';
     if(rowId){
-      const oldRow=ticketRows.find(x=>x.id===rowId)||{};
+      const oldRow=ticketRows.find(x=>String(x.id)===String(rowId))||{};
       result=await client.from('om_tickets').update(payload).eq('id',rowId);
       if(result.error) throw result.error;
       const detail=buildChangeDetail(oldRow,payload);
@@ -653,9 +1270,25 @@ document.getElementById('ticketForm').addEventListener('submit', async function(
   }catch(err){ console.error(err); msg.textContent='Error guardando: '+(err.message||err); msg.style.color='#fecaca'; }
 });
 
-window.changeTicketStatus=async function(id,estado){
+window.changeTicketStatusByIndex=async function(index,estado,selectEl=null,event=null){
+  if(event) event.stopPropagation();
+  const row=getRenderedTicket(index);
+  if(!row){
+    if(selectEl) selectEl.value='';
+    alert('No fue posible localizar este registro.');
+    return;
+  }
+  return changeTicketStatus(row.id,estado,selectEl);
+};
+
+window.changeTicketStatus=async function(id,estado,selectEl=null){
   try{
-    const client=await resolveClient(); const row=ticketRows.find(x=>x.id===id); const prev=row?.estado||'';
+    const client=await resolveClient(); const row=findTicketById(id); const prev=row?.estado||'';
+    if(estado==='CERRADO' && !String(row?.coord_dano||'').trim()){
+      if(selectEl) selectEl.value=prev;
+      alert('No puedes cerrar el ticket sin registrar primero la coordenada de la falla o daño. Abre Editar, diligencia la coordenada y luego guarda el ticket como CERRADO.');
+      return;
+    }
     const {error}=await client.from('om_tickets').update({estado}).eq('id',id); if(error) throw error;
     if(row) row.estado=estado;
     await logTicketAudit({...row,estado},'CAMBIO_ESTADO',`Cambio de estado: "${prev}" → "${estado}"`);
@@ -663,15 +1296,23 @@ window.changeTicketStatus=async function(id,estado){
   }catch(err){ console.error(err); alert('No fue posible actualizar el estado: '+(err.message||err)); }
 };
 
-window.editTicket=function(id){ const row=ticketRows.find(x=>x.id===id); if(row) openTicketModal(row); };
+window.editTicket=function(id){
+  const row=findTicketById(id);
+  if(!row){
+    console.error('No se encontró el ticket para editar. ID recibido:', id);
+    alert('No fue posible localizar este ticket. Actualiza la tabla e inténtalo nuevamente.');
+    return;
+  }
+  openTicketModal(row);
+};
 window.deleteTicket=async function(id){
-  const row=ticketRows.find(x=>x.id===id);
+  const row=findTicketById(id);
   const ok=confirm(`¿Seguro que deseas eliminar este ticket?\n\nTicket: ${row?.ticket||''}\nCliente: ${row?.nombre_cliente||''}\n\nEsta acción no se puede deshacer.`);
   if(!ok) return;
   try{
     await logTicketAudit(row||{id},'ELIMINACION','Ticket eliminado por el usuario.');
     const client=await resolveClient(); const {error}=await client.from('om_tickets').delete().eq('id',id); if(error) throw error;
-    ticketRows=ticketRows.filter(x=>x.id!==id); renderTickets();
+    ticketRows=ticketRows.filter(x=>String(x.id)!==String(id)); renderTickets();
   }catch(err){ console.error(err); alert('No fue posible eliminar el ticket: '+(err.message||err)); }
 };
 
@@ -721,8 +1362,11 @@ window.showHistory = async function(ticketId, ticketCodigo){
   `).join('');
 };
 
-['searchTicket','filterEstado','filterPrioridad','sortBy'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.addEventListener('input',renderTickets); el.addEventListener('change',renderTickets); } });
+['searchTicket','filterEstado','filterPrioridad','filterMes','sortBy'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.addEventListener('input',renderTickets); el.addEventListener('change',renderTickets); } });
+document.addEventListener('input',e=>{if(e.target?.classList?.contains('column-filter'))renderTickets();});
+document.addEventListener('change',e=>{if(e.target?.classList?.contains('column-filter'))renderTickets();});
 loadTickets();
 </script>
 </body>
 </html>
+
