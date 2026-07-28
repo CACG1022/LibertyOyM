@@ -156,6 +156,82 @@ body.sidebar-hidden .sidebar-toggle{
       pointer-events:auto !important;
     }
 
+
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{min-width:0;overflow-x:hidden}
+.main{min-width:0}
+.table-wrap{width:100%;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{min-width:1450px}
+
+@media (max-width:1100px){
+  .page{grid-template-columns:210px minmax(0,1fr)}
+  .sidebar{width:210px}
+  .main{padding:18px}
+  .toolbar-row,.toolbar-left,.toolbar-right{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:10px}
+  .toolbar-row{grid-template-columns:1fr}
+  .control,.toolbar-right .btn{width:100%;min-width:0}
+  .summary{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .modal{width:calc(100vw - 30px);max-height:calc(100dvh - 30px)}
+}
+
+@media (max-width:760px){
+  .page{display:block;min-height:100dvh}
+  .sidebar{
+    position:fixed;left:0;top:0;width:min(82vw,300px);height:100dvh;z-index:110;
+    transform:translateX(-105%);overflow-y:auto;padding:20px 16px 90px;
+    box-shadow:0 0 35px rgba(0,0,0,.55)
+  }
+  body:not(.sidebar-hidden) .sidebar{transform:translateX(0)}
+  body.sidebar-hidden .sidebar{transform:translateX(-105%);width:min(82vw,300px);opacity:1;pointer-events:auto;padding:20px 16px 90px}
+  .sidebar-toggle,body:not(.sidebar-hidden) .sidebar-toggle,body.sidebar-hidden .sidebar-toggle{
+    position:fixed;left:12px;top:14px;transform:none;width:44px;height:44px;z-index:130
+  }
+  body:not(.sidebar-hidden)::after{
+    content:"";position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.48);backdrop-filter:blur(2px)
+  }
+  .main{width:100%;padding:70px 12px 90px}
+  .header h1{font-size:23px}
+  .header p{font-size:14px;line-height:1.45}
+  .toolbar-row,.toolbar-left,.toolbar-right{display:grid;grid-template-columns:1fr;width:100%;gap:9px}
+  .control,.toolbar-right .btn{width:100%;min-width:0;min-height:46px;font-size:16px}
+  .summary{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+  .stat{min-height:92px;padding:13px}
+  .stat .value{font-size:23px}
+  .card,.table-wrap{border-radius:15px}
+  table{min-width:1280px;font-size:13px}
+  thead th,tbody td{padding:10px 8px}
+  .floating-add{right:16px;bottom:18px;width:58px;height:58px}
+  .modal-backdrop{padding:0;align-items:stretch}
+  .modal,.modal.small{
+    width:100vw;max-width:none;height:100dvh;max-height:100dvh;border-radius:0;
+    overflow-y:auto;padding:16px 12px 110px
+  }
+  .modal-header{
+    position:sticky;top:-16px;z-index:25;margin:-16px -12px 14px;padding:16px 12px 12px;
+    background:#08152c;border-bottom:1px solid var(--border)
+  }
+  .grid{grid-template-columns:1fr;gap:10px}
+  .span-2,.span-4{grid-column:1/-1}
+  .field input,.field select,.field textarea{min-height:46px;font-size:16px;padding:12px}
+  .field textarea{min-height:115px}
+  .tm-row,.tiempo-muerto-row{display:grid!important;grid-template-columns:1fr!important;gap:9px!important;padding:12px!important}
+  .tm-row>*,.tiempo-muerto-row>*{width:100%!important;min-width:0!important}
+  .tm-row button,.tiempo-muerto-row button{width:100%!important;height:44px!important}
+  #ticketForm>.actions{
+    position:sticky;bottom:-110px;z-index:30;margin:18px -12px -110px!important;padding:12px;
+    background:#08152c;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr;gap:8px
+  }
+  #ticketForm>.actions .btn,#ticketForm>.actions .small-btn{width:100%;min-height:48px;font-size:16px}
+}
+
+@media (max-width:420px){
+  .main{padding-left:9px;padding-right:9px}
+  .summary{grid-template-columns:1fr}
+  .modal,.modal.small{padding-left:10px;padding-right:10px}
+  .modal-header{margin-left:-10px;margin-right:-10px;padding-left:10px;padding-right:10px}
+}
+
 </style>
 </head>
 <body>
@@ -1393,5 +1469,28 @@ document.addEventListener('input',e=>{if(e.target?.classList?.contains('column-f
 document.addEventListener('change',e=>{if(e.target?.classList?.contains('column-filter'))renderTickets();});
 loadTickets();
 </script>
+<script>
+(function(){
+  function initMobileSidebar(){
+    if(window.matchMedia('(max-width:760px)').matches){
+      document.body.classList.add('sidebar-hidden');
+      localStorage.setItem('fallas_sidebar_hidden','1');
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initMobileSidebar);
+  else initMobileSidebar();
+
+  document.addEventListener('click',function(e){
+    if(!window.matchMedia('(max-width:760px)').matches) return;
+    if(document.body.classList.contains('sidebar-hidden')) return;
+    const sidebar=document.querySelector('.sidebar');
+    const toggle=document.getElementById('sidebarToggle');
+    if(sidebar?.contains(e.target) || toggle?.contains(e.target)) return;
+    document.body.classList.add('sidebar-hidden');
+    localStorage.setItem('fallas_sidebar_hidden','1');
+  });
+})();
+</script>
 </body>
 </html>
+
