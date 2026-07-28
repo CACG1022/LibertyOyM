@@ -742,6 +742,140 @@ body[data-theme="dark"] .pdrAlertDialog{
 }
 
 </style>
+
+
+<!-- ===== AJUSTE RESPONSIVO V12: ENCABEZADO Y MENÚ MÓVIL ===== -->
+<style>
+/* Evita que el encabezado se comprima y superponga en pantallas angostas. */
+header .oymHeaderData{
+  flex:1 1 auto!important;
+  min-width:0!important;
+  overflow:hidden!important;
+}
+header .oymHeaderMain{
+  flex:1 1 auto!important;
+  min-width:0!important;
+  overflow:hidden!important;
+}
+header > div:last-child{
+  flex:0 0 auto!important;
+  min-width:0!important;
+}
+#syncStatus{
+  display:block!important;
+  max-width:105px!important;
+  text-align:right!important;
+  line-height:1.18!important;
+  white-space:normal!important;
+}
+
+/* El menú queda limitado entre el encabezado y la barra inferior.
+   Su contenido se desplaza internamente y nunca queda debajo de la navegación. */
+#oymRightSideMenu{
+  bottom:74px!important;
+  max-height:none!important;
+  overflow-y:auto!important;
+  overflow-x:hidden!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  scrollbar-width:thin!important;
+  padding-bottom:max(8px,env(safe-area-inset-bottom))!important;
+}
+#oymRightSideMenu.oym-open{
+  pointer-events:auto!important;
+}
+.oymSideMenuItem{
+  flex:0 0 auto!important;
+}
+
+@media(max-width:768px){
+  header{
+    height:64px!important;
+    padding:7px 9px!important;
+    gap:6px!important;
+  }
+  .mapWrap{inset:64px 0 64px 0!important}
+
+  .oymHeaderData{gap:6px!important}
+  .oymBrand{gap:5px!important}
+  .oymBrandMark{
+    width:22px!important;
+    height:22px!important;
+    border-width:4px!important;
+  }
+  .oymBrandText{
+    font-size:14px!important;
+    letter-spacing:0!important;
+  }
+
+  /* El nombre OYM ya identifica la aplicación; ocultar el título duplicado
+     deja espacio suficiente para cliente y ruta. */
+  .oymHeaderMain h1{
+    display:none!important;
+  }
+  .oymHeaderMain #clienteHeader{
+    display:block!important;
+    max-width:100%!important;
+    font-size:9.5px!important;
+    line-height:1.2!important;
+    white-space:nowrap!important;
+    overflow:hidden!important;
+    text-overflow:ellipsis!important;
+  }
+  #syncStatus{
+    max-width:72px!important;
+    font-size:9px!important;
+    line-height:1.15!important;
+  }
+  .themeQuickButton{
+    width:34px!important;
+    height:34px!important;
+    min-width:34px!important;
+    font-size:16px!important;
+  }
+
+  #oymSideMenuToggle{
+    top:120px!important;
+    right:12px!important;
+    width:48px!important;
+    height:48px!important;
+    min-width:48px!important;
+    min-height:48px!important;
+  }
+  #oymRightSideMenu{
+    top:176px!important;
+    right:12px!important;
+    bottom:70px!important;
+    width:min(270px,calc(100vw - 24px))!important;
+    max-height:none!important;
+    border-radius:14px!important;
+  }
+  .oymSideMenuItem{
+    min-height:48px!important;
+    padding:0 13px!important;
+    gap:10px!important;
+    font-size:13px!important;
+  }
+  .oymSideMenuIcon{
+    width:23px!important;
+    min-width:23px!important;
+    font-size:18px!important;
+  }
+  .oymSideMenuArrow{font-size:19px!important}
+}
+
+@media(max-width:390px){
+  .oymBrandText{font-size:13px!important}
+  .oymHeaderMain #clienteHeader{font-size:9px!important}
+  #syncStatus{max-width:62px!important;font-size:8.5px!important}
+  #oymRightSideMenu{
+    top:168px!important;
+    bottom:68px!important;
+  }
+  .oymSideMenuItem{min-height:45px!important}
+}
+</style>
+
 </head>
 
 <body>
@@ -965,7 +1099,19 @@ body[data-theme="dark"] .pdrAlertDialog{
         </div>
       </div>
       <div class="row">
-        <div id="grupoCableEntrada"><label>Cable entrada</label><input id="cableEntrada"></div>
+        <div id="grupoCableEntrada">
+          <label>Cable entrada</label>
+          <input id="cableEntrada">
+          <label>Capilaridad cable entrada</label>
+          <select id="capilaridadCableEntrada">
+            <option value="">Seleccione...</option>
+            <option value="6 HILOS">6 HILOS</option>
+            <option value="12 HILOS">12 HILOS</option>
+            <option value="24 HILOS">24 HILOS</option>
+            <option value="48 HILOS">48 HILOS</option>
+            <option value="96 HILOS">96 HILOS</option>
+          </select>
+        </div>
         <div id="grupoCableSalida">
           <label id="labelCableSalida">Cable salida</label>
           <input id="cableSalida">
@@ -973,6 +1119,15 @@ body[data-theme="dark"] .pdrAlertDialog{
             <option value="">Seleccione...</option>
             <option>CABLE NUEVO</option>
             <option>HABILITACIÓN DE HILOS</option>
+          </select>
+          <label>Capilaridad cable salida</label>
+          <select id="capilaridadCableSalida">
+            <option value="">Seleccione...</option>
+            <option value="6 HILOS">6 HILOS</option>
+            <option value="12 HILOS">12 HILOS</option>
+            <option value="24 HILOS">24 HILOS</option>
+            <option value="48 HILOS">48 HILOS</option>
+            <option value="96 HILOS">96 HILOS</option>
           </select>
         </div>
       </div>
@@ -1674,7 +1829,9 @@ async function cargarEmpalmesExistentesDesdeSupabase(rutaSupabaseId){
         puerto_odf: e.puerto_odf ?? null,
         sentido: e.sentido,
         cable_entrada: e.cable_entrada,
+        capilaridad_cable_entrada: e.capilaridad_cable_entrada ?? null,
         cable_salida: e.cable_salida,
+        capilaridad_cable_salida: e.capilaridad_cable_salida ?? null,
         tubo_entrada: "",
         hilo_entrada: e.hilo_entrada,
         tubo_salida: "",
@@ -2527,9 +2684,11 @@ async function guardarRegistroLocal(){
     const sentidoCliente = val("sentido").replace(/\s+/g,"").toLowerCase();
     if(["nodo→cliente","nodo->cliente","nodo-cliente"].includes(sentidoCliente)){
       setVal("cableSalida", "");
+      setVal("capilaridadCableSalida", "");
       setVal("hiloSalida", "");
     }else if(["cliente→nodo","cliente->nodo","cliente-nodo"].includes(sentidoCliente)){
       setVal("cableEntrada", "");
+      setVal("capilaridadCableEntrada", "");
       setVal("hiloEntrada", "");
     }
   }
@@ -2537,9 +2696,11 @@ async function guardarRegistroLocal(){
     const sentidoNodo = val("sentido").replace(/\s+/g,"").toLowerCase();
     if(["nodo→cliente","nodo->cliente","nodo-cliente"].includes(sentidoNodo)){
       setVal("cableEntrada", "");
+      setVal("capilaridadCableEntrada", "");
       setVal("hiloEntrada", "");
     }else if(["cliente→nodo","cliente->nodo","cliente-nodo"].includes(sentidoNodo)){
       setVal("cableSalida", "");
+      setVal("capilaridadCableSalida", "");
       setVal("hiloSalida", "");
     }
   }
@@ -2547,9 +2708,11 @@ async function guardarRegistroLocal(){
     const sentidoOlt = val("sentido").replace(/\s+/g,"").toLowerCase();
     if(["nodo→cliente","nodo->cliente","nodo-cliente"].includes(sentidoOlt)){
       setVal("cableEntrada", "");
+      setVal("capilaridadCableEntrada", "");
       setVal("hiloEntrada", "");
     }else if(["cliente→nodo","cliente->nodo","cliente-nodo"].includes(sentidoOlt)){
       setVal("cableSalida", "");
+      setVal("capilaridadCableSalida", "");
       setVal("hiloSalida", "");
     }
   }
@@ -2608,7 +2771,9 @@ async function guardarRegistroLocal(){
     puerto_odf: val("puertoOdf") || null,
     sentido: val("sentido"),
     cable_entrada: val("cableEntrada"),
+    capilaridad_cable_entrada: val("capilaridadCableEntrada") || null,
     cable_salida: val("cableSalida"),
+    capilaridad_cable_salida: val("capilaridadCableSalida") || null,
     tubo_entrada: "",
     hilo_entrada: val("hiloEntrada") ? Number(val("hiloEntrada")) : null,
     tubo_salida: "",
@@ -2690,7 +2855,9 @@ async function editarRegistro(id){
   setVal("puertoOdf", r.puerto_odf);
   setVal("sentido", r.sentido);
   setVal("cableEntrada", r.cable_entrada);
+  setVal("capilaridadCableEntrada", r.capilaridad_cable_entrada);
   setVal("cableSalida", r.cable_salida);
+  setVal("capilaridadCableSalida", r.capilaridad_cable_salida);
   setVal("hiloEntrada", r.hilo_entrada);
   setVal("hiloSalida", r.hilo_salida);
   setVal("observacion", r.observacion);
@@ -3514,7 +3681,9 @@ async function sincronizarPendientes(forzarReenvio = false, mostrarActaOpcional 
         puerto_odf: r.puerto_odf || null,
         sentido: r.sentido,
         cable_entrada: r.cable_entrada,
+        capilaridad_cable_entrada: r.capilaridad_cable_entrada || null,
         cable_salida: r.cable_salida,
+        capilaridad_cable_salida: r.capilaridad_cable_salida || null,
         tubo_entrada: r.tubo_entrada,
         hilo_entrada: r.hilo_entrada,
         tubo_salida: r.tubo_salida,
@@ -3726,6 +3895,8 @@ function pintarListaRegistros(listaDatos){
       ${r.editado_en_app ? `<span class="badge editado">EDITADO</span>` : ""}<br>
       <b>${r.etiqueta_empalme || ("Empalme " + (r.consecutivo_empalme || ""))}</b> · ${r.nombre_punto} · ${r.tipo_punto || ""}<br>
       ${r.tipo_punto === "Nodo" ? `<b>Puerto ODF:</b> ${escapeHtml(r.puerto_odf || "N/A")}<br>` : ""}
+      <b>Cable entrada:</b> ${r.cable_entrada || "N/A"} · <b>Capilaridad:</b> ${r.capilaridad_cable_entrada || "N/A"}<br>
+      <b>Cable salida:</b> ${r.cable_salida || "N/A"} · <b>Capilaridad:</b> ${r.capilaridad_cable_salida || "N/A"}<br>
       <b>Fusión:</b> Hilo entrada ${r.hilo_entrada || "N/A"} → Hilo salida ${r.hilo_salida || "N/A"}<br>
       <b>GPS:</b> ${Number(r.latitud).toFixed(7)}, ${Number(r.longitud).toFixed(7)}<br>
       ${r.error_sync ? `<b style="color:#f87171">Error:</b> ${r.error_sync}<br>` : ""}
@@ -3891,7 +4062,7 @@ function limpiarDespuesDeGuardar(){
   limpiarFormulario();
 }
 function limpiarFormulario(){
-  ["editOfflineId","ambiente","zonaInterna","pisoNivel","torreBloque","cuartoRack","referenciaVisual","descripcionInterna","elementoExterno","idElementoExterno","referenciaExterna","punto","puertoOdf","cableEntrada","cableSalida","tuboEntrada","hiloEntrada","tuboSalida","hiloSalida","observacion"].forEach(id=>setVal(id,""));
+  ["editOfflineId","ambiente","zonaInterna","pisoNivel","torreBloque","cuartoRack","referenciaVisual","descripcionInterna","elementoExterno","idElementoExterno","referenciaExterna","punto","puertoOdf","cableEntrada","capilaridadCableEntrada","cableSalida","capilaridadCableSalida","tuboEntrada","hiloEntrada","tuboSalida","hiloSalida","observacion"].forEach(id=>setVal(id,""));
   cambiarAmbiente();
   actualizarCamposPorTipoPunto();
 }
@@ -4969,8 +5140,8 @@ function cerrarTodosLosPanelesTema(){
       "zonaInterna","pisoNivel","torreBloque","cuartoRack",
       "referenciaVisual","accesoRequerido","descripcionInterna",
       "elementoExterno","idElementoExterno","referenciaExterna",
-      "punto","puertoOdf","sentido","cableEntrada","hiloEntrada",
-      "cableSalida","hiloSalida","observacion",
+      "punto","puertoOdf","sentido","cableEntrada","capilaridadCableEntrada","hiloEntrada",
+      "cableSalida","capilaridadCableSalida","hiloSalida","observacion",
       "gponContenedor","gponContenedorId",
       "oltNombre","oltMarca","oltFrame","oltSlot","oltTarjeta","oltPuertoPon",
       "splitterNivel","splitterRelacion","splitterPuertoEntrada","splitterPuertoSalida",
@@ -5653,14 +5824,18 @@ function cerrarTodosLosPanelesTema(){
 
     if(!mostrarEntrada){
       const c = document.getElementById("cableEntrada");
+      const cap = document.getElementById("capilaridadCableEntrada");
       const h = document.getElementById("hiloEntrada");
       if(c) c.value = "";
+      if(cap) cap.value = "";
       if(h) h.value = "";
     }
     if(!mostrarSalida){
       const c = document.getElementById("cableSalida");
+      const cap = document.getElementById("capilaridadCableSalida");
       const h = document.getElementById("hiloSalida");
       if(c) c.value = "";
+      if(cap) cap.value = "";
       if(h) h.value = "";
     }
 
