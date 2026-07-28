@@ -738,8 +738,76 @@ function actualizarTotalesTiemposMuertos(){
   updateTiempoEfectivoForm();
 }
 function toggleTiempoMuertoFields(){const form=document.getElementById('ticketForm'); if(!form)return; const activo=form.elements['hubo_tiempo_muerto']?.value==='SI', section=document.getElementById('tiempoMuertoSection'); section?.classList.toggle('show',activo); if(activo&&!tiemposMuertosForm.length){tiemposMuertosForm=[crearRangoTiempoMuerto()]; renderTiemposMuertosForm();} if(!activo){tiemposMuertosForm=[]; const list=document.getElementById('tiemposMuertosList'); if(list)list.innerHTML=''; const total=document.getElementById('tiempoMuertoTotalAcumulado'); if(total)total.textContent='0 min'; updateTiempoEfectivoForm();}}
-function toDateTimeLocalValue(value){if(!value)return ''; const d=new Date(value); if(Number.isNaN(d.getTime()))return String(value).slice(0,16); const pad=n=>String(n).padStart(2,'0'); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;}
-function formatDateTimeValue(value){if(!value)return ''; const d=new Date(value); return Number.isNaN(d.getTime())?String(value):d.toLocaleString('es-CO',{dateStyle:'short',timeStyle:'short'});}
+function getBogotaDateTimeParts(value){
+  if(!value) return null;
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime())) return null;
+
+  const parts=new Intl.DateTimeFormat('en-CA',{
+    timeZone:'America/Bogota',
+    year:'numeric',
+    month:'2-digit',
+    day:'2-digit',
+    hour:'2-digit',
+    minute:'2-digit',
+    hourCycle:'h23'
+  }).formatToParts(d);
+
+  const out={};
+  parts.forEach(p=>{ if(p.type!=='literal') out[p.type]=p.value; });
+  return out;
+}
+
+function toDateTimeLocalValue(value){
+  if(!value) return '';
+
+  const raw=String(value).trim();
+
+  // Valores antiguos sin zona horaria: conservar exactamente la hora escrita.
+  if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(raw)){
+    return raw.slice(0,16);
+  }
+
+  const p=getBogotaDateTimeParts(raw);
+  if(!p) return raw.slice(0,16);
+
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+
+function localDateTimeToBogotaISO(value){
+  if(!value) return null;
+  const raw=String(value).trim().slice(0,16);
+
+  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)){
+    return value;
+  }
+
+  // Colombia no utiliza horario de verano: UTC-05:00 durante todo el año.
+  return `${raw}:00-05:00`;
+}
+
+function formatDateTimeValue(value){
+  if(!value) return '';
+
+  const raw=String(value).trim();
+
+  // Para datos antiguos sin zona horaria, mostrar la hora tal como fue registrada.
+  if(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?$/.test(raw)){
+    const [fecha,horaCompleta]=raw.split('T');
+    const [anio,mes,dia]=fecha.split('-');
+    const [hora,minuto]=horaCompleta.split(':');
+    return `${dia}/${mes}/${anio}, ${hora}:${minuto}`;
+  }
+
+  const d=new Date(raw);
+  if(Number.isNaN(d.getTime())) return raw;
+
+  return d.toLocaleString('es-CO',{
+    timeZone:'America/Bogota',
+    dateStyle:'short',
+    timeStyle:'short'
+  });
+}
 
 function updateCoordRequirement(){
   const form=document.getElementById('ticketForm');
@@ -1355,7 +1423,7 @@ document.getElementById('ticketForm').addEventListener('submit', async function(
     const tm=huboTiempoMuerto?obtenerTiemposMuertosValidados():{ok:true,rangos:[],minutos:0,texto:null};
     if(!tm.ok){ msg.textContent=tm.error; msg.style.color='#fecaca'; return; }
     const primerRango=tm.rangos[0]||{};
-    const payload={ticket:(el['ticket']?.value||'').trim(),id_cliente:(el['id_cliente']?.value||'').trim()||null,nombre_cliente:(el['nombre_cliente']?.value||'').trim(),direccion_cliente:(el['direccion_cliente']?.value||'').trim()||null,coordenada_cliente:(el['coordenada_cliente']?.value||'').trim()||null,demonico:(el['demonico']?.value||'').trim()||null,equipo_switch:(el['equipo_switch']?.value||'').trim()||null,puerto_switch:(el['puerto_switch']?.value||'').trim()||null,odf_espejo:(el['odf_espejo']?.value||'').trim()||null,odf_salida:(el['odf_salida']?.value||'').trim()||null,puerto_odf_salida:(el['puerto_odf_salida']?.value||'').trim()||null,responsable:(el['responsable']?.value||'').trim()||null,fecha_inicio:fechaInicio,hora_inicio:horaInicio,fecha_fin:fechaFin||null,hora_fin:horaFin||null,duracion_falla_minutos:durMin,duracion_falla:el['duracion_falla']?.value||null,estado:estadoTicket,prioridad:el['prioridad']?.value||'MEDIA',tipo_falla:(el['tipo_falla']?.value||'').trim()||null,subcausa_falla:(el['subcausa_falla']?.value||'').trim()||null,causa:(el['causa']?.value||'').trim()||null,solucion:(el['solucion']?.value||'').trim()||null,coord_dano:coordFallaNormalizada,fecha_hora_medida_otdr:el['fecha_hora_medida_otdr']?.value||null,fecha_hora_llegada_afectacion:el['fecha_hora_llegada_afectacion']?.value||null,hubo_tiempo_muerto:huboTiempoMuerto?'SI':'NO',tiempos_muertos:huboTiempoMuerto?tm.rangos:[],tiempo_muerto_inicio:huboTiempoMuerto?(primerRango.inicio||null):null,tiempo_muerto_fin:huboTiempoMuerto?(primerRango.fin||null):null,tiempo_muerto_minutos:huboTiempoMuerto?tm.minutos:0,tiempo_muerto_total:huboTiempoMuerto?tm.texto:null,motivo_tiempo_muerto:huboTiempoMuerto?(primerRango.motivo||null):null,observacion:(el['observacion']?.value||'').trim()||null};
+    const payload={ticket:(el['ticket']?.value||'').trim(),id_cliente:(el['id_cliente']?.value||'').trim()||null,nombre_cliente:(el['nombre_cliente']?.value||'').trim(),direccion_cliente:(el['direccion_cliente']?.value||'').trim()||null,coordenada_cliente:(el['coordenada_cliente']?.value||'').trim()||null,demonico:(el['demonico']?.value||'').trim()||null,equipo_switch:(el['equipo_switch']?.value||'').trim()||null,puerto_switch:(el['puerto_switch']?.value||'').trim()||null,odf_espejo:(el['odf_espejo']?.value||'').trim()||null,odf_salida:(el['odf_salida']?.value||'').trim()||null,puerto_odf_salida:(el['puerto_odf_salida']?.value||'').trim()||null,responsable:(el['responsable']?.value||'').trim()||null,fecha_inicio:fechaInicio,hora_inicio:horaInicio,fecha_fin:fechaFin||null,hora_fin:horaFin||null,duracion_falla_minutos:durMin,duracion_falla:el['duracion_falla']?.value||null,estado:estadoTicket,prioridad:el['prioridad']?.value||'MEDIA',tipo_falla:(el['tipo_falla']?.value||'').trim()||null,subcausa_falla:(el['subcausa_falla']?.value||'').trim()||null,causa:(el['causa']?.value||'').trim()||null,solucion:(el['solucion']?.value||'').trim()||null,coord_dano:coordFallaNormalizada,fecha_hora_medida_otdr:localDateTimeToBogotaISO(el['fecha_hora_medida_otdr']?.value)||null,fecha_hora_llegada_afectacion:localDateTimeToBogotaISO(el['fecha_hora_llegada_afectacion']?.value)||null,hubo_tiempo_muerto:huboTiempoMuerto?'SI':'NO',tiempos_muertos:huboTiempoMuerto?tm.rangos:[],tiempo_muerto_inicio:huboTiempoMuerto?(primerRango.inicio||null):null,tiempo_muerto_fin:huboTiempoMuerto?(primerRango.fin||null):null,tiempo_muerto_minutos:huboTiempoMuerto?tm.minutos:0,tiempo_muerto_total:huboTiempoMuerto?tm.texto:null,motivo_tiempo_muerto:huboTiempoMuerto?(primerRango.motivo||null):null,observacion:(el['observacion']?.value||'').trim()||null};
     let result; const rowId=el['id']?.value||'';
     if(rowId){
       const oldRow=ticketRows.find(x=>String(x.id)===String(rowId))||{};
