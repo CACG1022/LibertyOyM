@@ -33,6 +33,7 @@
     textarea{min-height:80px;resize:vertical}
     button{background:linear-gradient(135deg,#0ea5e9,#2563eb);border:none;font-weight:700;cursor:pointer}
     button.secondary{background:#162033;border:1px solid var(--line)}
+    button.danger{background:linear-gradient(135deg,#dc2626,#991b1b);border:1px solid #ef4444;color:#fff}
     .workspace-wrap{position:relative;min-width:0;min-height:0;padding:14px 16px 16px}
     .workspace{
       position:relative;width:100%;height:100%;min-height:500px;border:1px solid var(--line);border-radius:22px;
@@ -102,7 +103,14 @@
     .eq-type{font-size:10px;padding:3px 7px;border-radius:999px;border:1px solid #314255;color:#d5e8fb;background:#102033;white-space:nowrap}
     .eq-edit-btn{margin-top:5px;padding:4px 7px;border-radius:8px;font-size:9px;width:auto;background:#162033;border:1px solid #35506e;color:#d9efff;cursor:pointer}
     .eq-u{font-size:10px;color:#c2d7ee}
+    .port-section{margin-top:7px}
+    .port-section:first-child{margin-top:0}
+    .port-section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 4px;color:#9fb6d2;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+    .port-section-title span:last-child{padding:1px 5px;border:1px solid #33465f;border-radius:999px;background:#0c1a2b;color:#d4e8fb}
     .ports{display:grid;grid-template-columns:repeat(auto-fill,minmax(14px,1fr));gap:3px}
+    .port.wan,.port-box.wan{box-shadow:inset 0 0 0 1px rgba(38,198,255,.75)}
+    .port.admin,.port-box.admin{box-shadow:inset 0 0 0 1px rgba(168,85,247,.8)}
+    .special-port-label{font-size:6px;letter-spacing:-.02em}
     .port{
       height:14px;border-radius:8px;border:1px solid rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center;
       font-size:7px;font-weight:700;cursor:pointer;position:relative;transition:transform .12s ease, border-color .12s ease, box-shadow .12s ease;
@@ -236,22 +244,84 @@
     <div class="modal">
       <h3 id="equipmentModalTitle">Agregar equipo</h3>
       <div class="modal-subtitle">La posición del rack usa numeración U desde abajo hacia arriba. Ejemplo: 1 está abajo, 45 arriba.</div>
-      <select id="equipmentRack"></select>
-      <select id="equipmentTipo">
-        <option value="switch">Switch</option>
-        <option value="odf">ODF</option>
-        <option value="router">Router</option>
-      </select>
-      <input id="equipmentNombre" placeholder="Nombre del equipo">
-      <input id="equipmentDemonico" placeholder="Demónico">
-      <input id="equipmentMarca" placeholder="Marca">
-      <input id="equipmentModelo" placeholder="Modelo">
-      <input id="equipmentSerial" placeholder="Serial (opcional)">
-      <input id="equipmentPuertos" type="number" min="1" placeholder="Cantidad de puertos">
-      <input id="equipmentUnits" type="number" min="1" max="45" placeholder="Unidades en rack (U)">
-      <input id="equipmentPosicion" type="number" min="1" max="45" placeholder="Posición inferior en rack (1 a 45)">
-      <textarea id="equipmentObs" placeholder="Observaciones"></textarea>
+      <div class="field">
+        <label>Rack</label>
+        <select id="equipmentRack"></select>
+      </div>
+
+      <div class="field">
+        <label>Tipo de equipo</label>
+        <select id="equipmentTipo">
+          <option value="switch">Switch</option>
+          <option value="odf">ODF</option>
+          <option value="router">Router</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Nombre del equipo</label>
+        <input id="equipmentNombre" placeholder="Ej. ME3600#2">
+      </div>
+
+      <div class="field">
+        <label>Demónico</label>
+        <input id="equipmentDemonico" placeholder="Ej. ME3600#2">
+      </div>
+
+      <div class="field">
+        <label>Marca</label>
+        <input id="equipmentMarca" placeholder="Ej. CISCO">
+      </div>
+
+      <div class="field">
+        <label>Modelo</label>
+        <input id="equipmentModelo" placeholder="Ej. ME3600">
+      </div>
+
+      <div class="field">
+        <label>Serial <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
+        <input id="equipmentSerial" placeholder="Ej. FOC1812V0YN">
+      </div>
+
+      <div class="field">
+        <label>Inicio de numeración de puertos normales</label>
+        <select id="equipmentPortStart">
+          <option value="1">Puertos normales enumerados desde 1</option>
+          <option value="0">Puertos normales enumerados desde 0</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Cantidad de puertos normales</label>
+        <input id="equipmentPuertos" type="number" min="1" placeholder="Ej. 24">
+      </div>
+
+      <div class="field">
+        <label>Cantidad de puertos WAN</label>
+        <input id="equipmentWanPorts" type="number" min="0" value="0" placeholder="Ej. 2">
+      </div>
+
+      <div class="field">
+        <label>Cantidad de puertos ADMIN</label>
+        <input id="equipmentAdminPorts" type="number" min="0" value="0" placeholder="Ej. 1">
+      </div>
+
+      <div class="field">
+        <label>Unidades que ocupa en el rack (U)</label>
+        <input id="equipmentUnits" type="number" min="1" max="45" placeholder="Ej. 1">
+      </div>
+
+      <div class="field">
+        <label>Posición inferior en el rack</label>
+        <input id="equipmentPosicion" type="number" min="1" max="45" placeholder="Ej. 28">
+      </div>
+
+      <div class="field">
+        <label>Observaciones</label>
+        <textarea id="equipmentObs" placeholder="Escribe observaciones del equipo"></textarea>
+      </div>
       <div class="actions">
+        <button id="equipmentDeleteBtn" class="danger hidden" onclick="openDeleteEquipmentModal()">Eliminar equipo</button>
         <button class="secondary" onclick="closeEquipmentModal()">Cancelar</button>
         <button id="equipmentSaveBtn" onclick="saveEquipment()">Guardar equipo</button>
       </div>
@@ -268,6 +338,26 @@
       <div class="actions">
         <button class="secondary" id="editEquipmentFromPortsBtn" onclick="editCurrentEquipmentFromPorts()">Editar equipo</button>
         <button class="secondary" onclick="closeEquipmentViewModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="deleteEquipmentModal" class="modal-backdrop">
+    <div class="modal">
+      <h3 id="deleteEquipmentTitle">Eliminar equipo</h3>
+      <div class="modal-subtitle">
+        Esta acción eliminará el equipo, sus puertos, asignaciones, conexiones y rutas visuales asociadas.
+      </div>
+      <div class="section-card">
+        <div class="field">
+          <label>Para confirmar, escribe <strong>ELIMINAR</strong></label>
+          <input id="deleteEquipmentConfirmText" placeholder="Escribe ELIMINAR">
+        </div>
+      </div>
+      <div class="actions">
+        <button class="secondary" onclick="closeDeleteEquipmentModal()">Cancelar</button>
+        <button class="danger" onclick="confirmDeleteEquipment()">Eliminar definitivamente</button>
       </div>
     </div>
   </div>
@@ -445,19 +535,34 @@
       editingEquipmentId = null;
       document.getElementById('equipmentModalTitle').textContent = 'Agregar equipo';
       document.getElementById('equipmentSaveBtn').textContent = 'Guardar equipo';
+      document.getElementById('equipmentDeleteBtn').classList.add('hidden');
+      document.getElementById('equipmentPortStart').value = '1';
+      document.getElementById('equipmentWanPorts').value = '0';
+      document.getElementById('equipmentAdminPorts').value = '0';
       document.getElementById('equipmentRack').disabled = false;
       document.getElementById('equipmentTipo').disabled = false;
-      ['equipmentNombre','equipmentDemonico','equipmentMarca','equipmentModelo','equipmentSerial','equipmentPuertos','equipmentUnits','equipmentPosicion','equipmentObs'].forEach(id => {
+      ['equipmentNombre','equipmentDemonico','equipmentMarca','equipmentModelo','equipmentSerial','equipmentPuertos','equipmentWanPorts','equipmentAdminPorts','equipmentUnits','equipmentPosicion','equipmentObs'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
       });
       document.getElementById('equipmentModal').classList.add('show');
     };
-    window.closeEquipmentModal = () => document.getElementById('equipmentModal').classList.remove('show');
+    window.closeEquipmentModal = () => {
+      document.getElementById('equipmentModal').classList.remove('show');
+      document.getElementById('equipmentDeleteBtn').classList.add('hidden');
+    };
     window.closePortModal = () => document.getElementById('portModal').classList.remove('show');
     window.closeEquipmentViewModal = () => document.getElementById('equipmentViewModal').classList.remove('show');
+    window.openDeleteEquipmentModal = function() {
+      if (!editingEquipmentId) return toast('Primero selecciona un equipo para editar');
+      const eq = getEquipmentById(editingEquipmentId);
+      document.getElementById('deleteEquipmentConfirmText').value = '';
+      document.getElementById('deleteEquipmentTitle').textContent = `Eliminar ${eq?.nombre || 'equipo'}`;
+      document.getElementById('deleteEquipmentModal').classList.add('show');
+    };
+    window.closeDeleteEquipmentModal = () => document.getElementById('deleteEquipmentModal').classList.remove('show');
 
-    ['rackModal','equipmentModal','portModal','equipmentViewModal'].forEach(id => {
+    ['rackModal','equipmentModal','deleteEquipmentModal','portModal','equipmentViewModal'].forEach(id => {
       document.addEventListener('click', (e) => {
         if (e.target && e.target.id === id) document.getElementById(id).classList.remove('show');
       });
@@ -600,6 +705,28 @@
     function clearClientFilter() {
       filteredClientPortIds = null;
       filteredClientLinkKeys = null;
+    }
+
+
+    function getPortType(port) {
+      return String(port?.tipo_puerto || 'normal').toLowerCase();
+    }
+
+    function getPortDisplayLabel(port) {
+      const type = getPortType(port);
+      if (type === 'wan') return `WAN${port.numero_puerto}`;
+      if (type === 'admin') return `ADM${port.numero_puerto}`;
+      return String(port.numero_puerto);
+    }
+
+    function sortPortsByTypeAndNumber(list) {
+      const order = { normal: 1, wan: 2, admin: 3 };
+      return [...list].sort((a, b) => {
+        const ta = order[getPortType(a)] || 9;
+        const tb = order[getPortType(b)] || 9;
+        if (ta !== tb) return ta - tb;
+        return Number(a.numero_puerto) - Number(b.numero_puerto);
+      });
     }
 
     function getLinkSummary(portId) {
@@ -865,6 +992,17 @@
       saveRoutes(routes);
     }
 
+
+    function removeRoutesForPorts(portIds) {
+      const idSet = new Set((portIds || []).map(String));
+      const routes = getSavedRoutes();
+      Object.keys(routes).forEach(key => {
+        const [a, b] = key.split('|');
+        if (idSet.has(String(a)) || idSet.has(String(b))) delete routes[key];
+      });
+      saveRoutes(routes);
+    }
+
     function getOverlay() {
       return document.getElementById('linkOverlay');
     }
@@ -1095,31 +1233,48 @@
           });
         }
 
-        const portsDiv = eqBox.querySelector('.ports');
-        eqPorts.forEach(port => {
-          const client = getClientByPort(port.id);
-          const portEl = document.createElement('div');
-          const matchesFilter = isPortInClientFilter(port.id);
-          const visualClass = filteredClientPortIds
-            ? (matchesFilter ? 'occupied' : 'free')
-            : portClass(port.estado);
+        const originalPortsDiv = eqBox.querySelector('.ports');
+        originalPortsDiv.remove();
 
-          portEl.className = `port ${visualClass}`;
-          portEl.textContent = port.numero_puerto;
-          portEl.dataset.tip = client
-            ? `${client.nombre_cliente}${client.identificador_servicio ? ' · ' + client.identificador_servicio : ''}`
-            : `${port.estado} · ${getLinkSummary(port.id)}`;
-          portEl.dataset.portId = port.id;
-          portEl.dataset.equipmentId = eq.id;
+        const groups = [
+          { type: 'normal', title: 'Puertos normales' },
+          { type: 'wan', title: 'Puertos WAN' },
+          { type: 'admin', title: 'Puertos ADMIN' }
+        ];
 
-          if (filteredClientPortIds && !matchesFilter) {
-            portEl.style.opacity = '0.22';
-          } else {
-            portEl.style.opacity = '1';
-          }
+        groups.forEach(group => {
+          const groupPorts = sortPortsByTypeAndNumber(eqPorts.filter(p => getPortType(p) === group.type));
+          if (!groupPorts.length) return;
 
-          setupPortInteraction(portEl, eq, port, client);
-          portsDiv.appendChild(portEl);
+          const section = document.createElement('div');
+          section.className = 'port-section';
+          section.innerHTML = `<div class="port-section-title"><span>${group.title}</span><span>${groupPorts.length}</span></div><div class="ports"></div>`;
+
+          const portsDiv = section.querySelector('.ports');
+
+          groupPorts.forEach(port => {
+            const client = getClientByPort(port.id);
+            const portEl = document.createElement('div');
+            const matchesFilter = isPortInClientFilter(port.id);
+            const visualClass = filteredClientPortIds ? (matchesFilter ? 'occupied' : 'free') : portClass(port.estado);
+            const type = getPortType(port);
+
+            portEl.className = `port ${visualClass} ${type}`;
+            portEl.textContent = getPortDisplayLabel(port);
+            if (type !== 'normal') portEl.classList.add('special-port-label');
+
+            portEl.dataset.tip = client
+              ? `${getPortDisplayLabel(port)} · ${client.nombre_cliente}${client.identificador_servicio ? ' · ' + client.identificador_servicio : ''}`
+              : `${getPortDisplayLabel(port)} · ${port.estado} · ${getLinkSummary(port.id)}`;
+            portEl.dataset.portId = port.id;
+            portEl.dataset.equipmentId = eq.id;
+            portEl.style.opacity = filteredClientPortIds && !matchesFilter ? '0.22' : '1';
+
+            setupPortInteraction(portEl, eq, port, client);
+            portsDiv.appendChild(portEl);
+          });
+
+          eqBox.appendChild(section);
         });
 
         body.appendChild(eqBox);
@@ -1221,20 +1376,42 @@
       document.getElementById('evTitle').textContent = `Puertos de ${equipment.nombre}`;
       document.getElementById('evSubtitle').textContent = `Equipo ${equipment.tipo.toUpperCase()} · U${equipment.posicion_rack || '-'} · Haz clic sobre un puerto para editar.`;
       grid.innerHTML = '';
+      grid.style.display = 'block';
 
-      eqPorts.forEach(port => {
-        const client = getClientByPort(port.id);
-        const item = document.createElement('div');
-        item.className = `port-box ${portClass(port.estado)}`;
-        item.textContent = port.numero_puerto;
-        item.title = client
-          ? `${client.nombre_cliente}${client.identificador_servicio ? ' · ' + client.identificador_servicio : ''}`
-          : getLinkSummary(port.id);
-        item.addEventListener('click', () => {
-          closeEquipmentViewModal();
-          openPortModal(equipment, port, client);
+      const groups = [
+        { type: 'normal', title: 'Puertos normales' },
+        { type: 'wan', title: 'Puertos WAN' },
+        { type: 'admin', title: 'Puertos ADMIN' }
+      ];
+
+      groups.forEach(group => {
+        const groupPorts = sortPortsByTypeAndNumber(eqPorts.filter(p => getPortType(p) === group.type));
+        if (!groupPorts.length) return;
+
+        const section = document.createElement('div');
+        section.className = 'port-section';
+        section.innerHTML = `<div class="port-section-title"><span>${group.title}</span><span>${groupPorts.length}</span></div><div class="ports-grid"></div>`;
+        const sectionGrid = section.querySelector('.ports-grid');
+
+        groupPorts.forEach(port => {
+          const client = getClientByPort(port.id);
+          const type = getPortType(port);
+          const item = document.createElement('div');
+          item.className = `port-box ${portClass(port.estado)} ${type}`;
+          item.textContent = getPortDisplayLabel(port);
+          item.title = client
+            ? `${getPortDisplayLabel(port)} · ${client.nombre_cliente}${client.identificador_servicio ? ' · ' + client.identificador_servicio : ''}`
+            : `${getPortDisplayLabel(port)} · ${getLinkSummary(port.id)}`;
+
+          item.addEventListener('click', () => {
+            closeEquipmentViewModal();
+            openPortModal(equipment, port, client);
+          });
+
+          sectionGrid.appendChild(item);
         });
-        grid.appendChild(item);
+
+        grid.appendChild(section);
       });
 
       document.getElementById('equipmentViewModal').classList.add('show');
@@ -1279,7 +1456,7 @@
       prts.sort((a,b) => a.numero_puerto - b.numero_puerto).forEach(p => {
         const opt = document.createElement('option');
         opt.value = p.id;
-        opt.textContent = `Puerto ${p.numero_puerto}`;
+        opt.textContent = getPortType(p) === 'normal' ? `Puerto ${p.numero_puerto}` : getPortDisplayLabel(p);
         sel.appendChild(opt);
       });
       if ([...sel.options].some(o => o.value === current)) sel.value = current;
@@ -1333,7 +1510,7 @@
 
     function openPortModal(equipment, port, currentClient, prefillLink = null) {
       currentPortContext = { clickedEquipment: equipment, clickedPort: port, currentClient };
-      document.getElementById('portModalSubtitle').textContent = `Puerto seleccionado: ${equipment.nombre} - P${port.numero_puerto} · U${equipment.posicion_rack || '-'}`;
+      document.getElementById('portModalSubtitle').textContent = `Puerto seleccionado: ${equipment.nombre} - ${getPortDisplayLabel(port)} · U${equipment.posicion_rack || '-'}`;
 
       document.getElementById('pmClientName').value = currentClient?.nombre_cliente || '';
       document.getElementById('pmServiceId').value = currentClient?.identificador_servicio || '';
@@ -1644,7 +1821,10 @@
       document.getElementById('equipmentMarca').value = eq.marca || '';
       document.getElementById('equipmentModelo').value = eq.modelo || '';
       document.getElementById('equipmentSerial').value = eq.serial || '';
+      document.getElementById('equipmentPortStart').value = String(eq.puerto_inicial ?? 1);
       document.getElementById('equipmentPuertos').value = eq.cantidad_puertos || '';
+      document.getElementById('equipmentWanPorts').value = eq.cantidad_puertos_wan || 0;
+      document.getElementById('equipmentAdminPorts').value = eq.cantidad_puertos_admin || 0;
       document.getElementById('equipmentUnits').value = getEquipmentUnits(eq);
       document.getElementById('equipmentPosicion').value = eq.posicion_rack || '';
       document.getElementById('equipmentObs').value = eq.observaciones || '';
@@ -1657,6 +1837,7 @@
       editingEquipmentId = equipmentId;
       document.getElementById('equipmentModalTitle').textContent = 'Editar equipo';
       document.getElementById('equipmentSaveBtn').textContent = 'Actualizar equipo';
+      document.getElementById('equipmentDeleteBtn').classList.remove('hidden');
       document.getElementById('equipmentRack').disabled = false;
       document.getElementById('equipmentTipo').disabled = false;
       fillEquipmentForm(eq);
@@ -1669,18 +1850,36 @@
       openEditEquipmentModal(currentEquipmentViewId);
     };
 
-    async function syncPortsForEquipment(equipmentId, newCount) {
-      const eqPorts = ports.filter(p => p.equipment_id === equipmentId).sort((a,b) => a.numero_puerto - b.numero_puerto);
-      const currentNumbers = new Set(eqPorts.map(p => Number(p.numero_puerto)));
+    async function syncPortsForEquipment(equipmentId, normalCount, startNumber, wanCount, adminCount) {
+      const eqPorts = ports.filter(p => p.equipment_id === equipmentId);
+      const desired = [];
 
-      const portsToRemove = eqPorts.filter(p => Number(p.numero_puerto) > newCount);
+      for (let i = 0; i < normalCount; i++) {
+        desired.push({ tipo_puerto: 'normal', numero_puerto: Number(startNumber) + i, etiqueta_puerto: null });
+      }
+
+      for (let i = 1; i <= wanCount; i++) {
+        desired.push({ tipo_puerto: 'wan', numero_puerto: i, etiqueta_puerto: `WAN${i}` });
+      }
+
+      for (let i = 1; i <= adminCount; i++) {
+        desired.push({ tipo_puerto: 'admin', numero_puerto: i, etiqueta_puerto: `ADMIN${i}` });
+      }
+
+      const keyOf = p => `${String(p.tipo_puerto || 'normal').toLowerCase()}|${Number(p.numero_puerto)}`;
+      const desiredKeys = new Set(desired.map(keyOf));
+      const currentMap = new Map(eqPorts.map(p => [keyOf(p), p]));
+
+      const portsToRemove = eqPorts.filter(p => !desiredKeys.has(keyOf(p)));
+
       if (portsToRemove.length) {
         const blocked = portsToRemove.some(p =>
           assignments.some(a => a.port_id === p.id) ||
           links.some(l => l.port_id_origen === p.id || l.port_id_destino === p.id)
         );
+
         if (blocked) {
-          throw new Error('No se puede reducir la cantidad de puertos porque hay puertos superiores ocupados o enlazados');
+          throw new Error('No se pueden eliminar o renumerar puertos que tengan cliente o conexión');
         }
 
         const ids = portsToRemove.map(p => p.id);
@@ -1688,12 +1887,15 @@
         if (delRes.error) throw delRes.error;
       }
 
-      const missing = [];
-      for (let n = 1; n <= newCount; n++) {
-        if (!currentNumbers.has(n)) {
-          missing.push({ equipment_id: equipmentId, numero_puerto: n, estado: 'libre' });
-        }
-      }
+      const missing = desired
+        .filter(p => !currentMap.has(keyOf(p)))
+        .map(p => ({
+          equipment_id: equipmentId,
+          numero_puerto: p.numero_puerto,
+          tipo_puerto: p.tipo_puerto,
+          etiqueta_puerto: p.etiqueta_puerto,
+          estado: 'libre'
+        }));
 
       if (missing.length) {
         const insRes = await supabase.from('ports').insert(missing);
@@ -1701,6 +1903,68 @@
       }
     }
 
+
+
+    window.confirmDeleteEquipment = async function() {
+      if (!editingEquipmentId) return toast('No hay equipo seleccionado');
+
+      const confirmation = document.getElementById('deleteEquipmentConfirmText').value.trim();
+      if (confirmation !== 'ELIMINAR') {
+        toast('Debes escribir ELIMINAR exactamente');
+        return;
+      }
+
+      const equipmentId = editingEquipmentId;
+      const eq = getEquipmentById(equipmentId);
+      const equipmentPorts = ports.filter(p => p.equipment_id === equipmentId);
+      const portIds = equipmentPorts.map(p => p.id);
+
+      try {
+        if (portIds.length) {
+          const delAssignments = await supabase
+            .from('port_assignments')
+            .delete()
+            .in('port_id', portIds);
+          if (delAssignments.error) throw delAssignments.error;
+
+          const delOriginLinks = await supabase
+            .from('port_links')
+            .delete()
+            .in('port_id_origen', portIds);
+          if (delOriginLinks.error) throw delOriginLinks.error;
+
+          const delDestLinks = await supabase
+            .from('port_links')
+            .delete()
+            .in('port_id_destino', portIds);
+          if (delDestLinks.error) throw delDestLinks.error;
+
+          const delPorts = await supabase
+            .from('ports')
+            .delete()
+            .in('id', portIds);
+          if (delPorts.error) throw delPorts.error;
+
+          removeRoutesForPorts(portIds);
+        }
+
+        const delEquipment = await supabase
+          .from('equipment')
+          .delete()
+          .eq('id', equipmentId);
+        if (delEquipment.error) throw delEquipment.error;
+
+        editingEquipmentId = null;
+        currentEquipmentViewId = null;
+        closeDeleteEquipmentModal();
+        closeEquipmentModal();
+        await loadDashboard();
+        toast(`Equipo ${eq?.nombre || ''} eliminado`);
+      } catch (error) {
+        console.error(error);
+        toast(error.message || 'Error eliminando equipo');
+      }
+    };
 
     window.saveEquipment = async function() {
       if (!supabase) return toast('Sin conexión a Supabase');
@@ -1712,13 +1976,18 @@
       const marca = document.getElementById('equipmentMarca').value.trim();
       const modelo = document.getElementById('equipmentModelo').value.trim();
       const serial = document.getElementById('equipmentSerial').value.trim();
+      const puerto_inicial = Number(document.getElementById('equipmentPortStart').value);
       const cantidad_puertos = Number(document.getElementById('equipmentPuertos').value);
+      const cantidad_puertos_wan = Number(document.getElementById('equipmentWanPorts').value) || 0;
+      const cantidad_puertos_admin = Number(document.getElementById('equipmentAdminPorts').value) || 0;
       const unidades_rack = Number(document.getElementById('equipmentUnits').value) || 1;
       const posicion_rack = Number(document.getElementById('equipmentPosicion').value) || null;
       const observaciones = document.getElementById('equipmentObs').value.trim();
 
       if (!rack_id) return toast('Selecciona un rack');
-      if (!nombre || !cantidad_puertos) return toast('Nombre y cantidad de puertos son obligatorios');
+      if (!nombre || !cantidad_puertos) return toast('Nombre y cantidad de puertos normales son obligatorios');
+      if (![0,1].includes(puerto_inicial)) return toast('La numeración inicial debe ser 0 o 1');
+      if (cantidad_puertos_wan < 0 || cantidad_puertos_admin < 0) return toast('Las cantidades WAN y ADMIN no pueden ser negativas');
       if (!posicion_rack || posicion_rack < 1 || posicion_rack > 45) return toast('La posición del rack debe estar entre 1 y 45');
       if (!unidades_rack || unidades_rack < 1 || unidades_rack > 45) return toast('Las unidades en rack deben estar entre 1 y 45');
       if ((posicion_rack + unidades_rack - 1) > 45) return toast('El equipo se sale del rack con esas unidades');
@@ -1734,25 +2003,25 @@
           const { error } = await supabase.from('equipment')
             .update({
               rack_id, tipo, nombre, demonico, marca, modelo, serial,
-              cantidad_puertos, posicion_rack, unidades_rack, observaciones
+              cantidad_puertos, puerto_inicial, cantidad_puertos_wan, cantidad_puertos_admin, posicion_rack, unidades_rack, observaciones
             })
             .eq('id', editingEquipmentId);
 
           if (error) throw error;
 
-          await syncPortsForEquipment(editingEquipmentId, cantidad_puertos);
+          await syncPortsForEquipment(editingEquipmentId, cantidad_puertos, puerto_inicial, cantidad_puertos_wan, cantidad_puertos_admin);
           toast('Equipo actualizado');
         } else {
           const { data, error } = await supabase.from('equipment').insert({
-            rack_id, tipo, nombre, demonico, marca, modelo, serial, cantidad_puertos, posicion_rack, unidades_rack, observaciones
+            rack_id, tipo, nombre, demonico, marca, modelo, serial, cantidad_puertos, puerto_inicial, cantidad_puertos_wan, cantidad_puertos_admin, posicion_rack, unidades_rack, observaciones
           }).select().single();
 
           if (error) throw error;
-          if (data?.id) await syncPortsForEquipment(data.id, cantidad_puertos);
+          if (data?.id) await syncPortsForEquipment(data.id, cantidad_puertos, puerto_inicial, cantidad_puertos_wan, cantidad_puertos_admin);
           toast('Equipo agregado');
         }
 
-        ['equipmentNombre','equipmentDemonico','equipmentMarca','equipmentModelo','equipmentSerial','equipmentPuertos','equipmentUnits','equipmentPosicion','equipmentObs'].forEach(id => {
+        ['equipmentNombre','equipmentDemonico','equipmentMarca','equipmentModelo','equipmentSerial','equipmentPuertos','equipmentWanPorts','equipmentAdminPorts','equipmentUnits','equipmentPosicion','equipmentObs'].forEach(id => {
           const el = document.getElementById(id);
           if (el) el.value = '';
         });
@@ -1822,3 +2091,4 @@
   </script>
 </body>
 </html>
+
