@@ -21,7 +21,7 @@
     }
     .app{height:100vh;display:grid;grid-template-rows:auto 1fr}
     .topbar{
-      padding:14px 16px;display:grid;grid-template-columns:230px 1fr 180px 170px 150px 150px 150px 120px;gap:10px;
+      padding:14px 16px;display:grid;grid-template-columns:230px 1fr 180px 170px 150px 150px 150px 150px 120px;gap:10px;
       border-bottom:1px solid rgba(38,50,69,.5);background:rgba(7,17,31,.68);backdrop-filter:blur(8px);align-items:center;
     }
     .brand{font-size:20px;font-weight:700;white-space:nowrap}
@@ -167,7 +167,23 @@
       position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:9998;padding:20px
     }
     .modal-backdrop.show{display:flex}
-    .modal{width:min(520px,100%);background:linear-gradient(180deg, rgba(15,23,42,.98), rgba(11,19,36,.99));border:1px solid #304056;border-radius:20px;box-shadow:0 24px 60px rgba(0,0,0,.45);padding:16px}
+    .modal{
+      width:min(520px,100%);
+      max-height:92vh;
+      overflow-y:auto;
+      overflow-x:hidden;
+      background:linear-gradient(180deg, rgba(15,23,42,.98), rgba(11,19,36,.99));
+      border:1px solid #304056;
+      border-radius:20px;
+      box-shadow:0 24px 60px rgba(0,0,0,.45);
+      padding:16px;
+      scrollbar-width:thin;
+      scrollbar-color:#35506e #0b1324;
+    }
+    .modal::-webkit-scrollbar{width:10px}
+    .modal::-webkit-scrollbar-track{background:#0b1324;border-radius:999px}
+    .modal::-webkit-scrollbar-thumb{background:#35506e;border-radius:999px;border:2px solid #0b1324}
+    .modal::-webkit-scrollbar-thumb:hover{background:#4a6a8e}
     .modal.large{width:min(980px,100%);max-height:92vh;overflow:auto}
     .modal.medium{width:min(760px,100%);max-height:92vh;overflow:auto}
     .modal h3{margin:0 0 12px;font-size:18px}
@@ -176,7 +192,18 @@
     .section-card{border:1px solid #2d3c50;border-radius:16px;background:rgba(10,18,31,.72);padding:14px}
     .section-card h4{margin:0 0 12px 0;font-size:15px;color:#dff3ff}
     .field{margin-bottom:10px}.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
-    .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}.actions button{width:auto;min-width:130px}
+    .actions{
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      margin-top:14px;
+      position:sticky;
+      bottom:-16px;
+      z-index:5;
+      padding:12px 0 4px;
+      background:linear-gradient(180deg, rgba(11,19,36,0), rgba(11,19,36,.98) 28%);
+    }
+    .actions button{width:auto;min-width:130px}
     .ports-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(28px,1fr));gap:6px}
     .port-box{height:28px;border-radius:8px;border:1px solid rgba(255,255,255,.10);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;cursor:pointer;position:relative}
     .port-box.free{background:var(--free)} .port-box.occupied{background:var(--ok)} .port-box.reserved{background:var(--warn)} .port-box.danado{background:var(--danger)}
@@ -204,6 +231,7 @@
       <button class="secondary" onclick="searchClients()">Buscar cliente</button>
       <button class="secondary" onclick="openRackModal()">Agregar rack</button>
       <button class="secondary" onclick="openEquipmentModal()">Agregar equipo</button>
+      <button class="secondary" onclick="exportOccupiedPortsExcel()">Reporte Excel</button>
       <select id="toggleConnections" onchange="changeConnectionsVisibility()">
         <option value="show">Mostrar conexiones</option>
         <option value="hide">Ocultar conexiones</option>
@@ -408,6 +436,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
@@ -2037,6 +2066,151 @@
 
     window.createEquipment = window.saveEquipment;
 
+
+    function getPortConnectionData(portId) {
+      const incoming = links.find(l => l.port_id_destino === portId);
+      const outgoing = links.find(l => l.port_id_origen === portId);
+
+      const describeRemote = remotePortId => {
+        if (!remotePortId) return { rack: '', equipment: '', port: '' };
+        const remotePort = getPortById(remotePortId);
+        const remoteEquipment = getEquipmentById(remotePort?.equipment_id);
+        const remoteRack = getRackById(remoteEquipment?.rack_id);
+
+        return {
+          rack: remoteRack?.nombre || '',
+          equipment: remoteEquipment?.nombre || '',
+          port: remotePort ? getPortDisplayLabel(remotePort) : ''
+        };
+      };
+
+      return {
+        origin: describeRemote(incoming?.port_id_origen),
+        destination: describeRemote(outgoing?.port_id_destino)
+      };
+    }
+
+    function autoSizeWorksheetColumns(worksheet, rows) {
+      if (!rows.length) return;
+
+      const headers = Object.keys(rows[0]);
+      worksheet['!cols'] = headers.map(header => {
+        const maxLength = Math.max(
+          String(header).length,
+          ...rows.map(row => String(row[header] ?? '').length)
+        );
+        return { wch: Math.min(Math.max(maxLength + 2, 12), 42) };
+      });
+    }
+
+    window.exportOccupiedPortsExcel = function() {
+      if (!window.XLSX) {
+        toast('No fue posible cargar la librería de Excel');
+        return;
+      }
+
+      const occupiedPorts = ports
+        .filter(port => port.estado === 'ocupado' || getAssignmentByPort(port.id))
+        .sort((a, b) => {
+          const eqA = getEquipmentById(a.equipment_id);
+          const eqB = getEquipmentById(b.equipment_id);
+          const rackA = getRackById(eqA?.rack_id)?.nombre || '';
+          const rackB = getRackById(eqB?.rack_id)?.nombre || '';
+
+          return rackA.localeCompare(rackB) ||
+            String(eqA?.nombre || '').localeCompare(String(eqB?.nombre || '')) ||
+            getPortType(a).localeCompare(getPortType(b)) ||
+            Number(a.numero_puerto) - Number(b.numero_puerto);
+        });
+
+      if (!occupiedPorts.length) {
+        toast('No hay puertos ocupados para exportar');
+        return;
+      }
+
+      const rows = occupiedPorts.map(port => {
+        const equipment = getEquipmentById(port.equipment_id);
+        const rack = getRackById(equipment?.rack_id);
+        const client = getClientByPort(port.id);
+        const connection = getPortConnectionData(port.id);
+
+        return {
+          'Rack': rack?.nombre || '',
+          'Ubicación rack': rack?.ubicacion || '',
+          'Tipo de equipo': String(equipment?.tipo || '').toUpperCase(),
+          'Equipo': equipment?.nombre || '',
+          'Demónico': equipment?.demonico || '',
+          'Marca': equipment?.marca || '',
+          'Modelo': equipment?.modelo || '',
+          'Serial': equipment?.serial || '',
+          'Posición U': equipment?.posicion_rack || '',
+          'Unidades rack': equipment?.unidades_rack || 1,
+          'Tipo de puerto': getPortType(port).toUpperCase(),
+          'Puerto': getPortDisplayLabel(port),
+          'Estado': String(port.estado || '').toUpperCase(),
+          'Cliente': client?.nombre_cliente || '',
+          'ID servicio / cliente': client?.identificador_servicio || '',
+          'Rack origen': connection.origin.rack,
+          'Equipo origen': connection.origin.equipment,
+          'Puerto origen': connection.origin.port,
+          'Rack destino': connection.destination.rack,
+          'Equipo destino': connection.destination.equipment,
+          'Puerto destino': connection.destination.port
+        };
+      });
+
+      const summaryRows = equipments
+        .map(equipment => {
+          const rack = getRackById(equipment.rack_id);
+          const eqPorts = ports.filter(p => p.equipment_id === equipment.id);
+          const occupied = eqPorts.filter(p => p.estado === 'ocupado' || getAssignmentByPort(p.id)).length;
+
+          return {
+            'Rack': rack?.nombre || '',
+            'Tipo de equipo': String(equipment.tipo || '').toUpperCase(),
+            'Equipo': equipment.nombre || '',
+            'Cantidad total de puertos': eqPorts.length,
+            'Puertos ocupados': occupied,
+            'Puertos libres': eqPorts.filter(p => p.estado === 'libre' && !getAssignmentByPort(p.id)).length,
+            'Puertos reservados': eqPorts.filter(p => p.estado === 'reservado').length,
+            'Puertos dañados': eqPorts.filter(p => p.estado === 'danado').length,
+            'Porcentaje ocupación': eqPorts.length ? occupied / eqPorts.length : 0
+          };
+        })
+        .sort((a, b) => a.Rack.localeCompare(b.Rack) || a.Equipo.localeCompare(b.Equipo));
+
+      const workbook = XLSX.utils.book_new();
+
+      const occupiedSheet = XLSX.utils.json_to_sheet(rows);
+      autoSizeWorksheetColumns(occupiedSheet, rows);
+      occupiedSheet['!autofilter'] = { ref: occupiedSheet['!ref'] };
+      occupiedSheet['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+      const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
+      autoSizeWorksheetColumns(summarySheet, summaryRows);
+      summarySheet['!autofilter'] = { ref: summarySheet['!ref'] };
+      summarySheet['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+      // Formato porcentual de la columna I de la hoja resumen.
+      for (let rowIndex = 2; rowIndex <= summaryRows.length + 1; rowIndex++) {
+        const cell = summarySheet[`I${rowIndex}`];
+        if (cell) cell.z = '0.00%';
+      }
+
+      XLSX.utils.book_append_sheet(workbook, occupiedSheet, 'Puertos ocupados');
+      XLSX.utils.book_append_sheet(workbook, summarySheet, 'Resumen equipos');
+
+      const now = new Date();
+      const stamp = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, '0'),
+        String(now.getDate()).padStart(2, '0')
+      ].join('-');
+
+      XLSX.writeFile(workbook, `reporte_puertos_ocupados_${stamp}.xlsx`);
+      toast('Reporte Excel generado');
+    };
+
     window.searchClients = async function() {
       if (!supabase) return toast('Sin conexión a Supabase');
       const text = document.getElementById('searchClient').value.trim();
@@ -2091,4 +2265,5 @@
   </script>
 </body>
 </html>
+
 
