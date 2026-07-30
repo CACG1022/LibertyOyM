@@ -2963,16 +2963,18 @@ window.accionesClienteAsignado = window.accionesClienteAsignadoFix;
     <div class="card">
       <b>Filtros</b>
       <label>ID Cliente / Servicio</label>
-      <select id="filtroCliente" onchange="aplicarFiltros()"><option value="">Todos</option></select>
+      <input id="filtroCliente" list="listaFiltroClientes" autocomplete="off" placeholder="Escribe o selecciona un cliente">
+      <datalist id="listaFiltroClientes"></datalist>
       <label>Código ruta / cambio</label>
-      <select id="filtroRuta" onchange="aplicarFiltros()"><option value="">Todas</option></select>
+      <input id="filtroRuta" list="listaFiltroRutas" autocomplete="off" placeholder="Escribe o selecciona una ruta / cambio">
+      <datalist id="listaFiltroRutas"></datalist>
       <label>Buscar texto</label>
-      <input id="buscarTexto" placeholder="Cliente, ruta, punto, hilo..." oninput="aplicarFiltrosSobreDatosCargados()">
+      <input id="buscarTexto" placeholder="Nombre cliente, punto, hilo...">
       <div class="row">
-        <button onclick="cargarDatos()">Actualizar</button>
+        <button onclick="cargarDatos()">Cargar resultados</button>
         <button class="secondary" onclick="limpiarFiltros()">Limpiar</button>
       </div>
-      <button class="purple" onclick="cargarEnrutamientoSeleccionado()">Cargar enrutamiento seleccionado</button>
+      <div class="gpsBox" id="ayudaFiltrosMaster" style="margin-top:9px">No se precargan enrutamientos. Ingresa un cliente, una ruta o un texto y pulsa <b>Cargar resultados</b>.</div>
       <button class="purple" onclick="generarUnifilar()">Reporte unifilar</button>
       <button class="gray" onclick="diagnosticoCarga()">Diagnóstico carga</button>
     </div>
@@ -5626,6 +5628,10 @@ function construirHTMLImpresionUnifilar(contenidoHTML, subtitulo){
   </div>
 </div>
 
+
+
+
+
 </body>
 </html>`;
 }
@@ -7156,6 +7162,778 @@ window.accionesClienteAsignado = window.accionesClienteAsignadoFix;
 })();
 </script>
 
+
+<style id="oymMultiempresaStyles">
+  .oymEmpresaTag{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:#0f766e;color:#fff;font-size:11px;font-weight:800;white-space:nowrap}
+  .oymEmpresaInfo{margin-top:8px;padding:8px 10px;border-left:4px solid #14b8a6;border-radius:8px;background:#042f2e;color:#ccfbf1;font-size:12px;line-height:1.4}
+  #filtroEmpresaAsignacionWrap{min-width:180px}
+  @media(max-width:900px){#filtroEmpresaAsignacionWrap{min-width:0}}
+</style>
+
+<script>
+/* =========================================================
+   OYM MASTER MULTIEMPRESA
+   - Empresa al crear usuario
+   - Empresa al crear/asignar enrutamiento
+   - Técnicos filtrados por empresa
+   - Filtros de empresa por nombre
+   ========================================================= */
+(function(){
+  "use strict";
+
+  let empresasOym = [];
+  window.empresasOym = empresasOym;
+
+  const $ = id => document.getElementById(id);
+  const esc = v => typeof escapeHtml === "function" ? escapeHtml(v) : String(v ?? "").replace(/[&<>\"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'\"':"&quot;","'":"&#039;"}[m]));
+  const attr = v => typeof escapeAttr === "function" ? escapeAttr(v) : esc(v);
+
+  function nombreEmpresaPorId(id){
+    const e = empresasOym.find(x => String(x.id) === String(id || ""));
+    return e?.nombre || "Sin empresa";
+  }
+  window.nombreEmpresaPorId = nombreEmpresaPorId;
+
+  function crearSelectEmpresa(id, labelInicial="Seleccione empresa..."){
+    const select = document.createElement("select");
+    select.id = id;
+    select.innerHTML = `<option value="">${labelInicial}</option>`;
+    return select;
+  }
+
+  function insertarCamposEmpresa(){
+    // Crear usuario
+    if(!$('nuevoUsuarioEmpresa')){
+      const rol = $('nuevoUsuarioRol');
+      if(rol){
+        const label = document.createElement('label');
+        label.textContent = 'Empresa';
+        const select = crearSelectEmpresa('nuevoUsuarioEmpresa');
+        rol.insertAdjacentElement('afterend', select);
+        rol.insertAdjacentElement('afterend', label);
+      }
+    }
+
+    // Asignar cliente
+    if(!$('asigEmpresa')){
+      const tipoRed = $('asigTipoRed');
+      if(tipoRed){
+        const label = document.createElement('label');
+        label.textContent = 'Empresa';
+        const select = crearSelectEmpresa('asigEmpresa');
+        select.addEventListener('change', ()=>{
+          llenarTecnicosPorEmpresa(select.value, 'asigTecnico');
+        });
+        tipoRed.insertAdjacentElement('afterend', select);
+        tipoRed.insertAdjacentElement('afterend', label);
+      }
+    }
+
+    // Filtro principal por empresa
+    if(!$('filtroEmpresa')){
+      const filtroCliente = $('filtroCliente');
+      if(filtroCliente){
+        const label = document.createElement('label');
+        label.textContent = 'Empresa';
+        const select = crearSelectEmpresa('filtroEmpresa','Todas las empresas');
+        select.addEventListener('change', async ()=>{
+          await cargarCombosEmpresaPrincipal();
+          if(typeof cargarPrimerEnrutamientoDisponible === 'function') await cargarPrimerEnrutamientoDisponible();
+        });
+        filtroCliente.parentNode.insertBefore(select, filtroCliente.previousElementSibling || filtroCliente);
+        filtroCliente.parentNode.insertBefore(label, select);
+      }
+    }
+
+    // Filtro modal asignaciones
+    if(!$('filtroEmpresaAsignacion')){
+      const filtros = document.querySelector('#modalAsignaciones .assignFilters');
+      if(filtros){
+        const wrap = document.createElement('div');
+        wrap.id = 'filtroEmpresaAsignacionWrap';
+        wrap.innerHTML = `<label>Empresa</label><select id="filtroEmpresaAsignacion"><option value="">Todas</option></select>`;
+        const boton = filtros.querySelector('button');
+        filtros.insertBefore(wrap, boton || null);
+        $('filtroEmpresaAsignacion').addEventListener('change', ()=>window.aplicarFiltrosAsignaciones?.());
+      }
+    }
+  }
+
+  function poblarSelectEmpresas(id, incluirTodas=false){
+    const sel = $(id);
+    if(!sel) return;
+    const actual = sel.value;
+    sel.innerHTML = `<option value="">${incluirTodas ? 'Todas las empresas' : 'Seleccione empresa...'}</option>` +
+      empresasOym.map(e => `<option value="${attr(e.id)}">${esc(e.nombre)}</option>`).join('');
+    if([...sel.options].some(o => o.value === actual)) sel.value = actual;
+    else if(!incluirTodas && perfilSesion?.empresa_id && [...sel.options].some(o=>String(o.value)===String(perfilSesion.empresa_id))){
+      sel.value = perfilSesion.empresa_id;
+    }
+  }
+
+  async function cargarEmpresasOym(){
+    const {data,error} = await supabaseClient
+      .from('oym_empresas')
+      .select('id,nombre,slug,nit,activo')
+      .eq('activo',true)
+      .order('nombre');
+    if(error){
+      console.warn('No se pudieron cargar empresas:',error);
+      return;
+    }
+    empresasOym = data || [];
+    window.empresasOym = empresasOym;
+    poblarSelectEmpresas('nuevoUsuarioEmpresa',false);
+    poblarSelectEmpresas('asigEmpresa',false);
+    poblarSelectEmpresas('filtroEmpresa',true);
+    poblarSelectEmpresas('filtroEmpresaAsignacion',true);
+
+    if(perfilSesion?.rol !== 'admin' && perfilSesion?.empresa_id){
+      ['nuevoUsuarioEmpresa','asigEmpresa','filtroEmpresa','filtroEmpresaAsignacion'].forEach(id=>{
+        const sel=$(id); if(sel){sel.value=perfilSesion.empresa_id; sel.disabled=true;}
+      });
+    }
+  }
+  window.cargarEmpresasOym = cargarEmpresasOym;
+
+  function enriquecerUsuariosConEmpresa(lista){
+    return (lista || []).map(u=>({
+      ...u,
+      empresa_nombre: nombreEmpresaPorId(u.empresa_id)
+    }));
+  }
+
+  function llenarTecnicosPorEmpresa(empresaId, selectId='asigTecnico', tecnicoActual=''){
+    const sel=$(selectId); if(!sel) return;
+    const tecnicos=(window.usuariosOym || usuariosOym || [])
+      .filter(u=>u.rol==='tecnico' && u.activo!==false)
+      .filter(u=>!empresaId || String(u.empresa_id||'')===String(empresaId));
+    sel.innerHTML='<option value="">Seleccione técnico...</option>'+tecnicos.map(u=>{
+      const selected=String(u.id)===String(tecnicoActual||'')?'selected':'';
+      return `<option value="${attr(u.id)}" data-email="${attr(u.email)}" data-nombre="${attr(u.nombre||u.email)}" data-empresa-id="${attr(u.empresa_id||'')}" ${selected}>${esc(u.nombre||u.email)} · ${esc(u.email)} · ${esc(u.empresa_nombre||nombreEmpresaPorId(u.empresa_id))}</option>`;
+    }).join('');
+  }
+  window.llenarTecnicosPorEmpresa = llenarTecnicosPorEmpresa;
+
+  // Sustituye carga de usuarios para incluir la empresa.
+  window.cargarUsuariosOym = async function(){
+    const {data,error}=await supabaseClient.from('oym_usuarios').select('*').eq('activo',true).order('nombre');
+    if(error){console.warn(error);return;}
+    usuariosOym=enriquecerUsuariosConEmpresa(data||[]);
+    window.usuariosOym=usuariosOym;
+    llenarTecnicosPorEmpresa($('asigEmpresa')?.value || perfilSesion?.empresa_id || '', 'asigTecnico');
+  };
+
+  // Crear usuario con empresa.
+  window.crearUsuarioOym = async function(){
+    const nombre=$('nuevoUsuarioNombre').value.trim();
+    const email=$('nuevoUsuarioEmail').value.trim();
+    const password=$('nuevoUsuarioPassword').value;
+    const rol=$('nuevoUsuarioRol').value;
+    const empresaId=$('nuevoUsuarioEmpresa')?.value || perfilSesion?.empresa_id || '';
+    const msg=$('usuariosMsg');
+
+    if(perfilSesion?.rol!=='admin'){alert('Solo un administrador puede crear usuarios.');return;}
+    if(!nombre || !email || !password || !empresaId){alert('Nombre, correo, contraseña y empresa son obligatorios.');return;}
+    if(password.length<6){alert('La contraseña temporal debe tener mínimo 6 caracteres.');return;}
+
+    msg.textContent='Creando usuario...';
+    const adminEmail=usuarioSesion.email;
+    const adminPassword=passwordSesionActual;
+    const {data,error}=await supabaseClient.auth.signUp({
+      email,password,
+      options:{data:{nombre,rol,empresa_id:empresaId}}
+    });
+    if(error){msg.textContent='Error creando usuario en Auth: '+error.message;return;}
+    const userId=data.user?.id;
+    if(!userId){msg.textContent='No se recibió el ID del usuario. Revisa Authentication > Users.';return;}
+
+    const perfilResp=await supabaseClient.from('oym_usuarios').upsert({
+      id:userId,email,nombre,rol,empresa_id:empresaId,activo:true
+    },{onConflict:'id'});
+    if(perfilResp.error){msg.textContent='Usuario creado en Auth, pero falló el perfil: '+perfilResp.error.message;return;}
+
+    const {data:{session}}=await supabaseClient.auth.getSession();
+    if(session?.user?.email===email && adminEmail && adminPassword){
+      await supabaseClient.auth.signOut();
+      const back=await supabaseClient.auth.signInWithPassword({email:adminEmail,password:adminPassword});
+      if(back.error){msg.textContent='Usuario creado. Debes volver a iniciar sesión como administrador.';return;}
+      const {data:{session:newSession}}=await supabaseClient.auth.getSession();
+      usuarioSesion=newSession.user;
+      await cargarPerfilMaster();
+    }
+
+    msg.textContent=`Usuario creado para ${nombreEmpresaPorId(empresaId)}.`;
+    ['nuevoUsuarioNombre','nuevoUsuarioEmail','nuevoUsuarioPassword'].forEach(id=>$(id).value='');
+    await cargarUsuariosOym();
+  };
+
+  // Crear enrutamiento asociado a empresa y validar técnico de la misma empresa.
+  window.crearAsignacionCliente = async function(){
+    if(perfilSesion?.rol!=='admin'){alert('Solo un administrador puede asignar clientes.');return;}
+    const empresaId=$('asigEmpresa')?.value || perfilSesion?.empresa_id || '';
+    const tecnicoId=$('asigTecnico').value;
+    const tecnico=(usuariosOym||[]).find(u=>String(u.id)===String(tecnicoId));
+    const tipoRed=String($('asigTipoRed')?.value||'PUNTO_A_PUNTO').toUpperCase();
+
+    if(!empresaId){alert('Selecciona la empresa del enrutamiento.');return;}
+    if(!tecnico || String(tecnico.empresa_id||'')!==String(empresaId)){
+      alert('El técnico seleccionado debe pertenecer a la misma empresa del enrutamiento.');return;
+    }
+    const payload={
+      offline_id:crypto.randomUUID(),
+      empresa_id:empresaId,
+      id_cliente:$('asigIdCliente').value.trim(),
+      codigo_ruta:$('asigCodigoRuta').value.trim(),
+      nombre_cliente:$('asigNombreCliente').value.trim(),
+      direccion_cliente:$('asigDireccionCliente').value.trim(),
+      tipo_red:tipoRed,
+      tecnico_id:tecnicoId,
+      tecnico_email:tecnico.email||null,
+      tecnico_nombre:tecnico.nombre||tecnico.email||null,
+      estado:'activo',estado_asignacion:'asignado',
+      fecha_inicio:new Date().toISOString(),fecha_asignacion:new Date().toISOString(),
+      dispositivo:'MASTER'
+    };
+    if(!payload.id_cliente || !payload.codigo_ruta){alert('ID Cliente y Código de ruta son obligatorios.');return;}
+    const {data,error}=await supabaseClient.from('enrutamientos_clientes').insert(payload).select('id,id_cliente,codigo_ruta,tipo_red,empresa_id').single();
+    if(error){$('asigMsg').textContent='Error: '+error.message;return;}
+    $('asigMsg').textContent=`Cliente asignado a ${nombreEmpresaPorId(data.empresa_id)} correctamente.`;
+    ['asigIdCliente','asigCodigoRuta','asigNombreCliente','asigDireccionCliente'].forEach(id=>$(id).value='');
+    await cargarAsignaciones();
+    await cargarCombosEmpresaPrincipal();
+  };
+
+  async function completarEmpresaAsignaciones(lista){
+    const filas=Array.isArray(lista)?lista:[];
+    if(!filas.length)return filas;
+    const ids=filas.map(r=>r.id).filter(Boolean);
+    const {data,error}=await supabaseClient.from('enrutamientos_clientes').select('id,empresa_id').in('id',ids);
+    if(error){console.warn('No se pudo completar empresa:',error);return filas;}
+    const mapa=new Map((data||[]).map(x=>[String(x.id),x.empresa_id]));
+    return filas.map(r=>{
+      const empresa_id=r.empresa_id||mapa.get(String(r.id))||null;
+      return {...r,empresa_id,empresa_nombre:nombreEmpresaPorId(empresa_id)};
+    });
+  }
+
+  window.cargarAsignaciones = async function(){
+    const {data,error}=await supabaseClient.from('v_enrutamientos_asignados').select('*').order('fecha_asignacion',{ascending:false});
+    if(error){
+      const body=$('tablaAsignacionesBody'); if(body) body.innerHTML=`<tr><td colspan="11">Error: ${esc(error.message)}</td></tr>`;
+      return;
+    }
+    let lista=typeof completarTipoRedAsignaciones==='function' ? await completarTipoRedAsignaciones(data||[]) : (data||[]);
+    lista=await completarEmpresaAsignaciones(lista);
+    asignacionesData=lista;
+    window.__asignacionesCache=lista;
+    cargarFiltroTecnicosAsignaciones?.();
+    window.aplicarFiltrosAsignaciones?.();
+  };
+
+  const filtroOriginal=window.aplicarFiltrosAsignaciones;
+  window.aplicarFiltrosAsignaciones=function(){
+    const q=($('buscarAsignacion')?.value||'').toLowerCase().trim();
+    const estado=$('filtroEstadoAsignacion')?.value||'';
+    const asignado=$('filtroAsignadoSiNo')?.value||'';
+    const tecnico=$('filtroTecnicoAsignacion')?.value||'';
+    const tecnologia=$('filtroTecnologiaAsignacion')?.value||'';
+    const empresa=$('filtroEmpresaAsignacion')?.value||'';
+    asignacionesFiltradas=(asignacionesData||[]).filter(r=>{
+      const tiene=!!(r.tecnico_id||r.tecnico_email||r.tecnico_nombre||r.tecnico_nombre_perfil);
+      const estadoActual=String(r.estado_asignacion||'asignado').toLowerCase();
+      const tecnicoKey=r.tecnico_id||r.tecnico_email||r.tecnico_nombre||r.tecnico_nombre_perfil||'';
+      const texto=[JSON.stringify(r),r.empresa_nombre].join(' ').toLowerCase();
+      return (!estado||estadoActual===estado) &&
+        (!asignado||(asignado==='asignado'?tiene:!tiene)) &&
+        (!tecnico||String(tecnicoKey)===String(tecnico)) &&
+        (!tecnologia||String(r.tipo_red||'PUNTO_A_PUNTO').toUpperCase()===tecnologia) &&
+        (!empresa||String(r.empresa_id||'')===String(empresa)) &&
+        (!q||texto.includes(q));
+    });
+    pintarTablaAsignacionesMultiempresa();
+    actualizarResumenAsignaciones?.();
+  };
+
+  function asegurarColumnaEmpresa(){
+    const row=document.querySelector('#modalAsignaciones .assignTable thead tr');
+    if(!row)return;
+    if(![...row.children].some(th=>th.dataset?.oymEmpresa==='1')){
+      const th=document.createElement('th'); th.textContent='Empresa'; th.dataset.oymEmpresa='1';
+      row.insertBefore(th,row.children[3]||null);
+    }
+  }
+
+  function pintarTablaAsignacionesMultiempresa(){
+    asegurarColumnaEmpresa();
+    const body=$('tablaAsignacionesBody'); if(!body)return;
+    if(!asignacionesFiltradas.length){body.innerHTML='<tr><td colspan="11">No hay clientes con los filtros seleccionados.</td></tr>';return;}
+    body.innerHTML=asignacionesFiltradas.map(r=>{
+      const tecnicoNombre=r.tecnico_nombre||r.tecnico_nombre_perfil||'';
+      const tecnicoEmail=r.tecnico_email||r.tecnico_email_perfil||'';
+      const tiene=!!(r.tecnico_id||tecnicoNombre||tecnicoEmail);
+      const estado=String(r.estado_asignacion||'asignado').toLowerCase();
+      const tag=!tiene?'<span class="tagSinAsignar">Sin técnico</span>':estado==='en_proceso'?'<span class="tagProceso">En proceso</span>':`<span class="tagAsignado">${esc(estado)}</span>`;
+      return `<tr>
+        <td><b>${esc(r.id_cliente||'N/A')}</b></td>
+        <td>${esc(r.codigo_ruta||'N/A')}</td>
+        <td>${esc(r.nombre_cliente||'N/A')}</td>
+        <td><span class="oymEmpresaTag">${esc(r.empresa_nombre||nombreEmpresaPorId(r.empresa_id))}</span></td>
+        <td>${typeof tecnologiaBadge==='function'?tecnologiaBadge(r):esc(r.tipo_red||'N/A')}</td>
+        <td>${esc(r.direccion_cliente||'N/A')}</td>
+        <td>${tiene?esc(tecnicoNombre||tecnicoEmail||'N/A'):'<span class="tagSinAsignar">No asignado</span>'}</td>
+        <td>${esc(tecnicoEmail||'N/A')}</td>
+        <td>${tag}</td>
+        <td>${typeof formatoFecha==='function'?formatoFecha(r.fecha_asignacion||r.created_at):esc(r.fecha_asignacion||'N/A')}</td>
+        <td>${typeof accionesClienteAsignado==='function'?accionesClienteAsignado(r):''}</td>
+      </tr>`;
+    }).join('');
+  }
+  window.pintarTablaAsignaciones=pintarTablaAsignacionesMultiempresa;
+
+  // Reasignación: solo técnicos de la empresa del cliente.
+  const abrirReasignarOriginal=window.abrirModalReasignarCliente;
+  window.abrirModalReasignarCliente=function(id){
+    const r=(window.__asignacionesCache||[]).find(x=>String(x.id)===String(id));
+    if(!r){alert('No se encontró el cliente.');return;}
+    if(typeof abrirReasignarOriginal==='function') abrirReasignarOriginal(id);
+    setTimeout(()=>llenarTecnicosPorEmpresa(r.empresa_id,'reasignarTecnico',r.tecnico_id),0);
+  };
+
+  // Filtro principal y combos limitados por empresa seleccionada.
+  async function cargarCombosEmpresaPrincipal(){
+    const empresaId=$('filtroEmpresa')?.value||'';
+    let q=supabaseClient.from('enrutamientos_clientes').select('id_cliente,codigo_ruta,nombre_cliente,created_at,empresa_id').order('created_at',{ascending:false});
+    if(empresaId)q=q.eq('empresa_id',empresaId);
+    const {data,error}=await q;
+    if(error){console.warn(error);return;}
+    if(typeof cargarCombosDesdeClientes==='function') await cargarCombosDesdeClientes(data||[]);
+  }
+  window.cargarCombosEmpresaPrincipal=cargarCombosEmpresaPrincipal;
+
+  // Inserta empresa en búsquedas de texto y muestra empresa del usuario activo.
+  function actualizarCabeceraEmpresa(){
+    const el=$('usuarioActivo');
+    if(el && perfilSesion){
+      el.textContent=`${perfilSesion.nombre||usuarioSesion?.email} · ${perfilSesion.rol||'sin rol'} · ${nombreEmpresaPorId(perfilSesion.empresa_id)}`;
+    }
+  }
+
+  async function iniciarMultiempresa(){
+    insertarCamposEmpresa();
+    await cargarEmpresasOym();
+    actualizarCabeceraEmpresa();
+    await cargarUsuariosOym();
+    await cargarCombosEmpresaPrincipal();
+  }
+
+  // Espera a que la autenticación y el perfil estén disponibles.
+  async function intentarIniciarMultiempresa(){
+    try{
+      const clienteListo = typeof supabaseClient !== 'undefined' && supabaseClient;
+      const perfilListo = typeof perfilSesion !== 'undefined' && perfilSesion;
+      if(!clienteListo || !perfilListo) return false;
+      await iniciarMultiempresa();
+      if(typeof cargarAsignaciones==='function') await cargarAsignaciones();
+      return true;
+    }catch(error){
+      console.error('Error iniciando módulo multiempresa:', error);
+      const msg=document.getElementById('usuariosMsg');
+      if(msg) msg.textContent='No se pudieron cargar las empresas: '+(error?.message||error);
+      return false;
+    }
+  }
+  window.intentarIniciarMultiempresa=intentarIniciarMultiempresa;
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    insertarCamposEmpresa();
+    let intentos=0;
+    const timer=setInterval(async()=>{
+      intentos++;
+      if(await intentarIniciarMultiempresa() || intentos>=80){
+        clearInterval(timer);
+      }
+    },250);
+  });
+
+  // Recarga catálogos después de iniciar sesión, incluso cuando el perfil
+  // se obtiene después de que DOMContentLoaded ya ocurrió.
+  const loginMultiempresaOriginal = typeof loginMaster === 'function' ? loginMaster : null;
+  if(loginMultiempresaOriginal){
+    window.loginMaster = async function(){
+      await loginMultiempresaOriginal.apply(this, arguments);
+      setTimeout(()=>intentarIniciarMultiempresa(),150);
+    };
+  }
+
+  const verificarMultiempresaOriginal = typeof verificarSesionMaster === 'function' ? verificarSesionMaster : null;
+  if(verificarMultiempresaOriginal){
+    window.verificarSesionMaster = async function(){
+      await verificarMultiempresaOriginal.apply(this, arguments);
+      setTimeout(()=>intentarIniciarMultiempresa(),150);
+    };
+  }
+})();
+</script>
+<style id="oymGestionAdminStyles">
+  .oymAdminActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .oymAdminActions button{margin:0}
+  .oymManageModal{width:min(1180px,96vw);margin:3vh auto;background:#111827;border:1px solid #475569;border-radius:18px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.65)}
+  .oymManageBody{padding:16px;max-height:82vh;overflow:auto}
+  .oymManageGrid{display:grid;grid-template-columns:360px minmax(0,1fr);gap:14px;align-items:start}
+  .oymManagePanel{background:#020617;border:1px solid #334155;border-radius:14px;padding:14px}
+  .oymManagePanel h3{margin:0 0 10px;color:#93c5fd;font-size:16px}
+  .oymManageTableWrap{overflow:auto;max-height:63vh;border:1px solid #334155;border-radius:12px}
+  .oymManageTable{width:100%;min-width:850px;border-collapse:collapse;font-size:12px}
+  .oymManageTable th{position:sticky;top:0;background:#0f172a;color:#fff;padding:9px;text-align:left;z-index:2}
+  .oymManageTable td{padding:8px;border-bottom:1px solid #334155;vertical-align:top}
+  .oymManageTable tr.isInactive{opacity:.58}
+  .oymInlineActions{display:flex;gap:6px;flex-wrap:wrap}
+  .oymInlineActions button{width:auto;margin:0;padding:6px 9px;border-radius:8px;font-size:11px}
+  .oymStatusOn{display:inline-block;background:#16a34a;color:#fff;border-radius:999px;padding:3px 8px;font-weight:800;font-size:11px}
+  .oymStatusOff{display:inline-block;background:#64748b;color:#fff;border-radius:999px;padding:3px 8px;font-weight:800;font-size:11px}
+  .oymDangerNote{background:#450a0a;border:1px solid #991b1b;color:#fecaca;border-radius:10px;padding:9px;font-size:12px;margin-top:10px}
+  .oymFormButtons{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .oymFormButtons button{margin:0}
+  .oymHidden{display:none!important}
+  @media(max-width:900px){.oymManageGrid{grid-template-columns:1fr}.oymAdminActions{grid-template-columns:1fr}.oymManageModal{margin:1vh auto}.oymManageBody{max-height:90vh}}
+</style>
+
+<div class="modalOverlay" id="modalGestionUsuariosOym">
+  <div class="oymManageModal">
+    <div class="modalHeader">
+      <h2>Administrar usuarios</h2>
+      <button class="closeBtn" type="button" onclick="cerrarGestionUsuariosOym()">Cerrar</button>
+    </div>
+    <div class="oymManageBody">
+      <div class="oymManageGrid">
+        <section class="oymManagePanel">
+          <h3 id="tituloEdicionUsuarioOym">Editar usuario</h3>
+          <input id="editarUsuarioIdOym" type="hidden">
+          <label>Nombre</label>
+          <input id="editarUsuarioNombreOym" placeholder="Nombre del usuario">
+          <label>Correo de acceso</label>
+          <input id="editarUsuarioEmailOym" type="email" disabled>
+          <div class="gpsBox" style="margin-top:7px">El correo de autenticación no se modifica desde este formulario para evitar que quede diferente al usuario de Supabase Auth.</div>
+          <label>Rol</label>
+          <select id="editarUsuarioRolOym">
+            <option value="tecnico">Técnico</option>
+            <option value="admin">Administrador</option>
+          </select>
+          <label>Empresa</label>
+          <select id="editarUsuarioEmpresaOym"><option value="">Seleccione empresa...</option></select>
+          <label>Estado</label>
+          <select id="editarUsuarioActivoOym">
+            <option value="true">Activo</option>
+            <option value="false">Inactivo</option>
+          </select>
+          <div class="oymFormButtons">
+            <button type="button" onclick="guardarEdicionUsuarioOym()">Guardar cambios</button>
+            <button type="button" class="gray" onclick="limpiarEdicionUsuarioOym()">Limpiar</button>
+          </div>
+          <div class="gpsBox" id="gestionUsuariosMsgOym" style="margin-top:10px">Selecciona un usuario de la tabla para modificarlo.</div>
+        </section>
+        <section class="oymManagePanel">
+          <div class="row">
+            <div><label>Filtrar por empresa</label><select id="filtroUsuariosEmpresaOym" onchange="pintarUsuariosGestionOym()"><option value="">Todas</option></select></div>
+            <div><label>Buscar usuario</label><input id="buscarUsuariosOym" placeholder="Nombre, correo o rol" oninput="pintarUsuariosGestionOym()"></div>
+          </div>
+          <div class="oymManageTableWrap" style="margin-top:10px">
+            <table class="oymManageTable">
+              <thead><tr><th>Nombre</th><th>Correo</th><th>Rol</th><th>Empresa</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody id="tablaUsuariosGestionOym"><tr><td colspan="6">Sin datos</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modalOverlay" id="modalGestionEmpresasOym">
+  <div class="oymManageModal">
+    <div class="modalHeader">
+      <h2>Administrar empresas</h2>
+      <button class="closeBtn" type="button" onclick="cerrarGestionEmpresasOym()">Cerrar</button>
+    </div>
+    <div class="oymManageBody">
+      <div class="oymManageGrid">
+        <section class="oymManagePanel">
+          <h3 id="tituloEmpresaOym">Agregar empresa</h3>
+          <input id="editarEmpresaIdOym" type="hidden">
+          <label>Nombre de empresa</label>
+          <input id="empresaNombreOym" placeholder="Ej: Empresa ABC S.A.S.">
+          <label>Slug</label>
+          <input id="empresaSlugOym" placeholder="empresa-abc">
+          <label>NIT</label>
+          <input id="empresaNitOym" placeholder="900123456-7">
+          <label>Estado</label>
+          <select id="empresaActivoOym"><option value="true">Activa</option><option value="false">Inactiva</option></select>
+          <div class="oymFormButtons">
+            <button type="button" onclick="guardarEmpresaOym()">Guardar empresa</button>
+            <button type="button" class="gray" onclick="limpiarFormularioEmpresaOym()">Nueva / limpiar</button>
+          </div>
+          <div class="gpsBox" id="gestionEmpresasMsgOym" style="margin-top:10px">Puedes crear una empresa nueva o editar una existente.</div>
+          <div class="oymDangerNote">Una empresa solo puede eliminarse cuando no tenga usuarios, nodos, enrutamientos ni empalmes asociados. En los demás casos debes dejarla inactiva.</div>
+        </section>
+        <section class="oymManagePanel">
+          <label>Buscar empresa</label>
+          <input id="buscarEmpresasOym" placeholder="Nombre, slug o NIT" oninput="pintarEmpresasGestionOym()">
+          <div class="oymManageTableWrap" style="margin-top:10px">
+            <table class="oymManageTable" style="min-width:760px">
+              <thead><tr><th>Empresa</th><th>Slug</th><th>NIT</th><th>Estado</th><th>Usuarios</th><th>Rutas</th><th>Acciones</th></tr></thead>
+              <tbody id="tablaEmpresasGestionOym"><tr><td colspan="7">Sin datos</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  let usuariosGestionOym=[];
+  let empresasGestionOym=[];
+  let conteosEmpresasOym={};
+  const $g=id=>document.getElementById(id);
+  const escg=v=>String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+  const slugifyOym=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+
+  function esAdminGestionOym(){return String(window.perfilSesion?.rol||perfilSesion?.rol||'').toLowerCase()==='admin';}
+
+  function insertarBotonesGestionOym(){
+    const cajas=[...document.querySelectorAll('.adminBox')];
+    const cajaUsuario=cajas.find(x=>x.textContent.includes('Crear usuario técnico'));
+    if(cajaUsuario && !$g('accionesGestionAdminOym')){
+      const div=document.createElement('div');
+      div.id='accionesGestionAdminOym';
+      div.className='oymAdminActions';
+      div.innerHTML=`<button type="button" class="secondary" onclick="abrirGestionUsuariosOym()">Modificar usuarios</button><button type="button" class="purple" onclick="abrirGestionEmpresasOym()">Administrar empresas</button>`;
+      cajaUsuario.appendChild(div);
+    }
+  }
+
+  function poblarEmpresasGestionSelects(){
+    const opts=empresasGestionOym.map(e=>`<option value="${escg(e.id)}">${escg(e.nombre)}${e.activo===false?' (Inactiva)':''}</option>`).join('');
+    ['editarUsuarioEmpresaOym'].forEach(id=>{const s=$g(id);if(s){const a=s.value;s.innerHTML='<option value="">Seleccione empresa...</option>'+opts;if([...s.options].some(o=>o.value===a))s.value=a;}});
+    const f=$g('filtroUsuariosEmpresaOym');if(f){const a=f.value;f.innerHTML='<option value="">Todas las empresas</option>'+opts;if([...f.options].some(o=>o.value===a))f.value=a;}
+  }
+
+  async function cargarGestionUsuariosOym(){
+    const {data,error}=await supabaseClient.from('oym_usuarios').select('*').order('nombre',{ascending:true});
+    if(error){$g('gestionUsuariosMsgOym').textContent='Error cargando usuarios: '+error.message;return;}
+    usuariosGestionOym=data||[];
+    pintarUsuariosGestionOym();
+  }
+
+  async function cargarGestionEmpresasOym(){
+    const {data,error}=await supabaseClient.from('oym_empresas').select('*').order('nombre',{ascending:true});
+    if(error){$g('gestionEmpresasMsgOym').textContent='Error cargando empresas: '+error.message;return;}
+    empresasGestionOym=data||[];
+    await cargarConteosEmpresasOym();
+    poblarEmpresasGestionSelects();
+    pintarEmpresasGestionOym();
+  }
+
+  async function contarTablaPorEmpresaOym(tabla){
+    const {data,error}=await supabaseClient.from(tabla).select('empresa_id');
+    if(error){console.warn('Conteo '+tabla,error.message);return {};}
+    return (data||[]).reduce((a,r)=>{const k=String(r.empresa_id||'');a[k]=(a[k]||0)+1;return a;},{});
+  }
+
+  async function cargarConteosEmpresasOym(){
+    const [usuarios,rutas,nodos,empalmes]=await Promise.all([
+      contarTablaPorEmpresaOym('oym_usuarios'),contarTablaPorEmpresaOym('enrutamientos_clientes'),contarTablaPorEmpresaOym('oym_nodos'),contarTablaPorEmpresaOym('empalmes_enrutamiento')
+    ]);
+    conteosEmpresasOym={usuarios,rutas,nodos,empalmes};
+  }
+
+  window.abrirGestionUsuariosOym=async function(){
+    if(!esAdminGestionOym())return alert('Solo un administrador puede modificar usuarios.');
+    $g('modalGestionUsuariosOym').style.display='block';
+    await cargarGestionEmpresasOym();
+    await cargarGestionUsuariosOym();
+  };
+  window.cerrarGestionUsuariosOym=()=>{$g('modalGestionUsuariosOym').style.display='none';};
+
+  window.pintarUsuariosGestionOym=function(){
+    const body=$g('tablaUsuariosGestionOym');if(!body)return;
+    const q=($g('buscarUsuariosOym')?.value||'').toLowerCase().trim();
+    const empresa=$g('filtroUsuariosEmpresaOym')?.value||'';
+    const arr=usuariosGestionOym.filter(u=>(!empresa||String(u.empresa_id||'')===String(empresa))&&(!q||[u.nombre,u.email,u.rol,empresasGestionOym.find(e=>String(e.id)===String(u.empresa_id))?.nombre].join(' ').toLowerCase().includes(q)));
+    if(!arr.length){body.innerHTML='<tr><td colspan="6">No hay usuarios con los filtros seleccionados.</td></tr>';return;}
+    body.innerHTML=arr.map(u=>{const emp=empresasGestionOym.find(e=>String(e.id)===String(u.empresa_id));return `<tr class="${u.activo===false?'isInactive':''}"><td><b>${escg(u.nombre||'N/A')}</b></td><td>${escg(u.email||'N/A')}</td><td>${escg(u.rol||'N/A')}</td><td>${escg(emp?.nombre||'Sin empresa')}</td><td>${u.activo===false?'<span class="oymStatusOff">Inactivo</span>':'<span class="oymStatusOn">Activo</span>'}</td><td><div class="oymInlineActions"><button type="button" class="secondary" onclick="editarUsuarioGestionOym('${escg(u.id)}')">Editar</button><button type="button" class="${u.activo===false?'warning':'gray'}" onclick="alternarUsuarioActivoOym('${escg(u.id)}',${u.activo===false?'true':'false'})">${u.activo===false?'Activar':'Desactivar'}</button></div></td></tr>`;}).join('');
+  };
+
+  window.editarUsuarioGestionOym=function(id){
+    const u=usuariosGestionOym.find(x=>String(x.id)===String(id));if(!u)return;
+    $g('editarUsuarioIdOym').value=u.id;$g('editarUsuarioNombreOym').value=u.nombre||'';$g('editarUsuarioEmailOym').value=u.email||'';$g('editarUsuarioRolOym').value=u.rol||'tecnico';$g('editarUsuarioEmpresaOym').value=u.empresa_id||'';$g('editarUsuarioActivoOym').value=String(u.activo!==false);$g('tituloEdicionUsuarioOym').textContent='Editar usuario: '+(u.nombre||u.email);$g('gestionUsuariosMsgOym').textContent='Modifica los datos y pulsa Guardar cambios.';
+  };
+  window.limpiarEdicionUsuarioOym=function(){['editarUsuarioIdOym','editarUsuarioNombreOym','editarUsuarioEmailOym'].forEach(id=>$g(id).value='');$g('editarUsuarioRolOym').value='tecnico';$g('editarUsuarioEmpresaOym').value='';$g('editarUsuarioActivoOym').value='true';$g('tituloEdicionUsuarioOym').textContent='Editar usuario';};
+
+  window.guardarEdicionUsuarioOym=async function(){
+    const id=$g('editarUsuarioIdOym').value,nombre=$g('editarUsuarioNombreOym').value.trim(),rol=$g('editarUsuarioRolOym').value,empresa_id=$g('editarUsuarioEmpresaOym').value,activo=$g('editarUsuarioActivoOym').value==='true';
+    if(!id)return alert('Selecciona un usuario de la tabla.');if(!nombre||!empresa_id)return alert('Nombre y empresa son obligatorios.');
+    if(String(id)===String(usuarioSesion?.id)&&!activo)return alert('No puedes desactivar tu propio usuario mientras tienes la sesión abierta.');
+    const {error}=await supabaseClient.from('oym_usuarios').update({nombre,rol,empresa_id,activo}).eq('id',id);
+    if(error){$g('gestionUsuariosMsgOym').textContent='Error: '+error.message;return;}
+    $g('gestionUsuariosMsgOym').textContent='Usuario actualizado correctamente.';await cargarGestionUsuariosOym();if(typeof window.cargarUsuariosOym==='function')await window.cargarUsuariosOym();
+  };
+
+  window.alternarUsuarioActivoOym=async function(id,nuevoEstado){
+    const u=usuariosGestionOym.find(x=>String(x.id)===String(id));if(!u)return;
+    if(String(id)===String(usuarioSesion?.id)&&!nuevoEstado)return alert('No puedes desactivar tu propio usuario.');
+    if(!confirm(`¿${nuevoEstado?'Activar':'Desactivar'} al usuario ${u.nombre||u.email}?`))return;
+    const {error}=await supabaseClient.from('oym_usuarios').update({activo:nuevoEstado}).eq('id',id);
+    if(error)return alert('Error: '+error.message);await cargarGestionUsuariosOym();if(typeof window.cargarUsuariosOym==='function')await window.cargarUsuariosOym();
+  };
+
+  window.abrirGestionEmpresasOym=async function(){if(!esAdminGestionOym())return alert('Solo un administrador puede administrar empresas.');$g('modalGestionEmpresasOym').style.display='block';await cargarGestionEmpresasOym();};
+  window.cerrarGestionEmpresasOym=()=>{$g('modalGestionEmpresasOym').style.display='none';};
+  window.pintarEmpresasGestionOym=function(){
+    const body=$g('tablaEmpresasGestionOym');if(!body)return;const q=($g('buscarEmpresasOym')?.value||'').toLowerCase().trim();const arr=empresasGestionOym.filter(e=>!q||[e.nombre,e.slug,e.nit].join(' ').toLowerCase().includes(q));
+    if(!arr.length){body.innerHTML='<tr><td colspan="7">No hay empresas.</td></tr>';return;}
+    body.innerHTML=arr.map(e=>{const id=String(e.id),u=conteosEmpresasOym.usuarios?.[id]||0,r=conteosEmpresasOym.rutas?.[id]||0,n=conteosEmpresasOym.nodos?.[id]||0,p=conteosEmpresasOym.empalmes?.[id]||0;return `<tr class="${e.activo===false?'isInactive':''}"><td><b>${escg(e.nombre)}</b></td><td>${escg(e.slug)}</td><td>${escg(e.nit||'N/A')}</td><td>${e.activo===false?'<span class="oymStatusOff">Inactiva</span>':'<span class="oymStatusOn">Activa</span>'}</td><td>${u}</td><td>${r}</td><td><div class="oymInlineActions"><button type="button" class="secondary" onclick="editarEmpresaGestionOym('${escg(e.id)}')">Editar</button><button type="button" class="danger" onclick="eliminarEmpresaOym('${escg(e.id)}')">Eliminar</button></div><div style="font-size:10px;color:#94a3b8;margin-top:5px">Nodos ${n} · Puntos ${p}</div></td></tr>`;}).join('');
+  };
+  window.editarEmpresaGestionOym=function(id){const e=empresasGestionOym.find(x=>String(x.id)===String(id));if(!e)return;$g('editarEmpresaIdOym').value=e.id;$g('empresaNombreOym').value=e.nombre||'';$g('empresaSlugOym').value=e.slug||'';$g('empresaNitOym').value=e.nit||'';$g('empresaActivoOym').value=String(e.activo!==false);$g('tituloEmpresaOym').textContent='Editar empresa: '+e.nombre;};
+  window.limpiarFormularioEmpresaOym=function(){['editarEmpresaIdOym','empresaNombreOym','empresaSlugOym','empresaNitOym'].forEach(id=>$g(id).value='');$g('empresaActivoOym').value='true';$g('tituloEmpresaOym').textContent='Agregar empresa';$g('gestionEmpresasMsgOym').textContent='Formulario listo para crear una empresa nueva.';};
+  $g('empresaNombreOym')?.addEventListener('input',()=>{if(!$g('editarEmpresaIdOym').value&&!$g('empresaSlugOym').dataset.manual)$g('empresaSlugOym').value=slugifyOym($g('empresaNombreOym').value);});
+  $g('empresaSlugOym')?.addEventListener('input',()=>{$g('empresaSlugOym').dataset.manual='1';});
+
+  window.guardarEmpresaOym=async function(){
+    const id=$g('editarEmpresaIdOym').value,nombre=$g('empresaNombreOym').value.trim(),slug=slugifyOym($g('empresaSlugOym').value||nombre),nit=$g('empresaNitOym').value.trim()||null,activo=$g('empresaActivoOym').value==='true';
+    if(!nombre||!slug)return alert('Nombre y slug son obligatorios.');
+    const payload={nombre,slug,nit,activo,updated_at:new Date().toISOString()};let resp;
+    if(id)resp=await supabaseClient.from('oym_empresas').update(payload).eq('id',id);else resp=await supabaseClient.from('oym_empresas').insert({...payload,created_at:new Date().toISOString()});
+    if(resp.error){$g('gestionEmpresasMsgOym').textContent='Error: '+resp.error.message;return;}
+    $g('gestionEmpresasMsgOym').textContent=id?'Empresa actualizada correctamente.':'Empresa creada correctamente.';window.limpiarFormularioEmpresaOym();await cargarGestionEmpresasOym();if(typeof window.cargarEmpresasOym==='function')await window.cargarEmpresasOym();
+  };
+
+  window.eliminarEmpresaOym=async function(id){
+    const e=empresasGestionOym.find(x=>String(x.id)===String(id));if(!e)return;const u=conteosEmpresasOym.usuarios?.[id]||0,r=conteosEmpresasOym.rutas?.[id]||0,n=conteosEmpresasOym.nodos?.[id]||0,p=conteosEmpresasOym.empalmes?.[id]||0;
+    if(String(perfilSesion?.empresa_id||'')===String(id))return alert('No puedes eliminar la empresa asociada a tu usuario actual.');
+    if(u||r||n||p)return alert(`No se puede eliminar ${e.nombre}. Tiene asociados: usuarios ${u}, enrutamientos ${r}, nodos ${n}, puntos ${p}. Déjala inactiva o reasigna primero esos registros.`);
+    if(!confirm(`¿Eliminar definitivamente la empresa ${e.nombre}? Esta acción no se puede deshacer.`))return;
+    const {error}=await supabaseClient.from('oym_empresas').delete().eq('id',id);if(error)return alert('Error eliminando empresa: '+error.message);await cargarGestionEmpresasOym();if(typeof window.cargarEmpresasOym==='function')await window.cargarEmpresasOym();
+  };
+
+  document.addEventListener('DOMContentLoaded',insertarBotonesGestionOym);
+  setTimeout(insertarBotonesGestionOym,1200);
+})();
+</script>
+
+
+
+<style id="oymFiltrosBusquedaCss">
+  #filtroCliente,#filtroRuta{background:#020617;color:#e5e7eb}
+  #ayudaFiltrosMaster{line-height:1.4}
+  .oymEmptyLoad{padding:18px;text-align:center;color:#94a3b8;border:1px dashed #475569;border-radius:12px;background:#020617}
+</style>
+<script id="oymFiltrosBusquedaSinPrecarga">
+(function(){
+  let catalogoEnrutamientosBusqueda = [];
+  function el(id){ return document.getElementById(id); }
+  function valor(id){ return String(el(id)?.value || '').trim(); }
+  function limpiarVisualizacionMaster(mensaje){
+    if(typeof datos !== 'undefined') datos = [];
+    if(typeof filtrados !== 'undefined') filtrados = [];
+    if(typeof fotos !== 'undefined') fotos = [];
+    try{ if(typeof pintarMapa === 'function') pintarMapa(); }catch(e){ console.warn(e); }
+    try{ if(typeof pintarLista === 'function') pintarLista(); }catch(e){ console.warn(e); }
+    try{ if(typeof actualizarKpis === 'function') actualizarKpis(); }catch(e){ console.warn(e); }
+    const lista = el('lista');
+    if(lista) lista.innerHTML = `<div class="oymEmptyLoad">${mensaje || 'Usa los filtros y pulsa Cargar resultados.'}</div>`;
+    if(typeof setEstadoCarga === 'function') setEstadoCarga(mensaje || 'Sin enrutamiento cargado');
+  }
+  function poblarDatalistsBusqueda(lista){
+    catalogoEnrutamientosBusqueda = Array.isArray(lista) ? lista : [];
+    actualizarSugerenciasBusqueda();
+  }
+  function actualizarSugerenciasBusqueda(){
+    const clienteEscrito = valor('filtroCliente').toLowerCase();
+    const rutaEscrita = valor('filtroRuta').toLowerCase();
+    let baseClientes = catalogoEnrutamientosBusqueda;
+    let baseRutas = catalogoEnrutamientosBusqueda;
+    if(rutaEscrita) baseClientes = baseClientes.filter(r => String(r.codigo_ruta || '').toLowerCase().includes(rutaEscrita));
+    if(clienteEscrito) baseRutas = baseRutas.filter(r => String(r.id_cliente || '').toLowerCase().includes(clienteEscrito));
+    const clientes = [...new Map(baseClientes.filter(r=>r.id_cliente).map(r=>[String(r.id_cliente),r])).values()];
+    const rutas = [...new Map(baseRutas.filter(r=>r.codigo_ruta).map(r=>[String(r.codigo_ruta),r])).values()];
+    const dlClientes = el('listaFiltroClientes');
+    const dlRutas = el('listaFiltroRutas');
+    if(dlClientes) dlClientes.innerHTML = clientes.map(r=>`<option value="${typeof escapeAttr==='function'?escapeAttr(r.id_cliente):r.id_cliente}">${typeof escapeHtml==='function'?escapeHtml(r.nombre_cliente||r.codigo_ruta||''):''}</option>`).join('');
+    if(dlRutas) dlRutas.innerHTML = rutas.map(r=>`<option value="${typeof escapeAttr==='function'?escapeAttr(r.codigo_ruta):r.codigo_ruta}">${typeof escapeHtml==='function'?escapeHtml(r.id_cliente||r.nombre_cliente||''):''}</option>`).join('');
+  }
+  cargarCombosDesdeClientes = async function(cacheData){
+    let lista = cacheData;
+    if(!Array.isArray(lista)){
+      let q = supabaseClient.from('enrutamientos_clientes').select('id_cliente,codigo_ruta,nombre_cliente,created_at,empresa_id').order('created_at',{ascending:false});
+      const empresaId = valor('filtroEmpresa');
+      if(empresaId) q = q.eq('empresa_id',empresaId);
+      const resp = await q;
+      if(resp.error){ console.warn('No se pudo cargar el catálogo de búsqueda:',resp.error); lista=[]; }
+      else lista=resp.data||[];
+    }
+    poblarDatalistsBusqueda(lista);
+  };
+  window.cargarCombosDesdeClientes = cargarCombosDesdeClientes;
+  const cargarSeleccionOriginal = typeof cargarEnrutamientoSeleccionado === 'function' ? cargarEnrutamientoSeleccionado : null;
+  cargarEnrutamientoSeleccionado = async function(){
+    const cliente = valor('filtroCliente');
+    const ruta = valor('filtroRuta');
+    const texto = valor('buscarTexto');
+    if(!cliente && !ruta && !texto){
+      limpiarVisualizacionMaster('Ingresa al menos un cliente, una ruta o un texto antes de cargar.');
+      alert('Para evitar saturar la aplicación, ingresa al menos un criterio de búsqueda.');
+      return;
+    }
+    if(typeof cargarSeleccionOriginal !== 'function') return;
+    await cargarSeleccionOriginal();
+    if(texto && typeof aplicarFiltrosSobreDatosCargados === 'function') aplicarFiltrosSobreDatosCargados();
+  };
+  window.cargarEnrutamientoSeleccionado = cargarEnrutamientoSeleccionado;
+  cargarDatos = async function(){ await cargarEnrutamientoSeleccionado(); };
+  window.cargarDatos = cargarDatos;
+  cargarPrimerEnrutamientoDisponible = async function(){
+    await cargarCombosDesdeClientes();
+    limpiarVisualizacionMaster('Sin enrutamiento cargado. Usa los filtros para consultar.');
+  };
+  window.cargarPrimerEnrutamientoDisponible = cargarPrimerEnrutamientoDisponible;
+  limpiarFiltros = function(){
+    ['filtroCliente','filtroRuta','buscarTexto'].forEach(id=>{ if(el(id)) el(id).value=''; });
+    actualizarSugerenciasBusqueda();
+    limpiarVisualizacionMaster('Filtros limpios. No hay enrutamiento cargado.');
+  };
+  window.limpiarFiltros = limpiarFiltros;
+  aplicarFiltros = function(){ actualizarSugerenciasBusqueda(); };
+  window.aplicarFiltros = aplicarFiltros;
+  function conectarFiltros(){
+    ['filtroCliente','filtroRuta'].forEach(id=>{
+      const campo=el(id);
+      if(!campo || campo.dataset.busquedaConectada==='1') return;
+      campo.dataset.busquedaConectada='1';
+      campo.removeAttribute('onchange');
+      campo.addEventListener('input',actualizarSugerenciasBusqueda);
+      campo.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); cargarEnrutamientoSeleccionado(); } });
+    });
+    const texto=el('buscarTexto');
+    if(texto && texto.dataset.busquedaConectada!=='1'){
+      texto.dataset.busquedaConectada='1';
+      texto.removeAttribute('oninput');
+      texto.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); cargarEnrutamientoSeleccionado(); } });
+    }
+  }
+  document.addEventListener('DOMContentLoaded',()=>{
+    conectarFiltros();
+    setTimeout(async()=>{
+      conectarFiltros();
+      try{ await cargarCombosDesdeClientes(); }catch(e){ console.warn(e); }
+      limpiarVisualizacionMaster('Sin enrutamiento cargado. Usa los filtros para consultar.');
+    },900);
+  });
+})();
+</script>
 </body>
 </html>
+
 
