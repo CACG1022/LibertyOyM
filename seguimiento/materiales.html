@@ -796,6 +796,40 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
 </style>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+<style>
+.fal024-import-btn{
+  border:1px solid rgba(56,189,248,.55);
+  background:linear-gradient(135deg,#0369a1,#0e7490);
+  color:#fff;
+  border-radius:10px;
+  min-height:40px;
+  padding:0 14px;
+  font-weight:800;
+  font-size:12px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  white-space:nowrap;
+}
+.fal024-import-btn:hover{
+  filter:brightness(1.12);
+  transform:translateY(-1px);
+}
+@media (max-width:900px){
+  .fal024-import-btn{
+    width:40px;
+    padding:0;
+    font-size:0;
+  }
+  .fal024-import-btn::before{
+    content:"📥";
+    font-size:18px;
+  }
+}
+</style>
 </head>
 <body>
 <div id="root"></div>
@@ -808,8 +842,26 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         <div class="muted-note">Entradas, salidas, transferencias y consumo de materiales por instalación.</div>
       </div>
       <div class="modal-head-actions">
-        <button type="button" class="modal-max-btn" onclick="toggleMaximizeMovModal(); return false;" id="btnMaxMovModal" title="Maximizar / restaurar">⛶</button>
-        <button class="close-btn" onclick="closeMovModal()">✕</button>
+        <input id="fal024ReservaFileInput"
+               type="file"
+               accept=".xlsx,.xlsm,.xls"
+               hidden
+               onchange="importarCodigosReservaDesdeFAL024(this)">
+
+        <button type="button"
+                class="fal024-import-btn"
+                onclick="seleccionarFAL024ParaImportarReservas(); return false;"
+                title="Importar COD RESERVA desde el FAL-024 y aplicarlo únicamente a los materiales cargados">
+          📥 Importar COD RESERVA
+        </button>
+
+        <button type="button"
+                class="modal-max-btn"
+                onclick="toggleMaximizeMovModal(); return false;"
+                id="btnMaxMovModal"
+                title="Maximizar / restaurar">⛶</button>
+
+        <button type="button" class="close-btn" onclick="closeMovModal()">✕</button>
       </div>
     </div>
 
@@ -3783,28 +3835,51 @@ async function descargarFAL024(){
       msg.textContent = 'Cargando la plantilla FAL-024.xlsx y generando el formato...';
     }
 
-    const plantillaUrl = new URL('./FAL-024.xlsx', window.location.href);
-    plantillaUrl.searchParams.set('v', Date.now().toString());
+    let zip = null;
+    let plantillaOrigen = '';
 
-    const plantillaResponse = await fetch(plantillaUrl.toString(), {
-      method: 'GET',
-      cache: 'no-store'
-    });
+    // En GitHub Pages se carga el archivo externo FAL-024.xlsx.
+    // Al abrir el HTML directamente desde el computador (file://), los navegadores
+    // suelen bloquear fetch por seguridad; en ese caso se usa la plantilla embebida.
+    try{
+      if(window.location.protocol !== 'file:'){
+        const plantillaUrl = new URL('./FAL-024.xlsx', window.location.href);
+        plantillaUrl.searchParams.set('v', Date.now().toString());
 
-    if(!plantillaResponse.ok){
-      throw new Error(
-        `No se pudo cargar la plantilla FAL-024.xlsx desde GitHub Pages ` +
-        `(HTTP ${plantillaResponse.status}). Verifica que el archivo esté en la misma carpeta que materiales.html.`
+        const plantillaResponse = await fetch(plantillaUrl.toString(), {
+          method: 'GET',
+          cache: 'no-store'
+        });
+
+        if(!plantillaResponse.ok){
+          throw new Error(`HTTP ${plantillaResponse.status}`);
+        }
+
+        const plantillaBuffer = await plantillaResponse.arrayBuffer();
+
+        if(!plantillaBuffer || plantillaBuffer.byteLength === 0){
+          throw new Error('La plantilla externa está vacía.');
+        }
+
+        zip = await JSZip.loadAsync(plantillaBuffer);
+        plantillaOrigen = 'FAL-024.xlsx del repositorio';
+      }
+    }catch(fetchError){
+      console.warn('No fue posible cargar FAL-024.xlsx externamente. Se usará la plantilla embebida.', fetchError);
+    }
+
+    if(!zip){
+      if(typeof FAL024_TEMPLATE_BASE64 !== 'string' || !FAL024_TEMPLATE_BASE64.trim()){
+        throw new Error(
+          'No se pudo cargar FAL-024.xlsx y tampoco está disponible la plantilla embebida.'
+        );
+      }
+
+      zip = await JSZip.loadAsync(
+        fal024Base64ToUint8Array(FAL024_TEMPLATE_BASE64)
       );
+      plantillaOrigen = 'plantilla embebida en el HTML';
     }
-
-    const plantillaBuffer = await plantillaResponse.arrayBuffer();
-
-    if(!plantillaBuffer || plantillaBuffer.byteLength === 0){
-      throw new Error('La plantilla FAL-024.xlsx está vacía o no pudo descargarse.');
-    }
-
-    const zip = await JSZip.loadAsync(plantillaBuffer);
 
     const parser = new DOMParser();
     const serializer = new XMLSerializer();
@@ -3907,7 +3982,7 @@ async function descargarFAL024(){
 
     if(msg){
       msg.style.color = '#86efac';
-      msg.textContent = `Formato FAL-024 generado con ${items.length} material(es).`;
+      msg.textContent = `Formato FAL-024 generado con ${items.length} material(es) usando ${plantillaOrigen}.`;
     }
   }catch(error){
     console.error('Error generando FAL-024:', error);
@@ -3933,6 +4008,222 @@ async function descargarFAL024(){
     </div>
   </div>
 </div>
+
+
+<script>
+function seleccionarFAL024ParaImportarReservas(){
+  const form = document.getElementById('movForm');
+  const estado = String(form?.elements?.['estado']?.value || '').trim().toUpperCase();
+
+  if(estado !== 'CONSUMIDO'){
+    alert('Para importar los códigos de reserva, el Estado debe estar en CONSUMIDO.');
+    return;
+  }
+
+  if(!document.querySelectorAll('#materialLinesBody tr').length){
+    alert('No hay materiales cargados en el formulario.');
+    return;
+  }
+
+  const input = document.getElementById('fal024ReservaFileInput');
+  if(!input){
+    alert('No se encontró el selector del archivo FAL-024.');
+    return;
+  }
+
+  input.value = '';
+  input.click();
+}
+
+function normalizarEncabezadoFAL024(valor){
+  return String(valor ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\r\n\t]+/g, ' ')
+    .replace(/[^a-zA-Z0-9]+/g, ' ')
+    .trim()
+    .toUpperCase();
+}
+
+function normalizarCodigoSapCruce(valor){
+  let texto = String(valor ?? '')
+    .replace(/\u00a0/g, ' ')
+    .trim()
+    .toUpperCase();
+
+  if(/^\d+(?:\.0+)?$/.test(texto)){
+    texto = texto.replace(/\.0+$/, '');
+    texto = texto.replace(/^0+(?=\d)/, '');
+  }
+
+  return texto.replace(/\s+/g, '');
+}
+
+function localizarTablaReservasFAL024(workbook){
+  const encabezadosCodigo = new Set([
+    'CODIGO ARTICULO',
+    'CODIGO DE ARTICULO',
+    'COD ARTICULO',
+    'CODIGO SAP',
+    'COD SAP'
+  ]);
+
+  const encabezadosReserva = new Set([
+    'COD RESERVA',
+    'CODIGO RESERVA',
+    'CODIGO DE RESERVA',
+    'COD RESERVA SAP',
+    'RESERVA'
+  ]);
+
+  const hojas = [...workbook.SheetNames].sort((a,b) => {
+    const prioridad = nombre => {
+      const n = normalizarEncabezadoFAL024(nombre);
+      if(n === 'FORMATO') return 0;
+      if(n === 'HOJA2') return 1;
+      return 2;
+    };
+    return prioridad(a) - prioridad(b);
+  });
+
+  for(const nombreHoja of hojas){
+    const hoja = workbook.Sheets[nombreHoja];
+    if(!hoja) continue;
+
+    const matriz = XLSX.utils.sheet_to_json(hoja, {
+      header: 1,
+      defval: '',
+      raw: false,
+      blankrows: false
+    });
+
+    for(let fila = 0; fila < Math.min(matriz.length, 150); fila++){
+      const valores = Array.isArray(matriz[fila]) ? matriz[fila] : [];
+      let columnaCodigo = -1;
+      let columnaReserva = -1;
+
+      valores.forEach((valor, columna) => {
+        const encabezado = normalizarEncabezadoFAL024(valor);
+        if(columnaCodigo < 0 && encabezadosCodigo.has(encabezado)){
+          columnaCodigo = columna;
+        }
+        if(columnaReserva < 0 && encabezadosReserva.has(encabezado)){
+          columnaReserva = columna;
+        }
+      });
+
+      if(columnaCodigo >= 0 && columnaReserva >= 0){
+        return {
+          nombreHoja,
+          matriz,
+          filaEncabezado: fila,
+          columnaCodigo,
+          columnaReserva
+        };
+      }
+    }
+  }
+
+  throw new Error(
+    'No se encontraron las columnas "Código artículo" y "COD RESERVA" en una misma fila del archivo.'
+  );
+}
+
+async function importarCodigosReservaDesdeFAL024(input){
+  const archivo = input?.files?.[0];
+  if(!archivo) return;
+
+  try{
+    if(typeof XLSX === 'undefined'){
+      throw new Error('La librería de Excel no está disponible.');
+    }
+
+    const form = document.getElementById('movForm');
+    const estado = String(form?.elements?.['estado']?.value || '').trim().toUpperCase();
+
+    if(estado !== 'CONSUMIDO'){
+      throw new Error('El Estado debe estar en CONSUMIDO.');
+    }
+
+    const buffer = await archivo.arrayBuffer();
+    const workbook = XLSX.read(buffer, {
+      type: 'array',
+      cellDates: false,
+      cellText: true,
+      cellNF: true
+    });
+
+    const tabla = localizarTablaReservasFAL024(workbook);
+    const reservasPorSap = new Map();
+    let registrosLeidos = 0;
+
+    for(let fila = tabla.filaEncabezado + 1; fila < tabla.matriz.length; fila++){
+      const valores = Array.isArray(tabla.matriz[fila]) ? tabla.matriz[fila] : [];
+      const sap = normalizarCodigoSapCruce(valores[tabla.columnaCodigo]);
+      const reserva = String(valores[tabla.columnaReserva] ?? '').trim();
+
+      if(!sap || !reserva) continue;
+
+      reservasPorSap.set(sap, reserva);
+      registrosLeidos++;
+    }
+
+    if(!reservasPorSap.size){
+      throw new Error('El archivo no contiene códigos de reserva diligenciados.');
+    }
+
+    let actualizados = 0;
+    let sinCoincidencia = 0;
+    const codigosSinCoincidencia = [];
+
+    document.querySelectorAll('#materialLinesBody tr').forEach(tr => {
+      const inputSap = tr.querySelector('.line-sap');
+      const inputReserva = tr.querySelector('.line-reserva');
+
+      if(!inputSap || !inputReserva) return;
+
+      const sapVisible = String(inputSap.value || '').trim();
+      const sapCruce = normalizarCodigoSapCruce(sapVisible);
+      const reserva = reservasPorSap.get(sapCruce);
+
+      if(reserva !== undefined){
+        inputReserva.disabled = false;
+        inputReserva.value = reserva;
+        inputReserva.dispatchEvent(new Event('input', { bubbles:true }));
+        inputReserva.dispatchEvent(new Event('change', { bubbles:true }));
+        actualizados++;
+      }else{
+        sinCoincidencia++;
+        if(sapVisible) codigosSinCoincidencia.push(sapVisible);
+      }
+    });
+
+    if(!actualizados){
+      throw new Error(
+        'No hubo coincidencias entre los códigos SAP del FAL-024 y los materiales cargados en este formulario. No se modificó ningún campo.'
+      );
+    }
+
+    const detalle = codigosSinCoincidencia.length
+      ? `\n\nSin coincidencia: ${codigosSinCoincidencia.join(', ')}`
+      : '';
+
+    alert(
+      `Importación terminada desde la hoja "${tabla.nombreHoja}".\n\n` +
+      `Materiales actualizados: ${actualizados}\n` +
+      `Materiales sin coincidencia: ${sinCoincidencia}\n` +
+      `Reservas leídas del Excel: ${registrosLeidos}` +
+      detalle +
+      `\n\nSolo se actualizaron materiales que ya estaban cargados en este formulario.`
+    );
+  }catch(error){
+    console.error('Error importando COD RESERVA desde FAL-024:', error);
+    alert(`No se pudo importar COD RESERVA:\n${error.message || error}`);
+  }finally{
+    if(input) input.value = '';
+  }
+}
+</script>
 
 </body>
 </html>
