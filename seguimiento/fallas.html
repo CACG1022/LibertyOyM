@@ -232,6 +232,16 @@ table{min-width:1450px}
   .modal-header{margin-left:-10px;margin-right:-10px;padding-left:10px;padding-right:10px}
 }
 
+
+.small-btn.contractor{
+  color:#fde68a;
+  border-color:rgba(245,158,11,.42);
+  background:rgba(245,158,11,.10);
+}
+.small-btn.contractor:hover{
+  background:rgba(245,158,11,.20);
+}
+
 </style>
 </head>
 <body>
@@ -1016,6 +1026,96 @@ function valorColumna(r,col){const dur=r.duracion_falla||calcularDuracionTexto(r
 function getTiemposMuertosRow(row){if(Array.isArray(row?.tiempos_muertos)&&row.tiempos_muertos.length)return row.tiempos_muertos; if(row?.tiempo_muerto_inicio&&row?.tiempo_muerto_fin)return [{inicio:row.tiempo_muerto_inicio,fin:row.tiempo_muerto_fin,motivo:row.motivo_tiempo_muerto,minutos:row.tiempo_muerto_minutos,total:row.tiempo_muerto_total}]; return [];}
 function formatTiemposMuertosMensaje(row){const rangos=getTiemposMuertosRow(row); if(!rangos.length)return row?.hubo_tiempo_muerto==='SI'?'Sin detalle':'No'; return rangos.map((r,i)=>`${i+1}. ${formatDateTimeValue(r.inicio)} a ${formatDateTimeValue(r.fin)} | ${r.total||formatearMinutos(r.minutos||0)} | ${r.motivo||''}`).join(' ; ');}
 
+
+function valorCorreo(valor,alternativa='No registrado'){
+  const texto=String(valor??'').trim();
+  return texto || alternativa;
+}
+
+function buildAsuntoContratista(row){
+  return [
+    'REPORTE DE FALLA',
+    'TICKET',
+    valorCorreo(row?.ticket,'SIN TICKET'),
+    valorCorreo(row?.nombre_cliente,'CLIENTE NO REGISTRADO'),
+    valorCorreo(row?.id_cliente,'ID NO REGISTRADO')
+  ].join(' ');
+}
+
+function buildCorreoContratista(row){
+  const ticket=valorCorreo(row?.ticket);
+  const cliente=valorCorreo(row?.nombre_cliente);
+  const idCliente=valorCorreo(row?.id_cliente);
+  const direccion=valorCorreo(row?.direccion_cliente);
+  const escalamiento=valorCorreo(row?.demonico,'No registrado');
+  const nodo=valorCorreo(row?.equipo_switch || row?.demonico);
+  const puerto=valorCorreo(row?.puerto_switch);
+  const odf=valorCorreo(row?.odf_salida || row?.odf_espejo);
+  const puertoOdf=valorCorreo(row?.puerto_odf_salida);
+  const causa=valorCorreo(row?.causa,'Pendiente de validación en campo');
+  const observacion=valorCorreo(row?.observacion,'Sin observaciones adicionales');
+  const coordenada=valorCorreo(row?.coord_dano || row?.coordenada_cliente);
+  const prioridad=valorCorreo(row?.prioridad);
+  const fechaInicio=formatDateTime(row?.fecha_inicio,row?.hora_inicio) || 'No registrada';
+
+  return [
+    'Cordial saludo, Señores ACT:',
+    '',
+    `Solicito de manera urgente la atención y solución del caso No. ${ticket}, correspondiente al escalamiento ${escalamiento}, asociado al cliente ${cliente} (${idCliente}), el cual actualmente presenta afectación del servicio.`,
+    '',
+    'Datos del caso:',
+    `Ticket: ${ticket}`,
+    `Cliente: ${cliente}`,
+    `ID cliente / servicio: ${idCliente}`,
+    `Dirección: ${direccion}`,
+    `Fecha y hora de inicio: ${fechaInicio}`,
+    `Prioridad: ${prioridad}`,
+    `Nodo / equipo: ${nodo}`,
+    `Puerto: ${puerto}`,
+    `ODF: ${odf}`,
+    `Puerto ODF: ${puertoOdf}`,
+    `Coordenada de la afectación: ${coordenada}`,
+    `Causa o diagnóstico preliminar: ${causa}`,
+    '',
+    'Observaciones:',
+    observacion,
+    '',
+    'Agradecemos realizar la validación y gestión correspondiente con la mayor prioridad posible, dado el impacto que presenta el servicio. Quedamos atentos a la confirmación de las acciones ejecutadas, los hallazgos en campo y la normalización del enlace.',
+    '',
+    'Muchas gracias por su pronta gestión.'
+  ].join('\n');
+}
+
+function abrirCorreoOutlookContratista(row){
+  if(!row){
+    alert('No fue posible localizar los datos del ticket.');
+    return;
+  }
+  const asunto=buildAsuntoContratista(row);
+  const cuerpo=buildCorreoContratista(row);
+  const mailto=`mailto:?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+
+  const enlace=document.createElement('a');
+  enlace.href=mailto;
+  enlace.style.display='none';
+  document.body.appendChild(enlace);
+  enlace.click();
+  enlace.remove();
+}
+
+window.notificarContratistaByIndex=function(index,event){
+  if(event){
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  const row=getRenderedTicket(Number(index));
+  if(!row){
+    alert('No fue posible localizar el ticket para generar la notificación.');
+    return;
+  }
+  abrirCorreoOutlookContratista(row);
+};
+
 function buildMensajeInicio(row){
   return [
     '*Mensaje de Inicio:*',
@@ -1152,6 +1252,12 @@ function bindTicketRowEvents(){
     });
   });
 
+  body.querySelectorAll('[data-action="contractor"]').forEach(button=>{
+    button.addEventListener('click',event=>{
+      notificarContratistaByIndex(Number(button.dataset.index),event);
+    });
+  });
+
   body.querySelectorAll('[data-action="status"]').forEach(select=>{
     select.addEventListener('click',event=>event.stopPropagation());
     select.addEventListener('dblclick',event=>event.stopPropagation());
@@ -1220,6 +1326,7 @@ function renderTickets(){
           <div class="row">
             <button type="button" class="small-btn whatsapp" data-action="inicio" data-index="${rowIndex}">Mensaje Inicio</button>
             <button type="button" class="small-btn whatsapp" data-action="fin" data-index="${rowIndex}">Mensaje FIN</button>
+            <button type="button" class="small-btn contractor" data-action="contractor" data-index="${rowIndex}">Notificación a contratista</button>
           </div>
         </div>
       </td>
@@ -1561,4 +1668,5 @@ loadTickets();
 </script>
 </body>
 </html>
+
 
