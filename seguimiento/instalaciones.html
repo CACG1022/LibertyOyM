@@ -2376,7 +2376,18 @@ document.getElementById('instalacionForm').addEventListener('submit', async func
       responsable: (el['responsable'].value || '').trim() || null
     };
 
-    if(calcularListaParaAgendar(payload) && payload.estado_general !== 'AGENDADA' && payload.estado_general !== 'ENTREGADA'){
+    const estadosQuePuedenPasarAutomaticamente = [
+      'INGRESADA',
+      'EN_VALIDACION',
+      'PENDIENTE_PERMISOS',
+      'PERMISOS_APROBADOS',
+      'PENDIENTE_ENRUTAMIENTO'
+    ];
+
+    if(
+      calcularListaParaAgendar(payload) &&
+      estadosQuePuedenPasarAutomaticamente.includes(payload.estado_general)
+    ){
       payload.estado_general = 'LISTA_PARA_AGENDAR';
     }
 
@@ -2531,6 +2542,7 @@ loadInstalaciones();
 
 </body>
 </html>
+
 
 
 
