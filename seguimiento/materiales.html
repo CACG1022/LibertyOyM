@@ -3919,12 +3919,31 @@ async function descargarFAL024(){
       fal024ClearCell(fal024EnsureCell(sheetXml, row, `C${rowNumber}`));
     }
 
-    // Diligenciar Código SAP y Cantidad.
+    // Diligenciar Código SAP, Cantidad y No de Serial.
     items.forEach((item, index) => {
       const rowNumber = 19 + index;
       const row = fal024EnsureRow(sheetXml, sheetData, rowNumber);
-      fal024SetInlineText(sheetXml, fal024EnsureCell(sheetXml, row, `B${rowNumber}`), item.codigo_sap || '');
-      fal024SetNumber(sheetXml, fal024EnsureCell(sheetXml, row, `C${rowNumber}`), item.cantidad);
+
+      // Columna B: Código artículo, conservado como texto.
+      fal024SetInlineText(
+        sheetXml,
+        fal024EnsureCell(sheetXml, row, `B${rowNumber}`),
+        item.codigo_sap || ''
+      );
+
+      // Columna C: Cantidad, conservada como valor numérico.
+      fal024SetNumber(
+        sheetXml,
+        fal024EnsureCell(sheetXml, row, `C${rowNumber}`),
+        item.cantidad
+      );
+
+      // Columna O: No de Serial, tomado del campo Cod serial del formulario.
+      fal024SetInlineText(
+        sheetXml,
+        fal024EnsureCell(sheetXml, row, `O${rowNumber}`),
+        item.codigo_serial || item.cod_serial || ''
+      );
     });
 
     // L14: fecha actual del día en que se genera el formato.
