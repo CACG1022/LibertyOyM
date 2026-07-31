@@ -21,7 +21,7 @@
     }
     .app{height:100vh;display:grid;grid-template-rows:auto 1fr}
     .topbar{
-      padding:14px 16px;display:grid;grid-template-columns:230px 1fr 180px 170px 150px 150px 150px 150px 120px;gap:10px;
+      padding:14px 16px;display:grid;grid-template-columns:230px 1fr 180px 170px 145px 145px 145px 145px 145px 120px;gap:10px;
       border-bottom:1px solid rgba(38,50,69,.5);background:rgba(7,17,31,.68);backdrop-filter:blur(8px);align-items:center;
     }
     .brand{font-size:20px;font-weight:700;white-space:nowrap}
@@ -209,6 +209,125 @@
     .port-box.free{background:var(--free)} .port-box.occupied{background:var(--ok)} .port-box.reserved{background:var(--warn)} .port-box.danado{background:var(--danger)}
     .port-box:hover{transform:translateY(-1px);border-color:#7ddfff;box-shadow:0 0 0 3px rgba(38,198,255,.12)}
 
+
+    .dashboard-modal{width:min(1180px,100%);max-height:92vh;overflow:auto}
+    .dashboard-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+    .dashboard-kpi{border:1px solid #2d3c50;border-radius:16px;background:rgba(10,18,31,.78);padding:14px}
+    .dashboard-kpi-label{font-size:11px;color:var(--muted);margin-bottom:6px}
+    .dashboard-kpi-value{font-size:26px;font-weight:800}
+    .dashboard-kpi-detail{font-size:10px;color:#9fb4ce;margin-top:7px}
+    .dashboard-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .dashboard-card{border:1px solid #2d3c50;border-radius:16px;background:rgba(10,18,31,.72);padding:14px}
+    .dashboard-card h4{margin:0 0 12px;font-size:15px}
+    .status-row{display:grid;grid-template-columns:140px 1fr 54px;align-items:center;gap:10px;margin:9px 0}
+    .status-track{height:10px;border-radius:999px;background:#18263a;overflow:hidden;border:1px solid #2a3d56}
+    .status-fill{height:100%;border-radius:999px}
+    .status-fill.occupied{background:var(--ok)} .status-fill.free{background:#64748b}
+    .status-fill.reserved{background:var(--warn)} .status-fill.danado{background:var(--danger)}
+    .dashboard-table-wrap{overflow:auto;max-height:400px;border:1px solid #26374d;border-radius:14px}
+    .dashboard-table{width:100%;border-collapse:collapse;min-width:900px;font-size:11px}
+    .dashboard-table th{position:sticky;top:0;background:#102033;padding:9px;text-align:left}
+    .dashboard-table td{padding:8px 9px;border-bottom:1px solid rgba(49,68,93,.55)}
+    .availability-pill{display:inline-flex;min-width:62px;justify-content:center;padding:3px 7px;border-radius:999px;border:1px solid #35506e;background:#0d1d30}
+
+    .dashboard-filters{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:10px;
+      margin-bottom:14px;
+      padding:12px;
+      border:1px solid #2d3c50;
+      border-radius:14px;
+      background:rgba(10,18,31,.72);
+    }
+    .dashboard-filters .field{margin:0}
+    .dashboard-filter-actions{
+      display:flex;
+      gap:10px;
+      align-items:end;
+    }
+    .dashboard-filter-actions button{width:auto;min-width:120px}
+    .occupancy-low td{background:rgba(34,197,94,.08)}
+    .occupancy-medium td{background:rgba(245,158,11,.10)}
+    .occupancy-high td{background:rgba(239,68,68,.12)}
+    .occupancy-low:hover td{background:rgba(34,197,94,.16)!important}
+    .occupancy-medium:hover td{background:rgba(245,158,11,.18)!important}
+    .occupancy-high:hover td{background:rgba(239,68,68,.20)!important}
+    .occupancy-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:66px;
+      padding:3px 8px;
+      border-radius:999px;
+      font-weight:700;
+      border:1px solid transparent;
+    }
+    .occupancy-badge.low{background:rgba(34,197,94,.16);color:#bbf7d0;border-color:rgba(34,197,94,.45)}
+    .occupancy-badge.medium{background:rgba(245,158,11,.16);color:#fde68a;border-color:rgba(245,158,11,.45)}
+    .occupancy-badge.high{background:rgba(239,68,68,.16);color:#fecaca;border-color:rgba(239,68,68,.45)}
+    .dashboard-filter-summary{
+      margin:0 0 10px;
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .dashboard-clickable{
+      cursor:pointer;
+      border-radius:10px;
+      padding:6px 8px;
+      margin-left:-8px;
+      margin-right:-8px;
+      transition:background .15s ease, box-shadow .15s ease;
+    }
+    .dashboard-clickable:hover{
+      background:rgba(38,198,255,.08);
+      box-shadow:inset 0 0 0 1px rgba(38,198,255,.18);
+    }
+    .dashboard-clickable-hint{
+      font-size:9px;
+      color:#7ddfff;
+      margin-left:6px;
+      white-space:nowrap;
+    }
+    .orphan-table-wrap{
+      overflow:auto;
+      max-height:460px;
+      border:1px solid #26374d;
+      border-radius:14px;
+    }
+    .orphan-table{
+      width:100%;
+      border-collapse:collapse;
+      min-width:900px;
+      font-size:11px;
+    }
+    .orphan-table th{
+      position:sticky;
+      top:0;
+      z-index:2;
+      background:#102033;
+      color:#dcecff;
+      text-align:left;
+      padding:9px;
+      border-bottom:1px solid #31445d;
+      white-space:nowrap;
+    }
+    .orphan-table td{
+      padding:8px 9px;
+      border-bottom:1px solid rgba(49,68,93,.55);
+      white-space:nowrap;
+    }
+
+    @media(max-width:1100px){
+      .dashboard-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media(max-width:700px){
+      .dashboard-filters{grid-template-columns:1fr}
+    }
+
+    @media(max-width:900px){.dashboard-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-grid{grid-template-columns:1fr}}
+
     @media (max-width:1400px){
       .topbar{grid-template-columns:1fr 1fr 1fr}
       .brand{grid-column:1/-1}
@@ -231,6 +350,7 @@
       <button class="secondary" onclick="searchClients()">Buscar cliente</button>
       <button class="secondary" onclick="openRackModal()">Agregar rack</button>
       <button class="secondary" onclick="openEquipmentModal()">Agregar equipo</button>
+      <button class="secondary" onclick="openDashboardModal()">Dashboard</button>
       <button class="secondary" onclick="exportOccupiedPortsExcel()">Reporte Excel</button>
       <select id="toggleConnections" onchange="changeConnectionsVisibility()">
         <option value="show">Mostrar conexiones</option>
@@ -254,6 +374,99 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
+
+
+  <div id="dashboardModal" class="modal-backdrop">
+    <div class="modal dashboard-modal">
+      <h3>Dashboard de inventario de red</h3>
+      <div class="modal-subtitle">Resumen general de clientes, equipos y disponibilidad de puertos.</div>
+      <div id="dashboardKpis" class="dashboard-kpis"></div>
+      <div class="dashboard-grid">
+        <div class="dashboard-card"><h4>Distribución general de puertos</h4><div id="dashboardPortStatus"></div></div>
+        <div class="dashboard-card"><h4>Indicadores complementarios</h4><div id="dashboardAdditional"></div></div>
+      </div>
+      <div class="dashboard-card" style="margin-top:16px">
+        <h4>Disponibilidad por equipo</h4>
+
+        <div class="dashboard-filters">
+          <div class="field"><label>Rack</label><input id="dfRack" placeholder="Filtrar rack"></div>
+          <div class="field"><label>Equipo</label><input id="dfEquipment" placeholder="Filtrar equipo"></div>
+          <div class="field">
+            <label>Tipo</label>
+            <select id="dfType">
+              <option value="">Todos</option>
+              <option value="SWITCH">Switch</option>
+              <option value="ODF">ODF</option>
+              <option value="ROUTER">Router</option>
+            </select>
+          </div>
+          <div class="field"><label>Total mínimo</label><input id="dfTotalMin" type="number" min="0" placeholder="0"></div>
+          <div class="field"><label>Ocupados mínimo</label><input id="dfOccupiedMin" type="number" min="0" placeholder="0"></div>
+          <div class="field"><label>Libres mínimo</label><input id="dfFreeMin" type="number" min="0" placeholder="0"></div>
+          <div class="field"><label>Reservados mínimo</label><input id="dfReservedMin" type="number" min="0" placeholder="0"></div>
+          <div class="field"><label>Dañados mínimo</label><input id="dfDamagedMin" type="number" min="0" placeholder="0"></div>
+          <div class="field"><label>Clientes mínimo</label><input id="dfClientsMin" type="number" min="0" placeholder="0"></div>
+          <div class="field"><label>% disponible mínimo</label><input id="dfAvailableMin" type="number" min="0" max="100" placeholder="0"></div>
+          <div class="field"><label>% ocupación mínimo</label><input id="dfOccupancyMin" type="number" min="0" max="100" placeholder="0"></div>
+          <div class="field">
+            <label>Filtro especial</label>
+            <select id="dfHighOccupancy">
+              <option value="">Todos los equipos</option>
+              <option value="yes">Solo ocupación > 90%</option>
+            </select>
+          </div>
+          <div class="dashboard-filter-actions">
+            <button class="secondary" onclick="applyDashboardFilters()">Aplicar filtros</button>
+            <button class="secondary" onclick="clearDashboardFilters()">Limpiar</button>
+          </div>
+        </div>
+
+        <div id="dashboardFilterSummary" class="dashboard-filter-summary"></div>
+
+        <div class="dashboard-table-wrap">
+          <table class="dashboard-table">
+            <thead><tr><th>Rack</th><th>Equipo</th><th>Tipo</th><th>Total</th><th>Ocupados</th><th>Libres</th><th>Reservados</th><th>Dañados</th><th>Clientes</th><th>% disponible</th><th>% ocupación</th></tr></thead>
+            <tbody id="dashboardEquipmentBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="actions"><button class="secondary" onclick="closeDashboardModal()">Cerrar</button></div>
+    </div>
+  </div>
+
+
+  <div id="occupiedWithoutClientModal" class="modal-backdrop">
+    <div class="modal medium">
+      <h3>Puertos ocupados sin cliente</h3>
+      <div class="modal-subtitle">
+        Puertos cuyo estado está marcado como ocupado, pero no tienen una asignación de cliente registrada.
+      </div>
+
+      <div id="occupiedWithoutClientSummary" class="dashboard-filter-summary"></div>
+
+      <div class="orphan-table-wrap">
+        <table class="orphan-table">
+          <thead>
+            <tr>
+              <th>Rack</th>
+              <th>Equipo</th>
+              <th>Tipo de equipo</th>
+              <th>Tipo de puerto</th>
+              <th>Puerto</th>
+              <th>Estado</th>
+              <th>Origen</th>
+              <th>Destino</th>
+            </tr>
+          </thead>
+          <tbody id="occupiedWithoutClientBody"></tbody>
+        </table>
+      </div>
+
+      <div class="actions">
+        <button class="secondary" onclick="closeOccupiedWithoutClientModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
 
   <div id="rackModal" class="modal-backdrop">
     <div class="modal">
@@ -2067,6 +2280,297 @@
     window.createEquipment = window.saveEquipment;
 
 
+
+
+    let dashboardEquipmentRows = [];
+
+    function getOccupancyClass(value) {
+      if (value < 40) return 'low';
+      if (value <= 90) return 'medium';
+      return 'high';
+    }
+
+    function getDashboardFilterValue(id) {
+      const el = document.getElementById(id);
+      return el ? el.value.trim() : '';
+    }
+
+    function renderDashboardEquipmentTable(rows) {
+      const tbody = document.getElementById('dashboardEquipmentBody');
+      const summary = document.getElementById('dashboardFilterSummary');
+
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="11" class="dashboard-empty">No hay equipos que cumplan los filtros.</td></tr>';
+        summary.textContent = '0 equipos encontrados';
+        return;
+      }
+
+      tbody.innerHTML = rows.map(r => {
+        const level = getOccupancyClass(r.occupancy);
+        const rowClass = level === 'low' ? 'occupancy-low' : level === 'medium' ? 'occupancy-medium' : 'occupancy-high';
+
+        return `
+          <tr class="${rowClass}">
+            <td>${r.rack}</td>
+            <td>${r.equipment}</td>
+            <td>${r.type}</td>
+            <td>${r.total}</td>
+            <td>${r.eqOccupied}</td>
+            <td>${r.eqFree}</td>
+            <td>${r.eqReserved}</td>
+            <td>${r.eqDamaged}</td>
+            <td>${r.eqClients}</td>
+            <td><span class="availability-pill">${r.available.toFixed(1)}%</span></td>
+            <td><span class="occupancy-badge ${level}">${r.occupancy.toFixed(1)}%</span></td>
+          </tr>
+        `;
+      }).join('');
+
+      const highCount = rows.filter(r => r.occupancy > 90).length;
+      summary.textContent = `${rows.length} equipos encontrados · ${highCount} con ocupación mayor al 90%`;
+    }
+
+    window.applyDashboardFilters = function() {
+      const rack = getDashboardFilterValue('dfRack').toLowerCase();
+      const equipment = getDashboardFilterValue('dfEquipment').toLowerCase();
+      const type = getDashboardFilterValue('dfType');
+      const totalMin = Number(getDashboardFilterValue('dfTotalMin') || 0);
+      const occupiedMin = Number(getDashboardFilterValue('dfOccupiedMin') || 0);
+      const freeMin = Number(getDashboardFilterValue('dfFreeMin') || 0);
+      const reservedMin = Number(getDashboardFilterValue('dfReservedMin') || 0);
+      const damagedMin = Number(getDashboardFilterValue('dfDamagedMin') || 0);
+      const clientsMin = Number(getDashboardFilterValue('dfClientsMin') || 0);
+      const availableMin = Number(getDashboardFilterValue('dfAvailableMin') || 0);
+      const occupancyMin = Number(getDashboardFilterValue('dfOccupancyMin') || 0);
+      const highOnly = getDashboardFilterValue('dfHighOccupancy') === 'yes';
+
+      const filtered = dashboardEquipmentRows.filter(r => {
+        if (rack && !r.rack.toLowerCase().includes(rack)) return false;
+        if (equipment && !r.equipment.toLowerCase().includes(equipment)) return false;
+        if (type && r.type !== type) return false;
+        if (r.total < totalMin) return false;
+        if (r.eqOccupied < occupiedMin) return false;
+        if (r.eqFree < freeMin) return false;
+        if (r.eqReserved < reservedMin) return false;
+        if (r.eqDamaged < damagedMin) return false;
+        if (r.eqClients < clientsMin) return false;
+        if (r.available < availableMin) return false;
+        if (r.occupancy < occupancyMin) return false;
+        if (highOnly && r.occupancy <= 90) return false;
+        return true;
+      });
+
+      renderDashboardEquipmentTable(filtered);
+    };
+
+    window.clearDashboardFilters = function() {
+      [
+        'dfRack','dfEquipment','dfTotalMin','dfOccupiedMin','dfFreeMin',
+        'dfReservedMin','dfDamagedMin','dfClientsMin','dfAvailableMin','dfOccupancyMin'
+      ].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+
+      document.getElementById('dfType').value = '';
+      document.getElementById('dfHighOccupancy').value = '';
+      renderDashboardEquipmentTable(dashboardEquipmentRows);
+    };
+
+    function renderDashboard() {
+      const totalPorts = ports.length;
+      const occupied = ports.filter(p => p.estado === 'ocupado' || getAssignmentByPort(p.id)).length;
+      const free = ports.filter(p => p.estado === 'libre' && !getAssignmentByPort(p.id)).length;
+      const reserved = ports.filter(p => p.estado === 'reservado').length;
+      const damaged = ports.filter(p => p.estado === 'danado').length;
+      const clientsCount = new Set(assignments.map(a => a.client_id).filter(Boolean)).size;
+      const availability = totalPorts ? free / totalPorts * 100 : 0;
+      const occupancy = totalPorts ? occupied / totalPorts * 100 : 0;
+
+      const kpis = [
+        ['Clientes en inventario', clientsCount, 'Clientes únicos asociados'],
+        ['Equipos registrados', equipments.length, `${racks.length} racks registrados`],
+        ['Puertos totales', totalPorts, `${occupied} ocupados · ${free} libres`],
+        ['Disponibilidad general', `${availability.toFixed(1)}%`, `${occupancy.toFixed(1)}% de ocupación`]
+      ];
+
+      document.getElementById('dashboardKpis').innerHTML = kpis.map(k => `
+        <div class="dashboard-kpi"><div class="dashboard-kpi-label">${k[0]}</div><div class="dashboard-kpi-value">${k[1]}</div><div class="dashboard-kpi-detail">${k[2]}</div></div>
+      `).join('');
+
+      const states = [
+        ['Ocupados', occupied, 'occupied'],
+        ['Libres', free, 'free'],
+        ['Reservados', reserved, 'reserved'],
+        ['Dañados', damaged, 'danado']
+      ];
+      document.getElementById('dashboardPortStatus').innerHTML = states.map(s => {
+        const pct = totalPorts ? s[1] / totalPorts * 100 : 0;
+        return `<div class="status-row"><div>${s[0]}</div><div class="status-track"><div class="status-fill ${s[2]}" style="width:${pct}%"></div></div><div>${s[1]}</div></div>`;
+      }).join('');
+
+      const linkedPorts = new Set(links.flatMap(l => [l.port_id_origen,l.port_id_destino])).size;
+      const occupiedWithoutClient = ports.filter(p => p.estado === 'ocupado' && !getAssignmentByPort(p.id)).length;
+      const additional = [
+        { key: 'connections', label: 'Conexiones registradas', value: links.length },
+        { key: 'linked', label: 'Puertos con conexión', value: linkedPorts },
+        { key: 'occupiedWithoutClient', label: 'Puertos ocupados sin cliente', value: occupiedWithoutClient },
+        { key: 'avgPorts', label: 'Promedio de puertos por equipo', value: equipments.length ? (totalPorts/equipments.length).toFixed(1) : 0 },
+        { key: 'avgClients', label: 'Promedio de clientes por equipo', value: equipments.length ? (clientsCount/equipments.length).toFixed(1) : 0 }
+      ];
+
+      document.getElementById('dashboardAdditional').innerHTML = additional.map(item => `
+        <div class="status-row ${item.key === 'occupiedWithoutClient' ? 'dashboard-clickable' : ''}"
+             ${item.key === 'occupiedWithoutClient' ? 'id="occupiedWithoutClientMetric" title="Doble clic para ver el detalle"' : ''}>
+          <div style="grid-column:1/3">
+            ${item.label}
+            ${item.key === 'occupiedWithoutClient' ? '<span class="dashboard-clickable-hint">doble clic para ver</span>' : ''}
+          </div>
+          <div>${item.value}</div>
+        </div>
+      `).join('');
+
+      const occupiedMetric = document.getElementById('occupiedWithoutClientMetric');
+      if (occupiedMetric) {
+        occupiedMetric.addEventListener('dblclick', openOccupiedWithoutClientModal);
+      }
+
+      dashboardEquipmentRows = equipments.map(eq => {
+        const eqPorts = ports.filter(p => p.equipment_id === eq.id);
+        const eqOccupied = eqPorts.filter(p => p.estado === 'ocupado' || getAssignmentByPort(p.id)).length;
+        const eqFree = eqPorts.filter(p => p.estado === 'libre' && !getAssignmentByPort(p.id)).length;
+        const eqReserved = eqPorts.filter(p => p.estado === 'reservado').length;
+        const eqDamaged = eqPorts.filter(p => p.estado === 'danado').length;
+        const eqClients = new Set(eqPorts.map(p => getAssignmentByPort(p.id)?.client_id).filter(Boolean)).size;
+        const total = eqPorts.length;
+
+        return {
+          rack: getRackById(eq.rack_id)?.nombre || '',
+          equipment: eq.nombre || '',
+          type: String(eq.tipo || '').toUpperCase(),
+          total,
+          eqOccupied,
+          eqFree,
+          eqReserved,
+          eqDamaged,
+          eqClients,
+          available: total ? eqFree / total * 100 : 0,
+          occupancy: total ? eqOccupied / total * 100 : 0
+        };
+      }).sort((a,b) =>
+        b.occupancy - a.occupancy ||
+        a.rack.localeCompare(b.rack) ||
+        a.equipment.localeCompare(b.equipment)
+      );
+
+      renderDashboardEquipmentTable(dashboardEquipmentRows);
+    }
+
+
+    function describePortConnectionForDetail(portId, direction) {
+      const link = direction === 'origin'
+        ? links.find(l => l.port_id_destino === portId)
+        : links.find(l => l.port_id_origen === portId);
+
+      if (!link) return '';
+
+      const remoteId = direction === 'origin'
+        ? link.port_id_origen
+        : link.port_id_destino;
+
+      const remotePort = getPortById(remoteId);
+      const remoteEquipment = getEquipmentById(remotePort?.equipment_id);
+      const remoteRack = getRackById(remoteEquipment?.rack_id);
+
+      if (!remotePort || !remoteEquipment) return '';
+
+      return `${remoteRack?.nombre || 'Sin rack'} / ${remoteEquipment.nombre} / ${getPortDisplayLabel(remotePort)}`;
+    }
+
+    window.openOccupiedWithoutClientModal = function() {
+      const rows = ports
+        .filter(port => port.estado === 'ocupado' && !getAssignmentByPort(port.id))
+        .map(port => {
+          const equipment = getEquipmentById(port.equipment_id);
+          const rack = getRackById(equipment?.rack_id);
+
+          return {
+            rack: rack?.nombre || '',
+            equipment: equipment?.nombre || '',
+            equipmentType: String(equipment?.tipo || '').toUpperCase(),
+            portType: getPortType(port).toUpperCase(),
+            port: getPortDisplayLabel(port),
+            state: String(port.estado || '').toUpperCase(),
+            origin: describePortConnectionForDetail(port.id, 'origin'),
+            destination: describePortConnectionForDetail(port.id, 'destination')
+          };
+        })
+        .sort((a, b) =>
+          a.rack.localeCompare(b.rack) ||
+          a.equipment.localeCompare(b.equipment) ||
+          a.port.localeCompare(b.port, undefined, { numeric: true })
+        );
+
+      const tbody = document.getElementById('occupiedWithoutClientBody');
+      const summary = document.getElementById('occupiedWithoutClientSummary');
+
+      summary.textContent = `${rows.length} puerto${rows.length === 1 ? '' : 's'} ocupado${rows.length === 1 ? '' : 's'} sin cliente`;
+
+      if (!rows.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="dashboard-empty">No hay puertos ocupados sin cliente.</td></tr>';
+      } else {
+        tbody.innerHTML = rows.map(row => `
+          <tr>
+            <td>${row.rack}</td>
+            <td>${row.equipment}</td>
+            <td>${row.equipmentType}</td>
+            <td>${row.portType}</td>
+            <td>${row.port}</td>
+            <td>${row.state}</td>
+            <td>${row.origin || 'Sin origen'}</td>
+            <td>${row.destination || 'Sin destino'}</td>
+          </tr>
+        `).join('');
+      }
+
+      document.getElementById('occupiedWithoutClientModal').classList.add('show');
+    };
+
+    window.closeOccupiedWithoutClientModal = function() {
+      document.getElementById('occupiedWithoutClientModal').classList.remove('show');
+    };
+
+    window.openDashboardModal = function() {
+      renderDashboard();
+
+      [
+        'dfRack','dfEquipment','dfTotalMin','dfOccupiedMin','dfFreeMin',
+        'dfReservedMin','dfDamagedMin','dfClientsMin','dfAvailableMin','dfOccupancyMin'
+      ].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.dataset.filterWired) {
+          el.addEventListener('keydown', ev => {
+            if (ev.key === 'Enter') applyDashboardFilters();
+          });
+          el.dataset.filterWired = '1';
+        }
+      });
+
+      ['dfType','dfHighOccupancy'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && !el.dataset.filterWired) {
+          el.addEventListener('change', applyDashboardFilters);
+          el.dataset.filterWired = '1';
+        }
+      });
+
+      document.getElementById('dashboardModal').classList.add('show');
+    };
+
+    window.closeDashboardModal = function() {
+      document.getElementById('dashboardModal').classList.remove('show');
+    };
+
     function getPortConnectionData(portId) {
       const incoming = links.find(l => l.port_id_destino === portId);
       const outgoing = links.find(l => l.port_id_origen === portId);
@@ -2265,5 +2769,6 @@
   </script>
 </body>
 </html>
+
 
 
