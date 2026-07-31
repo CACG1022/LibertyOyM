@@ -968,6 +968,38 @@ function diasCalendarioEntre(fechaInicio, fechaFin){
   return diff < 0 ? 0 : diff;
 }
 
+function diasUnionIntervalos(fechaInicioTotal, fechaFinTotal, intervalos){
+  if(!fechaInicioTotal || !fechaFinTotal) return 0;
+  const limiteInicio = new Date(fechaInicioTotal + 'T00:00:00');
+  const limiteFin = new Date(fechaFinTotal + 'T00:00:00');
+  if(isNaN(limiteInicio) || isNaN(limiteFin) || limiteFin < limiteInicio) return 0;
+
+  const rangos = (intervalos || []).map(r => {
+    if(!r?.inicio || !r?.fin) return null;
+    let inicio = new Date(r.inicio + 'T00:00:00');
+    let fin = new Date(r.fin + 'T00:00:00');
+    if(isNaN(inicio) || isNaN(fin) || fin < inicio) return null;
+    if(inicio < limiteInicio) inicio = new Date(limiteInicio);
+    if(fin > limiteFin) fin = new Date(limiteFin);
+    if(fin < limiteInicio || inicio > limiteFin || fin < inicio) return null;
+    return { inicio, fin };
+  }).filter(Boolean).sort((a,b) => a.inicio - b.inicio);
+
+  if(!rangos.length) return 0;
+  const unidos = [{...rangos[0]}];
+  for(let i = 1; i < rangos.length; i++){
+    const actual = rangos[i];
+    const ultimo = unidos[unidos.length - 1];
+    if(actual.inicio <= ultimo.fin){
+      if(actual.fin > ultimo.fin) ultimo.fin = actual.fin;
+    }else{
+      unidos.push({...actual});
+    }
+  }
+
+  return unidos.reduce((total, r) => total + Math.max(0, Math.floor((r.fin - r.inicio) / 86400000)), 0);
+}
+
 function toggleRadicacionEmsaSection(fromHeader=false){
   const form = document.getElementById('instalacionForm');
   const section = document.getElementById('radicacionEmsaSection');
@@ -1055,12 +1087,17 @@ function calcularTiemposMuertosInstalacion(){
   const muertoRadicacionTelefonica = diasCalendarioEntre(fechaRadicacionTelefonica, fechaRespuestaTelefonica);
   const totalInstalacion = diasCalendarioEntre(el['fecha_ingreso']?.value, fechaFinCalculoInstalacion(el['fecha_entrega']?.value));
 
+  const fechaInicioInstalacion = el['fecha_ingreso']?.value || '';
+  const fechaFinInstalacion = fechaFinCalculoInstalacion(el['fecha_entrega']?.value);
+  const tiempoMuertoTotal = diasUnionIntervalos(fechaInicioInstalacion, fechaFinInstalacion, [
+    { inicio: fechaSolicitudPermisos, fin: finPermisos },
+    ...(radicacionActiva ? [{ inicio: fechaRadicacionEmsa, fin: fechaRespuestaEmsa }] : []),
+    ...(telefonicaActiva ? [{ inicio: fechaRadicacionTelefonica, fin: fechaRespuestaTelefonica }] : [])
+  ]);
+
   let efectivo = '';
   if(totalInstalacion !== ''){
-    const mp = muertoPermisos === '' ? 0 : Number(muertoPermisos);
-    const mr = muertoRadicacion === '' ? 0 : Number(muertoRadicacion);
-    const mt = muertoRadicacionTelefonica === '' ? 0 : Number(muertoRadicacionTelefonica);
-    efectivo = Math.max(0, Number(totalInstalacion) - mp - mr - mt);
+    efectivo = Math.max(0, Number(totalInstalacion) - tiempoMuertoTotal);
   }
 
   if(el['tiempo_muerto_permisos']) el['tiempo_muerto_permisos'].value = muertoPermisos === '' ? '' : `${muertoPermisos} días`;
@@ -1074,8 +1111,6 @@ function calcularTiemposMuertosInstalacion(){
   const totalKpi = document.getElementById('kpiDuracionTotalInst');
   const muertoKpi = document.getElementById('kpiTiempoMuertoInst');
   const efectivaKpi = document.getElementById('kpiDuracionEfectivaInst');
-  const tiempoMuertoTotal = (muertoPermisos === '' ? 0 : Number(muertoPermisos)) + (muertoRadicacion === '' ? 0 : Number(muertoRadicacion)) + (muertoRadicacionTelefonica === '' ? 0 : Number(muertoRadicacionTelefonica));
-
   if(totalKpi) totalKpi.textContent = totalInstalacion === '' ? '0 días' : `${totalInstalacion} días`;
   if(muertoKpi) muertoKpi.textContent = `${tiempoMuertoTotal} días`;
   if(efectivaKpi) efectivaKpi.textContent = efectivo === '' ? '0 días' : `${efectivo} días`;
@@ -1126,7 +1161,14 @@ function calcularDuracionTotalInstRow(row){
   return total === '' ? '0 días' : `${total} días`;
 }
 function calcularTiempoMuertoInstRow(row){
-  const total = calcularTiempoMuertoPermisosRow(row) + calcularTiempoMuertoRadicacionRow(row) + calcularTiempoMuertoRadicacionTelefonicaRow(row);
+  const fechaInicio = row?.fecha_ingreso || '';
+  const fechaFin = fechaFinCalculoInstalacion(row?.fecha_entrega);
+  const finPermisos = row?.fecha_aprobacion_permisos || row?.fecha_respuesta_permisos || '';
+  const total = diasUnionIntervalos(fechaInicio, fechaFin, [
+    { inicio: row?.fecha_solicitud_permisos || '', fin: finPermisos },
+    ...(row?.checklist_radicacion_emsa ? [{ inicio: row?.fecha_radicacion_emsa || '', fin: row?.fecha_respuesta_emsa || '' }] : []),
+    ...(row?.checklist_radicacion_telefonica ? [{ inicio: row?.fecha_radicacion_telefonica || '', fin: row?.fecha_respuesta_telefonica || '' }] : [])
+  ]);
   return `${total} días`;
 }
 function calcularDuracionEfectivaInstRow(row){
@@ -2542,8 +2584,6 @@ loadInstalaciones();
 
 </body>
 </html>
-
-
 
 
 
