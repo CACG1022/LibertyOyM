@@ -21,7 +21,7 @@
     }
     .app{height:100vh;display:grid;grid-template-rows:auto 1fr}
     .topbar{
-      padding:14px 16px;display:grid;grid-template-columns:230px 1fr 180px 170px 145px 145px 145px 145px 145px 120px;gap:10px;
+      padding:14px 16px;display:grid;grid-template-columns:230px 1fr 180px 170px 140px 140px 140px 140px 145px 145px 120px;gap:10px;
       border-bottom:1px solid rgba(38,50,69,.5);background:rgba(7,17,31,.68);backdrop-filter:blur(8px);align-items:center;
     }
     .brand{font-size:20px;font-weight:700;white-space:nowrap}
@@ -319,6 +319,47 @@
       white-space:nowrap;
     }
 
+
+    .connection-filter-list{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:8px;
+      max-height:430px;
+      overflow:auto;
+      padding:4px;
+    }
+    .connection-filter-item{
+      display:flex;
+      align-items:flex-start;
+      gap:9px;
+      padding:10px;
+      border:1px solid #2d3c50;
+      border-radius:12px;
+      background:#0b1728;
+      cursor:pointer;
+    }
+    .connection-filter-item:hover{border-color:#42617f;background:#0e1c30}
+    .connection-filter-item input{width:auto;margin-top:2px}
+    .connection-filter-name{font-size:12px;font-weight:700;color:#e3effc}
+    .connection-filter-meta{font-size:10px;color:var(--muted);margin-top:2px}
+    .connection-filter-toolbar{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      align-items:center;
+      margin-bottom:12px;
+    }
+    .connection-filter-toolbar input{flex:1;min-width:220px}
+    .connection-filter-toolbar button{width:auto;min-width:110px}
+    .connection-filter-summary{
+      margin:8px 0 0;
+      font-size:11px;
+      color:#9fb4ce;
+    }
+    @media(max-width:700px){
+      .connection-filter-list{grid-template-columns:1fr}
+    }
+
     @media(max-width:1100px){
       .dashboard-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
@@ -352,6 +393,7 @@
       <button class="secondary" onclick="openEquipmentModal()">Agregar equipo</button>
       <button class="secondary" onclick="openDashboardModal()">Dashboard</button>
       <button class="secondary" onclick="exportOccupiedPortsExcel()">Reporte Excel</button>
+      <button class="secondary" onclick="openConnectionEquipmentFilter()">Filtrar conexiones</button>
       <select id="toggleConnections" onchange="changeConnectionsVisibility()">
         <option value="show">Mostrar conexiones</option>
         <option value="hide">Ocultar conexiones</option>
@@ -375,6 +417,30 @@
 
   <div id="toast" class="toast hidden"></div>
 
+
+
+  <div id="connectionEquipmentFilterModal" class="modal-backdrop">
+    <div class="modal medium">
+      <h3>Filtrar conexiones por equipo</h3>
+      <div class="modal-subtitle">
+        Selecciona los equipos cuyas conexiones amarillas deseas visualizar. Solo se mostrarán las conexiones que tengan ambos extremos dentro de los equipos seleccionados.
+      </div>
+
+      <div class="connection-filter-toolbar">
+        <input id="connectionEquipmentSearch" placeholder="Buscar por rack, equipo o tipo">
+        <button class="secondary" onclick="selectAllConnectionEquipment()">Seleccionar todos</button>
+        <button class="secondary" onclick="clearAllConnectionEquipment()">Quitar todos</button>
+      </div>
+
+      <div id="connectionEquipmentFilterList" class="connection-filter-list"></div>
+      <div id="connectionEquipmentFilterSummary" class="connection-filter-summary"></div>
+
+      <div class="actions">
+        <button class="secondary" onclick="closeConnectionEquipmentFilter()">Cancelar</button>
+        <button onclick="applyConnectionEquipmentFilter()">Aplicar filtro</button>
+      </div>
+    </div>
+  </div>
 
   <div id="dashboardModal" class="modal-backdrop">
     <div class="modal dashboard-modal">
@@ -660,6 +726,7 @@
     let editingEquipmentId = null;
     let pendingDragPrefill = null;
     let filteredClientPortIds = null;
+    let connectionEquipmentFilterIds = null;
     let filteredClientLinkKeys = null;
     let dragConnection = {
       sourcePortId: null,
@@ -673,6 +740,7 @@
     const POS_KEY = 'rack_visual_positions_v4';
     const VIEW_KEY = 'rack_visual_view_mode';
     const CONNECTIONS_KEY = 'rack_visual_show_connections';
+    const CONNECTION_EQUIPMENT_FILTER_KEY = 'rack_visual_connection_equipment_filter_v1';
     const ROUTES_KEY = 'rack_visual_link_routes_v3';
     const DEFAULT_URL = 'https://lvwmpwnzavqdspdfvceb.supabase.co';
     const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2d21wd256YXZxZHNwZGZ2Y2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxOTg3MzYsImV4cCI6MjA5MTc3NDczNn0.u6g4OCm4kl-LEmyIf9VWwf43cdqYbik7Y60rdKQ8npI';
@@ -698,6 +766,179 @@
     function getConnectionsVisible() {
       return (localStorage.getItem(CONNECTIONS_KEY) || 'show') === 'show';
     }
+
+
+    function loadConnectionEquipmentFilter() {
+      try {
+        const raw = localStorage.getItem(CONNECTION_EQUIPMENT_FILTER_KEY);
+        if (!raw) {
+          connectionEquipmentFilterIds = null;
+          return;
+        }
+        const parsed = JSON.parse(raw);
+        connectionEquipmentFilterIds = Array.isArray(parsed) ? new Set(parsed.map(String)) : null;
+      } catch {
+        connectionEquipmentFilterIds = null;
+      }
+    }
+
+    function saveConnectionEquipmentFilter() {
+      if (connectionEquipmentFilterIds === null) {
+        localStorage.removeItem(CONNECTION_EQUIPMENT_FILTER_KEY);
+      } else {
+        localStorage.setItem(
+          CONNECTION_EQUIPMENT_FILTER_KEY,
+          JSON.stringify([...connectionEquipmentFilterIds])
+        );
+      }
+    }
+
+    function isLinkVisibleByEquipmentFilter(link) {
+      // Sin filtro: mostrar todas las conexiones.
+      if (connectionEquipmentFilterIds === null) return true;
+
+      // Sin equipos seleccionados: no mostrar ninguna conexión.
+      if (connectionEquipmentFilterIds.size === 0) return false;
+
+      const originPort = getPortById(link.port_id_origen);
+      const destinationPort = getPortById(link.port_id_destino);
+
+      const originEquipmentId = String(originPort?.equipment_id || '');
+      const destinationEquipmentId = String(destinationPort?.equipment_id || '');
+
+      // Mostrar únicamente conexiones comunes entre los equipos seleccionados:
+      // ambos extremos deben pertenecer al conjunto seleccionado.
+      return connectionEquipmentFilterIds.has(originEquipmentId) &&
+             connectionEquipmentFilterIds.has(destinationEquipmentId);
+    }
+
+    function getTemporarySelectedEquipmentIds() {
+      return new Set(
+        [...document.querySelectorAll('.connection-equipment-checkbox:checked')]
+          .map(input => String(input.value))
+      );
+    }
+
+    function renderConnectionEquipmentFilterList(query = '') {
+      const list = document.getElementById('connectionEquipmentFilterList');
+      const summary = document.getElementById('connectionEquipmentFilterSummary');
+      if (!list || !summary) return;
+
+      const normalized = query.trim().toLowerCase();
+      const selected = connectionEquipmentFilterIds === null
+        ? new Set(equipments.map(eq => String(eq.id)))
+        : new Set([...connectionEquipmentFilterIds].map(String));
+
+      const visibleEquipment = equipments
+        .map(eq => ({
+          ...eq,
+          rackName: getRackById(eq.rack_id)?.nombre || 'Sin rack'
+        }))
+        .filter(eq => {
+          if (!normalized) return true;
+          return String(eq.nombre || '').toLowerCase().includes(normalized) ||
+                 String(eq.tipo || '').toLowerCase().includes(normalized) ||
+                 String(eq.rackName || '').toLowerCase().includes(normalized);
+        })
+        .sort((a, b) =>
+          a.rackName.localeCompare(b.rackName) ||
+          String(a.nombre || '').localeCompare(String(b.nombre || ''))
+        );
+
+      if (!visibleEquipment.length) {
+        list.innerHTML = '<div class="dashboard-empty" style="grid-column:1/-1">No se encontraron equipos.</div>';
+      } else {
+        list.innerHTML = visibleEquipment.map(eq => {
+          const checked = selected.has(String(eq.id));
+          const eqPorts = ports.filter(p => p.equipment_id === eq.id);
+          const eqLinks = links.filter(link => {
+            const p1 = getPortById(link.port_id_origen);
+            const p2 = getPortById(link.port_id_destino);
+            return p1?.equipment_id === eq.id || p2?.equipment_id === eq.id;
+          }).length;
+
+          return `
+            <label class="connection-filter-item">
+              <input type="checkbox" class="connection-equipment-checkbox" value="${eq.id}" ${checked ? 'checked' : ''}>
+              <span>
+                <div class="connection-filter-name">${eq.nombre}</div>
+                <div class="connection-filter-meta">
+                  ${eq.rackName} · ${String(eq.tipo || '').toUpperCase()} ·
+                  ${eqPorts.length} puertos · ${eqLinks} conexiones
+                </div>
+              </span>
+            </label>
+          `;
+        }).join('');
+      }
+
+      const selectedCount = connectionEquipmentFilterIds === null
+        ? equipments.length
+        : connectionEquipmentFilterIds.size;
+
+      summary.textContent = connectionEquipmentFilterIds === null
+        ? `Mostrando conexiones de todos los equipos (${equipments.length})`
+        : `${selectedCount} de ${equipments.length} equipos seleccionados`;
+    }
+
+    window.openConnectionEquipmentFilter = function() {
+      const modal = document.getElementById('connectionEquipmentFilterModal');
+      const search = document.getElementById('connectionEquipmentSearch');
+      if (!modal || !search) {
+        toast('No se encontró el formulario de filtro');
+        return;
+      }
+
+      search.value = '';
+      renderConnectionEquipmentFilterList('');
+
+      if (!search.dataset.wired) {
+        search.addEventListener('input', () => {
+          renderConnectionEquipmentFilterList(search.value);
+        });
+        search.dataset.wired = '1';
+      }
+
+      modal.classList.add('show');
+    };
+
+    window.closeConnectionEquipmentFilter = function() {
+      document.getElementById('connectionEquipmentFilterModal')?.classList.remove('show');
+    };
+
+    window.selectAllConnectionEquipment = function() {
+      connectionEquipmentFilterIds = null;
+      renderConnectionEquipmentFilterList(
+        document.getElementById('connectionEquipmentSearch')?.value || ''
+      );
+    };
+
+    window.clearAllConnectionEquipment = function() {
+      connectionEquipmentFilterIds = new Set();
+      renderConnectionEquipmentFilterList(
+        document.getElementById('connectionEquipmentSearch')?.value || ''
+      );
+    };
+
+    window.applyConnectionEquipmentFilter = function() {
+      const checkedIds = getTemporarySelectedEquipmentIds();
+
+      if (checkedIds.size === equipments.length) {
+        connectionEquipmentFilterIds = null;
+      } else {
+        connectionEquipmentFilterIds = checkedIds;
+      }
+
+      saveConnectionEquipmentFilter();
+      closeConnectionEquipmentFilter();
+      drawPersistentLinks();
+
+      toast(
+        connectionEquipmentFilterIds === null
+          ? 'Mostrando conexiones de todos los equipos'
+          : `Mostrando conexiones comunes entre ${connectionEquipmentFilterIds.size} equipos`
+      );
+    };
 
     function setConnectionsVisible(value) {
       localStorage.setItem(CONNECTIONS_KEY, value ? 'show' : 'hide');
@@ -804,10 +1045,20 @@
     };
     window.closeDeleteEquipmentModal = () => document.getElementById('deleteEquipmentModal').classList.remove('show');
 
-    ['rackModal','equipmentModal','deleteEquipmentModal','portModal','equipmentViewModal'].forEach(id => {
+    ['rackModal','equipmentModal','deleteEquipmentModal','equipmentViewModal'].forEach(id => {
       document.addEventListener('click', (e) => {
         if (e.target && e.target.id === id) document.getElementById(id).classList.remove('show');
       });
+    });
+
+    // El modal de asignación de cliente y enlace no se cierra al hacer clic fuera.
+    // Así se conserva toda la información que el usuario esté diligenciando.
+    document.addEventListener('click', (e) => {
+      if (e.target && e.target.id === 'portModal') {
+        e.preventDefault();
+        e.stopPropagation();
+        toast('Este formulario solo se cierra con Cancelar, Guardar o Limpiar puerto');
+      }
     });
 
     async function fetchAll() {
@@ -1308,6 +1559,7 @@
       if (getConnectionsVisible()) {
         links.forEach(link => {
           if (!isLinkInClientFilter(link)) return;
+          if (!isLinkVisibleByEquipmentFilter(link)) return;
           const p1 = document.querySelector(`.port[data-port-id="${link.port_id_origen}"]`);
           const p2 = document.querySelector(`.port[data-port-id="${link.port_id_destino}"]`);
           if (!p1 || !p2) return;
@@ -2765,10 +3017,12 @@
     });
 
     initSupabase();
+    loadConnectionEquipmentFilter();
     loadDashboard();
   </script>
 </body>
 </html>
+
 
 
 
