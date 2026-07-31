@@ -242,6 +242,13 @@ table{min-width:1450px}
   background:rgba(245,158,11,.20);
 }
 
+
+.modal-header-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:nowrap;margin-left:auto}
+.folder-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:10px 14px;border-radius:12px;border:1px solid rgba(245,158,11,.48);background:rgba(245,158,11,.12);color:#fde68a;font-weight:800;cursor:pointer}
+.folder-btn:hover{background:rgba(245,158,11,.22)}
+.folder-btn:disabled{opacity:.55;cursor:not-allowed}
+@media (max-width:760px){.modal-header-actions{gap:7px;flex-wrap:nowrap}.folder-btn{padding:9px 11px;font-size:13px;white-space:nowrap}}
+
 </style>
 </head>
 <body>
@@ -255,7 +262,10 @@ table{min-width:1450px}
         <h3 id="modalTitle" style="margin:0 0 6px 0;">Nueva falla / ticket</h3>
         <div class="muted-note">Registra inicio, cierre, causa, solución, datos técnicos y ubicación.</div>
       </div>
-      <button class="close-btn" type="button" onclick="closeTicketModal()">✕</button>
+      <div class="modal-header-actions">
+        <button id="createFolderBtn" class="folder-btn" type="button" onclick="crearCarpetaCorrectivoDesdeFormulario()" title="Seleccionar ubicación y crear carpeta">📁 Crear carpeta</button>
+        <button class="close-btn" type="button" onclick="closeTicketModal()">✕</button>
+      </div>
     </div>
     <form id="ticketForm" action="javascript:void(0);" method="post">
       <input type="hidden" name="id">
@@ -1381,6 +1391,66 @@ function asignarValorFormularioSeguro(elemento,valor){
   }
 }
 
+
+function limpiarNombreCarpeta(valor){
+  return String(valor || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g,'')
+    .replace(/[<>:"/\\|?*\x00-\x1F]/g,' ')
+    .replace(/\s+/g,' ')
+    .trim()
+    .replace(/\.+$/g,'')
+    .slice(0,120);
+}
+
+function construirNombreCarpetaCorrectivo(){
+  const form=document.getElementById('ticketForm');
+  const el=form?.elements;
+  const ticket=limpiarNombreCarpeta(el?.['ticket']?.value || 'SIN-TICKET').replace(/\s+/g,'');
+  const cliente=limpiarNombreCarpeta(el?.['nombre_cliente']?.value || 'CLIENTE-SIN-NOMBRE');
+  return limpiarNombreCarpeta(`CORRECTIVO-TK${ticket}-${cliente}`).toUpperCase();
+}
+
+window.crearCarpetaCorrectivoDesdeFormulario=async function(){
+  const boton=document.getElementById('createFolderBtn');
+  const nombreCarpeta=construirNombreCarpetaCorrectivo();
+
+  if(!nombreCarpeta || nombreCarpeta==='CORRECTIVO-TKSIN-TICKET-CLIENTE-SIN-NOMBRE'){
+    alert('Primero debes diligenciar el número de ticket y el nombre del cliente.');
+    return;
+  }
+
+  if(typeof window.showDirectoryPicker!=='function'){
+    alert('Este navegador no permite seleccionar una carpeta desde esta página. Abre el módulo en Google Chrome o Microsoft Edge actualizado. También puede ser necesario ejecutarlo desde HTTPS o localhost.');
+    return;
+  }
+
+  try{
+    if(boton){
+      boton.disabled=true;
+      boton.textContent='Creando carpeta...';
+    }
+
+    const carpetaBase=await window.showDirectoryPicker({
+      mode:'readwrite',
+      id:'fallas-carpeta-correctivos',
+      startIn:'documents'
+    });
+
+    await carpetaBase.getDirectoryHandle(nombreCarpeta,{create:true});
+    alert(`Carpeta creada correctamente:\n${nombreCarpeta}`);
+  }catch(error){
+    if(error?.name==='AbortError') return;
+    console.error('Error creando carpeta:',error);
+    alert('No fue posible crear la carpeta. Verifica que hayas autorizado el acceso a la ubicación seleccionada y que el nombre sea válido.');
+  }finally{
+    if(boton){
+      boton.disabled=false;
+      boton.innerHTML='📁 Crear carpeta';
+    }
+  }
+};
+
 window.openTicketModal=function(row=null){
   const modal=document.getElementById('ticketModal');
   const form=document.getElementById('ticketForm');
@@ -1668,5 +1738,4 @@ loadTickets();
 </script>
 </body>
 </html>
-
 
