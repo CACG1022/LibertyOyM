@@ -6,6 +6,9 @@
   <title>Dashboard Ejecutivo O&M</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
@@ -66,6 +69,173 @@
     .fault-popup b{color:#bff7ff}.fault-popup small{color:#9fb5d6}.map-note{font-size:12px;color:var(--muted);margin-top:8px}.severity-dot,.fault-dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;background:#22d3ee;border:2px solid rgba(255,255,255,.85);box-shadow:0 0 0 2px rgba(2,6,23,.60),0 6px 14px rgba(0,0,0,.35)}.severity-critical{background:#ef4444}.severity-high{background:#f59e0b}.severity-medium{background:#3b82f6}.severity-low{background:#22c55e}
     .map-filter-card{border:1px solid var(--line);border-radius:22px;background:linear-gradient(180deg,rgba(10,24,48,.92),rgba(8,18,36,.78));box-shadow:var(--shadow);padding:14px;margin-bottom:16px}.map-filter-grid{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:10px;align-items:end}.map-filter-grid .field select{min-height:44px}.legend-panel{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.legend-item{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid rgba(255,255,255,.10);border-radius:999px;background:rgba(255,255,255,.045);font-size:12px;color:#dbeafe}.legend-swatch{width:12px;height:12px;border-radius:50%;display:inline-block;border:2px solid rgba(255,255,255,.8)}
     @media(max-width:1300px){.filters{grid-template-columns:repeat(3,1fr)}.kpis{grid-template-columns:repeat(3,1fr)}.grid-2,.grid-3{grid-template-columns:1fr}.page{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.sidebar-toggle-tab{display:none}.page.sidebar-hidden{grid-template-columns:1fr}.page.sidebar-hidden .sidebar{display:none}.nav{display:grid;grid-template-columns:1fr 1fr;gap:8px}.nav a{margin:0}}@media(max-width:780px){.main{padding:16px}.filters,.kpis{grid-template-columns:1fr}.hero{display:block}.chartbox{height:280px}}
+  
+    .material-pending-row{background:rgba(245,158,11,.075)}
+    .material-reported-row{background:rgba(34,197,94,.045)}
+    .sap-state{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:900;border:1px solid var(--line)}
+    .sap-state.reported{background:rgba(34,197,94,.14);color:#bbf7d0}
+    .sap-state.pending{background:rgba(245,158,11,.14);color:#fde68a}
+
+  
+    .material-report-toolbar{
+      display:flex;align-items:center;justify-content:space-between;gap:16px;
+      padding:14px 16px;margin-bottom:16px;border:1px solid rgba(34,211,238,.24);
+      border-radius:18px;background:linear-gradient(135deg,rgba(37,99,235,.12),rgba(34,211,238,.06));
+    }
+    .material-report-toolbar b{display:block;font-size:15px;color:#eef6ff}
+    .material-report-toolbar span{display:block;margin-top:4px;color:var(--muted);font-size:12px}
+    .material-report-btn{white-space:nowrap}
+    #materialManagementReportHost{
+      position:fixed;left:-20000px;top:0;width:1280px;z-index:-1;background:#fff;color:#162033;
+      overflow:visible;
+    }
+    .mgr-report{
+      width:1080px;max-width:1080px;box-sizing:border-box;background:#fff;color:#111827;font-family:Arial,Helvetica,sans-serif;
+      padding:24px 26px 22px;line-height:1.35;overflow:hidden;
+    }
+    .mgr-header{
+      display:grid;grid-template-columns:190px 1fr 230px;
+      min-height:88px;margin-bottom:16px;background:#f26300;color:#fff;
+      border:1px solid #d95500;box-shadow:0 2px 0 rgba(15,39,71,.08);
+    }
+    .mgr-logo{
+      display:flex;align-items:center;justify-content:center;padding:12px;border-right:1px solid rgba(255,255,255,.45);
+      font-size:21px;font-weight:900;letter-spacing:1px;color:#fff;text-align:center;
+    }
+    .mgr-title{
+      display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+      padding:10px 18px;border-right:1px solid rgba(255,255,255,.45);
+    }
+    .mgr-title h1{font-size:21px;margin:0;color:#fff;letter-spacing:.2px}
+    .mgr-title p{font-size:11px;margin:5px 0 0;color:#fff;opacity:.95}
+    .mgr-meta{display:grid;grid-template-rows:1fr 1fr}
+    .mgr-meta div{display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;padding:0 8px;text-align:center}
+    .mgr-meta div:first-child{border-bottom:1px solid rgba(255,255,255,.45)}
+    .mgr-band{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      background:#f26300;color:#fff;padding:8px 11px;margin:14px 0 10px;
+      font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.35px;
+    }
+    .mgr-summary{
+      display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin-bottom:13px;width:100%;box-sizing:border-box;
+    }
+    .mgr-kpi{
+      border:1px solid #cbd5e1;border-radius:10px;padding:10px 9px;background:#f8fafc;min-height:74px;
+    }
+    .mgr-kpi .k-label{font-size:9px;color:#64748b;text-transform:uppercase;font-weight:800}
+    .mgr-kpi .k-value{font-size:22px;color:#0f2747;font-weight:900;margin-top:5px}
+    .mgr-kpi .k-sub{font-size:8px;color:#64748b;margin-top:2px}
+    .mgr-kpi.good{border-color:#86efac;background:#f0fdf4}
+    .mgr-kpi.warn{border-color:#fcd34d;background:#fffbeb}
+    .mgr-exec{
+      border:1px solid #cbd5e1;border-radius:10px;background:#f8fafc;padding:11px 13px;
+      font-size:10px;color:#334155;margin-bottom:13px;
+    }
+    .mgr-exec strong{color:#0f2747}
+    .mgr-charts{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-bottom:12px;width:100%;box-sizing:border-box}
+    .mgr-chart-card{border:1px solid #94a3b8;border-radius:10px;padding:9px;background:#fff;break-inside:avoid;overflow:hidden;min-width:0;box-sizing:border-box}
+    .mgr-chart-card.full{grid-column:1/-1}
+    .mgr-chart-card h3{font-size:11px;color:#0f2747;margin:0 0 6px}
+    .mgr-chart-wrap{height:190px;position:relative;overflow:hidden;width:100%;max-width:100%}
+    .mgr-chart-wrap.small{height:165px}
+    .mgr-table-wrap{margin-bottom:12px;break-inside:auto;width:100%;max-width:100%;overflow:hidden;box-sizing:border-box}
+    .mgr-table{width:100%;max-width:100%;border-collapse:collapse;border-spacing:0;font-size:8.2px;table-layout:fixed;color:#111827;background:#ffffff}
+    .mgr-table th,.mgr-table td{border:0.35px solid #cbd5e1;padding:4px 5px;vertical-align:top;word-break:break-word;overflow-wrap:anywhere;color:#111827;opacity:1;line-height:1.25}
+    .mgr-table th{background:#f26300;color:#ffffff;text-transform:uppercase;font-size:7.7px;font-weight:900;text-align:left;letter-spacing:.1px}
+    .mgr-table td{background:#ffffff;font-weight:500}.mgr-table tr:nth-child(even) td{background:#f8fafc}
+    .mgr-status{
+      display:inline-block;border-radius:999px;padding:3px 6px;font-size:7px;font-weight:900;white-space:nowrap;
+    }
+    .mgr-status.reported{background:#dcfce7;color:#166534;border:1px solid #86efac}
+    .mgr-status.pending{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}
+    .mgr-note{font-size:8.7px;color:#1f2937;font-weight:600;margin:7px 0 0}
+    .mgr-footer{
+      display:flex;justify-content:space-between;gap:14px;margin-top:15px;padding-top:8px;
+      border-top:1px solid #64748b;color:#334155;font-size:8px;font-weight:600;
+    }
+    .mgr-page-break{page-break-before:always}
+    @media(max-width:780px){
+      .material-report-toolbar{align-items:stretch;flex-direction:column}
+      .material-report-btn{width:100%}
+    }
+
+  
+    .mgr-report *{box-sizing:border-box}
+    .mgr-header,.mgr-band,.mgr-summary,.mgr-exec,.mgr-charts,.mgr-table-wrap,.mgr-footer{width:100%;max-width:100%}
+    .mgr-chart-card,.mgr-table-wrap{overflow:hidden}
+    .mgr-table{max-width:100%}
+
+  
+    .mgr-chart-wrap canvas{
+      display:block !important;
+      width:100% !important;
+      max-width:100% !important;
+      height:100% !important;
+      max-height:100% !important;
+      box-sizing:border-box !important;
+    }
+    .mgr-header,.mgr-band,.mgr-summary,.mgr-exec,.mgr-charts,.mgr-table-wrap,.mgr-footer{
+      max-width:100%;
+      box-sizing:border-box;
+    }
+    .mgr-table tbody tr{page-break-inside:auto;break-inside:auto}.mgr-table thead{display:table-header-group}.mgr-table tfoot{display:table-footer-group}
+
+  
+    .mgr-summary-page{min-height:auto;display:block;page-break-inside:auto;break-inside:auto}
+    .mgr-summary-page.first{page-break-after:always;break-after:page;margin:0;padding:0}
+    .mgr-summary-page.second{page-break-before:auto;break-before:auto;page-break-after:always;break-after:page;margin:0;padding:0}
+    .mgr-table-section{page-break-before:auto;break-before:auto;margin:0;padding:0}
+    .mgr-chart-label{
+      font-size:8px;
+      font-weight:800;
+      color:#0f172a;
+    }
+    .mgr-table .nowrap{white-space:nowrap}
+
+  
+    .mgr-summary-page.second .mgr-band{margin-top:0}
+    .mgr-summary-page.second .mgr-charts{gap:10px;margin-bottom:0}
+    .mgr-summary-page.second .mgr-chart-card{padding:8px}
+    .mgr-summary-page.second .mgr-chart-card.full .mgr-chart-wrap{height:185px}
+    .mgr-summary-page.second .mgr-chart-card:not(.full) .mgr-chart-wrap{height:140px}
+
+  
+    .mgr-summary-page.second{
+      padding-top:0 !important;
+      margin-top:0 !important;
+    }
+    .mgr-summary-page.second > .mgr-band{
+      margin-top:0 !important;
+    }
+    .mgr-table-section{
+      padding-top:0 !important;
+      margin-top:0 !important;
+    }
+    .mgr-table-section > .mgr-band{
+      margin-top:0 !important;
+    }
+
+  
+    .mgr-summary-page.first,
+    .mgr-summary-page.second,
+    .mgr-table-section{
+      position:relative;
+      top:0;
+      margin-top:0 !important;
+      padding-top:0 !important;
+    }
+    .mgr-summary-page.second > .mgr-band,
+    .mgr-table-section > .mgr-band{
+      margin-top:0 !important;
+    }
+
+  
+    .mgr-table-section{
+      position:relative !important;
+      top:-245px !important;
+      margin-bottom:-245px !important;
+    }
+
   </style>
 </head>
 <body>
@@ -100,16 +270,17 @@
     <main class="main">
       <div class="hero">
         <div>
-          <h1 id="pageTitle">Dashboard Ejecutivo de Instalaciones</h1>
-          <p id="pageSubtitle">Histórico mensual, avance semanal, estados, fibra instalada, tiempos, tiempos muertos y ranking de clientes instalados.</p>
+          <h1 id="pageTitle">Dashboard de Consumo de Materiales</h1>
+          <p id="pageSubtitle">Consumo mensual por material y cliente, trazabilidad del reporte en SAP y pendientes sin código de reserva.</p>
         </div>
         <div class="pill"><span class="dot"></span><span id="lastUpdate">Sin actualizar</span></div>
       </div>
 
       <div class="module-tabs" aria-label="Cambiar módulo del dashboard">
-        <button id="btnInst" class="active" onclick="setModule('instalaciones')">⚡ Instalaciones</button>
+        <button id="btnInst" onclick="setModule('instalaciones')">⚡ Instalaciones</button>
         <button id="btnFact" onclick="setModule('factibilidades')">📡 Factibilidades</button>
         <button id="btnFallas" onclick="setModule('fallas')">🚨 Fallas</button>
+        <button id="btnMaterial" class="active" onclick="setModule('material')">📦 Material</button>
       </div>
 
       <div class="filters">
@@ -122,7 +293,7 @@
         <button class="btn" onclick="loadData()">Actualizar</button>
       </div>
 
-      <section id="secInst" class="section active">
+      <section id="secInst" class="section">
         <div id="kpisInst" class="kpis"></div>
         <div class="grid-2">
           <div class="card"><h3>Histórico por mes - Instalaciones realizadas</h3><div class="chartbox"><canvas id="instMonthlyChart"></canvas></div></div>
@@ -207,6 +378,64 @@
         </div>
         <div class="card"><h3>Detalle de fallas</h3><div id="detailFallas" class="table-wrap"></div></div>
       </section>
+
+      <section id="secMaterial" class="section active">
+        <div class="material-report-toolbar">
+          <div>
+            <b>Informe gerencial de materiales</b>
+            <span>Clientes instalados, consumos reportados en SAP y pendientes por gestionar.</span>
+          </div>
+          <button id="btnMaterialManagementPdf" class="btn material-report-btn" type="button" onclick="generarInformeGerencialMaterialesPDF()">
+            📄 Generar PDF + Excel con gráficas nativas
+          </button>
+        </div>
+        <div id="kpisMaterial" class="kpis"></div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Consumo mensual de materiales</h3>
+            <div class="chartbox"><canvas id="materialMonthlyChart"></canvas></div>
+            <div class="muted" style="font-size:12px;margin-top:8px">
+              Compara cantidades con consumo reportado en SAP y pendientes por registrar.
+            </div>
+          </div>
+          <div class="card">
+            <h3>Estado del consumo en SAP</h3>
+            <div class="chartbox sm"><canvas id="materialSapStatusChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="grid-3">
+          <div class="card">
+            <h3>Materiales más consumidos</h3>
+            <div class="chartbox sm"><canvas id="materialTopChart"></canvas></div>
+          </div>
+          <div class="card">
+            <h3>Clientes con mayor consumo</h3>
+            <div class="chartbox sm"><canvas id="materialClientsChart"></canvas></div>
+          </div>
+          <div class="card">
+            <h3>Consumo por tipo de movimiento</h3>
+            <div class="chartbox sm"><canvas id="materialTypeChart"></canvas></div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <h3>Material pendiente de consumo en SAP</h3>
+            <div class="chartbox"><canvas id="materialPendingChart"></canvas></div>
+          </div>
+          <div class="card">
+            <h3>Clientes pendientes de reporte en SAP</h3>
+            <div id="rankingMaterialPendingClients" class="mini-list"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Detalle de consumos de materiales</h3>
+          <div id="detailMaterial" class="table-wrap"></div>
+        </div>
+      </section>
     </main>
   </div>
   <div id="detailModal" class="modal-backdrop" onclick="closeDetailModal(event)">
@@ -241,6 +470,9 @@
       <div class="map-fullscreen-body"><div id="fallasFullscreenMap" class="map-fullscreen-map"></div></div>
     </div>
   </div>
+
+  <div id="materialManagementReportHost" aria-hidden="true"></div>
+
 <script>
 function initSidebarSession(){
   const email = localStorage.getItem('user_email') || '';
@@ -271,7 +503,7 @@ function restoreSidebarState(){
 }
 const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const COLORS={blue:'#3b82f6',cyan:'#22d3ee',green:'#22c55e',amber:'#f59e0b',red:'#ef4444',violet:'#8b5cf6',gray:'#64748b'};
-let currentModule='instalaciones', instalaciones=[], factibilidades=[], fallas=[], charts={}, fullscreenChart=null, fallasMarkersMap=null, fallasHeatMap=null, fallasMarkersLayer=null, fallasHeatLayer=null, fallasMarkersBaseLayer=null, fallasHeatBaseLayer=null, fallasFullscreenMap=null, fallasFullscreenLayer=null, fallasFullscreenHeatLayer=null, fallasFullscreenBaseLayer=null, fallasFullscreenMode='markers', fallasMarkerControl=null, fallasHeatControl=null, fallasFullscreenControl=null;
+let currentModule='material', instalaciones=[], factibilidades=[], fallas=[], materiales=[], charts={}, fullscreenChart=null, fallasMarkersMap=null, fallasHeatMap=null, fallasMarkersLayer=null, fallasHeatLayer=null, fallasMarkersBaseLayer=null, fallasHeatBaseLayer=null, fallasFullscreenMap=null, fallasFullscreenLayer=null, fallasFullscreenHeatLayer=null, fallasFullscreenBaseLayer=null, fallasFullscreenMode='markers', fallasMarkerControl=null, fallasHeatControl=null, fallasFullscreenControl=null;
 function esc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
 function asDate(v){if(!v)return null; const d=new Date(String(v).slice(0,10)+'T00:00:00'); return isNaN(d)?null:d;}
 function fmtDate(v){const d=asDate(v); return d?d.toLocaleDateString('es-CO'):'';}
@@ -406,9 +638,96 @@ window.limpiarSupabaseDashboard = function(){
   window.__dashboardSupabaseClient = null;
   return 'Configuración eliminada. Actualiza el dashboard.';
 };
-function setModule(m){currentModule=m; document.getElementById('btnInst').classList.toggle('active',m==='instalaciones'); document.getElementById('btnFact').classList.toggle('active',m==='factibilidades'); document.getElementById('btnFallas').classList.toggle('active',m==='fallas'); document.getElementById('secInst').classList.toggle('active',m==='instalaciones'); document.getElementById('secFact').classList.toggle('active',m==='factibilidades'); document.getElementById('secFallas').classList.toggle('active',m==='fallas'); document.getElementById('pageTitle').textContent=m==='instalaciones'?'Dashboard Ejecutivo de Instalaciones':(m==='factibilidades'?'Dashboard Ejecutivo de Factibilidades':'Dashboard Ejecutivo de Fallas'); document.getElementById('pageSubtitle').textContent=m==='instalaciones'?'Histórico mensual, avance semanal, estados, fibra instalada, tiempos, tiempos muertos y ranking de clientes instalados.':(m==='factibilidades'?'Histórico mensual, avance semanal, estados, fibra registrada, tiempos, tiempos muertos y ranking de clientes con factibilidad.':'Control estadístico de tickets, causas, subcausas, duración, ubicación geográfica, mapa de calor y seguimiento operativo de fallas.'); fillEstadoFilter(); renderAll(); setTimeout(()=>{ if(m==='fallas'){ invalidateFallasMaps(); } },250);}
+
+function refreshMaterialChartsAfterVisible(){
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      try{
+        renderMaterialDashboard();
+      }catch(error){
+        console.error('Error refrescando dashboard de materiales:',error);
+      }
+
+      const ids=[
+        'materialMonthlyChart',
+        'materialSapStatusChart',
+        'materialTopChart',
+        'materialClientsChart',
+        'materialTypeChart',
+        'materialPendingChart'
+      ];
+
+      ids.forEach(id=>{
+        const instance=Chart.getChart(id);
+        if(instance){
+          try{
+            instance.resize();
+            instance.update('none');
+          }catch(error){
+            console.warn(`No se pudo redimensionar ${id}`,error);
+          }
+        }
+      });
+    });
+  });
+}
+
+function setModule(m){
+  currentModule=m;
+  document.getElementById('btnInst').classList.toggle('active',m==='instalaciones');
+  document.getElementById('btnFact').classList.toggle('active',m==='factibilidades');
+  document.getElementById('btnFallas').classList.toggle('active',m==='fallas');
+  document.getElementById('btnMaterial').classList.toggle('active',m==='material');
+
+  document.getElementById('secInst').classList.toggle('active',m==='instalaciones');
+  document.getElementById('secFact').classList.toggle('active',m==='factibilidades');
+  document.getElementById('secFallas').classList.toggle('active',m==='fallas');
+  document.getElementById('secMaterial').classList.toggle('active',m==='material');
+
+  const titles={
+    instalaciones:'Dashboard Ejecutivo de Instalaciones',
+    factibilidades:'Dashboard Ejecutivo de Factibilidades',
+    fallas:'Dashboard Ejecutivo de Fallas',
+    material:'Dashboard de Consumo de Materiales'
+  };
+  const subtitles={
+    instalaciones:'Histórico mensual, avance semanal, estados, fibra instalada, tiempos, tiempos muertos y ranking de clientes instalados.',
+    factibilidades:'Histórico mensual, avance semanal, estados, fibra registrada, tiempos, tiempos muertos y ranking de clientes con factibilidad.',
+    fallas:'Control estadístico de tickets, causas, subcausas, duración, ubicación geográfica, mapa de calor y seguimiento operativo de fallas.',
+    material:'Consumo mensual por material y cliente, trazabilidad del reporte en SAP y pendientes sin código de reserva.'
+  };
+  document.getElementById('pageTitle').textContent=titles[m]||titles.instalaciones;
+  document.getElementById('pageSubtitle').textContent=subtitles[m]||subtitles.instalaciones;
+  fillEstadoFilter();
+
+  requestAnimationFrame(()=>{
+    renderAll();
+
+    if(m==='material'){
+      setTimeout(refreshMaterialChartsAfterVisible,80);
+    }
+
+    if(m==='fallas'){
+      setTimeout(invalidateFallasMaps,250);
+    }
+  });
+}
 function initFilters(){const ySel=document.getElementById('yearFilter'); const now=new Date(); for(let y=now.getFullYear()+1;y>=now.getFullYear()-5;y--) ySel.innerHTML+=`<option value="${y}" ${y===now.getFullYear()?'selected':''}>${y}</option>`; const mSel=document.getElementById('monthFilter'); MESES.forEach((m,i)=>mSel.innerHTML+=`<option value="${i}">${m}</option>`); ['estadoFilter','yearFilter','monthFilter','startFilter','endFilter','quickFilter'].forEach(id=>document.getElementById(id).addEventListener('change',renderAll));}
-function fillEstadoFilter(){const rows=currentModule==='instalaciones'?instalaciones:(currentModule==='factibilidades'?factibilidades:fallas); const sel=document.getElementById('estadoFilter'); const current=sel.value; const estados=[...new Set(rows.map(r=>currentModule==='fallas'?r.estado:r.estado_general).filter(Boolean))].sort(); sel.innerHTML='<option value="">Todos los estados</option>'+estados.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join(''); if(estados.includes(current)) sel.value=current;}
+function fillEstadoFilter(){
+  const sel=document.getElementById('estadoFilter');
+  const current=sel.value;
+  let estados=[];
+
+  if(currentModule==='material'){
+    estados=['REPORTADO EN SAP','PENDIENTE SAP'];
+  }else{
+    const rows=currentModule==='instalaciones'?instalaciones:(currentModule==='factibilidades'?factibilidades:fallas);
+    estados=[...new Set(rows.map(r=>currentModule==='fallas'?r.estado:r.estado_general).filter(Boolean))].sort();
+  }
+
+  sel.innerHTML='<option value="">Todos los estados</option>'+estados.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join('');
+  if(estados.includes(current)) sel.value=current;
+}
 function filteredRows(mod){const rows=mod==='instalaciones'?instalaciones:factibilidades; const year=Number(document.getElementById('yearFilter').value); const month=document.getElementById('monthFilter').value; const estado=document.getElementById('estadoFilter').value; const quick=document.getElementById('quickFilter').value; const s=asDate(document.getElementById('startFilter').value), e=asDate(document.getElementById('endFilter').value); const now=new Date(); const cw=getWeekNumber(now); return rows.filter(r=>{if(estado && r.estado_general!==estado)return false; const d=asDate(completionDate(r,mod)); if(!d)return false; if(quick==='currentWeek') return d.getFullYear()===now.getFullYear() && getWeekNumber(d)===cw; if(quick==='currentMonth') return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth(); if(quick==='custom'){ if(s && d<s)return false; if(e && d>e)return false; return true;} if(d.getFullYear()!==year)return false; if(month!=='' && d.getMonth()!==Number(month))return false; return true;});}
 function allYearDone(mod){const rows=mod==='instalaciones'?instalaciones:factibilidades; const year=Number(document.getElementById('yearFilter').value); return rows.filter(r=>isDone(r,mod)).filter(r=>{const d=asDate(chartDoneDate(r)); return d&&d.getFullYear()===year;});}
 function selectedMonthValue(){return document.getElementById('monthFilter').value;}
@@ -1112,8 +1431,1460 @@ function renderFallasDashboard(){
   renderFallasMaps(filteredFallasForMap(rows));
 }
 
-function renderAll(){fillEstadoFilter(); renderModule('instalaciones'); renderModule('factibilidades'); renderFallasDashboard();}
-async function loadData(){document.getElementById('connStatus').textContent='Cargando datos desde Supabase...'; try{const client=await getDashboardClient(); const [i,f,t]=await Promise.all([client.from('instalaciones').select('*').order('fecha_ingreso',{ascending:false}),client.from('factibilidades').select('*').order('fecha_ingreso',{ascending:false}),client.from('om_tickets').select('*').order('fecha_inicio',{ascending:false})]); if(i.error)throw i.error; if(f.error)throw f.error; if(t.error)throw t.error; instalaciones=i.data||[]; factibilidades=f.data||[]; fallas=t.data||[]; document.getElementById('connStatus').textContent=`Conectado: ${instalaciones.length} instalaciones / ${factibilidades.length} factibilidades / ${fallas.length} fallas`; document.getElementById('lastUpdate').textContent='Actualizado: '+new Date().toLocaleString('es-CO'); renderAll();}catch(err){console.error(err); document.getElementById('connStatus').innerHTML='<span style="color:#fecaca">Error: '+esc(err.message||err)+'</span>';}}
+
+function materialDate(r){return r.fecha || r.created_at || '';}
+function materialDescription(r){return r.material_descripcion || r.material_nombre || r.om_materiales_catalogo?.material || 'SIN DESCRIPCIÓN';}
+function materialClient(r){return String(r.cliente || r.id_cliente || 'SIN CLIENTE').trim() || 'SIN CLIENTE';}
+function materialUnit(r){return String(r.unidad || r.unidad_sap || '').trim().toUpperCase() || 'UND';}
+function materialQty(r){const n=parseNum(r.cantidad); return Number.isFinite(n)?n:0;}
+function materialReported(r){return String(r.cod_reserva || '').trim()!=='';}
+function isMaterialConsumption(r){
+  const tipo=String(r.tipo_movimiento || '').toUpperCase().trim();
+  const estado=String(r.estado || '').toUpperCase().trim();
+  return tipo.startsWith('CONSUMO_') || tipo==='CONSUMO' || estado==='CONSUMIDO';
+}
+function filteredMaterialRows(){
+  const year=Number(document.getElementById('yearFilter').value);
+  const month=document.getElementById('monthFilter').value;
+  const estado=document.getElementById('estadoFilter').value;
+  const quick=document.getElementById('quickFilter').value;
+  const s=asDate(document.getElementById('startFilter').value);
+  const e=asDate(document.getElementById('endFilter').value);
+  const now=new Date();
+  const cw=getWeekNumber(now);
+
+  return materiales.filter(isMaterialConsumption).filter(r=>{
+    if(estado==='REPORTADO EN SAP' && !materialReported(r)) return false;
+    if(estado==='PENDIENTE SAP' && materialReported(r)) return false;
+
+    const d=asDate(materialDate(r));
+    if(!d) return false;
+    if(quick==='currentWeek') return d.getFullYear()===now.getFullYear() && getWeekNumber(d)===cw;
+    if(quick==='currentMonth') return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+    if(quick==='custom'){
+      if(s && d<s) return false;
+      if(e && d>e) return false;
+      return true;
+    }
+    if(d.getFullYear()!==year) return false;
+    if(month!=='' && d.getMonth()!==Number(month)) return false;
+    return true;
+  });
+}
+function groupMaterialBy(rows,keyFn,limit=12){
+  const map=new Map();
+  rows.forEach(r=>{
+    const key=keyFn(r)||'SIN DATO';
+    if(!map.has(key)) map.set(key,{label:key,quantity:0,lines:0,records:[]});
+    const x=map.get(key);
+    x.quantity+=materialQty(r);
+    x.lines++;
+    x.records.push(r);
+  });
+  return [...map.values()].sort((a,b)=>b.quantity-a.quantity || b.lines-a.lines).slice(0,limit);
+}
+function groupMaterialMonthly(rows){
+  const out=Array.from({length:12},(_,i)=>({label:MESES[i],reported:0,pending:0,records:[],reportedRecords:[],pendingRecords:[]}));
+  rows.forEach(r=>{
+    const d=asDate(materialDate(r)); if(!d) return;
+    const x=out[d.getMonth()];
+    x.records.push(r);
+    if(materialReported(r)){x.reported+=materialQty(r);x.reportedRecords.push(r);}
+    else{x.pending+=materialQty(r);x.pendingRecords.push(r);}
+  });
+  const month=selectedMonthValue();
+  return month===''?out:[out[Number(month)]];
+}
+function renderMaterialTable(rows){
+  const sorted=[...rows].sort((a,b)=>String(materialDate(b)).localeCompare(String(materialDate(a))));
+  return `<table><thead><tr>
+    <th>Fecha</th><th>Tipo consumo</th><th>Código SAP</th><th>Material</th>
+    <th class="right">Cantidad</th><th>Unidad</th><th>Cliente</th><th>ID cliente</th>
+    <th>ID cambio</th><th>Bodega</th><th>Cod. serial</th><th>Cod. reserva</th><th>Estado SAP</th>
+  </tr></thead><tbody>${sorted.map(r=>`<tr class="${materialReported(r)?'material-reported-row':'material-pending-row'}">
+    <td>${fmtDate(materialDate(r))}<br><span class="muted">${esc(r.hora||'')}</span></td>
+    <td>${badge(r.tipo_movimiento||'CONSUMO')}</td>
+    <td><b>${esc(r.codigo_sap||'')}</b></td>
+    <td><b>${esc(materialDescription(r))}</b></td>
+    <td class="right"><b>${materialQty(r).toLocaleString('es-CO',{maximumFractionDigits:2})}</b></td>
+    <td>${esc(materialUnit(r))}</td>
+    <td><b>${esc(materialClient(r))}</b></td>
+    <td>${esc(r.id_cliente||'')}</td>
+    <td>${esc(r.id_cambio||'')}</td>
+    <td>${esc(r.origen_nombre||r.bodega_origen_nombre||r.bodega_origen_stock||'')}</td>
+    <td>${esc(r.codigo_serial||'')}</td>
+    <td>${esc(r.cod_reserva||'')}</td>
+    <td><span class="sap-state ${materialReported(r)?'reported':'pending'}">${materialReported(r)?'✓ Reportado':'⚠ Pendiente'}</span></td>
+  </tr>`).join('') || '<tr><td colspan="13" class="muted">Sin consumos de material para el periodo seleccionado.</td></tr>'}</tbody></table>`;
+}
+function openMaterialDetail(title,subtitle,rows){
+  document.getElementById('detailModalTitle').textContent=title;
+  document.getElementById('detailModalSubtitle').textContent=`${rows.length} registro(s). ${subtitle||''}`;
+  document.getElementById('detailModalBody').innerHTML=`<div class="table-wrap">${renderMaterialTable(rows)}</div>`;
+  document.getElementById('detailModal').classList.add('show');
+}
+function renderMaterialKPIs(rows){
+  const reported=rows.filter(materialReported);
+  const pending=rows.filter(r=>!materialReported(r));
+  const uniqueMaterials=new Set(rows.map(r=>String(r.codigo_sap||materialDescription(r)))).size;
+  const uniqueClients=new Set(rows.map(materialClient)).size;
+  const totalQty=rows.reduce((a,r)=>a+materialQty(r),0);
+  const pendingQty=pending.reduce((a,r)=>a+materialQty(r),0);
+
+  document.getElementById('kpisMaterial').innerHTML=`
+    <div class="kpi"><div class="label">Líneas consumidas</div><div class="value">${rows.length}</div><div class="sub">Movimientos con filtros aplicados</div></div>
+    <div class="kpi violet"><div class="label">Cantidad consumida</div><div class="value">${totalQty.toLocaleString('es-CO',{maximumFractionDigits:1})}</div><div class="sub">Suma de cantidades registradas</div></div>
+    <div class="kpi"><div class="label">Tipos de material</div><div class="value">${uniqueMaterials}</div><div class="sub">Códigos SAP diferentes</div></div>
+    <div class="kpi"><div class="label">Clientes atendidos</div><div class="value">${uniqueClients}</div><div class="sub">Clientes con consumo</div></div>
+    <div class="kpi green kpi-clickable" ondblclick="openMaterialDetail('Consumos reportados en SAP','Registros con código de reserva.',filteredMaterialRows().filter(materialReported))"><div class="label">Reportados en SAP</div><div class="value">${reported.length}</div><div class="sub">Con código de reserva · doble clic</div></div>
+    <div class="kpi amber kpi-clickable" ondblclick="openMaterialDetail('Pendientes de consumo en SAP','Registros sin código de reserva.',filteredMaterialRows().filter(r=>!materialReported(r)))"><div class="label">Pendientes SAP</div><div class="value">${pending.length}</div><div class="sub">${pendingQty.toLocaleString('es-CO',{maximumFractionDigits:1})} unidades/cantidad · doble clic</div></div>`;
+}
+function renderMaterialPendingClients(rows){
+  const pending=rows.filter(r=>!materialReported(r));
+  const groups=groupMaterialBy(pending,materialClient,10);
+  document.getElementById('rankingMaterialPendingClients').innerHTML=groups.length
+    ? groups.map((x,i)=>`<div class="rank" style="cursor:pointer" ondblclick="openMaterialDetail('Pendientes SAP - ${esc(x.label)}','Cliente seleccionado.',filteredMaterialRows().filter(r=>!materialReported(r)&&materialClient(r)===${JSON.stringify(x.label)}))">
+        <div><b>${i+1}. ${esc(x.label)}</b><br><small>${x.lines} material(es) pendientes</small></div>
+        <b>${x.quantity.toLocaleString('es-CO',{maximumFractionDigits:1})}</b>
+      </div>`).join('')
+    : '<div class="muted">No hay clientes pendientes de reporte en SAP.</div>';
+}
+function renderMaterialDashboard(){
+  const rows=filteredMaterialRows();
+  const monthly=groupMaterialMonthly(rows);
+  const reported=rows.filter(materialReported);
+  const pending=rows.filter(r=>!materialReported(r));
+  renderMaterialKPIs(rows);
+  renderMaterialPendingClients(rows);
+  document.getElementById('detailMaterial').innerHTML=renderMaterialTable(rows);
+
+  chart('materialMonthlyChart','bar',{
+    labels:monthly.map(x=>x.label),
+    datasets:[
+      {label:'Reportado en SAP',data:monthly.map(x=>Number(x.reported.toFixed(2))),backgroundColor:'rgba(34,197,94,.72)',borderColor:COLORS.green,borderWidth:1},
+      {label:'Pendiente SAP',data:monthly.map(x=>Number(x.pending.toFixed(2))),backgroundColor:'rgba(245,158,11,.78)',borderColor:COLORS.amber,borderWidth:1}
+    ]},{
+      scales:{x:{stacked:true,ticks:{color:'#b8c7e3'},grid:{color:'rgba(255,255,255,.06)'}},y:{stacked:true,beginAtZero:true,ticks:{color:'#b8c7e3'},grid:{color:'rgba(255,255,255,.07)'}}},
+      detailHandler:({index,datasetIndex})=>{
+        const x=monthly[index]; if(!x)return;
+        openMaterialDetail(`Materiales - ${x.label}`,datasetIndex===0?'Reportados en SAP':'Pendientes de SAP',datasetIndex===0?x.reportedRecords:x.pendingRecords);
+      }
+    });
+
+  chart('materialSapStatusChart','doughnut',{
+    labels:['Reportado en SAP','Pendiente SAP'],
+    datasets:[{data:[reported.length,pending.length],backgroundColor:[COLORS.green,COLORS.amber]}]
+  },{detailHandler:({index})=>openMaterialDetail(index===0?'Reportados en SAP':'Pendientes de SAP','Estado seleccionado.',index===0?reported:pending)});
+
+  const top=groupMaterialBy(rows,r=>`${r.codigo_sap||'S/SAP'} · ${materialDescription(r)} · ${materialUnit(r)}`,10);
+  chart('materialTopChart','bar',{
+    labels:top.map(x=>x.label),
+    datasets:[{label:'Cantidad consumida',data:top.map(x=>Number(x.quantity.toFixed(2))),backgroundColor:'rgba(34,211,238,.72)',borderColor:COLORS.cyan,borderWidth:1}]
+  },{indexAxis:'y',plugins:{legend:{display:false}},detailHandler:({index})=>{const x=top[index];if(x)openMaterialDetail(`Material consumido - ${x.label}`,'Material seleccionado.',x.records);}});
+
+  const clients=groupMaterialBy(rows,materialClient,10);
+  chart('materialClientsChart','bar',{
+    labels:clients.map(x=>x.label),
+    datasets:[{label:'Cantidad consumida',data:clients.map(x=>Number(x.quantity.toFixed(2))),backgroundColor:'rgba(59,130,246,.72)',borderColor:COLORS.blue,borderWidth:1}]
+  },{indexAxis:'y',plugins:{legend:{display:false}},detailHandler:({index})=>{const x=clients[index];if(x)openMaterialDetail(`Consumo del cliente - ${x.label}`,'Cliente seleccionado.',x.records);}});
+
+  const types=groupMaterialBy(rows,r=>r.tipo_movimiento||'SIN TIPO',10);
+  chart('materialTypeChart','doughnut',{
+    labels:types.map(x=>x.label),
+    datasets:[{data:types.map(x=>x.lines),backgroundColor:[COLORS.cyan,COLORS.blue,COLORS.violet,COLORS.amber,COLORS.green,COLORS.red]}]
+  },{detailHandler:({index})=>{const x=types[index];if(x)openMaterialDetail(`Tipo de consumo - ${x.label}`,'Tipo seleccionado.',x.records);}});
+
+  const pendingTop=groupMaterialBy(pending,r=>`${r.codigo_sap||'S/SAP'} · ${materialDescription(r)} · ${materialUnit(r)}`,12);
+  chart('materialPendingChart','bar',{
+    labels:pendingTop.map(x=>x.label),
+    datasets:[{label:'Cantidad pendiente',data:pendingTop.map(x=>Number(x.quantity.toFixed(2))),backgroundColor:'rgba(245,158,11,.76)',borderColor:COLORS.amber,borderWidth:1}]
+  },{indexAxis:'y',plugins:{legend:{display:false}},detailHandler:({index})=>{const x=pendingTop[index];if(x)openMaterialDetail(`Pendiente SAP - ${x.label}`,'Material sin código de reserva.',x.records);}});
+}
+
+
+function materialReportFilterDate(r){
+  return asDate(materialDate(r));
+}
+function installationRowsForMaterialReport(){
+  const year=Number(document.getElementById('yearFilter').value);
+  const month=document.getElementById('monthFilter').value;
+  const quick=document.getElementById('quickFilter').value;
+  const start=asDate(document.getElementById('startFilter').value);
+  const end=asDate(document.getElementById('endFilter').value);
+  const now=new Date();
+  const currentWeek=getWeekNumber(now);
+
+  return instalaciones.filter(r=>isDone(r,'instalaciones')).filter(r=>{
+    const d=asDate(closeDate(r) || r.fecha_ingreso || r.created_at);
+    if(!d) return false;
+    if(quick==='currentWeek') return d.getFullYear()===now.getFullYear() && getWeekNumber(d)===currentWeek;
+    if(quick==='currentMonth') return d.getFullYear()===now.getFullYear() && d.getMonth()===now.getMonth();
+    if(quick==='custom'){
+      if(start && d<start) return false;
+      if(end && d>end) return false;
+      return true;
+    }
+    if(d.getFullYear()!==year) return false;
+    if(month!=='' && d.getMonth()!==Number(month)) return false;
+    return true;
+  });
+}
+function materialReportPeriodLabel(){
+  const quick=document.getElementById('quickFilter').value;
+  const year=document.getElementById('yearFilter').value;
+  const month=document.getElementById('monthFilter').value;
+  const start=document.getElementById('startFilter').value;
+  const end=document.getElementById('endFilter').value;
+  if(quick==='custom') return `Periodo personalizado: ${start || 'inicio abierto'} a ${end || 'fin abierto'}`;
+  if(quick==='currentWeek') return 'Semana actual';
+  if(quick==='currentMonth') return 'Mes actual';
+  if(month!=='') return `${MESES[Number(month)]} de ${year}`;
+  return `Año ${year}`;
+}
+function normalizeMaterialJoinKey(value){
+  return String(value || '').trim().toUpperCase().replace(/\s+/g,'');
+}
+function buildMaterialClientReportRows(materialRows, installedRows){
+  const groups=new Map();
+
+  function ensureGroup(key,seed={}){
+    if(!groups.has(key)){
+      groups.set(key,{
+        key,
+        cliente:seed.cliente || 'SIN CLIENTE',
+        id_cliente:seed.id_cliente || '',
+        id_cambio:seed.id_cambio || '',
+        fecha_instalacion:seed.fecha_instalacion || '',
+        materialLines:[],
+        reservationCodes:new Set(),
+        reportedLines:0,
+        pendingLines:0
+      });
+    }
+    return groups.get(key);
+  }
+
+  installedRows.forEach(inst=>{
+    const idCambio=String(inst.id_cambio || '').trim();
+    const idCliente=String(inst.id_cliente || '').trim();
+    const key=idCambio ? `C:${normalizeMaterialJoinKey(idCambio)}` :
+      idCliente ? `I:${normalizeMaterialJoinKey(idCliente)}` :
+      `N:${normalizeMaterialJoinKey(inst.cliente)}`;
+    ensureGroup(key,{
+      cliente:inst.cliente || 'SIN CLIENTE',
+      id_cliente:idCliente,
+      id_cambio:idCambio,
+      fecha_instalacion:closeDate(inst) || inst.fecha_ingreso || ''
+    });
+  });
+
+  materialRows.forEach(r=>{
+    const idCambio=String(r.id_cambio || '').trim();
+    const idCliente=String(r.id_cliente || '').trim();
+    const key=idCambio ? `C:${normalizeMaterialJoinKey(idCambio)}` :
+      idCliente ? `I:${normalizeMaterialJoinKey(idCliente)}` :
+      `N:${normalizeMaterialJoinKey(materialClient(r))}`;
+    const group=ensureGroup(key,{
+      cliente:materialClient(r),
+      id_cliente:idCliente,
+      id_cambio:idCambio,
+      fecha_instalacion:''
+    });
+    if(!group.cliente || group.cliente==='SIN CLIENTE') group.cliente=materialClient(r);
+    if(!group.id_cliente) group.id_cliente=idCliente;
+    if(!group.id_cambio) group.id_cambio=idCambio;
+    group.materialLines.push(r);
+    if(materialReported(r)){
+      group.reportedLines++;
+      String(r.cod_reserva || '').split(/[,;\s]+/).filter(Boolean).forEach(x=>group.reservationCodes.add(x));
+    }else{
+      group.pendingLines++;
+    }
+  });
+
+  return [...groups.values()]
+    .filter(x=>x.materialLines.length>0)
+    .map(x=>({
+      ...x,
+      status:x.pendingLines>0?'PENDIENTE SAP':'REPORTADO EN SAP',
+      totalLines:x.materialLines.length,
+      materialSummary:(()=>{
+        const grouped=new Map();
+        x.materialLines.forEach(r=>{
+          const key=`${r.codigo_sap || 'S/SAP'}|${materialDescription(r)}|${materialUnit(r)}`;
+          if(!grouped.has(key)) grouped.set(key,{sap:r.codigo_sap || 'S/SAP',desc:materialDescription(r),unit:materialUnit(r),qty:0});
+          grouped.get(key).qty+=materialQty(r);
+        });
+        return [...grouped.values()];
+      })()
+    }))
+    .sort((a,b)=>{
+      if(a.status!==b.status) return a.status==='PENDIENTE SAP'?-1:1;
+      return a.cliente.localeCompare(b.cliente,'es');
+    });
+}
+function buildMaterialSummaryReportRows(rows){
+  const map=new Map();
+  rows.forEach(r=>{
+    const key=`${r.codigo_sap || 'S/SAP'}|${materialUnit(r)}`;
+    if(!map.has(key)){
+      map.set(key,{
+        codigo_sap:r.codigo_sap || '',
+        descripcion:materialDescription(r),
+        unidad:materialUnit(r),
+        total:0,
+        reported:0,
+        pending:0,
+        clients:new Set(),
+        records:[]
+      });
+    }
+    const x=map.get(key);
+    const qty=materialQty(r);
+    x.total+=qty;
+    if(materialReported(r)) x.reported+=qty; else x.pending+=qty;
+    x.clients.add(materialClient(r));
+    x.records.push(r);
+  });
+  return [...map.values()].sort((a,b)=>b.total-a.total);
+}
+function materialReportEscape(v){return esc(v);}
+
+function materialReportConsumptionLabel(value){
+  const v=String(value || '').trim().toUpperCase();
+  const map={
+    'CONSUMO_INSTALACION':'Instalación',
+    'CONSUMO_MTO_CORRECTIVO':'Mto. correctivo',
+    'CONSUMO_MTO_PREVENTIVO':'Mto. preventivo',
+    'CONSUMO':'Consumo'
+  };
+  return map[v] || v.replace(/^CONSUMO_?/,'').replaceAll('_',' ').toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
+}
+
+function materialReportTableClients(rows){
+  return `<table class="mgr-table"><thead><tr>
+    <th style="width:14%">Cliente</th>
+    <th style="width:8%">ID cliente</th>
+    <th style="width:8%">ID cambio</th>
+    <th style="width:8%">Fecha instalación</th>
+    <th style="width:11%">Tipo de consumo</th>
+    <th style="width:10%">Estado SAP</th>
+    <th style="width:12%">Códigos de reserva</th>
+    <th style="width:29%">Resumen de materiales</th>
+  </tr></thead><tbody>${rows.map(x=>`<tr>
+    <td><b>${materialReportEscape(x.cliente)}</b></td>
+    <td>${materialReportEscape(x.id_cliente)}</td>
+    <td>${materialReportEscape(x.id_cambio)}</td>
+    <td class="nowrap">${fmtDate(x.fecha_instalacion)}</td>
+    <td>${materialReportEscape([...new Set(x.materialLines.map(r=>materialReportConsumptionLabel(r.tipo_movimiento)))].join(', '))}</td>
+    <td><span class="mgr-status ${x.status==='REPORTADO EN SAP'?'reported':'pending'}">${x.status}</span></td>
+    <td>${materialReportEscape([...x.reservationCodes].join(', ') || 'Pendiente')}</td>
+    <td>${x.materialSummary.map(m=>`${materialReportEscape(m.sap)} - ${materialReportEscape(m.desc)}: <strong>${m.qty.toLocaleString('es-CO',{maximumFractionDigits:2})} ${materialReportEscape(m.unit)}</strong>`).join('<br>')}</td>
+  </tr>`).join('') || '<tr><td colspan="8">Sin registros para el periodo seleccionado.</td></tr>'}</tbody></table>`;
+}
+function materialReportTableMaterials(rows){
+  return `<table class="mgr-table"><thead><tr>
+    <th style="width:10%">Código SAP</th>
+    <th style="width:32%">Material</th>
+    <th style="width:7%">Unidad</th>
+    <th style="width:10%">Total consumido</th>
+    <th style="width:10%">Reportado SAP</th>
+    <th style="width:10%">Pendiente SAP</th>
+    <th style="width:8%">Clientes</th>
+    <th style="width:13%">Estado</th>
+  </tr></thead><tbody>${rows.map(x=>`<tr>
+    <td><b>${materialReportEscape(x.codigo_sap)}</b></td>
+    <td>${materialReportEscape(x.descripcion)}</td>
+    <td>${materialReportEscape(x.unidad)}</td>
+    <td>${x.total.toLocaleString('es-CO',{maximumFractionDigits:2})}</td>
+    <td>${x.reported.toLocaleString('es-CO',{maximumFractionDigits:2})}</td>
+    <td>${x.pending.toLocaleString('es-CO',{maximumFractionDigits:2})}</td>
+    <td>${x.clients.size}</td>
+    <td><span class="mgr-status ${x.pending>0?'pending':'reported'}">${x.pending>0?'CON PENDIENTES':'GESTIONADO'}</span></td>
+  </tr>`).join('') || '<tr><td colspan="8">Sin materiales para el periodo seleccionado.</td></tr>'}</tbody></table>`;
+}
+function buildMaterialManagementReport(){
+  const materialRows=filteredMaterialRows();
+  const installedRows=installationRowsForMaterialReport();
+  const clientRows=buildMaterialClientReportRows(materialRows,installedRows);
+  const materialSummary=buildMaterialSummaryReportRows(materialRows);
+  const reportedRows=materialRows.filter(materialReported);
+  const pendingRows=materialRows.filter(r=>!materialReported(r));
+  const reportedClients=clientRows.filter(x=>x.status==='REPORTADO EN SAP');
+  const pendingClients=clientRows.filter(x=>x.status==='PENDIENTE SAP');
+  const compliance=clientRows.length ? (reportedClients.length/clientRows.length*100) : 0;
+  const reservations=new Set(reportedRows.map(r=>String(r.cod_reserva || '').trim()).filter(Boolean));
+  const generated=new Date();
+  const host=document.getElementById('materialManagementReportHost');
+
+  const conclusion=pendingClients.length===0
+    ? `Para el periodo analizado, el 100% de los clientes con consumo de materiales cuenta con trazabilidad en SAP mediante código de reserva.`
+    : `Para el periodo analizado, ${reportedClients.length} de ${clientRows.length} clientes con consumo presentan gestión completa en SAP. Permanecen ${pendingClients.length} cliente(s) con al menos un material pendiente de código de reserva.`;
+
+  host.innerHTML=`<div class="mgr-report" id="materialManagementReport">
+    <div class="mgr-summary-page first">
+    <div class="mgr-header">
+      <div class="mgr-logo">LIBERTY<br>NETWORKS</div>
+      <div class="mgr-title">
+        <h1>INFORME GERENCIAL DE CONTROL DE MATERIALES</h1>
+        <p>Seguimiento de consumos, clientes instalados y trazabilidad de registros en SAP</p>
+      </div>
+      <div class="mgr-meta">
+        <div>FECHA: ${generated.toLocaleDateString('es-CO')}</div>
+        <div>PERIODO: ${materialReportEscape(materialReportPeriodLabel())}</div>
+      </div>
+    </div>
+
+    <div class="mgr-band"><span>Resumen ejecutivo</span><span>Gestión O&amp;M</span></div>
+    <div class="mgr-summary">
+      <div class="mgr-kpi"><div class="k-label">Clientes con consumo</div><div class="k-value">${clientRows.length}</div><div class="k-sub">Clientes relacionados</div></div>
+      <div class="mgr-kpi good"><div class="k-label">Clientes reportados SAP</div><div class="k-value">${reportedClients.length}</div><div class="k-sub">Sin materiales pendientes</div></div>
+      <div class="mgr-kpi warn"><div class="k-label">Clientes pendientes SAP</div><div class="k-value">${pendingClients.length}</div><div class="k-sub">Con material sin reserva</div></div>
+      <div class="mgr-kpi"><div class="k-label">Líneas de consumo</div><div class="k-value">${materialRows.length}</div><div class="k-sub">Registros analizados</div></div>
+      <div class="mgr-kpi"><div class="k-label">Códigos SAP</div><div class="k-value">${materialSummary.length}</div><div class="k-sub">Materiales diferentes</div></div>
+      <div class="mgr-kpi ${compliance>=90?'good':'warn'}"><div class="k-label">Cumplimiento SAP</div><div class="k-value">${compliance.toFixed(0)}%</div><div class="k-sub">${reservations.size} reserva(s) evidenciadas</div></div>
+    </div>
+
+    <div class="mgr-exec">
+      <strong>Resultado de gestión:</strong> ${materialReportEscape(conclusion)}
+      Los consumos reportados se sustentan mediante los códigos de reserva registrados en el módulo de Materiales.
+      Este informe permite identificar de manera separada los consumos gestionados y los pendientes de formalización en SAP.
+    </div>
+
+    <div class="mgr-band"><span>Indicadores gráficos</span><span>Control mensual y estado SAP</span></div>
+    <div class="mgr-charts">
+      <div class="mgr-chart-card">
+        <h3>Clientes según estado del consumo en SAP</h3>
+        <div class="mgr-chart-wrap small"><canvas id="mgrSapClientsChart"></canvas></div>
+      </div>
+      <div class="mgr-chart-card">
+        <h3>Líneas de consumo por mes</h3>
+        <div class="mgr-chart-wrap small"><canvas id="mgrMonthlyLinesChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mgr-summary-page second">
+    <div class="mgr-band"><span>Materiales y gestión operativa</span><span>Resumen de consumo</span></div>
+    <div class="mgr-charts">
+      <div class="mgr-chart-card full">
+        <h3>Principales materiales consumidos</h3>
+        <div class="mgr-chart-wrap"><canvas id="mgrTopMaterialsChart"></canvas></div>
+      </div>
+      <div class="mgr-chart-card">
+        <h3>Clientes con consumos pendientes en SAP</h3>
+        <div class="mgr-chart-wrap small"><canvas id="mgrPendingClientsChart"></canvas></div>
+      </div>
+      <div class="mgr-chart-card">
+        <h3>Consumos por tipo de movimiento</h3>
+        <div class="mgr-chart-wrap small"><canvas id="mgrConsumptionTypeChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mgr-table-section">
+    <div class="mgr-band"><span>Clientes y trazabilidad SAP</span><span>${clientRows.length} cliente(s)</span></div>
+    <div class="mgr-table-wrap">${materialReportTableClients(clientRows)}</div>
+
+    <div class="mgr-page-break"></div>
+    <div class="mgr-band"><span>Materiales consumidos</span><span>${materialSummary.length} código(s) SAP</span></div>
+    <div class="mgr-table-wrap">${materialReportTableMaterials(materialSummary)}</div>
+
+    <div class="mgr-band"><span>Gestiones pendientes</span><span>${pendingRows.length} línea(s) sin reserva</span></div>
+    <div class="mgr-table-wrap">${materialReportTableClients(pendingClients)}</div>
+    <p class="mgr-note">
+      Criterio de control: un material se considera reportado en SAP cuando el registro contiene un código de reserva.
+      Los valores de cantidad se presentan respetando la unidad registrada para cada código SAP.
+    </p>
+
+    <div class="mgr-footer">
+      <span>Generado automáticamente desde el Dashboard Ejecutivo O&amp;M.</span>
+      <span>Fecha y hora: ${generated.toLocaleString('es-CO')}</span>
+    </div>
+  </div>`;
+
+  return {host,materialRows,clientRows,materialSummary,reportedClients,pendingClients};
+}
+
+const materialReportDataLabelsPlugin={
+  id:'materialReportDataLabels',
+  afterDatasetsDraw(chart){
+    const {ctx}=chart;
+    ctx.save();
+    chart.data.datasets.forEach((dataset,datasetIndex)=>{
+      const meta=chart.getDatasetMeta(datasetIndex);
+      if(meta.hidden) return;
+      meta.data.forEach((element,index)=>{
+        const raw=dataset.data[index];
+        const value=Number(raw);
+        if(!Number.isFinite(value) || value===0) return;
+        const pos=element.tooltipPosition();
+        ctx.fillStyle='#0f172a';
+        ctx.font='700 9px Arial';
+        ctx.textAlign='center';
+        ctx.textBaseline='bottom';
+        if(chart.config.type==='doughnut'){
+          const total=dataset.data.reduce((a,b)=>a+Number(b||0),0);
+          const pct=total ? Math.round(value/total*100) : 0;
+          ctx.fillText(`${value} (${pct}%)`,pos.x,pos.y-4);
+        }else if(chart.options.indexAxis==='y'){
+          ctx.textAlign='left';
+          ctx.textBaseline='middle';
+          ctx.fillText(String(value),pos.x+5,pos.y);
+        }else{
+          ctx.fillText(String(value),pos.x,pos.y-5);
+        }
+      });
+    });
+    ctx.restore();
+  }
+};
+
+function createMaterialManagementReportCharts(data){
+  const monthly=Array.from({length:12},(_,i)=>({label:MESES[i],reported:0,pending:0}));
+  data.materialRows.forEach(r=>{
+    const d=materialReportFilterDate(r); if(!d)return;
+    if(materialReported(r)) monthly[d.getMonth()].reported++;
+    else monthly[d.getMonth()].pending++;
+  });
+
+  const chartOptions={
+    responsive:true,maintainAspectRatio:false,animation:false,
+    plugins:{legend:{labels:{color:'#334155',font:{size:9}}},tooltip:{enabled:false}},
+    scales:{x:{ticks:{color:'#475569',font:{size:8}},grid:{color:'rgba(100,116,139,.15)'}},y:{beginAtZero:true,ticks:{color:'#475569',font:{size:8},precision:0},grid:{color:'rgba(100,116,139,.15)'}}}
+  };
+
+  const chartClients=new Chart(document.getElementById('mgrSapClientsChart'),{
+    type:'doughnut',
+    plugins:[materialReportDataLabelsPlugin],
+    data:{labels:['Reportados en SAP','Pendientes SAP'],datasets:[{data:[data.reportedClients.length,data.pendingClients.length],backgroundColor:['#22c55e','#f59e0b'],borderColor:'#ffffff',borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{position:'bottom',labels:{color:'#334155',font:{size:9}}}}}
+  });
+
+  const chartMonthly=new Chart(document.getElementById('mgrMonthlyLinesChart'),{
+    type:'bar',
+    plugins:[materialReportDataLabelsPlugin],
+    data:{labels:monthly.map(x=>x.label.slice(0,3)),datasets:[
+      {label:'Reportado SAP',data:monthly.map(x=>x.reported),backgroundColor:'#22c55e'},
+      {label:'Pendiente SAP',data:monthly.map(x=>x.pending),backgroundColor:'#f59e0b'}
+    ]},
+    options:{...chartOptions,scales:{x:{stacked:true,ticks:{color:'#475569',font:{size:8}},grid:{display:false}},y:{stacked:true,beginAtZero:true,ticks:{color:'#475569',font:{size:8},precision:0},grid:{color:'rgba(100,116,139,.15)'}}}}
+  });
+
+  const top=data.materialSummary.slice(0,10);
+  const chartTop=new Chart(document.getElementById('mgrTopMaterialsChart'),{
+    type:'bar',
+    plugins:[materialReportDataLabelsPlugin],
+    data:{labels:top.map(x=>`${x.codigo_sap} - ${x.descripcion}`),datasets:[
+      {label:'Reportado SAP',data:top.map(x=>Number(x.reported.toFixed(2))),backgroundColor:'#2563eb'},
+      {label:'Pendiente SAP',data:top.map(x=>Number(x.pending.toFixed(2))),backgroundColor:'#f59e0b'}
+    ]},
+    options:{...chartOptions,indexAxis:'y',plugins:{legend:{position:'bottom',labels:{color:'#334155',font:{size:9}}}},scales:{x:{stacked:true,beginAtZero:true,ticks:{color:'#475569',font:{size:8}},grid:{color:'rgba(100,116,139,.15)'}},y:{stacked:true,ticks:{color:'#334155',font:{size:7}},grid:{display:false}}}}
+  });
+
+
+  const pendingClientData=data.pendingClients.slice(0,10).map(x=>({
+    label:x.cliente,
+    value:x.pendingLines
+  }));
+  const chartPendingClients=new Chart(document.getElementById('mgrPendingClientsChart'),{
+    type:'bar',
+    data:{
+      labels:pendingClientData.map(x=>x.label),
+      datasets:[{label:'Materiales pendientes',data:pendingClientData.map(x=>x.value),backgroundColor:'#f59e0b'}]
+    },
+    plugins:[materialReportDataLabelsPlugin],
+    options:{
+      ...chartOptions,
+      indexAxis:'y',
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{beginAtZero:true,ticks:{color:'#475569',font:{size:8},precision:0},grid:{color:'rgba(100,116,139,.15)'}},
+        y:{ticks:{color:'#334155',font:{size:8}},grid:{display:false}}
+      }
+    }
+  });
+
+  const typeMap=new Map();
+  data.materialRows.forEach(r=>{
+    const key=String(r.tipo_movimiento || 'SIN TIPO');
+    typeMap.set(key,(typeMap.get(key)||0)+1);
+  });
+  const typeData=[...typeMap.entries()].sort((a,b)=>b[1]-a[1]);
+  const chartTypes=new Chart(document.getElementById('mgrConsumptionTypeChart'),{
+    type:'doughnut',
+    data:{
+      labels:typeData.map(x=>materialReportConsumptionLabel(x[0])),
+      datasets:[{data:typeData.map(x=>x[1]),backgroundColor:['#f26300','#2563eb','#22c55e','#f59e0b','#7c3aed','#0891b2']}]
+    },
+    plugins:[materialReportDataLabelsPlugin],
+    options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{position:'bottom',labels:{color:'#334155',font:{size:8}}}}}
+  });
+
+  return [chartClients,chartMonthly,chartTop,chartPendingClients,chartTypes];
+}
+
+function excelSafeText(value){
+  return String(value ?? '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,'').trim();
+}
+function excelDateValue(value){
+  const d=asDate(value);
+  return d || '';
+}
+function excelDownloadBuffer(buffer, filename){
+  const blob=new Blob(
+    [buffer],
+    {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}
+  );
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+function excelStyleHeader(row, fill='F26300'){
+  row.eachCell(cell=>{
+    cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:fill}};
+    cell.font={bold:true,color:{argb:'FFFFFFFF'},size:10};
+    cell.alignment={vertical:'middle',horizontal:'center',wrapText:true};
+    cell.border={
+      top:{style:'thin',color:{argb:'FFD1D5DB'}},
+      left:{style:'thin',color:{argb:'FFD1D5DB'}},
+      bottom:{style:'thin',color:{argb:'FFD1D5DB'}},
+      right:{style:'thin',color:{argb:'FFD1D5DB'}}
+    };
+  });
+  row.height=28;
+}
+function excelStyleDataRows(sheet,startRow,endRow,statusColumn=null){
+  for(let r=startRow;r<=endRow;r++){
+    const row=sheet.getRow(r);
+    row.eachCell(cell=>{
+      cell.font={color:{argb:'FF111827'},size:9};
+      cell.alignment={vertical:'top',wrapText:true};
+      cell.border={
+        top:{style:'hair',color:{argb:'FFD1D5DB'}},
+        left:{style:'hair',color:{argb:'FFD1D5DB'}},
+        bottom:{style:'hair',color:{argb:'FFD1D5DB'}},
+        right:{style:'hair',color:{argb:'FFD1D5DB'}}
+      };
+      if(r%2===0){
+        cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF8FAFC'}};
+      }
+    });
+    if(statusColumn){
+      const cell=row.getCell(statusColumn);
+      const status=String(cell.value||'').toUpperCase();
+      if(status.includes('PENDIENTE')){
+        cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFFEF3C7'}};
+        cell.font={bold:true,color:{argb:'FF92400E'},size:9};
+      }else{
+        cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFDCFCE7'}};
+        cell.font={bold:true,color:{argb:'FF166534'},size:9};
+      }
+    }
+  }
+}
+function excelAddTitle(sheet,title,subtitle,period){
+  sheet.mergeCells('A1:H1');
+  const titleCell=sheet.getCell('A1');
+  titleCell.value=title;
+  titleCell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF26300'}};
+  titleCell.font={bold:true,color:{argb:'FFFFFFFF'},size:18};
+  titleCell.alignment={horizontal:'center',vertical:'middle'};
+  sheet.getRow(1).height=34;
+
+  sheet.mergeCells('A2:H2');
+  const subCell=sheet.getCell('A2');
+  subCell.value=subtitle;
+  subCell.font={italic:true,color:{argb:'FF475569'},size:10};
+  subCell.alignment={horizontal:'center'};
+
+  sheet.mergeCells('A3:D3');
+  sheet.getCell('A3').value=`Fecha de generación: ${new Date().toLocaleString('es-CO')}`;
+  sheet.mergeCells('E3:H3');
+  sheet.getCell('E3').value=`Periodo: ${period}`;
+  ['A3','E3'].forEach(ref=>{
+    sheet.getCell(ref).font={bold:true,color:{argb:'FF334155'},size:9};
+    sheet.getCell(ref).alignment={horizontal:'center'};
+  });
+}
+function excelCanvasImage(workbook,canvasId){
+  const canvas=document.getElementById(canvasId);
+  if(!canvas) return null;
+  try{
+    const dataUrl=canvas.toDataURL('image/png',1);
+    return workbook.addImage({base64:dataUrl,extension:'png'});
+  }catch(error){
+    console.warn(`No fue posible capturar la gráfica ${canvasId}`,error);
+    return null;
+  }
+}
+function excelApplyPageSetup(sheet,orientation='landscape'){
+  sheet.pageSetup={
+    paperSize:5,
+    orientation,
+    fitToPage:true,
+    fitToWidth:1,
+    fitToHeight:0,
+    margins:{left:0.25,right:0.25,top:0.4,bottom:0.4,header:0.2,footer:0.2}
+  };
+  sheet.headerFooter={
+    oddFooter:'&LInforme gerencial de materiales&C&P de &N&RLiberty Networks'
+  };
+}
+async function generarInformeGerencialMaterialesExcel(data,period,chartIds){
+  if(typeof ExcelJS==='undefined'){
+    throw new Error('No se pudo cargar la librería ExcelJS. Verifica la conexión a internet.');
+  }
+
+  const workbook=new ExcelJS.Workbook();
+  workbook.creator='Dashboard Ejecutivo O&M';
+  workbook.lastModifiedBy='Dashboard Ejecutivo O&M';
+  workbook.created=new Date();
+  workbook.modified=new Date();
+  workbook.subject='Informe gerencial de control de materiales';
+  workbook.title='Informe gerencial de materiales';
+
+  const reportedRows=data.materialRows.filter(materialReported);
+  const pendingRows=data.materialRows.filter(r=>!materialReported(r));
+  const compliance=data.clientRows.length
+    ? data.reportedClients.length/data.clientRows.length
+    : 0;
+  const reservations=new Set(
+    reportedRows.map(r=>String(r.cod_reserva||'').trim()).filter(Boolean)
+  );
+
+  // HOJA 1: RESUMEN EJECUTIVO
+  const summary=workbook.addWorksheet('Resumen Ejecutivo',{
+    views:[{showGridLines:false}]
+  });
+  excelAddTitle(
+    summary,
+    'INFORME GERENCIAL DE CONTROL DE MATERIALES',
+    'Seguimiento de consumos, clientes instalados y trazabilidad de registros en SAP',
+    period
+  );
+
+  const kpis=[
+    ['Clientes con consumo',data.clientRows.length],
+    ['Clientes reportados SAP',data.reportedClients.length],
+    ['Clientes pendientes SAP',data.pendingClients.length],
+    ['Líneas de consumo',data.materialRows.length],
+    ['Códigos SAP',data.materialSummary.length],
+    ['Cumplimiento SAP',compliance]
+  ];
+
+  summary.getRow(5).values=kpis.map(x=>x[0]);
+  summary.getRow(6).values=kpis.map(x=>x[1]);
+  excelStyleHeader(summary.getRow(5));
+  summary.getRow(6).eachCell((cell,col)=>{
+    cell.font={bold:true,size:20,color:{argb:'FF0F2747'}};
+    cell.alignment={horizontal:'center',vertical:'middle'};
+    cell.fill={
+      type:'pattern',pattern:'solid',
+      fgColor:{argb:col===3?'FFFFFBEB':(col===2||col===6?'FFF0FDF4':'FFF8FAFC')}
+    };
+    cell.border={
+      top:{style:'thin',color:{argb:'FFCBD5E1'}},
+      left:{style:'thin',color:{argb:'FFCBD5E1'}},
+      bottom:{style:'thin',color:{argb:'FFCBD5E1'}},
+      right:{style:'thin',color:{argb:'FFCBD5E1'}}
+    };
+  });
+  summary.getCell('F6').numFmt='0%';
+  summary.getRow(6).height=38;
+
+  summary.mergeCells('A8:H10');
+  const conclusion=data.pendingClients.length===0
+    ? 'Para el periodo analizado, el 100% de los clientes con consumo de materiales cuenta con trazabilidad en SAP mediante código de reserva.'
+    : `Para el periodo analizado, ${data.reportedClients.length} de ${data.clientRows.length} clientes con consumo presentan gestión completa en SAP. Permanecen ${data.pendingClients.length} cliente(s) con al menos un material pendiente de código de reserva.`;
+  summary.getCell('A8').value=
+    `Resultado de gestión: ${conclusion} Los consumos reportados se sustentan mediante ${reservations.size} código(s) de reserva registrado(s) en el módulo de Materiales.`;
+  summary.getCell('A8').alignment={wrapText:true,vertical:'middle'};
+  summary.getCell('A8').font={size:10,color:{argb:'FF334155'}};
+  summary.getCell('A8').fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFF8FAFC'}};
+  summary.getCell('A8').border={
+    top:{style:'thin',color:{argb:'FFCBD5E1'}},
+    left:{style:'thin',color:{argb:'FFCBD5E1'}},
+    bottom:{style:'thin',color:{argb:'FFCBD5E1'}},
+    right:{style:'thin',color:{argb:'FFCBD5E1'}}
+  };
+
+  const imgClients=excelCanvasImage(workbook,chartIds.clients);
+  const imgMonthly=excelCanvasImage(workbook,chartIds.monthly);
+  if(imgClients!==null) summary.addImage(imgClients,{tl:{col:0,row:11},ext:{width:470,height:270}});
+  if(imgMonthly!==null) summary.addImage(imgMonthly,{tl:{col:4,row:11},ext:{width:470,height:270}});
+
+  summary.columns=[
+    {width:22},{width:22},{width:22},{width:22},
+    {width:22},{width:22},{width:22},{width:22}
+  ];
+  summary.views=[{state:'frozen',ySplit:3,showGridLines:false}];
+  excelApplyPageSetup(summary);
+
+  // HOJA 2: GESTIÓN OPERATIVA
+  const operation=workbook.addWorksheet('Gestión Operativa',{
+    views:[{showGridLines:false}]
+  });
+  excelAddTitle(
+    operation,
+    'MATERIALES Y GESTIÓN OPERATIVA',
+    'Principales materiales, clientes pendientes y consumos por tipo de movimiento',
+    period
+  );
+  const imgTop=excelCanvasImage(workbook,chartIds.topMaterials);
+  const imgPending=excelCanvasImage(workbook,chartIds.pendingClients);
+  const imgTypes=excelCanvasImage(workbook,chartIds.types);
+  if(imgTop!==null) operation.addImage(imgTop,{tl:{col:0,row:4},ext:{width:950,height:300}});
+  if(imgPending!==null) operation.addImage(imgPending,{tl:{col:0,row:20},ext:{width:470,height:260}});
+  if(imgTypes!==null) operation.addImage(imgTypes,{tl:{col:4,row:20},ext:{width:470,height:260}});
+  operation.columns=Array.from({length:8},()=>({width:22}));
+  excelApplyPageSetup(operation);
+
+  // HOJA 3: CLIENTES Y TRAZABILIDAD SAP
+  const clients=workbook.addWorksheet('Clientes SAP',{
+    views:[{state:'frozen',ySplit:1}]
+  });
+  clients.columns=[
+    {header:'Cliente',key:'cliente',width:30},
+    {header:'ID cliente',key:'id_cliente',width:16},
+    {header:'ID cambio',key:'id_cambio',width:16},
+    {header:'Fecha instalación',key:'fecha',width:17},
+    {header:'Tipo de consumo',key:'tipo',width:22},
+    {header:'Estado SAP',key:'estado',width:19},
+    {header:'Códigos de reserva',key:'reservas',width:26},
+    {header:'Resumen de materiales',key:'resumen',width:70}
+  ];
+  data.clientRows.forEach(x=>{
+    clients.addRow({
+      cliente:x.cliente,
+      id_cliente:x.id_cliente,
+      id_cambio:x.id_cambio,
+      fecha:excelDateValue(x.fecha_instalacion),
+      tipo:[...new Set(x.materialLines.map(r=>materialReportConsumptionLabel(r.tipo_movimiento)))].join(', '),
+      estado:x.status,
+      reservas:[...x.reservationCodes].join(', ') || 'Pendiente',
+      resumen:x.materialSummary.map(m=>
+        `${m.sap} - ${m.desc}: ${m.qty.toLocaleString('es-CO',{maximumFractionDigits:2})} ${m.unit}`
+      ).join('\n')
+    });
+  });
+  excelStyleHeader(clients.getRow(1));
+  if(clients.rowCount>1) excelStyleDataRows(clients,2,clients.rowCount,6);
+  clients.getColumn('fecha').numFmt='dd/mm/yyyy';
+  clients.autoFilter={from:'A1',to:`H${clients.rowCount}`};
+  excelApplyPageSetup(clients);
+
+  // HOJA 4: MATERIALES CONSUMIDOS
+  const materialsSheet=workbook.addWorksheet('Materiales Consumidos',{
+    views:[{state:'frozen',ySplit:1}]
+  });
+  materialsSheet.columns=[
+    {header:'Código SAP',key:'sap',width:15},
+    {header:'Material',key:'material',width:55},
+    {header:'Unidad',key:'unidad',width:12},
+    {header:'Total consumido',key:'total',width:18},
+    {header:'Reportado SAP',key:'reportado',width:18},
+    {header:'Pendiente SAP',key:'pendiente',width:18},
+    {header:'Clientes',key:'clientes',width:13},
+    {header:'Estado',key:'estado',width:18}
+  ];
+  data.materialSummary.forEach(x=>{
+    materialsSheet.addRow({
+      sap:x.codigo_sap,
+      material:x.descripcion,
+      unidad:x.unidad,
+      total:x.total,
+      reportado:x.reported,
+      pendiente:x.pending,
+      clientes:x.clients.size,
+      estado:x.pending>0?'CON PENDIENTES':'GESTIONADO'
+    });
+  });
+  excelStyleHeader(materialsSheet.getRow(1));
+  if(materialsSheet.rowCount>1) excelStyleDataRows(materialsSheet,2,materialsSheet.rowCount,8);
+  ['D','E','F'].forEach(col=>materialsSheet.getColumn(col).numFmt='#,##0.00');
+  materialsSheet.autoFilter={from:'A1',to:`H${materialsSheet.rowCount}`};
+  excelApplyPageSetup(materialsSheet);
+
+  // HOJA 5: PENDIENTES SAP
+  const pending=workbook.addWorksheet('Pendientes SAP',{
+    views:[{state:'frozen',ySplit:1}]
+  });
+  pending.columns=[
+    {header:'Fecha',key:'fecha',width:15},
+    {header:'Tipo de consumo',key:'tipo',width:22},
+    {header:'Código SAP',key:'sap',width:15},
+    {header:'Material',key:'material',width:48},
+    {header:'Cantidad',key:'cantidad',width:14},
+    {header:'Unidad',key:'unidad',width:11},
+    {header:'Cliente',key:'cliente',width:30},
+    {header:'ID cliente',key:'id_cliente',width:16},
+    {header:'ID cambio',key:'id_cambio',width:16},
+    {header:'Bodega',key:'bodega',width:18},
+    {header:'Cod. serial',key:'serial',width:20},
+    {header:'Estado SAP',key:'estado',width:18}
+  ];
+  pendingRows.forEach(r=>{
+    pending.addRow({
+      fecha:excelDateValue(materialDate(r)),
+      tipo:materialReportConsumptionLabel(r.tipo_movimiento),
+      sap:r.codigo_sap||'',
+      material:materialDescription(r),
+      cantidad:materialQty(r),
+      unidad:materialUnit(r),
+      cliente:materialClient(r),
+      id_cliente:r.id_cliente||'',
+      id_cambio:r.id_cambio||'',
+      bodega:r.origen_nombre||r.bodega_origen_nombre||r.bodega_origen_stock||'',
+      serial:r.codigo_serial||'',
+      estado:'PENDIENTE SAP'
+    });
+  });
+  excelStyleHeader(pending.getRow(1));
+  if(pending.rowCount>1) excelStyleDataRows(pending,2,pending.rowCount,12);
+  pending.getColumn('fecha').numFmt='dd/mm/yyyy';
+  pending.getColumn('cantidad').numFmt='#,##0.00';
+  pending.autoFilter={from:'A1',to:`L${pending.rowCount}`};
+  excelApplyPageSetup(pending);
+
+  // HOJA 6: DETALLE COMPLETO
+  const detail=workbook.addWorksheet('Detalle Movimientos',{
+    views:[{state:'frozen',ySplit:1}]
+  });
+  detail.columns=[
+    {header:'Fecha',key:'fecha',width:15},
+    {header:'Hora',key:'hora',width:11},
+    {header:'Tipo de consumo',key:'tipo',width:22},
+    {header:'Código SAP',key:'sap',width:15},
+    {header:'Material',key:'material',width:48},
+    {header:'Cantidad',key:'cantidad',width:14},
+    {header:'Unidad',key:'unidad',width:11},
+    {header:'Cliente',key:'cliente',width:30},
+    {header:'ID cliente',key:'id_cliente',width:16},
+    {header:'ID cambio',key:'id_cambio',width:16},
+    {header:'Bodega',key:'bodega',width:18},
+    {header:'Cod. serial',key:'serial',width:20},
+    {header:'Cod. reserva',key:'reserva',width:20},
+    {header:'Estado SAP',key:'estado',width:18}
+  ];
+  data.materialRows.forEach(r=>{
+    detail.addRow({
+      fecha:excelDateValue(materialDate(r)),
+      hora:r.hora||'',
+      tipo:materialReportConsumptionLabel(r.tipo_movimiento),
+      sap:r.codigo_sap||'',
+      material:materialDescription(r),
+      cantidad:materialQty(r),
+      unidad:materialUnit(r),
+      cliente:materialClient(r),
+      id_cliente:r.id_cliente||'',
+      id_cambio:r.id_cambio||'',
+      bodega:r.origen_nombre||r.bodega_origen_nombre||r.bodega_origen_stock||'',
+      serial:r.codigo_serial||'',
+      reserva:r.cod_reserva||'',
+      estado:materialReported(r)?'REPORTADO EN SAP':'PENDIENTE SAP'
+    });
+  });
+  excelStyleHeader(detail.getRow(1));
+  if(detail.rowCount>1) excelStyleDataRows(detail,2,detail.rowCount,14);
+  detail.getColumn('fecha').numFmt='dd/mm/yyyy';
+  detail.getColumn('cantidad').numFmt='#,##0.00';
+  detail.autoFilter={from:'A1',to:`N${detail.rowCount}`};
+  excelApplyPageSetup(detail);
+
+  const buffer=await workbook.xlsx.writeBuffer();
+  const safePeriod=period.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ_-]+/g,'_');
+  const filename=`Informe_gerencial_materiales_${safePeriod}_${new Date().toISOString().slice(0,10)}.xlsx`;
+  excelDownloadBuffer(buffer,filename);
+}
+
+
+function nativeExcelColNumber(ref){
+  const letters=String(ref).match(/[A-Z]+/i)?.[0]?.toUpperCase() || 'A';
+  let n=0;
+  for(const ch of letters) n=n*26+(ch.charCodeAt(0)-64);
+  return n;
+}
+function nativeExcelClearCell(cell){
+  Array.from(cell.childNodes).forEach(node=>{
+    if(['v','is','f'].includes(node.localName)) cell.removeChild(node);
+  });
+}
+function nativeExcelSetInlineText(xmlDoc,cell,value){
+  nativeExcelClearCell(cell);
+  const ns=cell.namespaceURI || 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  cell.setAttribute('t','inlineStr');
+  const isNode=xmlDoc.createElementNS(ns,'is');
+  const tNode=xmlDoc.createElementNS(ns,'t');
+  tNode.setAttribute('xml:space','preserve');
+  tNode.textContent=String(value ?? '');
+  isNode.appendChild(tNode);
+  cell.appendChild(isNode);
+}
+function nativeExcelSetNumber(xmlDoc,cell,value){
+  nativeExcelClearCell(cell);
+  const ns=cell.namespaceURI || 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  cell.removeAttribute('t');
+  const vNode=xmlDoc.createElementNS(ns,'v');
+  const n=Number(value);
+  vNode.textContent=Number.isFinite(n)?String(n):'0';
+  cell.appendChild(vNode);
+}
+function nativeExcelEnsureRow(xmlDoc,sheetData,rowNumber){
+  const ns=sheetData.namespaceURI || 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  let row=Array.from(sheetData.children).find(x=>x.localName==='row' && Number(x.getAttribute('r'))===rowNumber);
+  if(row) return row;
+  row=xmlDoc.createElementNS(ns,'row');
+  row.setAttribute('r',String(rowNumber));
+  const next=Array.from(sheetData.children).find(x=>x.localName==='row' && Number(x.getAttribute('r'))>rowNumber);
+  if(next) sheetData.insertBefore(row,next); else sheetData.appendChild(row);
+  return row;
+}
+function nativeExcelEnsureCell(xmlDoc,row,cellRef){
+  const ns=row.namespaceURI || 'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+  let cell=Array.from(row.children).find(x=>x.localName==='c' && x.getAttribute('r')===cellRef);
+  if(cell) return cell;
+  cell=xmlDoc.createElementNS(ns,'c');
+  cell.setAttribute('r',cellRef);
+  const target=nativeExcelColNumber(cellRef);
+  const next=Array.from(row.children).find(x=>x.localName==='c' && nativeExcelColNumber(x.getAttribute('r'))>target);
+  if(next) row.insertBefore(cell,next); else row.appendChild(cell);
+  return cell;
+}
+function nativeExcelColumnName(number){
+  let n=number, out='';
+  while(n>0){
+    const r=(n-1)%26;
+    out=String.fromCharCode(65+r)+out;
+    n=Math.floor((n-1)/26);
+  }
+  return out;
+}
+function nativeExcelClearRowsFrom(sheetData,startRow){
+  Array.from(sheetData.children).forEach(row=>{
+    if(row.localName==='row' && Number(row.getAttribute('r'))>=startRow){
+      sheetData.removeChild(row);
+    }
+  });
+}
+function nativeExcelWriteMatrix(xmlDoc,sheetData,startRow,startCol,matrix,types=[]){
+  matrix.forEach((values,rowOffset)=>{
+    const rowNumber=startRow+rowOffset;
+    const row=nativeExcelEnsureRow(xmlDoc,sheetData,rowNumber);
+    values.forEach((value,colOffset)=>{
+      const colNumber=startCol+colOffset;
+      const ref=`${nativeExcelColumnName(colNumber)}${rowNumber}`;
+      const cell=nativeExcelEnsureCell(xmlDoc,row,ref);
+      const type=types[colOffset] || (typeof value==='number'?'number':'text');
+      if(type==='number') nativeExcelSetNumber(xmlDoc,cell,value);
+      else nativeExcelSetInlineText(xmlDoc,cell,value);
+    });
+  });
+}
+async function nativeExcelGetSheetMap(zip){
+  const parser=new DOMParser();
+  const workbookXml=parser.parseFromString(await zip.file('xl/workbook.xml').async('string'),'application/xml');
+  const relsXml=parser.parseFromString(await zip.file('xl/_rels/workbook.xml.rels').async('string'),'application/xml');
+  const relMap=new Map(
+    Array.from(relsXml.getElementsByTagNameNS('*','Relationship')).map(r=>[
+      r.getAttribute('Id'),
+      r.getAttribute('Target')
+    ])
+  );
+  const map=new Map();
+  Array.from(workbookXml.getElementsByTagNameNS('*','sheet')).forEach(sheet=>{
+    const rid=sheet.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+    let target=relMap.get(rid) || '';
+    if(!target.startsWith('xl/')) target='xl/'+target.replace(/^\/+/,'');
+    map.set(sheet.getAttribute('name'),target);
+  });
+  return map;
+}
+async function nativeExcelOpenSheet(zip,path){
+  const parser=new DOMParser();
+  const xmlDoc=parser.parseFromString(await zip.file(path).async('string'),'application/xml');
+  const sheetData=xmlDoc.getElementsByTagNameNS('*','sheetData')[0];
+  if(!sheetData) throw new Error(`No se encontró sheetData en ${path}`);
+  return {xmlDoc,sheetData};
+}
+function nativeExcelSaveSheet(zip,path,xmlDoc){
+  zip.file(path,new XMLSerializer().serializeToString(xmlDoc));
+}
+async function generarInformeGerencialMaterialesExcelNativo(data,period){
+  if(typeof JSZip==='undefined'){
+    throw new Error('No se pudo cargar JSZip para generar el Excel con gráficos nativos.');
+  }
+
+  const plantillaRelativa='./Informe_Gerencial_Materiales.xlsx';
+  const plantillaGitHubPages='https://cacg1022.github.io/LibertyOyM/seguimiento/Informe_Gerencial_Materiales.xlsx';
+
+  const urlsPlantilla = window.location.protocol === 'file:'
+    ? [plantillaGitHubPages]
+    : [
+        new URL(plantillaRelativa, window.location.href).toString(),
+        plantillaGitHubPages
+      ];
+
+  let response=null;
+  let ultimaError=null;
+
+  for(const baseUrl of urlsPlantilla){
+    try{
+      const url = new URL(baseUrl);
+      url.searchParams.set('v', Date.now().toString());
+
+      const intento = await fetch(url.toString(), {
+        method:'GET',
+        cache:'no-store',
+        mode:'cors'
+      });
+
+      if(intento.ok){
+        response=intento;
+        break;
+      }
+
+      ultimaError=new Error(`HTTP ${intento.status} al cargar ${url}`);
+    }catch(error){
+      ultimaError=error;
+      console.warn('No fue posible cargar la plantilla desde:', baseUrl, error);
+    }
+  }
+
+  if(!response){
+    throw new Error(
+      'No se pudo cargar la plantilla Informe_Gerencial_Materiales.xlsx. ' +
+      'Se intentó desde GitHub Pages y desde la misma carpeta del dashboard. ' +
+      'Verifica que GitHub Pages esté publicado y que la URL sea accesible. ' +
+      (ultimaError?.message ? `Detalle: ${ultimaError.message}` : '')
+    );
+  }
+
+  const zip=await JSZip.loadAsync(await response.arrayBuffer());
+  const sheetMap=await nativeExcelGetSheetMap(zip);
+  const reportedRows=data.materialRows.filter(materialReported);
+  const pendingRows=data.materialRows.filter(r=>!materialReported(r));
+  const compliance=data.clientRows.length?data.reportedClients.length/data.clientRows.length:0;
+  const reservations=new Set(reportedRows.map(r=>String(r.cod_reserva||'').trim()).filter(Boolean));
+
+  // RESUMEN EJECUTIVO
+  {
+    const path=sheetMap.get('Resumen Ejecutivo');
+    const {xmlDoc,sheetData}=await nativeExcelOpenSheet(zip,path);
+    const setText=(ref,val)=>{
+      const rowN=Number(ref.match(/\d+/)[0]);
+      nativeExcelSetInlineText(xmlDoc,nativeExcelEnsureCell(xmlDoc,nativeExcelEnsureRow(xmlDoc,sheetData,rowN),ref),val);
+    };
+    const setNum=(ref,val)=>{
+      const rowN=Number(ref.match(/\d+/)[0]);
+      nativeExcelSetNumber(xmlDoc,nativeExcelEnsureCell(xmlDoc,nativeExcelEnsureRow(xmlDoc,sheetData,rowN),ref),val);
+    };
+
+    setText('A3',`Fecha de generación: ${new Date().toLocaleString('es-CO')}`);
+    setText('E3',`Periodo: ${period}`);
+    [
+      data.clientRows.length,
+      data.reportedClients.length,
+      data.pendingClients.length,
+      data.materialRows.length,
+      data.materialSummary.length,
+      compliance
+    ].forEach((v,i)=>setNum(`${nativeExcelColumnName(i+1)}6`,v));
+
+    const conclusion=data.pendingClients.length===0
+      ? 'Para el periodo analizado, el 100% de los clientes con consumo cuenta con trazabilidad en SAP mediante código de reserva.'
+      : `Para el periodo analizado, ${data.reportedClients.length} de ${data.clientRows.length} clientes presentan gestión completa en SAP. Permanecen ${data.pendingClients.length} cliente(s) con consumos pendientes.`;
+    setText('A8',`Resultado de gestión: ${conclusion} Se evidencian ${reservations.size} código(s) de reserva.`);
+
+    nativeExcelWriteMatrix(xmlDoc,sheetData,2,10,[
+      ['Estado SAP','Clientes'],
+      ['Reportados en SAP',data.reportedClients.length],
+      ['Pendientes SAP',data.pendingClients.length]
+    ],['text','number']);
+
+    const monthly=Array.from({length:12},(_,i)=>[MESES[i].slice(0,3),0,0]);
+    data.materialRows.forEach(r=>{
+      const d=materialReportFilterDate(r);
+      if(!d) return;
+      if(materialReported(r)) monthly[d.getMonth()][1]++;
+      else monthly[d.getMonth()][2]++;
+    });
+    nativeExcelWriteMatrix(xmlDoc,sheetData,2,13,[['Mes','Reportado SAP','Pendiente SAP'],...monthly],['text','number','number']);
+    nativeExcelSaveSheet(zip,path,xmlDoc);
+  }
+
+  // GESTIÓN OPERATIVA
+  {
+    const path=sheetMap.get('Gestión Operativa');
+    const {xmlDoc,sheetData}=await nativeExcelOpenSheet(zip,path);
+
+    const top=data.materialSummary.slice(0,10).map(x=>[
+      `${x.codigo_sap} - ${x.descripcion}`,
+      x.reported,
+      x.pending
+    ]);
+    while(top.length<10) top.push(['',0,0]);
+    nativeExcelWriteMatrix(xmlDoc,sheetData,2,10,[['Material','Reportado SAP','Pendiente SAP'],...top],['text','number','number']);
+
+    const pendingClients=data.pendingClients.slice(0,10).map(x=>[x.cliente,x.pendingLines]);
+    while(pendingClients.length<10) pendingClients.push(['',0]);
+    nativeExcelWriteMatrix(xmlDoc,sheetData,2,14,[['Cliente','Pendientes'],...pendingClients],['text','number']);
+
+    const typeMap=new Map();
+    data.materialRows.forEach(r=>{
+      const key=materialReportConsumptionLabel(r.tipo_movimiento);
+      typeMap.set(key,(typeMap.get(key)||0)+1);
+    });
+    const types=[...typeMap.entries()].slice(0,6);
+    while(types.length<6) types.push(['',0]);
+    nativeExcelWriteMatrix(xmlDoc,sheetData,2,17,[['Tipo consumo','Líneas'],...types],['text','number']);
+
+    nativeExcelSaveSheet(zip,path,xmlDoc);
+  }
+
+  async function writeDataSheet(name,headers,rows,types){
+    const path=sheetMap.get(name);
+    const {xmlDoc,sheetData}=await nativeExcelOpenSheet(zip,path);
+    nativeExcelClearRowsFrom(sheetData,2);
+    nativeExcelWriteMatrix(xmlDoc,sheetData,1,1,[headers],headers.map(()=> 'text'));
+    if(rows.length) nativeExcelWriteMatrix(xmlDoc,sheetData,2,1,rows,types);
+    nativeExcelSaveSheet(zip,path,xmlDoc);
+  }
+
+  await writeDataSheet(
+    'Clientes SAP',
+    ['Cliente','ID cliente','ID cambio','Fecha instalación','Tipo de consumo','Estado SAP','Códigos de reserva','Resumen de materiales'],
+    data.clientRows.map(x=>[
+      x.cliente,
+      x.id_cliente,
+      x.id_cambio,
+      fmtDate(x.fecha_instalacion),
+      [...new Set(x.materialLines.map(r=>materialReportConsumptionLabel(r.tipo_movimiento)))].join(', '),
+      x.status,
+      [...x.reservationCodes].join(', ') || 'Pendiente',
+      x.materialSummary.map(m=>`${m.sap} - ${m.desc}: ${m.qty.toLocaleString('es-CO',{maximumFractionDigits:2})} ${m.unit}`).join('\n')
+    ]),
+    ['text','text','text','text','text','text','text','text']
+  );
+
+  await writeDataSheet(
+    'Materiales Consumidos',
+    ['Código SAP','Material','Unidad','Total consumido','Reportado SAP','Pendiente SAP','Clientes','Estado'],
+    data.materialSummary.map(x=>[
+      x.codigo_sap,x.descripcion,x.unidad,x.total,x.reported,x.pending,x.clients.size,
+      x.pending>0?'CON PENDIENTES':'GESTIONADO'
+    ]),
+    ['text','text','text','number','number','number','number','text']
+  );
+
+  await writeDataSheet(
+    'Pendientes SAP',
+    ['Fecha','Tipo de consumo','Código SAP','Material','Cantidad','Unidad','Cliente','ID cliente','ID cambio','Bodega','Cod. serial','Estado SAP'],
+    pendingRows.map(r=>[
+      fmtDate(materialDate(r)),
+      materialReportConsumptionLabel(r.tipo_movimiento),
+      r.codigo_sap||'',
+      materialDescription(r),
+      materialQty(r),
+      materialUnit(r),
+      materialClient(r),
+      r.id_cliente||'',
+      r.id_cambio||'',
+      r.origen_nombre||r.bodega_origen_nombre||r.bodega_origen_stock||'',
+      r.codigo_serial||'',
+      'PENDIENTE SAP'
+    ]),
+    ['text','text','text','text','number','text','text','text','text','text','text','text']
+  );
+
+  await writeDataSheet(
+    'Detalle Movimientos',
+    ['Fecha','Hora','Tipo de consumo','Código SAP','Material','Cantidad','Unidad','Cliente','ID cliente','ID cambio','Bodega','Cod. serial','Cod. reserva','Estado SAP'],
+    data.materialRows.map(r=>[
+      fmtDate(materialDate(r)),
+      r.hora||'',
+      materialReportConsumptionLabel(r.tipo_movimiento),
+      r.codigo_sap||'',
+      materialDescription(r),
+      materialQty(r),
+      materialUnit(r),
+      materialClient(r),
+      r.id_cliente||'',
+      r.id_cambio||'',
+      r.origen_nombre||r.bodega_origen_nombre||r.bodega_origen_stock||'',
+      r.codigo_serial||'',
+      r.cod_reserva||'',
+      materialReported(r)?'REPORTADO EN SAP':'PENDIENTE SAP'
+    ]),
+    ['text','text','text','text','text','number','text','text','text','text','text','text','text','text']
+  );
+
+  const blob=await zip.generateAsync({
+    type:'blob',
+    mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  });
+  const safePeriod=period.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ_-]+/g,'_');
+  const filename=`Informe_gerencial_materiales_${safePeriod}_${new Date().toISOString().slice(0,10)}.xlsx`;
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+
+async function generarInformeGerencialMaterialesPDF(){
+  const button=document.getElementById('btnMaterialManagementPdf');
+  const originalText=button?.innerHTML || '';
+  let reportCharts=[];
+
+  try{
+    if(typeof html2pdf==='undefined'){
+      throw new Error('No se pudo cargar la librería para generar PDF. Verifica la conexión a internet.');
+    }
+    if(typeof ExcelJS==='undefined'){
+      throw new Error('No se pudo cargar la librería para generar Excel. Verifica la conexión a internet.');
+    }
+    if(!materiales.length){
+      throw new Error('No hay movimientos de materiales cargados en el dashboard.');
+    }
+
+    if(button){
+      button.disabled=true;
+      button.innerHTML='⏳ Generando PDF y Excel...';
+    }
+
+    const data=buildMaterialManagementReport();
+    if(!data.materialRows.length){
+      throw new Error('No hay consumos de materiales para los filtros seleccionados.');
+    }
+
+    reportCharts=createMaterialManagementReportCharts(data);
+    await new Promise(resolve=>setTimeout(resolve,650));
+
+    const periodLabel=materialReportPeriodLabel();
+    const periodSafe=periodLabel.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ_-]+/g,'_');
+    const dateStamp=new Date().toISOString().slice(0,10);
+
+    // Generar primero el Excel, reutilizando las mismas gráficas y datos del PDF.
+    await generarInformeGerencialMaterialesExcelNativo(data,periodLabel);
+
+    // Después generar el PDF ejecutivo.
+    const element=document.getElementById('materialManagementReport');
+    const pdfFilename=`Informe_gerencial_materiales_${periodSafe}_${dateStamp}.pdf`;
+
+    await html2pdf().set({
+      margin:[4,7,7,7],
+      filename:pdfFilename,
+      image:{type:'jpeg',quality:.98},
+      html2canvas:{
+        scale:1.35,
+        useCORS:true,
+        backgroundColor:'#ffffff',
+        logging:false,
+        scrollX:0,
+        scrollY:0,
+        windowWidth:1080,
+        width:1080,
+        x:0,
+        y:0
+      },
+      jsPDF:{unit:'mm',format:'legal',orientation:'landscape'},
+      pagebreak:{
+        mode:['css','legacy'],
+        before:'.mgr-page-break',
+        avoid:['.mgr-kpi','.mgr-chart-card','.mgr-table thead']
+      }
+    }).from(element).save();
+
+    if(button){
+      button.innerHTML='✅ PDF y Excel generados';
+      setTimeout(()=>{
+        button.innerHTML=originalText || '📄 Generar PDF + Excel con gráficas nativas';
+      },1800);
+    }
+  }catch(error){
+    console.error('Error generando informe gerencial de materiales:',error);
+    alert(`No se pudieron generar los informes:\n${error.message || error}`);
+  }finally{
+    reportCharts.forEach(c=>{try{c.destroy();}catch(e){}});
+    const host=document.getElementById('materialManagementReportHost');
+    if(host) host.innerHTML='';
+    if(button){
+      button.disabled=false;
+      if(!button.innerHTML.includes('✅')){
+        button.innerHTML=originalText || '📄 Generar PDF + Excel con gráficas nativas';
+      }
+    }
+  }
+}
+
+function renderAll(){
+  fillEstadoFilter();
+
+  if(currentModule==='instalaciones'){
+    renderModule('instalaciones');
+    return;
+  }
+
+  if(currentModule==='factibilidades'){
+    renderModule('factibilidades');
+    return;
+  }
+
+  if(currentModule==='fallas'){
+    renderFallasDashboard();
+    return;
+  }
+
+  if(currentModule==='material'){
+    renderMaterialDashboard();
+  }
+}
+async function loadData(){
+  document.getElementById('connStatus').textContent='Cargando datos desde Supabase...';
+  try{
+    const client=await getDashboardClient();
+    const [i,f,t,m]=await Promise.all([
+      client.from('instalaciones').select('*').order('fecha_ingreso',{ascending:false}),
+      client.from('factibilidades').select('*').order('fecha_ingreso',{ascending:false}),
+      client.from('om_tickets').select('*').order('fecha_inicio',{ascending:false}),
+      client.from('om_materiales_movimientos').select('*').order('fecha',{ascending:false})
+    ]);
+    if(i.error)throw i.error;
+    if(f.error)throw f.error;
+    if(t.error)throw t.error;
+    if(m.error)throw m.error;
+
+    instalaciones=i.data||[];
+    factibilidades=f.data||[];
+    fallas=t.data||[];
+    materiales=m.data||[];
+
+    document.getElementById('connStatus').textContent=
+      `Conectado: ${instalaciones.length} instalaciones / ${factibilidades.length} factibilidades / ${fallas.length} fallas / ${materiales.length} movimientos de material`;
+    document.getElementById('lastUpdate').textContent='Actualizado: '+new Date().toLocaleString('es-CO');
+
+    // Activar el módulo después de cargar los datos garantiza que sus
+    // contenedores ya sean visibles antes de crear las gráficas.
+    setModule(currentModule || 'material');
+
+    if(currentModule==='material'){
+      setTimeout(refreshMaterialChartsAfterVisible,120);
+      setTimeout(refreshMaterialChartsAfterVisible,450);
+    }
+  }catch(err){
+    console.error(err);
+    document.getElementById('connStatus').innerHTML='<span style="color:#fecaca">Error: '+esc(err.message||err)+'</span>';
+  }
+}
 initSidebarSession();
 restoreSidebarState();
 initFilters();
@@ -1123,7 +2894,20 @@ initFallasMapControls();
   if(logged) await loadData();
 })();
 </script>
+
+<script>
+
+window.addEventListener('load',()=>{
+  currentModule='material';
+  setModule('material');
+  setTimeout(refreshMaterialChartsAfterVisible,250);
+  setTimeout(refreshMaterialChartsAfterVisible,800);
+});
+
+</script>
 </body>
 </html>
+
+
 
 
