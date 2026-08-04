@@ -794,6 +794,37 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       display:block;
     }
 
+
+    .movement-reference-row{
+      grid-column:1/-1;
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:14px;
+      padding:14px;
+      border:1px solid rgba(96,165,250,.22);
+      border-radius:16px;
+      background:rgba(37,99,235,.06);
+    }
+    .movement-reference-row .cliente-field{
+      grid-column:span 2;
+    }
+    .movement-reference-row.is-hidden{
+      display:none !important;
+    }
+    .required-mark{
+      color:#fca5a5;
+      font-weight:900;
+      margin-left:3px;
+    }
+    @media(max-width:900px){
+      .movement-reference-row{
+        grid-template-columns:1fr !important;
+      }
+      .movement-reference-row .cliente-field{
+        grid-column:auto !important;
+      }
+    }
+
 </style>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
@@ -885,6 +916,26 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           <select name="estado" onchange="actualizarReservaInputs()"><option>RECIBIDO</option><option>PENDIENTE</option><option>ENTREGADO</option><option>CONSUMIDO</option><option>ANULADO</option></select>
         </div>
 
+        <div id="movementReferenceRow" class="movement-reference-row">
+          <div class="field">
+            <label id="idCambioLabel">ID cambio instalación <span class="required-mark">*</span></label>
+            <input name="id_cambio"
+                   id="idCambioInput"
+                   placeholder="Digite el ID de cambio"
+                   oninput="handleMovementReferenceInput(this.value)"
+                   onchange="handleMovementReferenceChange(this.value)">
+            <div id="instalacionLookupMsg" class="muted-note" style="margin-top:6px"></div>
+          </div>
+          <div class="field">
+            <label>ID cliente <span class="required-mark">*</span></label>
+            <input name="id_cliente" id="idClienteInput" placeholder="Digite el ID del cliente">
+          </div>
+          <div class="field cliente-field">
+            <label>Cliente <span class="required-mark">*</span></label>
+            <input name="cliente" id="clienteInput" placeholder="Nombre del cliente">
+          </div>
+        </div>
+
         <div class="span-4">
           <div class="section-title" style="margin-top:4px">Materiales del movimiento</div>
           <div class="material-lines">
@@ -934,10 +985,6 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
         <div class="field"><label>Recibido por</label><input name="recibido_por"></div>
         <div class="field"><label>Entregado por</label><input name="entregado_a"></div>
-        <div class="field"><label>ID cambio instalación</label><input name="id_cambio" id="idCambioInput" placeholder="Opcional" oninput="debouncedBuscarInstalacionPorCambio(this.value)" onchange="buscarInstalacionPorCambio(this.value)"><div id="instalacionLookupMsg" class="muted-note" style="margin-top:6px"></div></div>
-        <div class="field"><label>ID cliente</label><input name="id_cliente" id="idClienteInput"></div>
-
-        <div class="field span-2"><label>Cliente</label><input name="cliente" id="clienteInput"></div>
         <div class="field span-2"><label>Observaciones</label><textarea name="observaciones"></textarea></div>
       </div>
 
@@ -2640,7 +2687,13 @@ function openMovModal(row = null){
   toggleMovementFields();
   initBarcodeMode();
   actualizarReservaInputs();
-  if(form?.elements?.['id_cambio']?.value && (!form.elements['cliente']?.value || !form.elements['id_cliente']?.value)) buscarInstalacionPorCambio(form.elements['id_cambio'].value);
+  if(
+    form?.elements?.['tipo_movimiento']?.value === 'CONSUMO_INSTALACION' &&
+    form?.elements?.['id_cambio']?.value &&
+    (!form.elements['cliente']?.value || !form.elements['id_cliente']?.value)
+  ){
+    buscarInstalacionPorCambio(form.elements['id_cambio'].value);
+  }
   document.getElementById('movModal').classList.add('show');
 }
 function getMovModalCard(){
@@ -2700,6 +2753,27 @@ function setInstalacionLookupMsg(text, type = 'info'){
   if(type === 'error') el.style.color = '#fecaca';
   else if(type === 'ok') el.style.color = '#86efac';
   else el.style.color = '#bfdbfe';
+}
+
+function handleMovementReferenceInput(value){
+  const form=document.getElementById('movForm');
+  const tipo=String(form?.elements?.['tipo_movimiento']?.value || '').toUpperCase();
+
+  if(tipo==='CONSUMO_INSTALACION'){
+    debouncedBuscarInstalacionPorCambio(value);
+  }else{
+    clearTimeout(instalacionLookupTimer);
+    setInstalacionLookupMsg('');
+  }
+}
+
+function handleMovementReferenceChange(value){
+  const form=document.getElementById('movForm');
+  const tipo=String(form?.elements?.['tipo_movimiento']?.value || '').toUpperCase();
+
+  if(tipo==='CONSUMO_INSTALACION'){
+    buscarInstalacionPorCambio(value);
+  }
 }
 
 function debouncedBuscarInstalacionPorCambio(value){
@@ -2991,7 +3065,45 @@ if(!window.__barcodeScannerMaterialesInit){
 function toggleMovementFields(){
   const form = document.getElementById('movForm');
   if(!form) return;
-  const tipo = form.elements['tipo_movimiento'].value;
+
+  const tipo = String(form.elements['tipo_movimiento']?.value || '').toUpperCase();
+  const isEntrada = tipo === 'ENTRADA';
+  const isMantenimiento = [
+    'CONSUMO_MTO_CORRECTIVO',
+    'CONSUMO_MTO_PREVENTIVO'
+  ].includes(tipo);
+
+  const referenceRow = document.getElementById('movementReferenceRow');
+  const idCambioLabel = document.getElementById('idCambioLabel');
+  const idCambio = form.elements['id_cambio'];
+  const idCliente = form.elements['id_cliente'];
+  const cliente = form.elements['cliente'];
+
+  if(referenceRow){
+    referenceRow.classList.toggle('is-hidden', isEntrada);
+  }
+
+  if(idCambioLabel){
+    idCambioLabel.innerHTML = isMantenimiento
+      ? 'ID Ticket <span class="required-mark">*</span>'
+      : 'ID cambio instalación <span class="required-mark">*</span>';
+  }
+
+  [idCambio,idCliente,cliente].forEach(input=>{
+    if(!input) return;
+    input.required = !isEntrada;
+    input.disabled = isEntrada;
+  });
+
+  if(idCambio){
+    idCambio.placeholder = isMantenimiento
+      ? 'Digite el ID del ticket'
+      : 'Digite el ID de cambio';
+  }
+
+  if(isEntrada){
+    setInstalacionLookupMsg('');
+  }
 
   // Los campos globales se conservan ocultos solo como compatibilidad,
   // pero la afectación de inventario ahora se toma por cada línea de material.
@@ -3000,7 +3112,14 @@ function toggleMovementFields(){
   if(origen) origen.required = false;
   if(destino) destino.required = false;
 
-  if(['CONSUMO_INSTALACION','CONSUMO_MTO_CORRECTIVO','CONSUMO_MTO_PREVENTIVO'].includes(tipo)) form.elements['estado'].value = 'CONSUMIDO';
+  if([
+    'CONSUMO_INSTALACION',
+    'CONSUMO_MTO_CORRECTIVO',
+    'CONSUMO_MTO_PREVENTIVO'
+  ].includes(tipo)){
+    form.elements['estado'].value = 'CONSUMIDO';
+  }
+
   actualizarRequeridosBodegasPorLinea();
   actualizarReservaInputs();
 }
@@ -3444,6 +3563,24 @@ document.getElementById('movForm').addEventListener('submit', async function(e){
   msg.style.color = '#86efac';
 
   try{
+    const tipoMovimiento = String(form.elements['tipo_movimiento']?.value || '').toUpperCase();
+
+    if(tipoMovimiento !== 'ENTRADA'){
+      const referencia = String(form.elements['id_cambio']?.value || '').trim();
+      const idCliente = String(form.elements['id_cliente']?.value || '').trim();
+      const clienteNombre = String(form.elements['cliente']?.value || '').trim();
+      const referenciaNombre = [
+        'CONSUMO_MTO_CORRECTIVO',
+        'CONSUMO_MTO_PREVENTIVO'
+      ].includes(tipoMovimiento) ? 'ID Ticket' : 'ID cambio instalación';
+
+      if(!referencia || !idCliente || !clienteNombre){
+        throw new Error(
+          `Los campos ${referenciaNombre}, ID cliente y Cliente son obligatorios para este tipo de movimiento.`
+        );
+      }
+    }
+
     const client = await resolveClient();
     const userEmail = localStorage.getItem('user_email') || null;
     const items = getMaterialLineItems();
@@ -3475,9 +3612,9 @@ document.getElementById('movForm').addEventListener('submit', async function(e){
       responsable: form.elements['responsable'].value.trim() || null,
       recibido_por: form.elements['recibido_por'].value.trim() || null,
       entregado_a: form.elements['entregado_a'].value.trim() || null,
-      id_cambio: form.elements['id_cambio'].value.trim() || null,
-      id_cliente: form.elements['id_cliente'].value.trim() || null,
-      cliente: form.elements['cliente'].value.trim() || null,
+      id_cambio: tipoMovimiento === 'ENTRADA' ? null : (form.elements['id_cambio'].value.trim() || null),
+      id_cliente: tipoMovimiento === 'ENTRADA' ? null : (form.elements['id_cliente'].value.trim() || null),
+      cliente: tipoMovimiento === 'ENTRADA' ? null : (form.elements['cliente'].value.trim() || null),
       observaciones: form.elements['observaciones'].value.trim() || null,
       created_by_email: userEmail,
       ...(grupoMovimientoId ? { grupo_movimiento_id: grupoMovimientoId } : {}),
