@@ -6,7 +6,6 @@
   <title>Dashboard Ejecutivo O&M</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -236,6 +235,103 @@
       margin-bottom:-245px !important;
     }
 
+  
+    .material-average-section{
+      margin-bottom:16px;
+      overflow:hidden;
+    }
+    .material-average-heading{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:14px;
+      margin-bottom:12px;
+    }
+    .material-average-heading h3{
+      margin:0;
+    }
+    .material-average-heading p{
+      margin:5px 0 0;
+      font-size:12px;
+    }
+    .material-average-cards{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:10px;
+      margin-bottom:14px;
+    }
+    .material-average-card{
+      min-width:0;
+      border:1px solid rgba(148,163,184,.2);
+      border-radius:15px;
+      padding:12px 13px;
+      background:linear-gradient(145deg,rgba(15,35,64,.94),rgba(10,27,51,.92));
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.025);
+    }
+    .material-average-card .avg-name{
+      color:#9fd4ff;
+      font-size:11px;
+      font-weight:800;
+      line-height:1.25;
+      min-height:28px;
+    }
+    .material-average-card .avg-value{
+      margin-top:6px;
+      color:#f8fbff;
+      font-size:25px;
+      line-height:1;
+      font-weight:950;
+      letter-spacing:-.4px;
+    }
+    .material-average-card .avg-unit{
+      font-size:12px;
+      color:#c8d8ec;
+      font-weight:800;
+      margin-left:3px;
+    }
+    .material-average-card .avg-meta{
+      margin-top:7px;
+      color:#80a8d4;
+      font-size:10px;
+      line-height:1.3;
+    }
+    .material-average-card .avg-code{
+      color:#f59e0b;
+      font-weight:900;
+    }
+    .material-average-chartbox{
+      height:330px;
+    }
+    @media(max-width:1200px){
+      .material-average-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media(max-width:650px){
+      .material-average-cards{grid-template-columns:1fr}
+      .material-average-chartbox{height:420px}
+    }
+
+  
+    .mgr-summary-page.averages{
+      page-break-before:always;
+      break-before:page;
+      page-break-after:always;
+      break-after:page;
+      margin:0;
+      padding:0;
+    }
+    .mgr-summary-page.averages > .mgr-band{
+      margin-top:0 !important;
+    }
+    .mgr-average-report-card{
+      margin-bottom:12px;
+    }
+    .mgr-average-report-chart{
+      height:315px !important;
+    }
+    .mgr-summary-page.averages .mgr-table{
+      font-size:8.5px;
+    }
+
   </style>
 </head>
 <body>
@@ -382,14 +478,31 @@
       <section id="secMaterial" class="section active">
         <div class="material-report-toolbar">
           <div>
-            <b>Informe gerencial de materiales</b>
-            <span>Clientes instalados, consumos reportados en SAP y pendientes por gestionar.</span>
+            <b>Informe gerencial de materiales en Excel</b>
+            <span>Clientes instalados, consumos reportados en SAP y pendientes por gestionar en un archivo Excel.</span>
           </div>
           <button id="btnMaterialManagementPdf" class="btn material-report-btn" type="button" onclick="generarInformeGerencialMaterialesPDF()">
-            📄 Generar PDF + Excel con gráficas nativas
+            📄 Generar informe Excel
           </button>
         </div>
         <div id="kpisMaterial" class="kpis"></div>
+
+        <div class="card material-average-section">
+          <div class="material-average-heading">
+            <div>
+              <h3>Promedio mensual en meses con consumo de materiales estratégicos</h3>
+              <p id="materialAveragePeriodText" class="muted">
+                Promedio calculado con los filtros y el periodo seleccionados.
+              </p>
+            </div>
+          </div>
+
+          <div id="materialAverageCards" class="material-average-cards"></div>
+
+          <div class="chartbox material-average-chartbox">
+            <canvas id="materialAverageChart"></canvas>
+          </div>
+        </div>
 
         <div class="grid-2">
           <div class="card">
@@ -649,6 +762,7 @@ function refreshMaterialChartsAfterVisible(){
       }
 
       const ids=[
+        'materialAverageChart',
         'materialMonthlyChart',
         'materialSapStatusChart',
         'materialTopChart',
@@ -1523,6 +1637,176 @@ function openMaterialDetail(title,subtitle,rows){
   document.getElementById('detailModalBody').innerHTML=`<div class="table-wrap">${renderMaterialTable(rows)}</div>`;
   document.getElementById('detailModal').classList.add('show');
 }
+
+const MATERIAL_AVERAGE_CONFIG = [
+  {sap:'522155',name:'Fibra 12 hilos'},
+  {sap:'523098',name:'Herraje retención 12H'},
+  {sap:'523102',name:'Herraje de suspensión 12H'},
+  {sap:'522653',name:'Conversor de medios'},
+  {sap:'522171',name:'Fibra de 4 hilos'},
+  {sap:'522897',name:'Caja terminal'},
+  {sap:'523270',name:'Marquilla amarilla'},
+  {sap:'523272',name:'Marquilla blanca'}
+];
+
+function materialAverageMonthCount(){
+  const quick=document.getElementById('quickFilter')?.value || '';
+  const month=document.getElementById('monthFilter')?.value ?? '';
+  const year=Number(document.getElementById('yearFilter')?.value || new Date().getFullYear());
+  const start=asDate(document.getElementById('startFilter')?.value);
+  const end=asDate(document.getElementById('endFilter')?.value);
+  const now=new Date();
+
+  if(quick==='currentWeek' || quick==='currentMonth') return 1;
+
+  if(quick==='custom' && start && end){
+    return Math.max(
+      1,
+      (end.getFullYear()-start.getFullYear())*12 +
+      (end.getMonth()-start.getMonth()) + 1
+    );
+  }
+
+  if(month!=='') return 1;
+
+  if(year===now.getFullYear()){
+    return now.getMonth()+1;
+  }
+
+  return 12;
+}
+
+function materialAveragePeriodLabel(monthCount){
+  const quick=document.getElementById('quickFilter')?.value || '';
+  const month=document.getElementById('monthFilter')?.value ?? '';
+  const year=document.getElementById('yearFilter')?.value || '';
+  const start=document.getElementById('startFilter')?.value || '';
+  const end=document.getElementById('endFilter')?.value || '';
+
+  if(quick==='currentWeek') return 'Semana actual · equivalente mensual calculado sobre 1 periodo';
+  if(quick==='currentMonth') return 'Mes actual';
+  if(quick==='custom' && start && end){
+    return `${start} a ${end} · ${monthCount} mes(es) incluidos`;
+  }
+  if(month!==''){
+    return `${MESES[Number(month)]} de ${year}`;
+  }
+  return `Año ${year} · ${monthCount} mes(es) incluidos en el promedio`;
+}
+
+function calculateMaterialMonthlyAverages(rows){
+  return MATERIAL_AVERAGE_CONFIG.map(cfg=>{
+    const records=rows.filter(r=>String(r.codigo_sap||'').trim()===cfg.sap);
+
+    const monthlyTotals=new Map();
+
+    records.forEach(r=>{
+      const d=asDate(materialDate(r));
+      if(!d) return;
+
+      const monthKey=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      monthlyTotals.set(
+        monthKey,
+        (monthlyTotals.get(monthKey)||0)+materialQty(r)
+      );
+    });
+
+    const activeMonths=monthlyTotals.size;
+    const total=[...monthlyTotals.values()].reduce((sum,value)=>sum+value,0);
+    const unit=records.length
+      ? materialUnit(records[0])
+      : (cfg.sap==='522155'||cfg.sap==='522171'?'M':'EA');
+
+    return {
+      ...cfg,
+      records,
+      monthlyTotals,
+      activeMonths,
+      total,
+      unit,
+      average:activeMonths>0 ? total/activeMonths : 0
+    };
+  });
+}
+
+function renderMaterialMonthlyAverages(rows){
+  const data=calculateMaterialMonthlyAverages(rows);
+  const periodText=document.getElementById('materialAveragePeriodText');
+  if(periodText){
+    periodText.textContent=
+      'Promedio calculado por cada código SAP usando únicamente los meses en los que ese material tuvo consumo.';
+  }
+
+  const cards=document.getElementById('materialAverageCards');
+  if(cards){
+    cards.innerHTML=data.map(item=>`
+      <div class="material-average-card"
+           ondblclick="openMaterialDetail(
+             'Consumo mensual promedio - ${esc(item.name)}',
+             'Código SAP ${item.sap}.',
+             filteredMaterialRows().filter(r=>String(r.codigo_sap||'').trim()==='${item.sap}')
+           )"
+           title="Doble clic para ver el detalle">
+        <div class="avg-name">${esc(item.name)}</div>
+        <div class="avg-value">
+          ${item.average.toLocaleString('es-CO',{minimumFractionDigits:0,maximumFractionDigits:2})}
+          <span class="avg-unit">${esc(item.unit)}/mes activo</span>
+        </div>
+        <div class="avg-meta">
+          <span class="avg-code">SAP ${item.sap}</span><br>
+          Total periodo: <b>${item.total.toLocaleString('es-CO',{maximumFractionDigits:2})} ${esc(item.unit)}</b><br>
+          Meses con consumo: <b>${item.activeMonths}</b>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  chart('materialAverageChart','bar',{
+    labels:data.map(x=>`${x.sap} · ${x.name}`),
+    datasets:[{
+      label:'Promedio por mes con consumo',
+      data:data.map(x=>Number(x.average.toFixed(2))),
+      backgroundColor:'rgba(245,158,11,.78)',
+      borderColor:'#f59e0b',
+      borderWidth:1
+    }]
+  },{
+    indexAxis:'y',
+    plugins:{
+      legend:{display:false},
+      tooltip:{
+        callbacks:{
+          label(ctx){
+            const item=data[ctx.dataIndex];
+            return `${item.average.toLocaleString('es-CO',{maximumFractionDigits:2})} ${item.unit}/mes activo · ${item.activeMonths} mes(es) con consumo`;
+          }
+        }
+      }
+    },
+    scales:{
+      x:{
+        beginAtZero:true,
+        ticks:{color:'#b8c7e3'},
+        grid:{color:'rgba(255,255,255,.07)'}
+      },
+      y:{
+        ticks:{color:'#b8c7e3',font:{size:11}},
+        grid:{display:false}
+      }
+    },
+    detailHandler:({index})=>{
+      const item=data[index];
+      if(item){
+        openMaterialDetail(
+          `Consumo mensual promedio - ${item.name}`,
+          `Código SAP ${item.sap}. Promedio: ${item.average.toLocaleString('es-CO',{maximumFractionDigits:2})} ${item.unit}/mes activo, calculado con ${item.activeMonths} mes(es) con consumo.`,
+          item.records
+        );
+      }
+    }
+  });
+}
+
 function renderMaterialKPIs(rows){
   const reported=rows.filter(materialReported);
   const pending=rows.filter(r=>!materialReported(r));
@@ -1555,6 +1839,7 @@ function renderMaterialDashboard(){
   const reported=rows.filter(materialReported);
   const pending=rows.filter(r=>!materialReported(r));
   renderMaterialKPIs(rows);
+  renderMaterialMonthlyAverages(rows);
   renderMaterialPendingClients(rows);
   document.getElementById('detailMaterial').innerHTML=renderMaterialTable(rows);
 
@@ -1644,6 +1929,134 @@ function materialReportPeriodLabel(){
 function normalizeMaterialJoinKey(value){
   return String(value || '').trim().toUpperCase().replace(/\s+/g,'');
 }
+
+function materialReportActivityType(records){
+  const types=[...new Set(
+    (records||[])
+      .map(r=>String(r.tipo_movimiento||'').trim().toUpperCase())
+      .filter(Boolean)
+  )];
+
+  if(types.some(t=>t.includes('MTO_CORRECTIVO'))) return 'MTO_CORRECTIVO';
+  if(types.some(t=>t.includes('MTO_PREVENTIVO'))) return 'MTO_PREVENTIVO';
+  if(types.some(t=>t.includes('INSTALACION'))) return 'INSTALACION';
+  return types[0] || '';
+}
+
+function materialReportRecordDate(r){
+  return r?.fecha || r?.created_at || r?.updated_at || '';
+}
+
+function materialReportInstallationDate(r){
+  return r?.fecha_entrega ||
+    r?.fecha_instalacion ||
+    r?.fecha_fin ||
+    r?.fecha_cierre ||
+    r?.fecha_agendamiento ||
+    '';
+}
+
+function materialReportMaintenanceDate(r){
+  return r?.fecha_fin ||
+    r?.fecha_cierre ||
+    r?.fecha_solucion ||
+    r?.fecha_finalizacion ||
+    '';
+}
+
+function materialReportSameClient(source,target){
+  const sourceChange=normalizeMaterialJoinKey(
+    source?.id_cambio || source?.id_tarea || source?.ticket || ''
+  );
+  const targetChange=normalizeMaterialJoinKey(
+    target?.id_cambio || target?.id_tarea || target?.ticket || ''
+  );
+
+  if(sourceChange && targetChange && sourceChange===targetChange) return true;
+
+  const sourceId=normalizeMaterialJoinKey(source?.id_cliente || '');
+  const targetId=normalizeMaterialJoinKey(target?.id_cliente || '');
+
+  if(sourceId && targetId && sourceId===targetId) return true;
+
+  const sourceClient=normalizeMaterialJoinKey(
+    source?.cliente || source?.nombre_cliente || ''
+  );
+  const targetClient=normalizeMaterialJoinKey(
+    target?.cliente || target?.nombre_cliente || ''
+  );
+
+  return Boolean(
+    sourceClient &&
+    targetClient &&
+    sourceClient===targetClient
+  );
+}
+
+function materialReportClosestRecord(records,materialRecords,dateGetter){
+  const referenceDates=(materialRecords||[])
+    .map(r=>asDate(materialReportRecordDate(r)))
+    .filter(Boolean);
+
+  const reference=referenceDates.length
+    ? referenceDates.sort((a,b)=>a-b)[0]
+    : null;
+
+  const candidates=(records||[])
+    .map(r=>({record:r,date:asDate(dateGetter(r))}))
+    .filter(x=>x.date);
+
+  if(!candidates.length) return null;
+  if(!reference){
+    return candidates.sort((a,b)=>b.date-a.date)[0].record;
+  }
+
+  return candidates.sort(
+    (a,b)=>Math.abs(a.date-reference)-Math.abs(b.date-reference)
+  )[0].record;
+}
+
+function resolveMaterialReportActivityDate(group){
+  const records=group?.materialLines || [];
+  if(!records.length) return '';
+
+  const activityType=materialReportActivityType(records);
+  const sample=records[0];
+
+  if(activityType==='MTO_CORRECTIVO' || activityType==='MTO_PREVENTIVO'){
+    const ticketMatches=(fallas||[]).filter(ticket=>
+      records.some(record=>materialReportSameClient(record,ticket))
+    );
+
+    const ticket=materialReportClosestRecord(
+      ticketMatches,
+      records,
+      materialReportMaintenanceDate
+    );
+
+    if(ticket){
+      return materialReportMaintenanceDate(ticket);
+    }
+  }
+
+  const installationMatches=(instalaciones||[]).filter(inst=>
+    records.some(record=>materialReportSameClient(record,inst))
+  );
+
+  const installation=materialReportClosestRecord(
+    installationMatches,
+    records,
+    materialReportInstallationDate
+  );
+
+  if(installation){
+    return materialReportInstallationDate(installation);
+  }
+
+  // Último respaldo: usar la fecha del movimiento, para no dejar la celda vacía.
+  return materialReportRecordDate(sample);
+}
+
 function buildMaterialClientReportRows(materialRows, installedRows){
   const groups=new Map();
 
@@ -1664,42 +2077,57 @@ function buildMaterialClientReportRows(materialRows, installedRows){
     return groups.get(key);
   }
 
-  installedRows.forEach(inst=>{
-    const idCambio=String(inst.id_cambio || '').trim();
-    const idCliente=String(inst.id_cliente || '').trim();
-    const key=idCambio ? `C:${normalizeMaterialJoinKey(idCambio)}` :
-      idCliente ? `I:${normalizeMaterialJoinKey(idCliente)}` :
-      `N:${normalizeMaterialJoinKey(inst.cliente)}`;
-    ensureGroup(key,{
-      cliente:inst.cliente || 'SIN CLIENTE',
-      id_cliente:idCliente,
-      id_cambio:idCambio,
-      fecha_instalacion:closeDate(inst) || inst.fecha_ingreso || ''
-    });
-  });
-
+  // Primero agrupar los movimientos. Esto evita depender de que la instalación
+  // haya quedado dentro del mismo filtro de fechas del informe.
   materialRows.forEach(r=>{
     const idCambio=String(r.id_cambio || '').trim();
     const idCliente=String(r.id_cliente || '').trim();
     const key=idCambio ? `C:${normalizeMaterialJoinKey(idCambio)}` :
       idCliente ? `I:${normalizeMaterialJoinKey(idCliente)}` :
       `N:${normalizeMaterialJoinKey(materialClient(r))}`;
+
     const group=ensureGroup(key,{
       cliente:materialClient(r),
       id_cliente:idCliente,
       id_cambio:idCambio,
       fecha_instalacion:''
     });
-    if(!group.cliente || group.cliente==='SIN CLIENTE') group.cliente=materialClient(r);
+
+    if(!group.cliente || group.cliente==='SIN CLIENTE'){
+      group.cliente=materialClient(r);
+    }
     if(!group.id_cliente) group.id_cliente=idCliente;
     if(!group.id_cambio) group.id_cambio=idCambio;
+
     group.materialLines.push(r);
+
     if(materialReported(r)){
       group.reportedLines++;
-      String(r.cod_reserva || '').split(/[,;\s]+/).filter(Boolean).forEach(x=>group.reservationCodes.add(x));
+      String(r.cod_reserva || '')
+        .split(/[,;\s]+/)
+        .filter(Boolean)
+        .forEach(x=>group.reservationCodes.add(x));
     }else{
       group.pendingLines++;
     }
+  });
+
+  // Complementar cliente e identificadores con la tabla de instalaciones,
+  // aunque el registro no esté dentro del mismo filtro temporal.
+  groups.forEach(group=>{
+    const match=(instalaciones||[]).find(inst=>
+      group.materialLines.some(record=>materialReportSameClient(record,inst))
+    );
+
+    if(match){
+      if(!group.cliente || group.cliente==='SIN CLIENTE'){
+        group.cliente=match.cliente || group.cliente;
+      }
+      if(!group.id_cliente) group.id_cliente=match.id_cliente || '';
+      if(!group.id_cambio) group.id_cambio=match.id_cambio || '';
+    }
+
+    group.fecha_instalacion=resolveMaterialReportActivityDate(group);
   });
 
   return [...groups.values()]
@@ -1710,16 +2138,29 @@ function buildMaterialClientReportRows(materialRows, installedRows){
       totalLines:x.materialLines.length,
       materialSummary:(()=>{
         const grouped=new Map();
+
         x.materialLines.forEach(r=>{
           const key=`${r.codigo_sap || 'S/SAP'}|${materialDescription(r)}|${materialUnit(r)}`;
-          if(!grouped.has(key)) grouped.set(key,{sap:r.codigo_sap || 'S/SAP',desc:materialDescription(r),unit:materialUnit(r),qty:0});
+
+          if(!grouped.has(key)){
+            grouped.set(key,{
+              sap:r.codigo_sap || 'S/SAP',
+              desc:materialDescription(r),
+              unit:materialUnit(r),
+              qty:0
+            });
+          }
+
           grouped.get(key).qty+=materialQty(r);
         });
+
         return [...grouped.values()];
       })()
     }))
     .sort((a,b)=>{
-      if(a.status!==b.status) return a.status==='PENDIENTE SAP'?-1:1;
+      if(a.status!==b.status){
+        return a.status==='PENDIENTE SAP'?-1:1;
+      }
       return a.cliente.localeCompare(b.cliente,'es');
     });
 }
@@ -1766,7 +2207,7 @@ function materialReportTableClients(rows){
     <th style="width:14%">Cliente</th>
     <th style="width:8%">ID cliente</th>
     <th style="width:8%">ID cambio</th>
-    <th style="width:8%">Fecha instalación</th>
+    <th style="width:8%">Fecha actividad</th>
     <th style="width:11%">Tipo de consumo</th>
     <th style="width:10%">Estado SAP</th>
     <th style="width:12%">Códigos de reserva</th>
@@ -1882,6 +2323,22 @@ function buildMaterialManagementReport(){
     </div>
   </div>
 
+  <div class="mgr-summary-page averages">
+    <div class="mgr-band">
+      <span>Promedio mensual de materiales estratégicos</span>
+      <span>Meses con consumo</span>
+    </div>
+
+    <div class="mgr-chart-card full mgr-average-report-card">
+      <h3>Promedio mensual calculado únicamente con los meses en los que cada material registró consumo</h3>
+      <div class="mgr-chart-wrap mgr-average-report-chart">
+        <canvas id="mgrMaterialAverageChart"></canvas>
+      </div>
+    </div>
+
+    <div id="mgrMaterialAverageTable" class="mgr-table-wrap"></div>
+  </div>
+
   <div class="mgr-table-section">
     <div class="mgr-band"><span>Clientes y trazabilidad SAP</span><span>${clientRows.length} cliente(s)</span></div>
     <div class="mgr-table-wrap">${materialReportTableClients(clientRows)}</div>
@@ -1903,7 +2360,28 @@ function buildMaterialManagementReport(){
     </div>
   </div>`;
 
-  return {host,materialRows,clientRows,materialSummary,reportedClients,pendingClients};
+  const materialAverages=calculateMaterialMonthlyAverages(materialRows);
+
+  const averageTable=document.getElementById('mgrMaterialAverageTable');
+  if(averageTable){
+    averageTable.innerHTML=`<table class="mgr-table"><thead><tr>
+      <th>Código SAP</th>
+      <th>Material</th>
+      <th>Total consumido</th>
+      <th>Meses con consumo</th>
+      <th>Promedio mensual</th>
+      <th>Unidad</th>
+    </tr></thead><tbody>${materialAverages.map(item=>`<tr>
+      <td><b>${materialReportEscape(item.sap)}</b></td>
+      <td>${materialReportEscape(item.name)}</td>
+      <td>${item.total.toLocaleString('es-CO',{maximumFractionDigits:2})}</td>
+      <td>${item.activeMonths}</td>
+      <td><b>${item.average.toLocaleString('es-CO',{maximumFractionDigits:2})}</b></td>
+      <td>${materialReportEscape(item.unit)}</td>
+    </tr>`).join('')}</tbody></table>`;
+  }
+
+  return {host,materialRows,clientRows,materialSummary,reportedClients,pendingClients,materialAverages};
 }
 
 const materialReportDataLabelsPlugin={
@@ -2021,7 +2499,51 @@ function createMaterialManagementReportCharts(data){
     options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{position:'bottom',labels:{color:'#334155',font:{size:8}}}}}
   });
 
-  return [chartClients,chartMonthly,chartTop,chartPendingClients,chartTypes];
+
+  const chartMaterialAverage=new Chart(document.getElementById('mgrMaterialAverageChart'),{
+    type:'bar',
+    plugins:[materialReportDataLabelsPlugin],
+    data:{
+      labels:data.materialAverages.map(x=>`${x.sap} - ${x.name}`),
+      datasets:[{
+        label:'Promedio mensual',
+        data:data.materialAverages.map(x=>Number(x.average.toFixed(2))),
+        backgroundColor:'#F59E0B',
+        borderColor:'#D97706',
+        borderWidth:1
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      animation:false,
+      indexAxis:'y',
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label(ctx){
+              const item=data.materialAverages[ctx.dataIndex];
+              return `${item.average.toLocaleString('es-CO',{maximumFractionDigits:2})} ${item.unit}/mes activo`;
+            }
+          }
+        }
+      },
+      scales:{
+        x:{
+          beginAtZero:true,
+          ticks:{color:'#334155',font:{size:8}},
+          grid:{color:'rgba(100,116,139,.15)'}
+        },
+        y:{
+          ticks:{color:'#334155',font:{size:8}},
+          grid:{display:false}
+        }
+      }
+    }
+  });
+
+  return [chartClients,chartMonthly,chartTop,chartPendingClients,chartTypes,chartMaterialAverage];
 }
 
 function excelSafeText(value){
@@ -2253,7 +2775,7 @@ async function generarInformeGerencialMaterialesExcel(data,period,chartIds){
     {header:'Cliente',key:'cliente',width:30},
     {header:'ID cliente',key:'id_cliente',width:16},
     {header:'ID cambio',key:'id_cambio',width:16},
-    {header:'Fecha instalación',key:'fecha',width:17},
+    {header:'Fecha actividad',key:'fecha',width:17},
     {header:'Tipo de consumo',key:'tipo',width:22},
     {header:'Estado SAP',key:'estado',width:19},
     {header:'Códigos de reserva',key:'reservas',width:26},
@@ -2486,10 +3008,130 @@ function nativeExcelWriteMatrix(xmlDoc,sheetData,startRow,startCol,matrix,types=
     });
   });
 }
+
+async function nativeExcelEnsureWrapTopStyle(zip){
+  const stylesPath='xl/styles.xml';
+  const entry=zip.file(stylesPath);
+
+  if(!entry){
+    throw new Error('La plantilla Excel no contiene xl/styles.xml.');
+  }
+
+  const parser=new DOMParser();
+  const xmlDoc=parser.parseFromString(
+    await entry.async('string'),
+    'application/xml'
+  );
+
+  const parseError=xmlDoc.getElementsByTagName('parsererror')[0];
+  if(parseError){
+    throw new Error('No se pudo interpretar styles.xml de la plantilla.');
+  }
+
+  const cellXfs=xmlDoc.getElementsByTagNameNS('*','cellXfs')[0];
+  if(!cellXfs){
+    throw new Error('La plantilla Excel no contiene la sección cellXfs.');
+  }
+
+  const xfs=Array.from(cellXfs.children).filter(x=>x.localName==='xf');
+
+  // Reutilizar un estilo equivalente si ya existe.
+  const existingIndex=xfs.findIndex(xf=>{
+    const alignment=Array.from(xf.children).find(x=>x.localName==='alignment');
+    return alignment &&
+      alignment.getAttribute('wrapText')==='1' &&
+      alignment.getAttribute('vertical')==='top' &&
+      alignment.getAttribute('horizontal')==='left';
+  });
+
+  if(existingIndex>=0){
+    return existingIndex;
+  }
+
+  const ns=cellXfs.namespaceURI ||
+    'http://schemas.openxmlformats.org/spreadsheetml/2006/main';
+
+  const base=xfs[0];
+  const xf=base
+    ? base.cloneNode(false)
+    : xmlDoc.createElementNS(ns,'xf');
+
+  if(!xf.hasAttribute('numFmtId')) xf.setAttribute('numFmtId','0');
+  if(!xf.hasAttribute('fontId')) xf.setAttribute('fontId','0');
+  if(!xf.hasAttribute('fillId')) xf.setAttribute('fillId','0');
+  if(!xf.hasAttribute('borderId')) xf.setAttribute('borderId','0');
+  if(!xf.hasAttribute('xfId')) xf.setAttribute('xfId','0');
+
+  xf.setAttribute('applyAlignment','1');
+
+  const alignment=xmlDoc.createElementNS(ns,'alignment');
+  alignment.setAttribute('wrapText','1');
+  alignment.setAttribute('vertical','top');
+  alignment.setAttribute('horizontal','left');
+
+  xf.appendChild(alignment);
+  cellXfs.appendChild(xf);
+  cellXfs.setAttribute('count',String(xfs.length+1));
+
+  zip.file(stylesPath,new XMLSerializer().serializeToString(xmlDoc));
+
+  return xfs.length;
+}
+
+function nativeExcelEstimateWrappedLines(text,charactersPerLine=62){
+  const value=String(text ?? '');
+  if(!value) return 1;
+
+  return value.split('\n').reduce((total,line)=>{
+    const normalized=line.trim();
+    return total + Math.max(
+      1,
+      Math.ceil(normalized.length / charactersPerLine)
+    );
+  },0);
+}
+
+function nativeExcelApplyClientesSapLayout(
+  xmlDoc,
+  sheetData,
+  rows,
+  wrapStyleIndex
+){
+  rows.forEach((values,index)=>{
+    const rowNumber=index+2;
+    const row=nativeExcelEnsureRow(xmlDoc,sheetData,rowNumber);
+    const summaryText=String(values[7] ?? '');
+
+    // Aplicar el estilo con ajuste de texto a la columna H.
+    const summaryCell=nativeExcelEnsureCell(
+      xmlDoc,
+      row,
+      `H${rowNumber}`
+    );
+    summaryCell.setAttribute('s',String(wrapStyleIndex));
+
+    // Calcular la altura estimada según los saltos de línea y el ancho
+    // aproximado de la columna H.
+    const lineCount=nativeExcelEstimateWrappedLines(summaryText,62);
+    const rowHeight=Math.min(
+      409,
+      Math.max(22, lineCount*15+4)
+    );
+
+    row.setAttribute('ht',rowHeight.toFixed(2));
+    row.setAttribute('customHeight','1');
+  });
+}
+
 async function nativeExcelGetSheetMap(zip){
   const parser=new DOMParser();
-  const workbookXml=parser.parseFromString(await zip.file('xl/workbook.xml').async('string'),'application/xml');
-  const relsXml=parser.parseFromString(await zip.file('xl/_rels/workbook.xml.rels').async('string'),'application/xml');
+  const workbookEntry=zip.file('xl/workbook.xml');
+  const relsEntry=zip.file('xl/_rels/workbook.xml.rels');
+  if(!workbookEntry || !relsEntry){
+    throw new Error('La plantilla no tiene una estructura XLSX válida. Faltan workbook.xml o sus relaciones.');
+  }
+  const workbookXml=parser.parseFromString(await workbookEntry.async('string'),'application/xml');
+  const relsXml=parser.parseFromString(await relsEntry.async('string'),'application/xml');
   const relMap=new Map(
     Array.from(relsXml.getElementsByTagNameNS('*','Relationship')).map(r=>[
       r.getAttribute('Id'),
@@ -2500,14 +3142,38 @@ async function nativeExcelGetSheetMap(zip){
   Array.from(workbookXml.getElementsByTagNameNS('*','sheet')).forEach(sheet=>{
     const rid=sheet.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
     let target=relMap.get(rid) || '';
-    if(!target.startsWith('xl/')) target='xl/'+target.replace(/^\/+/,'');
+
+    // Los archivos XLSX pueden guardar el destino como:
+    // /xl/worksheets/sheet1.xml, xl/worksheets/sheet1.xml o worksheets/sheet1.xml.
+    // Se normaliza para evitar rutas inválidas como xl/xl/worksheets/sheet1.xml.
+    target=target.replace(/^\/+/, '');
+    if(target.startsWith('../')) target=target.replace(/^\.\.\//, '');
+    if(!target.startsWith('xl/')) target='xl/'+target;
+
     map.set(sheet.getAttribute('name'),target);
   });
   return map;
 }
 async function nativeExcelOpenSheet(zip,path){
+  if(!path){
+    throw new Error('No se encontró la hoja solicitada dentro de la plantilla Excel.');
+  }
+
+  const zipEntry=zip.file(path);
+  if(!zipEntry){
+    const disponibles=Object.keys(zip.files)
+      .filter(x=>x.startsWith('xl/worksheets/'))
+      .join(', ');
+    throw new Error(`No se encontró ${path} dentro de la plantilla. Hojas disponibles: ${disponibles}`);
+  }
+
   const parser=new DOMParser();
-  const xmlDoc=parser.parseFromString(await zip.file(path).async('string'),'application/xml');
+  const xmlDoc=parser.parseFromString(await zipEntry.async('string'),'application/xml');
+  const parseError=xmlDoc.getElementsByTagName('parsererror')[0];
+  if(parseError){
+    throw new Error(`No se pudo interpretar la hoja ${path}.`);
+  }
+
   const sheetData=xmlDoc.getElementsByTagNameNS('*','sheetData')[0];
   if(!sheetData) throw new Error(`No se encontró sheetData en ${path}`);
   return {xmlDoc,sheetData};
@@ -2520,8 +3186,8 @@ async function generarInformeGerencialMaterialesExcelNativo(data,period){
     throw new Error('No se pudo cargar JSZip para generar el Excel con gráficos nativos.');
   }
 
-  const plantillaRelativa='./Informe_Gerencial_Materiales.xlsx';
-  const plantillaGitHubPages='https://cacg1022.github.io/LibertyOyM/seguimiento/Informe_Gerencial_Materiales.xlsx';
+  const plantillaRelativa='./Informe_Gerencial_Materiales_actualizado.xlsx';
+  const plantillaGitHubPages='https://cacg1022.github.io/LibertyOyM/seguimiento/Informe_Gerencial_Materiales_actualizado.xlsx';
 
   const urlsPlantilla = window.location.protocol === 'file:'
     ? [plantillaGitHubPages]
@@ -2558,7 +3224,7 @@ async function generarInformeGerencialMaterialesExcelNativo(data,period){
 
   if(!response){
     throw new Error(
-      'No se pudo cargar la plantilla Informe_Gerencial_Materiales.xlsx. ' +
+      'No se pudo cargar la plantilla Informe_Gerencial_Materiales_actualizado.xlsx. ' +
       'Se intentó desde GitHub Pages y desde la misma carpeta del dashboard. ' +
       'Verifica que GitHub Pages esté publicado y que la URL sea accesible. ' +
       (ultimaError?.message ? `Detalle: ${ultimaError.message}` : '')
@@ -2567,6 +3233,8 @@ async function generarInformeGerencialMaterialesExcelNativo(data,period){
 
   const zip=await JSZip.loadAsync(await response.arrayBuffer());
   const sheetMap=await nativeExcelGetSheetMap(zip);
+  const clientesSapWrapStyleIndex=
+    await nativeExcelEnsureWrapTopStyle(zip);
   const reportedRows=data.materialRows.filter(materialReported);
   const pendingRows=data.materialRows.filter(r=>!materialReported(r));
   const compliance=data.clientRows.length?data.reportedClients.length/data.clientRows.length:0;
@@ -2647,18 +3315,80 @@ async function generarInformeGerencialMaterialesExcelNativo(data,period){
     nativeExcelSaveSheet(zip,path,xmlDoc);
   }
 
+
+  // PROMEDIOS MENSUALES: alimenta la gráfica nativa de Excel.
+  {
+    const path=sheetMap.get('Promedios Mensuales');
+    if(!path){
+      throw new Error(
+        'La plantilla no contiene la hoja "Promedios Mensuales". ' +
+        'Usa Informe_Gerencial_Materiales_actualizado.xlsx.'
+      );
+    }
+
+    const {xmlDoc,sheetData}=await nativeExcelOpenSheet(zip,path);
+    const averages=data.materialAverages || calculateMaterialMonthlyAverages(data.materialRows);
+
+    nativeExcelWriteMatrix(
+      xmlDoc,
+      sheetData,
+      5,
+      1,
+      averages.map(item=>[
+        item.sap,
+        item.name,
+        item.total,
+        item.activeMonths,
+        Number(item.average.toFixed(2)),
+        item.unit
+      ]),
+      ['text','text','number','number','number','text']
+    );
+
+    nativeExcelSaveSheet(zip,path,xmlDoc);
+  }
+
   async function writeDataSheet(name,headers,rows,types){
     const path=sheetMap.get(name);
     const {xmlDoc,sheetData}=await nativeExcelOpenSheet(zip,path);
+
     nativeExcelClearRowsFrom(sheetData,2);
-    nativeExcelWriteMatrix(xmlDoc,sheetData,1,1,[headers],headers.map(()=> 'text'));
-    if(rows.length) nativeExcelWriteMatrix(xmlDoc,sheetData,2,1,rows,types);
+
+    nativeExcelWriteMatrix(
+      xmlDoc,
+      sheetData,
+      1,
+      1,
+      [headers],
+      headers.map(()=> 'text')
+    );
+
+    if(rows.length){
+      nativeExcelWriteMatrix(
+        xmlDoc,
+        sheetData,
+        2,
+        1,
+        rows,
+        types
+      );
+    }
+
+    if(name==='Clientes SAP' && rows.length){
+      nativeExcelApplyClientesSapLayout(
+        xmlDoc,
+        sheetData,
+        rows,
+        clientesSapWrapStyleIndex
+      );
+    }
+
     nativeExcelSaveSheet(zip,path,xmlDoc);
   }
 
   await writeDataSheet(
     'Clientes SAP',
-    ['Cliente','ID cliente','ID cambio','Fecha instalación','Tipo de consumo','Estado SAP','Códigos de reserva','Resumen de materiales'],
+    ['Cliente','ID cliente','ID cambio','Fecha actividad','Tipo de consumo','Estado SAP','Códigos de reserva','Resumen de materiales'],
     data.clientRows.map(x=>[
       x.cliente,
       x.id_cliente,
@@ -2743,84 +3473,60 @@ async function generarInformeGerencialMaterialesExcelNativo(data,period){
 async function generarInformeGerencialMaterialesPDF(){
   const button=document.getElementById('btnMaterialManagementPdf');
   const originalText=button?.innerHTML || '';
-  let reportCharts=[];
 
   try{
-    if(typeof html2pdf==='undefined'){
-      throw new Error('No se pudo cargar la librería para generar PDF. Verifica la conexión a internet.');
+    if(typeof JSZip==='undefined'){
+      throw new Error('No se pudo cargar JSZip para generar el Excel.');
     }
-    if(typeof ExcelJS==='undefined'){
-      throw new Error('No se pudo cargar la librería para generar Excel. Verifica la conexión a internet.');
-    }
+
     if(!materiales.length){
       throw new Error('No hay movimientos de materiales cargados en el dashboard.');
     }
 
     if(button){
       button.disabled=true;
-      button.innerHTML='⏳ Generando PDF y Excel...';
+      button.innerHTML='⏳ Generando Excel...';
     }
 
     const data=buildMaterialManagementReport();
+
     if(!data.materialRows.length){
       throw new Error('No hay consumos de materiales para los filtros seleccionados.');
     }
 
-    reportCharts=createMaterialManagementReportCharts(data);
-    await new Promise(resolve=>setTimeout(resolve,650));
-
     const periodLabel=materialReportPeriodLabel();
-    const periodSafe=periodLabel.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ_-]+/g,'_');
-    const dateStamp=new Date().toISOString().slice(0,10);
 
-    // Generar primero el Excel, reutilizando las mismas gráficas y datos del PDF.
-    await generarInformeGerencialMaterialesExcelNativo(data,periodLabel);
-
-    // Después generar el PDF ejecutivo.
-    const element=document.getElementById('materialManagementReport');
-    const pdfFilename=`Informe_gerencial_materiales_${periodSafe}_${dateStamp}.pdf`;
-
-    await html2pdf().set({
-      margin:[4,7,7,7],
-      filename:pdfFilename,
-      image:{type:'jpeg',quality:.98},
-      html2canvas:{
-        scale:1.35,
-        useCORS:true,
-        backgroundColor:'#ffffff',
-        logging:false,
-        scrollX:0,
-        scrollY:0,
-        windowWidth:1080,
-        width:1080,
-        x:0,
-        y:0
-      },
-      jsPDF:{unit:'mm',format:'legal',orientation:'landscape'},
-      pagebreak:{
-        mode:['css','legacy'],
-        before:'.mgr-page-break',
-        avoid:['.mgr-kpi','.mgr-chart-card','.mgr-table thead']
-      }
-    }).from(element).save();
+    await generarInformeGerencialMaterialesExcelNativo(
+      data,
+      periodLabel
+    );
 
     if(button){
-      button.innerHTML='✅ PDF y Excel generados';
+      button.innerHTML='✅ Excel generado';
       setTimeout(()=>{
-        button.innerHTML=originalText || '📄 Generar PDF + Excel con gráficas nativas';
+        button.innerHTML=originalText || '📊 Generar informe Excel';
       },1800);
     }
+
   }catch(error){
-    console.error('Error generando informe gerencial de materiales:',error);
-    alert(`No se pudieron generar los informes:\n${error.message || error}`);
+    console.error('Error generando informe Excel de materiales:',error);
+
+    alert(
+      `No se pudo generar el informe Excel:\n${error.message || error}`
+    );
+
   }finally{
-    reportCharts.forEach(c=>{try{c.destroy();}catch(e){}});
     const host=document.getElementById('materialManagementReportHost');
-    if(host) host.innerHTML='';
+
+    if(host){
+      host.innerHTML='';
+    }
+
     if(button){
       button.disabled=false;
+
       if(!button.innerHTML.includes('✅')){
-        button.innerHTML=originalText || '📄 Generar PDF + Excel con gráficas nativas';
+        button.innerHTML=originalText || '📊 Generar informe Excel';
       }
     }
   }
