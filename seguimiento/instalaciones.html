@@ -1923,6 +1923,15 @@ function obtenerValorFechaDashboard(row, campos){
   }
   return '';
 }
+function obtenerFechaExtremaDashboard(valores, tipo='min'){
+  const fechasValidas = (valores || [])
+    .filter(Boolean)
+    .map(v => ({ valor: v, fecha: new Date(String(v) + 'T00:00:00') }))
+    .filter(x => !isNaN(x.fecha));
+  if(!fechasValidas.length) return '';
+  fechasValidas.sort((a,b) => a.fecha - b.fecha);
+  return tipo === 'max' ? fechasValidas[fechasValidas.length - 1].valor : fechasValidas[0].valor;
+}
 function descargarReporteDashboard(){
   if(typeof XLSX === 'undefined'){
     alert('No se pudo cargar la librería XLSX. Verifica la conexión a internet e intenta nuevamente.');
@@ -1962,8 +1971,16 @@ function descargarReporteDashboard(){
   const data = [headers];
   rows.forEach(r => {
     const fechaIngreso = obtenerValorFechaDashboard(r, ['fecha_ingreso']);
-    const fechaRadicacion = obtenerValorFechaDashboard(r, ['fecha_radicacion_emsa']);
-    const fechaRespuestaRadicacion = obtenerValorFechaDashboard(r, ['fecha_respuesta_emsa']);
+    // Para el dashboard se toma la radicación más antigua entre EMSA y Telefónica.
+    const fechaRadicacion = obtenerFechaExtremaDashboard([
+      r.fecha_radicacion_emsa,
+      r.fecha_radicacion_telefonica
+    ], 'min');
+    // Para el dashboard se toma la respuesta más reciente entre EMSA y Telefónica.
+    const fechaRespuestaRadicacion = obtenerFechaExtremaDashboard([
+      r.fecha_respuesta_emsa,
+      r.fecha_respuesta_telefonica
+    ], 'max');
     const fechaSolicitudPermisos = obtenerValorFechaDashboard(r, ['fecha_solicitud_permisos']);
     const fechaAprobacionPermisos = obtenerValorFechaDashboard(r, ['fecha_aprobacion_permisos']);
     const fechaEntrega = obtenerValorFechaDashboard(r, ['fecha_entrega']);
@@ -2584,6 +2601,7 @@ loadInstalaciones();
 
 </body>
 </html>
+
 
 
 
