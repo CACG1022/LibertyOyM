@@ -24,7 +24,7 @@
     .small-btn{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:#fff;cursor:pointer;font-weight:700}.copy-msg{font-size:12px;color:#86efac;margin-left:10px;align-self:center}
     .main{padding:26px 28px}
     .header h1{margin:0 0 6px;font-size:28px}.header p{margin:0 0 20px;color:var(--muted)}
-    .toolbar{display:grid;grid-template-columns:minmax(280px,1fr) 190px 190px 170px auto auto;gap:12px;margin-bottom:18px;align-items:center}
+    .toolbar{display:grid;grid-template-columns:minmax(280px,1fr) 190px 190px 170px auto 150px auto auto auto;gap:12px;margin-bottom:18px;align-items:center}
     .control{min-width:0;width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}
     .summary{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:12px;margin-bottom:18px}
     .stat{border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));padding:16px;box-shadow:var(--shadow);min-height:110px;cursor:pointer;transition:.15s}
@@ -51,7 +51,7 @@
     .span-2{grid-column:span 2}.span-3{grid-column:span 3}.span-4{grid-column:1/-1}.muted-note{font-size:12px;color:var(--muted)}
     .section-title{margin:18px 0 10px;font-size:16px;font-weight:800;color:#dbeafe;padding:10px 12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.03)}
     .materials-box{margin-top:12px;padding:14px;border-radius:16px;border:1px solid rgba(96,165,250,.18);background:rgba(37,99,235,.08)}
-    .empty{padding:26px;text-align:center;color:var(--muted);display:none}
+    .empty{padding:26px;text-align:center;color:var(--muted);display:none}.import-input{display:none}.import-msg{margin:-6px 0 16px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.03);font-size:13px;display:none}.import-msg.show{display:block}.import-msg.ok{color:#bbf7d0}.import-msg.warn{color:#fde68a}.import-msg.err{color:#fecaca}
     @media (max-width:1300px){.summary{grid-template-columns:repeat(3,1fr)}.toolbar{grid-template-columns:1fr 1fr}.grid{grid-template-columns:repeat(2,1fr)}}
     @media (max-width:900px){.page{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.summary,.toolbar,.grid{grid-template-columns:1fr}}
   </style>
@@ -77,6 +77,7 @@
       <div class="grid">
         <div class="field"><label>Tipo origen</label><input name="tipo_origen" readonly></div>
         <div class="field"><label>ID Cambio</label><input name="id_cambio" readonly></div>
+        <div class="field"><label>PO</label><input name="po"></div>
         <div class="field"><label>ID Tarea</label><input name="id_tarea" readonly></div>
         <div class="field"><label>ID Cliente</label><input name="id_cliente" readonly></div>
         <div class="field span-2"><label>Cliente</label><input name="cliente" readonly></div>
@@ -88,9 +89,9 @@
 
         <div class="field"><label>Fecha liquidación</label><input type="date" name="fecha_liquidacion"></div>
         <div class="field"><label>Responsable liquidación</label><input name="responsable_liquidacion"></div>
-        <div class="field"><label>Valor liquidado Planta externa</label><input type="number" step="0.01" min="0" name="valor_liquidado_pe"></div>
+        <div class="field"><label>Valor liquidado Planta externa</label><input type="text" inputmode="decimal" name="valor_liquidado_pe" placeholder="$ 0,00" onblur="formatCurrencyField(this)" onfocus="this.select()"></div>
         <div class="field"><label>Número acta Planta externa</label><input name="numero_acta_pe"></div>
-        <div class="field"><label>Valor liquidado Planta Interna</label><input type="number" step="0.01" min="0" name="valor_liquidado_pi"></div>
+        <div class="field"><label>Valor liquidado Planta Interna</label><input type="text" inputmode="decimal" name="valor_liquidado_pi" placeholder="$ 0,00" onblur="formatCurrencyField(this)" onfocus="this.select()"></div>
         <div class="field"><label>Número acta Planta Interna</label><input name="numero_acta_pi"></div>
         <div class="field"><label>Número factura</label><input name="numero_factura"></div>
         <div class="field span-3"><label>Observaciones</label><input name="observaciones"></div>
@@ -147,14 +148,25 @@ function renderShell(){
         <select id="filterTipo" class="control"><option value="">Todos los orígenes</option><option>INSTALACION</option><option>FACTIBILIDAD</option></select>
         <select id="filterEstado" class="control"><option value="">Todos los estados</option><option>PENDIENTE</option><option>EN_REVISION</option><option>LIQUIDADA</option><option>RECHAZADA</option><option>NO_APLICA</option><option>NO APARECE EN SAR</option></select>
         <select id="sortBy" class="control"><option value="fecha_desc">Más recientes</option><option value="fecha_asc">Más antiguas</option><option value="cliente_asc">Cliente A-Z</option><option value="estado_asc">Estado</option></select>
+        <button class="btn ghost" onclick="document.getElementById('importPlantillaInput').click()">Cargar plantilla</button>
+        <input id="importPlantillaInput" class="import-input" type="file" accept=".xlsx,.xls,.xlsm" onchange="importarPlantillaLiquidaciones(event)">
+        <select id="emailMonth" class="control" title="Mes para el correo">
+          <option value="1">ENERO</option><option value="2">FEBRERO</option><option value="3">MARZO</option>
+          <option value="4">ABRIL</option><option value="5">MAYO</option><option value="6">JUNIO</option>
+          <option value="7">JULIO</option><option value="8">AGOSTO</option><option value="9">SEPTIEMBRE</option>
+          <option value="10">OCTUBRE</option><option value="11">NOVIEMBRE</option><option value="12">DICIEMBRE</option>
+        </select>
+        <button class="btn ghost" onclick="redactarCorreoOutlookWeb()">Redactar correo Outlook Web</button>
         <button class="btn ghost" onclick="exportLiquidacionesExcel()">Exportar Excel</button>
         <button class="btn ghost" onclick="loadAll()">Actualizar</button>
       </div>
+      <div id="importPlantillaMsg" class="import-msg"></div>
       <div id="summary" class="summary"></div>
       <section class="card"><div class="table-wrap"><table><thead><tr>
         <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('origen')">Origen <span id="sort_origen" class="sort-icon"></span></div><select id="filter_origen" onchange="setColumnFilter('origen', this.value)"><option value="">Todos</option></select></div></th>
         <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('fecha')">Fecha <span id="sort_fecha" class="sort-icon"></span></div><select id="filter_fecha" onchange="setColumnFilter('fecha', this.value)"><option value="">Todas</option></select></div></th>
         <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('id_cambio')">ID Cambio <span id="sort_id_cambio" class="sort-icon"></span></div><select id="filter_id_cambio" onchange="setColumnFilter('id_cambio', this.value)"><option value="">Todos</option></select></div></th>
+        <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('po')">PO <span id="sort_po" class="sort-icon"></span></div><select id="filter_po" onchange="setColumnFilter('po', this.value)"><option value="">Todas</option></select></div></th>
         <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('id_tarea')">ID Tarea <span id="sort_id_tarea" class="sort-icon"></span></div><select id="filter_id_tarea" onchange="setColumnFilter('id_tarea', this.value)"><option value="">Todos</option></select></div></th>
         <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('id_cliente')">ID Cliente <span id="sort_id_cliente" class="sort-icon"></span></div><select id="filter_id_cliente" onchange="setColumnFilter('id_cliente', this.value)"><option value="">Todos</option></select></div></th>
         <th><div class="th-tools"><div class="th-sort" onclick="sortColumn('cliente')">Cliente <span id="sort_cliente" class="sort-icon"></span></div><select id="filter_cliente" onchange="setColumnFilter('cliente', this.value)"><option value="">Todos</option></select></div></th>
@@ -189,8 +201,17 @@ function restoreSidebarState(){
 renderShell();
 restoreSidebarState();
 
+function initEmailMonth(){
+  const el=document.getElementById('emailMonth');
+  if(!el) return;
+  const hoy=new Date();
+  const mesAnterior=hoy.getMonth()===0 ? 12 : hoy.getMonth();
+  el.value=String(mesAnterior);
+}
+initEmailMonth();
+
 let clientRef = null, instalaciones = [], factibilidades = [], liquidaciones = [], rows = [], activeKpi = null;
-let columnFilters = {origen:'', fecha:'', id_cambio:'', id_tarea:'', id_cliente:'', cliente:'', estado:'', acta_pe:'', acta_pi:'', fo_total:'', acciones:''};
+let columnFilters = {origen:'', fecha:'', id_cambio:'', po:'', id_tarea:'', id_cliente:'', cliente:'', estado:'', acta_pe:'', acta_pi:'', fo_total:'', acciones:''};
 let sortField = 'fecha';
 let sortDir = 'desc';
 function esc(v){ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;"); }
@@ -200,6 +221,18 @@ function badgeEstado(v){ return `<span class="badge estado-${esc(v)}">${esc(v ||
 function badgeTipo(v){ return `<span class="badge tipo-${esc(v)}">${esc(v || '')}</span>`; }
 async function resolveClient(){ if(clientRef) return clientRef; if(typeof getClient === 'function'){ clientRef = await getClient(); return clientRef; } const url = localStorage.getItem('sb_url'); const key = localStorage.getItem('sb_key'); if(!url || !key) throw new Error('No se encontró configuración de Supabase'); clientRef = window.supabase.createClient(url, key); return clientRef; }
 function normalizeNum(v){ const n = parseFloat(String(v ?? '').replace(',','.')); return Number.isFinite(n) ? n : 0; }
+function formatCOP(v){
+  if(v===null || v===undefined || String(v).trim()==='') return '';
+  const n = typeof v==='number' ? v : parseMoneyExcel(v);
+  if(n===null || !Number.isFinite(Number(n))) return '';
+  return new Intl.NumberFormat('es-CO',{style:'currency',currency:'COP',minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(n));
+}
+function formatCurrencyField(el){
+  if(!el) return;
+  const n=parseMoneyExcel(el.value);
+  el.value = n===null ? '' : formatCOP(n);
+}
+
 
 function buildInstallacionLiquidacion(i){
   const foEx = normalizeNum(i.fo_externa), foIn = normalizeNum(i.fo_interna), foTotal = normalizeNum(i.fo_total) || (foEx + foIn);
@@ -242,6 +275,7 @@ function getRowColumnValue(r, field){
     case 'origen': return r.tipo_origen || '';
     case 'fecha': return fmtDate(r.fecha_entrega || r.fecha_ingreso);
     case 'id_cambio': return r.id_cambio || '';
+    case 'po': return r.po || '';
     case 'id_tarea': return r.id_tarea || '';
     case 'id_cliente': return r.id_cliente || '';
     case 'cliente': return `${r.cliente || ''}${r.direccion ? ' - ' + r.direccion : ''}`.trim();
@@ -271,6 +305,7 @@ function hydrateColumnFilters(baseRows){
     ['origen','filter_origen','Todos'],
     ['fecha','filter_fecha','Todas'],
     ['id_cambio','filter_id_cambio','Todos'],
+    ['po','filter_po','Todas'],
     ['id_tarea','filter_id_tarea','Todos'],
     ['id_cliente','filter_id_cliente','Todos'],
     ['cliente','filter_cliente','Todos'],
@@ -310,7 +345,7 @@ function sortColumn(field){
   renderTable(false);
 }
 function updateSortIcons(){
-  ['origen','fecha','id_cambio','id_tarea','id_cliente','cliente','estado','acta_pe','acta_pi','fo_total','acciones'].forEach(field => {
+  ['origen','fecha','id_cambio','po','id_tarea','id_cliente','cliente','estado','acta_pe','acta_pi','fo_total','acciones'].forEach(field => {
     const el = document.getElementById('sort_' + field);
     if(el) el.textContent = sortField === field ? (sortDir === 'asc' ? '▲' : '▼') : '';
   });
@@ -318,7 +353,7 @@ function updateSortIcons(){
 function getFilteredRows(){
   const txt=(document.getElementById('searchBox')?.value||'').trim().toLowerCase(), tipo=document.getElementById('filterTipo')?.value||'', estado=document.getElementById('filterEstado')?.value||'', sort=document.getElementById('sortBy')?.value||'fecha_desc';
   let filtered = rows.filter(r => {
-    const matchText=!txt||[r.cliente,r.id_cliente,r.id_cambio,r.id_tarea,r.direccion,r.operador,r.tipo_origen,r.estado_liquidacion,r.numero_acta_pe,r.numero_acta_pi].map(x=>String(x||'').toLowerCase()).some(x=>x.includes(txt));
+    const matchText=!txt||[r.cliente,r.id_cliente,r.id_cambio,r.id_tarea,r.direccion,r.operador,r.tipo_origen,r.estado_liquidacion,r.numero_acta_pe,r.numero_acta_pi,r.po].map(x=>String(x||'').toLowerCase()).some(x=>x.includes(txt));
     return matchText && (!tipo||r.tipo_origen===tipo) && (!estado||r.estado_liquidacion===estado);
   });
   if(activeKpi && activeKpi!=='TOTAL'){ if(['PENDIENTE','EN_REVISION','LIQUIDADA'].includes(activeKpi)) filtered=filtered.filter(r=>r.estado_liquidacion===activeKpi); if(activeKpi==='INSTALACION') filtered=filtered.filter(r=>r.tipo_origen==='INSTALACION'); if(activeKpi==='FO_TOTAL') filtered=filtered.filter(r=>Number(r.fo_total||0)>0); }
@@ -346,7 +381,7 @@ function renderTable(){
     <tr onclick="openLiqModal('${esc(r.tipo_origen)}','${esc(r.id_cambio)}')" style="cursor:pointer" title="Clic para gestionar liquidación">
       <td>${badgeTipo(r.tipo_origen)}<div class="desc">${r.existe ? 'Guardada' : 'Sin registrar'}</div></td>
       <td>${fmtDate(r.fecha_entrega || r.fecha_ingreso)}<div class="desc">${r.fecha_entrega ? 'Entrega' : 'Ingreso'}</div></td>
-      <td><b>${esc(r.id_cambio||'')}</b></td><td>${esc(r.id_tarea||'')}</td><td>${esc(r.id_cliente||'')}</td>
+      <td><b>${esc(r.id_cambio||'')}</b></td><td>${esc(r.po||'')}</td><td>${esc(r.id_tarea||'')}</td><td>${esc(r.id_cliente||'')}</td>
       <td><div class="title">${esc(r.cliente||'')}</div><div class="desc">${esc(r.direccion||'')}</div></td>
       <td>${badgeEstado(r.estado_liquidacion||'PENDIENTE')}</td>
       <td><b>${esc(r.numero_acta_pe || '')}</b><div class="desc">Planta externa</div></td>
@@ -400,6 +435,8 @@ function openLiqModal(tipo,cambio){
   const form=document.getElementById('liqForm'); form.reset(); document.getElementById('liqMsg').textContent='';
   Object.keys(row).forEach(k=>{ if(form.elements[k]) form.elements[k].value = row[k] ?? ''; });
   if(form.elements['valor_liquidado_pe'] && !form.elements['valor_liquidado_pe'].value && row.valor_liquidado) form.elements['valor_liquidado_pe'].value = row.valor_liquidado;
+  if(form.elements['valor_liquidado_pe']) form.elements['valor_liquidado_pe'].value = formatCOP(form.elements['valor_liquidado_pe'].value);
+  if(form.elements['valor_liquidado_pi']) form.elements['valor_liquidado_pi'].value = formatCOP(form.elements['valor_liquidado_pi'].value);
   if(form.elements['numero_acta_pe'] && !form.elements['numero_acta_pe'].value && row.numero_acta) form.elements['numero_acta_pe'].value = row.numero_acta;
   form.elements['estado_liquidacion'].value = row.estado_liquidacion || 'PENDIENTE';
   document.getElementById('materialsBox').style.display = row.tipo_origen === 'INSTALACION' ? '' : 'none';
@@ -411,12 +448,199 @@ document.getElementById('liqForm').addEventListener('submit', async function(e){
   e.preventDefault(); const form=e.target, msg=document.getElementById('liqMsg'); msg.textContent=''; msg.style.color='#86efac';
   try{
     const client=await resolveClient(), email=localStorage.getItem('user_email')||null;
-    const payload={tipo_origen:form.elements['tipo_origen'].value, origen_id:form.elements['origen_id'].value||null, id_cambio:form.elements['id_cambio'].value||null, id_tarea:form.elements['id_tarea'].value||null, id_cliente:form.elements['id_cliente'].value||null, cliente:form.elements['cliente'].value||null, direccion:form.elements['direccion'].value||null, operador:form.elements['operador'].value||null, fecha_ingreso:form.elements['fecha_ingreso'].value||null, fecha_entrega:form.elements['fecha_entrega'].value||null, estado_liquidacion:form.elements['estado_liquidacion'].value, fecha_liquidacion:form.elements['fecha_liquidacion'].value||null, responsable_liquidacion:form.elements['responsable_liquidacion'].value||null, valor_liquidado_pe:form.elements['valor_liquidado_pe'].value||null, numero_acta_pe:form.elements['numero_acta_pe'].value||null, valor_liquidado_pi:form.elements['valor_liquidado_pi'].value||null, numero_acta_pi:form.elements['numero_acta_pi'].value||null, numero_factura:form.elements['numero_factura'].value||null, observaciones:form.elements['observaciones'].value||null, fo_externa:form.elements['fo_externa'].value||0, fo_interna:form.elements['fo_interna'].value||0, fo_total:form.elements['fo_total'].value||0, tipo_fibra:form.elements['tipo_fibra'].value||null, cant_herrajes_retencion:form.elements['cant_herrajes_retencion'].value||0, cant_herrajes_suspension:form.elements['cant_herrajes_suspension'].value||0, cant_argolla_poste:form.elements['cant_argolla_poste'].value||0, cant_caja_ob:form.elements['cant_caja_ob'].value||0, cant_patchcord:form.elements['cant_patchcord'].value||0, tipo_patchcord:form.elements['tipo_patchcord'].value||null, longitud_patchcord:form.elements['longitud_patchcord'].value||null, cinta_bandi_it_metros:form.elements['cinta_bandi_it_metros'].value||0, cant_marquilla_amarilla:form.elements['cant_marquilla_amarilla'].value||0, cant_marquillas:form.elements['cant_marquillas'].value||0, created_by_email:email};
+    const payload={tipo_origen:form.elements['tipo_origen'].value, origen_id:form.elements['origen_id'].value||null, id_cambio:form.elements['id_cambio'].value||null, po:form.elements['po'].value||null, id_tarea:form.elements['id_tarea'].value||null, id_cliente:form.elements['id_cliente'].value||null, cliente:form.elements['cliente'].value||null, direccion:form.elements['direccion'].value||null, operador:form.elements['operador'].value||null, fecha_ingreso:form.elements['fecha_ingreso'].value||null, fecha_entrega:form.elements['fecha_entrega'].value||null, estado_liquidacion:form.elements['estado_liquidacion'].value, fecha_liquidacion:form.elements['fecha_liquidacion'].value||null, responsable_liquidacion:form.elements['responsable_liquidacion'].value||null, valor_liquidado_pe:parseMoneyExcel(form.elements['valor_liquidado_pe'].value), numero_acta_pe:form.elements['numero_acta_pe'].value||null, valor_liquidado_pi:parseMoneyExcel(form.elements['valor_liquidado_pi'].value), numero_acta_pi:form.elements['numero_acta_pi'].value||null, numero_factura:form.elements['numero_factura'].value||null, observaciones:form.elements['observaciones'].value||null, fo_externa:form.elements['fo_externa'].value||0, fo_interna:form.elements['fo_interna'].value||0, fo_total:form.elements['fo_total'].value||0, tipo_fibra:form.elements['tipo_fibra'].value||null, cant_herrajes_retencion:form.elements['cant_herrajes_retencion'].value||0, cant_herrajes_suspension:form.elements['cant_herrajes_suspension'].value||0, cant_argolla_poste:form.elements['cant_argolla_poste'].value||0, cant_caja_ob:form.elements['cant_caja_ob'].value||0, cant_patchcord:form.elements['cant_patchcord'].value||0, tipo_patchcord:form.elements['tipo_patchcord'].value||null, longitud_patchcord:form.elements['longitud_patchcord'].value||null, cinta_bandi_it_metros:form.elements['cinta_bandi_it_metros'].value||0, cant_marquilla_amarilla:form.elements['cant_marquilla_amarilla'].value||0, cant_marquillas:form.elements['cant_marquillas'].value||0, created_by_email:email};
     const existing=liquidaciones.find(l=>l.tipo_origen===payload.tipo_origen && String(l.id_cambio)===String(payload.id_cambio));
     const result = existing ? await client.from('om_liquidaciones').update(payload).eq('id', existing.id) : await client.from('om_liquidaciones').insert(payload);
     if(result.error) throw result.error; msg.textContent='Liquidación guardada correctamente'; closeLiqModal(); await loadAll();
   }catch(err){ console.error(err); msg.style.color='#fecaca'; msg.textContent='Error guardando liquidación: '+(err.message||err); }
 });
+
+
+function normHeader(v){
+  return String(v ?? '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ');
+}
+function normIdCambio(v){
+  return String(v ?? '').trim().toUpperCase().replace(/\s+/g,'');
+}
+function hasExcelValue(v){
+  return v !== null && v !== undefined && String(v).trim() !== '';
+}
+function excelSerialToISO(v){
+  if(!hasExcelValue(v)) return null;
+  if(v instanceof Date && !isNaN(v)) return `${v.getFullYear()}-${String(v.getMonth()+1).padStart(2,'0')}-${String(v.getDate()).padStart(2,'0')}`;
+  if(typeof v === 'number' && typeof XLSX !== 'undefined' && XLSX.SSF){
+    const d=XLSX.SSF.parse_date_code(v); if(d) return `${d.y}-${String(d.m).padStart(2,'0')}-${String(d.d).padStart(2,'0')}`;
+  }
+  const s=String(v).trim();
+  const iso=s.match(/^(\d{4})[-\/]([01]?\d)[-\/]([0-3]?\d)/); if(iso) return `${iso[1]}-${String(iso[2]).padStart(2,'0')}-${String(iso[3]).padStart(2,'0')}`;
+  const lat=s.match(/^([0-3]?\d)[\/-]([01]?\d)[\/-](\d{4})$/); if(lat) return `${lat[3]}-${String(lat[2]).padStart(2,'0')}-${String(lat[1]).padStart(2,'0')}`;
+  const d=new Date(s); if(!isNaN(d)) return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  return null;
+}
+function parseMoneyExcel(v){
+  if(!hasExcelValue(v)) return null;
+  if(typeof v === 'number') return Number.isFinite(v) ? v : null;
+  let s=String(v).trim().replace(/\s/g,'').replace(/\$/g,'');
+  if(s.includes('.') && s.includes(',')) s = s.lastIndexOf(',') > s.lastIndexOf('.') ? s.replace(/\./g,'').replace(',','.') : s.replace(/,/g,'');
+  else if(s.includes(',')) s=s.replace(/\./g,'').replace(',','.');
+  const n=Number(s.replace(/[^0-9.-]/g,'')); return Number.isFinite(n)?n:null;
+}
+function showImportMsg(text,type='ok'){
+  const el=document.getElementById('importPlantillaMsg'); if(!el) return;
+  el.className=`import-msg show ${type}`; el.textContent=text;
+}
+function getHeaderIndex(headers, aliases){
+  const normalized=headers.map(normHeader);
+  for(const a of aliases){ const i=normalized.indexOf(normHeader(a)); if(i>=0) return i; }
+  return -1;
+}
+async function importarPlantillaLiquidaciones(event){
+  const input=event?.target; const file=input?.files?.[0]; if(!file) return;
+  try{
+    if(typeof XLSX==='undefined') throw new Error('No se pudo cargar la librería de Excel (SheetJS).');
+    showImportMsg('Validando plantilla y cruzando registros por ID Cambio...','warn');
+    const buffer=await file.arrayBuffer();
+    const wb=XLSX.read(buffer,{type:'array',cellDates:true});
+    const sheetName=wb.SheetNames.find(n=>normHeader(n)==='INSTALACIONES') || wb.SheetNames[0];
+    const ws=wb.Sheets[sheetName];
+    const matrix=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+    if(!matrix.length) throw new Error('La hoja seleccionada está vacía.');
+    const headers=matrix[0];
+    const idx={
+      id:getHeaderIndex(headers,['ID Cambio','ID CAMBIO']),
+      fecha:getHeaderIndex(headers,['FECHA DE LIQUIDACION','FECHA LIQUIDACION','Fecha liquidación']),
+      po:getHeaderIndex(headers,['PO','P.O.']),
+      pi:getHeaderIndex(headers,['LIQUIDACION PI','VALOR LIQUIDADO PLANTA INTERNA','Valor liquidado Planta Interna']),
+      pe:getHeaderIndex(headers,['LIQUIDACION PE','VALOR LIQUIDADO PLANTA EXTERNA','Valor liquidado Planta externa']),
+      factura:getHeaderIndex(headers,['# FACTURA','NUMERO FACTURA','NÚMERO FACTURA','Número factura']),
+      obs:getHeaderIndex(headers,['FACTIBILIDAD RELACIONADA LIQUIDADA','OBSERVACIONES','OBSERVACION','OBSERVACIÓN'])
+    };
+    if(idx.id<0) throw new Error('No encuentro la columna ID Cambio en la plantilla.');
+    const client=await resolveClient();
+    let actualizados=0, omitidosLiquidacion=0, noEncontrados=0, sinId=0, sinCambios=0, errores=0, poActualizadas=0, facturasActualizadas=0, observacionesActualizadas=0, liquidadas=0;
+    const detalles=[];
+    for(let i=1;i<matrix.length;i++){
+      const excelRow=matrix[i]; const id=normIdCambio(excelRow[idx.id]);
+      if(!id){ sinId++; continue; }
+      const matches=rows.filter(r=>normIdCambio(r.id_cambio)===id);
+      if(!matches.length){ noEncontrados++; detalles.push(`${id}: no encontrado`); continue; }
+
+      for(const r of matches){
+        const estadoActual=(r.estado_liquidacion||'PENDIENTE').toUpperCase();
+        const esPendiente=estadoActual==='PENDIENTE';
+        const payload={};
+
+        // PO y factura son datos complementarios: se completan si están vacíos,
+        // sin importar el estado de liquidación, y nunca se sobrescriben.
+        if(idx.po>=0 && !hasExcelValue(r.po) && hasExcelValue(excelRow[idx.po])){
+          payload.po=String(excelRow[idx.po]).trim();
+          poActualizadas++;
+        }
+        if(idx.factura>=0 && !hasExcelValue(r.numero_factura) && hasExcelValue(excelRow[idx.factura])){
+          payload.numero_factura=String(excelRow[idx.factura]).trim();
+          facturasActualizadas++;
+        }
+        // La factibilidad relacionada se usa como Observaciones. Se completa cuando
+        // el registro aún no tiene observación, sin importar el estado, y no se sobrescribe.
+        if(idx.obs>=0 && !hasExcelValue(r.observaciones) && hasExcelValue(excelRow[idx.obs])){
+          payload.observaciones=String(excelRow[idx.obs]).trim();
+          observacionesActualizadas++;
+        }
+
+        // Los datos propios de liquidación solo se modifican cuando el estado actual es PENDIENTE.
+        if(esPendiente){
+          if(idx.fecha>=0 && hasExcelValue(excelRow[idx.fecha])){ const f=excelSerialToISO(excelRow[idx.fecha]); if(f) payload.fecha_liquidacion=f; }
+          if(idx.pe>=0 && hasExcelValue(excelRow[idx.pe])){ const n=parseMoneyExcel(excelRow[idx.pe]); if(n!==null) payload.valor_liquidado_pe=n; }
+          if(idx.pi>=0 && hasExcelValue(excelRow[idx.pi])){ const n=parseMoneyExcel(excelRow[idx.pi]); if(n!==null) payload.valor_liquidado_pi=n; }
+
+          const peFinal=payload.valor_liquidado_pe ?? (hasExcelValue(r.valor_liquidado_pe)?Number(r.valor_liquidado_pe):null);
+          const piFinal=payload.valor_liquidado_pi ?? (hasExcelValue(r.valor_liquidado_pi)?Number(r.valor_liquidado_pi):null);
+          if(peFinal!==null && piFinal!==null){ payload.estado_liquidacion='LIQUIDADA'; liquidadas++; }
+        }else{
+          omitidosLiquidacion++;
+        }
+
+        if(!Object.keys(payload).length){ sinCambios++; continue; }
+        payload.updated_at=new Date().toISOString();
+        let res;
+        if(r.existe && r.id){
+          res=await client.from('om_liquidaciones').update(payload).eq('id',r.id);
+        }else{
+          const base={...r,...payload}; delete base.existe; delete base.id; delete base.created_at; delete base.updated_at;
+          base.created_by_email=localStorage.getItem('user_email')||null;
+          res=await client.from('om_liquidaciones').insert(base);
+        }
+        if(res.error){ errores++; console.error('Importación',id,res.error); detalles.push(`${id}: ${res.error.message||res.error}`); }
+        else actualizados++;
+      }
+    }
+    await loadAll();
+    const obsAviso=idx.obs<0?' La plantilla no trae la columna FACTIBILIDAD RELACIONADA LIQUIDADA/Observaciones, por lo que ese campo no se modificó.':'';
+    const errAviso=errores?` ${errores} registro(s) presentaron error; revisa la consola.`:'';
+    showImportMsg(`Importación finalizada: ${actualizados} registro(s) actualizados; ${liquidadas} pasaron a LIQUIDADA; ${poActualizadas} PO completadas; ${facturasActualizadas} facturas completadas; ${observacionesActualizadas} observaciones completadas desde FACTIBILIDAD RELACIONADA LIQUIDADA; ${omitidosLiquidacion} registro(s) no PENDIENTE conservaron sus valores de liquidación; ${noEncontrados} ID Cambio no encontrados.${obsAviso}${errAviso}`, errores?'warn':'ok');
+  }catch(err){
+    console.error(err); showImportMsg('Error cargando plantilla: '+(err.message||err),'err'); alert('Error cargando plantilla: '+(err.message||err));
+  }finally{ if(input) input.value=''; }
+}
+
+
+function normalizarMesCorreo(valor){
+  const nombres=['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO','JULIO','AGOSTO','SEPTIEMBRE','OCTUBRE','NOVIEMBRE','DICIEMBRE'];
+  const n=Number(valor);
+  if(Number.isInteger(n) && n>=1 && n<=12) return {nombre:nombres[n-1],numero:n};
+  return null;
+}
+function nombreMesTitulo(nombre){ return nombre.charAt(0)+nombre.slice(1).toLowerCase(); }
+
+async function redactarCorreoOutlookWeb(){
+  const selector=document.getElementById('emailMonth');
+  const mes=normalizarMesCorreo(selector?.value);
+  if(!mes){
+    alert('Selecciona un mes válido para el correo.');
+    return;
+  }
+
+  const anio=new Date().getFullYear();
+  const mesTitulo=nombreMesTitulo(mes.nombre);
+
+  // Tomar las PO registradas en liquidaciones del mes seleccionado.
+  // Si hay varias, se relacionan sin duplicados.
+  const registrosMes=(rows||[]).filter(r=>{
+    if(String(r.estado_liquidacion||'').toUpperCase()!=='LIQUIDADA') return false;
+    if(!r.fecha_liquidacion) return false;
+    const s=String(r.fecha_liquidacion).slice(0,10);
+    const m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(m) return Number(m[1])===anio && Number(m[2])===mes.numero;
+    const d=new Date(r.fecha_liquidacion);
+    return !isNaN(d) && d.getFullYear()===anio && d.getMonth()+1===mes.numero;
+  });
+
+  const pos=Array.from(new Set(
+    registrosMes.map(r=>String(r.po||'').trim()).filter(Boolean)
+  ));
+  const poTexto=pos.length ? pos.join(', ') : '(sin PO registrada)';
+
+  const subject=`LIQUIDACION CAPEX-${mes.nombre} ${anio} VILLAVICENCIO`;
+  const body=
+`Buenas tardes, Diana /Esmeralda. A continuación, relaciono liquidación de Capex del mes de ${mesTitulo} ${anio}, por favor tener presente que estas liquidaciones se hacen bajo la PO: ${poTexto}
+
+`;
+
+  const to='diana.pulido@acttelematica.com.co,esmeralda.guerrero@acttelematica.com.co';
+  const cc='elber.pinilla@acttelematica.com.co';
+
+  const outlookWeb =
+    `https://outlook.office.com/mail/deeplink/compose?to=${encodeURIComponent(to)}` +
+    `&cc=${encodeURIComponent(cc)}` +
+    `&subject=${encodeURIComponent(subject)}` +
+    `&body=${encodeURIComponent(body)}` +
+    `&online=1`;
+
+  const w=window.open(outlookWeb,'_blank','noopener,noreferrer');
+  if(!w){
+    alert('El navegador bloqueó la apertura de Outlook Web. Habilita ventanas emergentes para este archivo e inténtalo nuevamente.');
+  }
+}
 
 function excelDate(v){
   if(!v) return '';
@@ -431,6 +655,7 @@ function exportLiquidacionesExcel(){
     const data = (rows && rows.length ? rows : []).map(r => ({
       'Tipo origen': r.tipo_origen || '',
       'ID Cambio': r.id_cambio || '',
+      'PO': r.po || '',
       'ID Tarea': r.id_tarea || '',
       'ID Cliente': r.id_cliente || '',
       'Cliente': r.cliente || '',
