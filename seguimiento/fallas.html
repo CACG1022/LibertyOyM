@@ -99,7 +99,7 @@ body.sidebar-hidden .sidebar-toggle{
     .section-client{border-color:rgba(6,182,212,.32)}.section-client .form-section-header{background:rgba(6,182,212,.11);color:#a5f3fc}
     .section-network{border-color:rgba(168,85,247,.32)}.section-network .form-section-header{background:rgba(168,85,247,.11);color:#e9d5ff}
     .section-diagnosis{border-color:rgba(245,158,11,.34)}.section-diagnosis .form-section-header{background:rgba(245,158,11,.11);color:#fde68a}
-    .section-operation{border-color:rgba(34,197,94,.32)}.section-operation .form-section-header{background:rgba(34,197,94,.10);color:#bbf7d0}
+    .section-operation{border-color:rgba(34,197,94,.32)}.section-operation .form-section-header{background:rgba(34,197,94,.10);color:#bbf7d0}.section-contractor{border-color:rgba(14,165,233,.38)}.section-contractor .form-section-header{background:rgba(14,165,233,.12);color:#bae6fd}.contractor-result{border-color:rgba(14,165,233,.50)!important;background:rgba(14,165,233,.07)!important}
     .section-close{border-color:rgba(244,63,94,.32)}.section-close .form-section-header{background:rgba(244,63,94,.10);color:#fecdd3}
     .conditional-section{grid-column:1/-1;display:none;border:1px solid rgba(45,212,191,.32);border-radius:16px;padding:16px;background:rgba(20,184,166,.07)}.conditional-section.show{display:block}.section-title{font-weight:800;margin:0 0 12px;color:#99f6e4}.tm-list{display:grid;gap:12px}.tm-row{display:grid;grid-template-columns:1.25fr 1.25fr 1fr 1fr auto;gap:10px;align-items:end;padding:12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.025)}.tm-row .field{margin:0}.tm-total-box{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px;padding:12px;border-radius:12px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25)}.tm-total-box strong{font-size:18px}.remove-tm{height:43px;min-width:43px}.required-note{display:none;margin-top:6px;font-size:12px;color:#fecaca}.required-note.show{display:block}.footer-note{margin-top:10px;font-size:13px;color:#86efac}.muted-note{font-size:12px;color:var(--muted)}
     .timeline{display:grid;gap:12px}.timeline-item{border:1px solid var(--border);border-radius:14px;padding:14px;background:rgba(255,255,255,.03)}
@@ -249,6 +249,59 @@ table{min-width:1450px}
 .folder-btn:disabled{opacity:.55;cursor:not-allowed}
 @media (max-width:760px){.modal-header-actions{gap:7px;flex-wrap:nowrap}.folder-btn{padding:9px 11px;font-size:13px;white-space:nowrap}}
 
+
+.contractor-summary-row{
+  display:flex;
+  justify-content:flex-end;
+  margin-top:10px;
+}
+.contractor-summary-btn{
+  min-height:42px;
+  padding:10px 16px;
+  border-radius:12px;
+  border:1px solid rgba(14,165,233,.48);
+  background:rgba(14,165,233,.12);
+  color:#bae6fd;
+  font-weight:800;
+  cursor:pointer;
+}
+.contractor-summary-btn:hover{background:rgba(14,165,233,.22)}
+@media (max-width:760px){
+  .contractor-summary-row{justify-content:stretch}
+  .contractor-summary-btn{width:100%}
+}
+
+
+.close-required-note{
+  margin-top:6px;
+  font-size:12px;
+  color:#fecaca;
+}
+
+
+.live-time{
+  font-weight:800;
+  white-space:nowrap;
+}
+.live-time-open{
+  color:#f59e0b !important;
+}
+.live-time-overdue{
+  color:#ef4444 !important;
+}
+.live-time-closed{
+  color:#86efac !important;
+}
+
+
+.close-required-mark{
+  color:#ef4444 !important;
+  font-weight:900;
+  margin-left:4px;
+  font-size:15px;
+  vertical-align:baseline;
+}
+
 </style>
 </head>
 <body>
@@ -279,6 +332,7 @@ table{min-width:1450px}
             <div class="field"><label>Responsable</label><input name="responsable"></div>
             <div class="field"><label>Estado</label><select name="estado" id="estadoTicketSelect"><option>ABIERTO</option><option>EN_GESTION</option><option>ESCALADO</option><option>CERRADO</option></select></div>
             <div class="field"><label>Prioridad</label><select name="prioridad"><option>MEDIA</option><option>BAJA</option><option>ALTA</option><option>CRITICA</option></select></div>
+            <div class="field"><label>Motivo del ticket</label><select name="motivo_ticket" id="motivoTicketSelect"><option value="">Seleccione...</option><option value="CAIDA DEL SERVICIO">CAIDA DEL SERVICIO</option><option value="ATENUACION">ATENUACION</option></select></div>
           </div>
         </section>
 
@@ -319,6 +373,7 @@ table{min-width:1450px}
             <div class="field"><label>Fecha y hora de medida con OTDR</label><input type="datetime-local" name="fecha_hora_medida_otdr"></div>
             <div class="field"><label>Fecha y hora de llegada al punto de afectación</label><input type="datetime-local" name="fecha_hora_llegada_afectacion"></div>
             <div class="field span-2"><label>¿Hubo tiempos muertos / parada de reloj?</label><select name="hubo_tiempo_muerto" id="huboTiempoMuertoSelect"><option value="NO">NO</option><option value="SI">SÍ</option></select></div>
+            <div class="field span-2"><label>Reporte a contratista</label><select name="reporte_contratista" id="reporteContratistaSelect"><option value="NO">NO</option><option value="SI">SÍ</option></select></div>
             <div id="tiempoMuertoSection" class="conditional-section">
               <div class="section-title">Rangos de tiempo muerto / paradas de reloj</div>
               <div id="tiemposMuertosList" class="tm-list"></div>
@@ -330,8 +385,56 @@ table{min-width:1450px}
           </div>
         </section>
 
+        <section id="gestionContratistaSection" class="form-section section-contractor" style="display:none">
+          <div class="form-section-header"><span class="section-icon">⑥</span>Gestión contratista</div>
+          <div class="section-grid">
+            <div class="field">
+              <label>Fecha y hora de reporte a contratista</label>
+              <input type="datetime-local" name="fecha_hora_reporte_contratista">
+            </div>
+            <div class="field">
+              <label>Fecha y hora fin de gestión contratista</label>
+              <input type="datetime-local" name="fecha_hora_fin_gestion_contratista">
+            </div>
+            <div class="field contractor-result">
+              <label>Duración total gestión contratista</label>
+              <input name="duracion_gestion_contratista" readonly placeholder="Automático">
+            </div>
+            <div class="field contractor-result">
+              <label>Tiempo efectivo contratista</label>
+              <input name="tiempo_efectivo_contratista" readonly placeholder="Total menos paradas">
+            </div>
+
+            <div class="field span-2">
+              <label>¿Hubo tiempos muertos / parada de reloj del contratista?</label>
+              <select name="hubo_tiempo_muerto_contratista" id="huboTiempoMuertoContratistaSelect">
+                <option value="NO">NO</option>
+                <option value="SI">SÍ</option>
+              </select>
+            </div>
+
+            <div id="tiempoMuertoContratistaSection" class="conditional-section">
+              <div class="section-title">Rangos de tiempo muerto / paradas de reloj del contratista</div>
+              <div id="tiemposMuertosContratistaList" class="tm-list"></div>
+              <div class="tm-total-box">
+                <div>
+                  <span class="muted-note">Total acumulado de paradas del contratista</span><br>
+                  <strong id="tiempoMuertoContratistaTotalAcumulado">0 min</strong>
+                </div>
+                <button type="button" class="small-btn info" onclick="agregarRangoTiempoMuertoContratista()">+ Agregar otro rango</button>
+              </div>
+            </div>
+
+            <div class="field span-4 contractor-summary-row">
+              <button type="button" class="contractor-summary-btn" onclick="copiarResumenGestionContratista()">
+                📋 Resumen gestión contratista
+              </button>
+            </div>
+          </div>
+        </section>
+
         <section class="form-section section-close">
-          <div class="form-section-header"><span class="section-icon">⑥</span>Cierre de la falla</div>
+          <div class="form-section-header"><span class="section-icon">⑦</span>Cierre de la falla</div>
           <div class="section-grid">
             <div class="field"><label>Fecha fin</label><input type="date" name="fecha_fin"></div>
             <div class="field"><label>Hora fin</label><input type="time" name="hora_fin"></div>
@@ -617,7 +720,7 @@ const FALLA_TIPIFICACION={
 };
 
 let clientRef=null,ticketRows=[],renderedTicketRows=[],selectedTicketId=null; const PRIORITY_ORDER={CRITICA:4,ALTA:3,MEDIA:2,BAJA:1};
-const LABELS={ticket:'Ticket',id_cliente:'ID cliente',nombre_cliente:'Nombre cliente',direccion_cliente:'Dirección cliente',coordenada_cliente:'Coordenada cliente',demonico:'Demónico',equipo_switch:'Equipo / Switch',puerto_switch:'Puerto switch',odf_espejo:'ODF espejo',odf_salida:'ODF salida',puerto_odf_salida:'Puerto ODF salida',responsable:'Responsable',fecha_inicio:'Fecha inicio',hora_inicio:'Hora inicio',fecha_fin:'Fecha fin',hora_fin:'Hora fin',duracion_falla:'Duración falla',tiempo_efectivo:'Tiempo efectivo',fecha_hora_medida_otdr:'Fecha/hora medida OTDR',fecha_hora_llegada_afectacion:'Fecha/hora llegada al punto de afectación',hubo_tiempo_muerto:'Hubo tiempo muerto',tiempo_muerto_inicio:'Inicio tiempo muerto',tiempo_muerto_fin:'Fin tiempo muerto',tiempo_muerto_total:'Total tiempo muerto',motivo_tiempo_muerto:'Motivo tiempo muerto',tiempos_muertos:'Rangos de tiempos muertos',estado:'Estado',prioridad:'Prioridad',tipo_falla:'Tipo de falla',subcausa_falla:'Subcausa / subcategoría',causa:'Causa',solucion:'Solución',coord_dano:'Coord falla / daño',observacion:'Observación'};
+const LABELS={ticket:'Ticket',id_cliente:'ID cliente',nombre_cliente:'Nombre cliente',direccion_cliente:'Dirección cliente',coordenada_cliente:'Coordenada cliente',demonico:'Demónico',equipo_switch:'Equipo / Switch',puerto_switch:'Puerto switch',odf_espejo:'ODF espejo',odf_salida:'ODF salida',puerto_odf_salida:'Puerto ODF salida',responsable:'Responsable',fecha_inicio:'Fecha inicio',hora_inicio:'Hora inicio',fecha_fin:'Fecha fin',hora_fin:'Hora fin',duracion_falla:'Duración falla',tiempo_efectivo:'Tiempo efectivo',fecha_hora_medida_otdr:'Fecha/hora medida OTDR',fecha_hora_llegada_afectacion:'Fecha/hora llegada al punto de afectación',hubo_tiempo_muerto:'Hubo tiempo muerto',reporte_contratista:'Reporte a contratista',fecha_hora_reporte_contratista:'Fecha/hora reporte a contratista',fecha_hora_fin_gestion_contratista:'Fecha/hora fin gestión contratista',duracion_gestion_contratista:'Duración gestión contratista',duracion_gestion_contratista_minutos:'Duración gestión contratista minutos',tiempo_efectivo_contratista:'Tiempo efectivo contratista',tiempo_efectivo_contratista_minutos:'Tiempo efectivo contratista minutos',hubo_tiempo_muerto_contratista:'Hubo tiempo muerto contratista',tiempos_muertos_contratista:'Rangos tiempos muertos contratista',tiempo_muerto_contratista_minutos:'Total minutos muertos contratista',tiempo_muerto_contratista_total:'Total tiempo muerto contratista',tiempo_muerto_inicio:'Inicio tiempo muerto',tiempo_muerto_fin:'Fin tiempo muerto',tiempo_muerto_total:'Total tiempo muerto',motivo_tiempo_muerto:'Motivo tiempo muerto',tiempos_muertos:'Rangos de tiempos muertos',estado:'Estado',prioridad:'Prioridad',motivo_ticket:'Motivo del ticket',tipo_falla:'Tipo de falla',subcausa_falla:'Subcausa / subcategoría',causa:'Causa',solucion:'Solución',coord_dano:'Coord falla / daño',observacion:'Observación'};
 
 function getRenderedTicket(index){
   const numericIndex=Number(index);
@@ -723,9 +826,150 @@ function calcularMinutosDateTime(inicio,fin){
   return Math.floor((end-ini)/60000);
 }
 function minutosTexto(minutos){minutos=Math.max(0,Number(minutos)||0); const d=Math.floor(minutos/1440),h=Math.floor((minutos%1440)/60),m=minutos%60; const p=[]; if(d)p.push(`${d} d`); if(h||d)p.push(`${h} h`); p.push(`${m} min`); return p.join(' ');}
-function getTiempoMuertoMinutosRow(row){if(Number.isFinite(Number(row?.tiempo_muerto_minutos)))return Math.max(0,Number(row.tiempo_muerto_minutos)||0); const rangos=getTiemposMuertosRow(row); return rangos.reduce((sum,x)=>sum+(Number(x.minutos)||calcularMinutosDateTime(x.inicio,x.fin)||0),0);}
-function getTiempoEfectivoMinutosRow(row){const total=Number(row?.duracion_falla_minutos); const dur=Number.isFinite(total)?total:calcularDuracionMinutos(row?.fecha_inicio,row?.hora_inicio,row?.fecha_fin,row?.hora_fin); if(dur==null)return null; return Math.max(0,dur-getTiempoMuertoMinutosRow(row));}
-function updateTiempoEfectivoForm(){const form=document.getElementById('ticketForm'); if(!form)return; const el=form.elements; const total=calcularDuracionMinutos(el['fecha_inicio']?.value||'',el['hora_inicio']?.value||'',el['fecha_fin']?.value||'',el['hora_fin']?.value||''); const tm=tiemposMuertosForm.reduce((sum,r)=>sum+(calcularMinutosDateTime(r.inicio,r.fin)||0),0); if(el['tiempo_efectivo']) el['tiempo_efectivo'].value=total==null?'':minutosTexto(Math.max(0,total-tm));}
+
+function rangoAIntervaloMinutos(rango){
+  if(!rango?.inicio || !rango?.fin) return null;
+  const ini=new Date(rango.inicio);
+  const fin=new Date(rango.fin);
+  if(Number.isNaN(ini.getTime()) || Number.isNaN(fin.getTime()) || fin<=ini) return null;
+  return {inicio:ini.getTime(),fin:fin.getTime()};
+}
+
+function minutosUnionRangos(rangos=[]){
+  const intervalos=(rangos||[])
+    .map(rangoAIntervaloMinutos)
+    .filter(Boolean)
+    .sort((a,b)=>a.inicio-b.inicio);
+
+  if(!intervalos.length) return 0;
+
+  let totalMs=0;
+  let actual={...intervalos[0]};
+
+  for(let i=1;i<intervalos.length;i++){
+    const sig=intervalos[i];
+
+    if(sig.inicio<=actual.fin){
+      actual.fin=Math.max(actual.fin,sig.fin);
+    }else{
+      totalMs+=actual.fin-actual.inicio;
+      actual={...sig};
+    }
+  }
+
+  totalMs+=actual.fin-actual.inicio;
+  return Math.floor(totalMs/60000);
+}
+
+function getTiemposMuertosContratistaRow(row){
+  if(Array.isArray(row?.tiempos_muertos_contratista) && row.tiempos_muertos_contratista.length){
+    return row.tiempos_muertos_contratista;
+  }
+  return [];
+}
+
+function getTodosTiemposMuertosRow(row){
+  return [
+    ...getTiemposMuertosRow(row),
+    ...getTiemposMuertosContratistaRow(row)
+  ];
+}
+
+function getTiempoMuertoMinutosRow(row){
+  const rangosGenerales=getTiemposMuertosRow(row);
+  const rangosContratista=getTiemposMuertosContratistaRow(row);
+  const todos=[...rangosGenerales,...rangosContratista];
+
+  // Si hay rangos detallados, sumar la unión de intervalos para no descontar
+  // dos veces cuando una parada general y una del contratista se solapan.
+  if(todos.length){
+    return minutosUnionRangos(todos);
+  }
+
+  const general=Number.isFinite(Number(row?.tiempo_muerto_minutos))
+    ? Math.max(0,Number(row.tiempo_muerto_minutos)||0)
+    : 0;
+
+  const contratista=Number.isFinite(Number(row?.tiempo_muerto_contratista_minutos))
+    ? Math.max(0,Number(row.tiempo_muerto_contratista_minutos)||0)
+    : 0;
+
+  return general+contratista;
+}
+
+function ticketEstaCerrado(row){
+  return String(row?.estado||'').toUpperCase()==='CERRADO';
+}
+
+function fechaHoraInicioTicketBogota(row){
+  const fecha=String(row?.fecha_inicio||'').trim();
+  const hora=String(row?.hora_inicio||'').trim().slice(0,5);
+  if(!fecha || !hora) return null;
+
+  // Los tickets de esta operación se trabajan con hora Colombia.
+  const d=new Date(`${fecha}T${hora}:00-05:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function getDuracionTotalMinutosRow(row){
+  if(ticketEstaCerrado(row)){
+    const almacenada=Number(row?.duracion_falla_minutos);
+    if(Number.isFinite(almacenada) && almacenada>=0) return almacenada;
+
+    return calcularDuracionMinutos(
+      row?.fecha_inicio,
+      row?.hora_inicio,
+      row?.fecha_fin,
+      row?.hora_fin
+    );
+  }
+
+  const inicio=fechaHoraInicioTicketBogota(row);
+  if(!inicio) return null;
+
+  const ahora=Date.now();
+  if(ahora<inicio.getTime()) return 0;
+
+  return Math.floor((ahora-inicio.getTime())/60000);
+}
+
+function getTiempoEfectivoMinutosRow(row){
+  const dur=getDuracionTotalMinutosRow(row);
+  if(dur==null) return null;
+  return Math.max(0,dur-getTiempoMuertoMinutosRow(row));
+}
+
+function getClaseTiempoEnVivo(row,minutos){
+  if(ticketEstaCerrado(row)) return 'live-time-closed';
+  if(minutos!=null && minutos>240) return 'live-time-overdue';
+  return 'live-time-open';
+}
+
+function getTextoDuracionRow(row){
+  const minutos=getDuracionTotalMinutosRow(row);
+  return minutos==null ? '' : minutosTexto(minutos);
+}
+function updateTiempoEfectivoForm(){
+  const form=document.getElementById('ticketForm');
+  if(!form) return;
+
+  const el=form.elements;
+  const total=calcularDuracionMinutos(
+    el['fecha_inicio']?.value||'',
+    el['hora_inicio']?.value||'',
+    el['fecha_fin']?.value||'',
+    el['hora_fin']?.value||''
+  );
+
+  const rangosGenerales=(typeof tiemposMuertosForm!=='undefined' ? tiemposMuertosForm : []);
+  const rangosContratista=(typeof tiemposMuertosContratistaForm!=='undefined' ? tiemposMuertosContratistaForm : []);
+  const tmTotal=minutosUnionRangos([...rangosGenerales,...rangosContratista]);
+
+  if(el['tiempo_efectivo']){
+    el['tiempo_efectivo'].value=
+      total==null ? '' : minutosTexto(Math.max(0,total-tmTotal));
+  }
+}
 function updateDuracionForm(){const form=document.getElementById('ticketForm'); const el=form.elements; if(el['duracion_falla']) el['duracion_falla'].value=calcularDuracionTexto(el['fecha_inicio']?.value||'',el['hora_inicio']?.value||'',el['fecha_fin']?.value||'',el['hora_fin']?.value||''); updateTiempoEfectivoForm();}
 function calcularDuracionEntreDateTimes(inicio,fin){if(!inicio||!fin)return {minutos:null,texto:''}; const ini=new Date(inicio), end=new Date(fin); if(Number.isNaN(ini.getTime())||Number.isNaN(end.getTime())||end<ini)return {minutos:null,texto:''}; const dm=Math.floor((end-ini)/60000); return {minutos:dm,texto:formatearMinutos(dm)}}
 function formatearMinutos(dm){dm=Number(dm)||0; const d=Math.floor(dm/1440), h=Math.floor((dm%1440)/60), m=dm%60; const p=[]; if(d)p.push(`${d} d`); if(h||d)p.push(`${h} h`); p.push(`${m} min`); return p.join(' ')}
@@ -758,6 +1002,240 @@ function actualizarTotalesTiemposMuertos(){
   updateTiempoEfectivoForm();
 }
 function toggleTiempoMuertoFields(){const form=document.getElementById('ticketForm'); if(!form)return; const activo=form.elements['hubo_tiempo_muerto']?.value==='SI', section=document.getElementById('tiempoMuertoSection'); section?.classList.toggle('show',activo); if(activo&&!tiemposMuertosForm.length){tiemposMuertosForm=[crearRangoTiempoMuerto()]; renderTiemposMuertosForm();} if(!activo){tiemposMuertosForm=[]; const list=document.getElementById('tiemposMuertosList'); if(list)list.innerHTML=''; const total=document.getElementById('tiempoMuertoTotalAcumulado'); if(total)total.textContent='0 min'; updateTiempoEfectivoForm();}}
+
+let tiemposMuertosContratistaForm=[];
+
+function crearRangoTiempoMuertoContratista(data={}){
+  return {
+    id:data.id||`tmc_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+    inicio:toDateTimeLocalValue(data.inicio||''),
+    fin:toDateTimeLocalValue(data.fin||''),
+    motivo:data.motivo||''
+  };
+}
+
+window.agregarRangoTiempoMuertoContratista=function(data={}){
+  tiemposMuertosContratistaForm.push(crearRangoTiempoMuertoContratista(data));
+  renderTiemposMuertosContratistaForm();
+};
+
+window.eliminarRangoTiempoMuertoContratista=function(id){
+  tiemposMuertosContratistaForm=tiemposMuertosContratistaForm.filter(x=>x.id!==id);
+  if(!tiemposMuertosContratistaForm.length) tiemposMuertosContratistaForm.push(crearRangoTiempoMuertoContratista());
+  renderTiemposMuertosContratistaForm();
+};
+
+window.actualizarRangoTiempoMuertoContratista=function(id,campo,valor){
+  const r=tiemposMuertosContratistaForm.find(x=>x.id===id);
+  if(r){
+    r[campo]=valor;
+    actualizarTotalesTiemposMuertosContratista();
+  }
+};
+
+function renderTiemposMuertosContratistaForm(){
+  const list=document.getElementById('tiemposMuertosContratistaList');
+  if(!list) return;
+
+  list.innerHTML=tiemposMuertosContratistaForm.map((r,i)=>{
+    const calc=calcularDuracionEntreDateTimes(r.inicio,r.fin);
+    return `<div class="tm-row">
+      <div class="field"><label>Inicio rango ${i+1}</label><input type="datetime-local" value="${esc(r.inicio)}" onchange="actualizarRangoTiempoMuertoContratista('${r.id}','inicio',this.value)" oninput="actualizarRangoTiempoMuertoContratista('${r.id}','inicio',this.value)" required></div>
+      <div class="field"><label>Fin rango ${i+1}</label><input type="datetime-local" value="${esc(r.fin)}" onchange="actualizarRangoTiempoMuertoContratista('${r.id}','fin',this.value)" oninput="actualizarRangoTiempoMuertoContratista('${r.id}','fin',this.value)" required></div>
+      <div class="field"><label>Duración</label><input value="${esc(calc.texto)}" readonly placeholder="Automático"></div>
+      <div class="field"><label>Motivo</label><select onchange="actualizarRangoTiempoMuertoContratista('${r.id}','motivo',this.value)" required><option value="">Seleccione...</option>${MOTIVOS_TIEMPO_MUERTO.map(m=>`<option ${r.motivo===m?'selected':''}>${esc(m)}</option>`).join('')}</select></div>
+      <button type="button" class="small-btn danger remove-tm" title="Eliminar rango" onclick="eliminarRangoTiempoMuertoContratista('${r.id}')">✕</button>
+    </div>`;
+  }).join('');
+
+  actualizarTotalesTiemposMuertosContratista();
+}
+
+function obtenerTiemposMuertosContratistaValidados(){
+  let total=0;
+  const rangos=[];
+
+  for(let i=0;i<tiemposMuertosContratistaForm.length;i++){
+    const r=tiemposMuertosContratistaForm[i];
+    const calc=calcularDuracionEntreDateTimes(r.inicio,r.fin);
+
+    if(!r.inicio||!r.fin||!r.motivo){
+      return {ok:false,error:`Completa inicio, fin y motivo del rango de contratista ${i+1}.`};
+    }
+    if(calc.minutos===null){
+      return {ok:false,error:`El rango de contratista ${i+1} es inválido. La fecha/hora final debe ser posterior a la inicial.`};
+    }
+
+    total+=calc.minutos;
+    rangos.push({
+      inicio:r.inicio,
+      fin:r.fin,
+      motivo:r.motivo,
+      minutos:calc.minutos,
+      total:calc.texto
+    });
+  }
+
+  return {ok:true,rangos,minutos:total,texto:formatearMinutos(total)};
+}
+
+function updateGestionContratistaCalculos(){
+  const form=document.getElementById('ticketForm');
+  if(!form) return;
+  const el=form.elements;
+
+  const inicio=el['fecha_hora_reporte_contratista']?.value||'';
+  const fin=el['fecha_hora_fin_gestion_contratista']?.value||'';
+  const total=calcularMinutosDateTime(inicio,fin);
+
+  const tm=tiemposMuertosContratistaForm.reduce(
+    (sum,r)=>sum+(calcularMinutosDateTime(r.inicio,r.fin)||0),0
+  );
+
+  if(el['duracion_gestion_contratista']){
+    el['duracion_gestion_contratista'].value=total==null?'':minutosTexto(total);
+  }
+  if(el['tiempo_efectivo_contratista']){
+    el['tiempo_efectivo_contratista'].value=total==null?'':minutosTexto(Math.max(0,total-tm));
+  }
+}
+
+function actualizarTotalesTiemposMuertosContratista(){
+  const totalEl=document.getElementById('tiempoMuertoContratistaTotalAcumulado');
+  let total=0;
+
+  tiemposMuertosContratistaForm.forEach(r=>{
+    const c=calcularDuracionEntreDateTimes(r.inicio,r.fin);
+    if(c.minutos!==null) total+=c.minutos;
+  });
+
+  if(totalEl) totalEl.textContent=formatearMinutos(total);
+
+  document.querySelectorAll('#tiemposMuertosContratistaList .tm-row').forEach((row,i)=>{
+    const input=row.querySelector('input[readonly]');
+    const r=tiemposMuertosContratistaForm[i];
+    const c=r?calcularDuracionEntreDateTimes(r.inicio,r.fin):{texto:''};
+    if(input) input.value=c.texto;
+  });
+
+  updateGestionContratistaCalculos();
+  updateTiempoEfectivoForm();
+}
+
+function toggleTiempoMuertoContratistaFields(){
+  const form=document.getElementById('ticketForm');
+  if(!form) return;
+
+  const activo=form.elements['hubo_tiempo_muerto_contratista']?.value==='SI';
+  const section=document.getElementById('tiempoMuertoContratistaSection');
+
+  section?.classList.toggle('show',activo);
+
+  if(activo && !tiemposMuertosContratistaForm.length){
+    tiemposMuertosContratistaForm=[crearRangoTiempoMuertoContratista()];
+    renderTiemposMuertosContratistaForm();
+  }
+
+  if(!activo){
+    tiemposMuertosContratistaForm=[];
+    const list=document.getElementById('tiemposMuertosContratistaList');
+    if(list) list.innerHTML='';
+    const total=document.getElementById('tiempoMuertoContratistaTotalAcumulado');
+    if(total) total.textContent='0 min';
+    updateGestionContratistaCalculos();
+    updateTiempoEfectivoForm();
+  }
+}
+
+
+function buildResumenGestionContratista(){
+  const form=document.getElementById('ticketForm');
+  if(!form) return '';
+  const el=form.elements;
+
+  const ticket=el['ticket']?.value||'';
+  const cliente=el['nombre_cliente']?.value||'';
+  const idCliente=el['id_cliente']?.value||'';
+  const inicio=el['fecha_hora_reporte_contratista']?.value||'';
+  const fin=el['fecha_hora_fin_gestion_contratista']?.value||'';
+  const duracion=el['duracion_gestion_contratista']?.value||'';
+  const efectivo=el['tiempo_efectivo_contratista']?.value||'';
+  const huboTM=el['hubo_tiempo_muerto_contratista']?.value||'NO';
+
+  const lineas=[
+    '*RESUMEN GESTIÓN CONTRATISTA*',
+    '',
+    `*Ticket:* ${ticket}`,
+    `*Cliente:* ${cliente}`,
+    `*ID cliente:* ${idCliente}`,
+    `*Motivo del ticket:* ${el['motivo_ticket']?.value || 'No registrado'}`,
+    `*Fecha y hora de reporte:* ${inicio ? formatDateTimeValue(localDateTimeToBogotaISO(inicio)) : 'No registrada'}`,
+    `*Fecha y hora fin de gestión:* ${fin ? formatDateTimeValue(localDateTimeToBogotaISO(fin)) : 'No registrada'}`,
+    `*Duración total:* ${duracion || 'No calculada'}`,
+    `*Tiempo efectivo:* ${efectivo || 'No calculado'}`,
+    `*Tiempos muertos:* ${huboTM}`
+  ];
+
+  if(huboTM==='SI' && tiemposMuertosContratistaForm.length){
+    lineas.push('');
+    lineas.push('*Detalle de paradas de reloj:*');
+
+    tiemposMuertosContratistaForm.forEach((r,i)=>{
+      const calc=calcularDuracionEntreDateTimes(r.inicio,r.fin);
+      lineas.push(`*Parada ${i+1}:* ${r.inicio ? formatDateTimeValue(localDateTimeToBogotaISO(r.inicio)) : '—'} a ${r.fin ? formatDateTimeValue(localDateTimeToBogotaISO(r.fin)) : '—'}`);
+      lineas.push(`*Duración parada ${i+1}:* ${calc.texto || '—'}`);
+      lineas.push(`*Motivo parada ${i+1}:* ${r.motivo || '—'}`);
+    });
+
+    const totalTM=tiemposMuertosContratistaForm.reduce((sum,r)=>sum+(calcularMinutosDateTime(r.inicio,r.fin)||0),0);
+    lineas.push(`*Total tiempos muertos:* ${minutosTexto(totalTM)}`);
+  }
+
+  return lineas.join('\n');
+}
+
+window.copiarResumenGestionContratista=async function(){
+  const form=document.getElementById('ticketForm');
+  if(!form) return;
+
+  if(form.elements['reporte_contratista']?.value!=='SI'){
+    alert('El campo Reporte a contratista debe estar en SI para generar el resumen.');
+    return;
+  }
+
+  updateGestionContratistaCalculos();
+  const texto=buildResumenGestionContratista();
+  const ok=await copyToClipboardText(texto);
+
+  alert(ok
+    ? 'Resumen de gestión del contratista copiado para WhatsApp.'
+    : 'No fue posible copiar el resumen.');
+};
+
+function toggleGestionContratista(){
+  const form=document.getElementById('ticketForm');
+  if(!form) return;
+
+  const activo=form.elements['reporte_contratista']?.value==='SI';
+  const section=document.getElementById('gestionContratistaSection');
+  if(section) section.style.display=activo?'block':'none';
+
+  if(!activo){
+    tiemposMuertosContratistaForm=[];
+    if(form.elements['fecha_hora_reporte_contratista']) form.elements['fecha_hora_reporte_contratista'].value='';
+    if(form.elements['fecha_hora_fin_gestion_contratista']) form.elements['fecha_hora_fin_gestion_contratista'].value='';
+    if(form.elements['duracion_gestion_contratista']) form.elements['duracion_gestion_contratista'].value='';
+    if(form.elements['tiempo_efectivo_contratista']) form.elements['tiempo_efectivo_contratista'].value='';
+    if(form.elements['hubo_tiempo_muerto_contratista']) form.elements['hubo_tiempo_muerto_contratista'].value='NO';
+    const tmSection=document.getElementById('tiempoMuertoContratistaSection');
+    tmSection?.classList.remove('show');
+    const list=document.getElementById('tiemposMuertosContratistaList');
+    if(list) list.innerHTML='';
+    const total=document.getElementById('tiempoMuertoContratistaTotalAcumulado');
+    if(total) total.textContent='0 min';
+  }
+}
+
 function getBogotaDateTimeParts(value){
   if(!value) return null;
   const d=new Date(value);
@@ -827,6 +1305,91 @@ function formatDateTimeValue(value){
     dateStyle:'short',
     timeStyle:'short'
   });
+}
+
+
+const CAMPOS_OBLIGATORIOS_CIERRE = [
+  {name:'fecha_inicio', label:'Fecha inicio'},
+  {name:'hora_inicio', label:'Hora inicio'},
+  {name:'ticket', label:'Ticket'},
+  {name:'responsable', label:'Responsable'},
+  {name:'id_cliente', label:'ID del cliente'},
+  {name:'nombre_cliente', label:'Nombre cliente'},
+  {name:'equipo_switch', label:'Equipo / Switch'},
+  {name:'puerto_switch', label:'Puerto switch'},
+  {name:'odf_salida', label:'ODF salida'},
+  {name:'puerto_odf_salida', label:'Puerto ODF salida'},
+  {name:'tipo_falla', label:'Tipo de falla'},
+  {name:'subcausa_falla', label:'Subcausa / subcategoría'},
+  {name:'fecha_hora_medida_otdr', label:'Fecha y hora de medida con OTDR'},
+  {name:'fecha_hora_llegada_afectacion', label:'Fecha y hora de llegada al punto de afectación'},
+  {name:'fecha_fin', label:'Fecha fin'},
+  {name:'hora_fin', label:'Hora fin'},
+  {name:'coord_dano', label:'Coord falla / daño'},
+  {name:'solucion', label:'Solución'}
+];
+
+function validarCamposObligatoriosCierre(form, mostrarAlerta=true){
+  if(!form) return {ok:true};
+
+  const estado=(form.elements['estado']?.value||'').toUpperCase();
+  if(estado!=='CERRADO') return {ok:true};
+
+  for(const campo of CAMPOS_OBLIGATORIOS_CIERRE){
+    const input=form.elements[campo.name];
+    const valor=String(input?.value??'').trim();
+
+    if(!valor){
+      if(mostrarAlerta){
+        const msg=document.getElementById('ticketMsg');
+        if(msg){
+          msg.textContent=`Para cerrar el ticket debes diligenciar: ${campo.label}.`;
+          msg.style.color='#fecaca';
+        }
+        try{
+          input?.scrollIntoView({behavior:'smooth',block:'center'});
+          input?.focus();
+          input?.reportValidity?.();
+        }catch(e){}
+      }
+      return {ok:false,campo:campo.name,label:campo.label};
+    }
+  }
+
+  return {ok:true};
+}
+
+function updateRequiredFieldsForClose(){
+  const form=document.getElementById('ticketForm');
+  if(!form) return;
+
+  const cerrado=(form.elements['estado']?.value||'').toUpperCase()==='CERRADO';
+
+  CAMPOS_OBLIGATORIOS_CIERRE.forEach(campo=>{
+    const input=form.elements[campo.name];
+    if(!input) return;
+
+    input.required=cerrado;
+
+    const field=input.closest('.field');
+    const label=field?.querySelector('label');
+    if(label){
+      let mark=label.querySelector('.close-required-mark');
+
+      if(cerrado && !mark){
+        mark=document.createElement('span');
+        mark.className='close-required-mark';
+        mark.style.color='#ef4444';
+        mark.style.marginLeft='4px'; mark.style.fontWeight='900';
+        mark.textContent='*';
+        label.appendChild(mark);
+      }else if(!cerrado && mark){
+        mark.remove();
+      }
+    }
+  });
+
+  updateCoordRequirement();
 }
 
 function updateCoordRequirement(){
@@ -938,6 +1501,9 @@ async function resolveClient(){ if(clientRef) return clientRef; if(typeof getCli
 async function getCurrentUserEmail(){ try{ const client=await resolveClient(); const {data}=await client.auth.getUser(); return data?.user?.email || localStorage.getItem('user_email') || 'Desconocido'; }catch(e){ return localStorage.getItem('user_email') || 'Desconocido'; } }
 async function logTicketAudit(row,accion,detalle){
   try{
+    const cierreValidation=validarCamposObligatoriosCierre(form,true);
+    if(!cierreValidation.ok) return;
+
     const client=await resolveClient();
     const email=await getCurrentUserEmail();
     await client.from('om_ticket_auditoria').insert({
@@ -985,7 +1551,7 @@ function getFilteredRows(){
     const textoRegistro=normalizarFiltro([
       r.ticket,r.id_cliente,r.nombre_cliente,r.direccion_cliente,r.equipo_switch,
       r.demonico,r.puerto_switch,r.responsable,r.estado,r.prioridad,
-      getTipoFallaTexto(r.tipo_falla),r.subcausa_falla,r.coord_dano,
+      r.motivo_ticket,getTipoFallaTexto(r.tipo_falla),r.subcausa_falla,r.coord_dano,
       formatDateTime(r.fecha_inicio,r.hora_inicio)
     ].join(' '));
     const coincideTexto=!txt||textoRegistro.includes(txt);
@@ -999,7 +1565,7 @@ function getFilteredRows(){
     switch(sort){
       case 'prioridad_desc': return (PRIORITY_ORDER[b.prioridad]||0)-(PRIORITY_ORDER[a.prioridad]||0);
       case 'prioridad_asc': return (PRIORITY_ORDER[a.prioridad]||0)-(PRIORITY_ORDER[b.prioridad]||0);
-      case 'duracion_desc': return (Number(b.duracion_falla_minutos)||0)-(Number(a.duracion_falla_minutos)||0);
+      case 'duracion_desc': return (getDuracionTotalMinutosRow(b)||0)-(getDuracionTotalMinutosRow(a)||0);
       case 'ticket_asc': return String(a.ticket||'').localeCompare(String(b.ticket||''),'es',{numeric:true});
       case 'estado_asc': return String(a.estado||'').localeCompare(String(b.estado||''),'es');
       default:
@@ -1031,7 +1597,7 @@ function renderSummary(rows){
 }
 
 function normalizarFiltro(v){return String(v??'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
-function valorColumna(r,col){const dur=r.duracion_falla||calcularDuracionTexto(r.fecha_inicio,r.hora_inicio,r.fecha_fin,r.hora_fin)||''; const ef=getTiempoEfectivoMinutosRow(r); const map={fecha:formatDateTime(r.fecha_inicio,r.hora_inicio),ticket:r.ticket,id_cliente:r.id_cliente,cliente:`${r.nombre_cliente||''} ${r.direccion_cliente||''}`,equipo:`${r.equipo_switch||''} ${r.demonico||''}`,puerto:`${r.puerto_switch||''} ${r.odf_salida||''} ${r.puerto_odf_salida||''}`,responsable:r.responsable,estado:r.estado,prioridad:r.prioridad,duracion:dur,efectivo:ef==null?'':minutosTexto(ef),operativos:`${formatDateTimeValue(r.fecha_hora_medida_otdr)||''} ${formatDateTimeValue(r.fecha_hora_llegada_afectacion)||''} ${r.tiempo_muerto_total||''} ${r.motivo_tiempo_muerto||''}`,tipo:getTipoFallaTexto(r.tipo_falla),subcausa:r.subcausa_falla,coord:r.coord_dano}; return map[col]??'';}
+function valorColumna(r,col){const dur=getTextoDuracionRow(r); const ef=getTiempoEfectivoMinutosRow(r); const map={fecha:formatDateTime(r.fecha_inicio,r.hora_inicio),ticket:r.ticket,id_cliente:r.id_cliente,cliente:`${r.nombre_cliente||''} ${r.direccion_cliente||''}`,equipo:`${r.equipo_switch||''} ${r.demonico||''}`,puerto:`${r.puerto_switch||''} ${r.odf_salida||''} ${r.puerto_odf_salida||''}`,responsable:r.responsable,estado:r.estado,prioridad:r.prioridad,duracion:dur,efectivo:ef==null?'':minutosTexto(ef),operativos:`${formatDateTimeValue(r.fecha_hora_medida_otdr)||''} ${formatDateTimeValue(r.fecha_hora_llegada_afectacion)||''} ${r.tiempo_muerto_total||''} ${r.motivo_tiempo_muerto||''}`,tipo:getTipoFallaTexto(r.tipo_falla),subcausa:r.subcausa_falla,coord:r.coord_dano}; return map[col]??'';}
 
 function getTiemposMuertosRow(row){if(Array.isArray(row?.tiempos_muertos)&&row.tiempos_muertos.length)return row.tiempos_muertos; if(row?.tiempo_muerto_inicio&&row?.tiempo_muerto_fin)return [{inicio:row.tiempo_muerto_inicio,fin:row.tiempo_muerto_fin,motivo:row.motivo_tiempo_muerto,minutos:row.tiempo_muerto_minutos,total:row.tiempo_muerto_total}]; return [];}
 function formatTiemposMuertosMensaje(row){const rangos=getTiemposMuertosRow(row); if(!rangos.length)return row?.hubo_tiempo_muerto==='SI'?'Sin detalle':'No'; return rangos.map((r,i)=>`${i+1}. ${formatDateTimeValue(r.inicio)} a ${formatDateTimeValue(r.fin)} | ${r.total||formatearMinutos(r.minutos||0)} | ${r.motivo||''}`).join(' ; ');}
@@ -1040,6 +1606,88 @@ function formatTiemposMuertosMensaje(row){const rangos=getTiemposMuertosRow(row)
 function valorCorreo(valor,alternativa='No registrado'){
   const texto=String(valor??'').trim();
   return texto || alternativa;
+}
+
+
+function ahoraBogotaLocalInput(){
+  const parts=new Intl.DateTimeFormat('en-CA',{
+    timeZone:'America/Bogota',
+    year:'numeric',
+    month:'2-digit',
+    day:'2-digit',
+    hour:'2-digit',
+    minute:'2-digit',
+    hourCycle:'h23'
+  }).formatToParts(new Date());
+
+  const p={};
+  parts.forEach(x=>{if(x.type!=='literal') p[x.type]=x.value;});
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+
+function motivoTicketTextoWhatsApp(valor){
+  const v=String(valor||'').trim().toUpperCase();
+  if(v==='CAIDA DEL SERVICIO') return 'Caída del servicio';
+  if(v==='ATENUACION') return 'Atenuación';
+  return valorCorreo(valor);
+}
+
+function buildWhatsAppReporteContratista(row){
+  const motivo=motivoTicketTextoWhatsApp(row?.motivo_ticket);
+  return [
+    '⚠️🚨 *REPORTE DE FALLA TICKET* 🚨⚠️',
+    `Se solicita validación con cuadrilla para el siguiente caso debido a: ${motivo}`,
+    '',
+    `*ID ticket:* ${valorCorreo(row?.ticket)}`,
+    `*ID cliente:* ${valorCorreo(row?.id_cliente)}`,
+    `*Nombre del cliente:* ${valorCorreo(row?.nombre_cliente)}`,
+    `*Fecha inicio:* ${formatDate(row?.fecha_inicio) || 'No registrada'}`,
+    `*Hora inicio:* ${formatTime(row?.hora_inicio) || 'No registrada'}`,
+    `*Equipo / Switch:* ${valorCorreo(row?.equipo_switch)}`,
+    `*Puerto:* ${valorCorreo(row?.puerto_switch)}`
+  ].join('\n');
+}
+
+async function asegurarFechaReporteContratista(row){
+  if(!row) return null;
+
+  if(row.fecha_hora_reporte_contratista){
+    return row.fecha_hora_reporte_contratista;
+  }
+
+  const localValue=ahoraBogotaLocalInput();
+  const isoValue=localDateTimeToBogotaISO(localValue);
+
+  try{
+    const client=await resolveClient();
+    const {error}=await client
+      .from('om_tickets')
+      .update({fecha_hora_reporte_contratista:isoValue})
+      .eq('id',row.id);
+
+    if(error) throw error;
+
+    row.fecha_hora_reporte_contratista=isoValue;
+
+    const form=document.getElementById('ticketForm');
+    if(form){
+      const idForm=String(form.elements['id']?.value||'');
+      if(idForm && idForm===String(row.id)){
+        if(form.elements['fecha_hora_reporte_contratista']){
+          form.elements['fecha_hora_reporte_contratista'].value=localValue;
+        }
+        if(typeof updateGestionContratistaCalculos==='function'){
+          updateGestionContratistaCalculos();
+        }
+      }
+    }
+
+    return isoValue;
+  }catch(error){
+    console.error('No se pudo actualizar la fecha de reporte al contratista:',error);
+    alert('No fue posible guardar automáticamente la fecha y hora de reporte al contratista.');
+    return null;
+  }
 }
 
 function buildAsuntoContratista(row){
@@ -1080,6 +1728,7 @@ function buildCorreoContratista(row){
     `Dirección: ${direccion}`,
     `Fecha y hora de inicio: ${fechaInicio}`,
     `Prioridad: ${prioridad}`,
+    `Motivo del ticket: ${valorCorreo(row?.motivo_ticket)}`,
     `Nodo / equipo: ${nodo}`,
     `Puerto: ${puerto}`,
     `ODF: ${odf}`,
@@ -1113,17 +1762,49 @@ function abrirCorreoOutlookContratista(row){
   enlace.remove();
 }
 
-window.notificarContratistaByIndex=function(index,event){
+window.notificarContratistaByIndex=async function(index,event){
   if(event){
     event.preventDefault();
     event.stopPropagation();
   }
+
   const row=getRenderedTicket(Number(index));
   if(!row){
     alert('No fue posible localizar el ticket para generar la notificación.');
     return;
   }
-  abrirCorreoOutlookContratista(row);
+
+  const opcion=window.prompt(
+    '¿Cómo deseas reportar al contratista?\n\nEscribe:\n1 = CORREO\n2 = WHATSAPP',
+    '2'
+  );
+
+  if(opcion===null) return;
+
+  const seleccion=String(opcion).trim().toUpperCase();
+  const esCorreo=['1','CORREO','EMAIL','E-MAIL'].includes(seleccion);
+  const esWhatsapp=['2','WHATSAPP','WA','WSP'].includes(seleccion);
+
+  if(!esCorreo && !esWhatsapp){
+    alert('Opción no válida. Escribe 1 para CORREO o 2 para WHATSAPP.');
+    return;
+  }
+
+  await asegurarFechaReporteContratista(row);
+
+  if(esCorreo){
+    abrirCorreoOutlookContratista(row);
+    return;
+  }
+
+  const texto=buildWhatsAppReporteContratista(row);
+  const ok=await copyToClipboardText(texto);
+
+  alert(
+    ok
+      ? 'Mensaje de reporte al contratista copiado. Ya puedes pegarlo en WhatsApp.'
+      : 'No fue posible copiar el mensaje para WhatsApp.'
+  );
 };
 
 function buildMensajeInicio(row){
@@ -1320,8 +2001,8 @@ function renderTickets(){
         </div>
       </td>
       <td>${badgePriority(r.prioridad||'')}</td>
-      <td>${esc(r.duracion_falla||calcularDuracionTexto(r.fecha_inicio,r.hora_inicio,r.fecha_fin,r.hora_fin)||'')}</td>
-      <td><span class="effective-value">${getTiempoEfectivoMinutosRow(r)==null?'—':esc(minutosTexto(getTiempoEfectivoMinutosRow(r)))}</span></td>
+      <td><span class="live-time ${getClaseTiempoEnVivo(r,getDuracionTotalMinutosRow(r))}">${getDuracionTotalMinutosRow(r)==null?'—':esc(minutosTexto(getDuracionTotalMinutosRow(r)))}</span></td>
+      <td><span class="effective-value live-time ${getClaseTiempoEnVivo(r,getTiempoEfectivoMinutosRow(r))}">${getTiempoEfectivoMinutosRow(r)==null?'—':esc(minutosTexto(getTiempoEfectivoMinutosRow(r)))}</span></td>
       <td><div class="desc"><strong>OTDR:</strong> ${esc(formatDateTimeValue(r.fecha_hora_medida_otdr)||'—')}<br><strong>Llegada:</strong> ${esc(formatDateTimeValue(r.fecha_hora_llegada_afectacion)||'—')}<br><strong>T. muerto:</strong> ${r.hubo_tiempo_muerto==='SI'?esc(r.tiempo_muerto_total||'Sí'):'No'}${r.motivo_tiempo_muerto?`<br>${esc(r.motivo_tiempo_muerto)}`:''}</div></td>
       <td><div class="title">${esc(getTipoFallaTexto(r.tipo_falla)||'')}</div></td>
       <td><div class="desc">${esc(r.subcausa_falla||'')}</div></td>
@@ -1467,6 +2148,7 @@ window.openTicketModal=function(row=null){
   try{
     form.reset();
     tiemposMuertosForm=[];
+    tiemposMuertosContratistaForm=[];
     if(msg) msg.textContent='';
     if(el['id']) el['id'].value='';
 
@@ -1517,6 +2199,30 @@ window.openTicketModal=function(row=null){
         el['hubo_tiempo_muerto'].value=tieneTM?'SI':'NO';
       }
 
+      const reporteContratista=
+        row.reporte_contratista===true ||
+        String(row.reporte_contratista||'').toUpperCase()==='SI';
+
+      if(el['reporte_contratista']) el['reporte_contratista'].value=reporteContratista?'SI':'NO';
+
+      if(reporteContratista){
+        if(el['fecha_hora_reporte_contratista']) asignarValorFormularioSeguro(el['fecha_hora_reporte_contratista'],row.fecha_hora_reporte_contratista);
+        if(el['fecha_hora_fin_gestion_contratista']) asignarValorFormularioSeguro(el['fecha_hora_fin_gestion_contratista'],row.fecha_hora_fin_gestion_contratista);
+
+        let rangosContratista=normalizarListaTiemposMuertos(row.tiempos_muertos_contratista);
+        tiemposMuertosContratistaForm=rangosContratista.map(item=>{
+          try{return crearRangoTiempoMuertoContratista(item);}
+          catch(error){console.warn('Rango contratista omitido:',item,error);return null;}
+        }).filter(Boolean);
+
+        const tieneTMC=
+          row.hubo_tiempo_muerto_contratista===true ||
+          String(row.hubo_tiempo_muerto_contratista||'').toUpperCase()==='SI' ||
+          tiemposMuertosContratistaForm.length>0;
+
+        if(el['hubo_tiempo_muerto_contratista']) el['hubo_tiempo_muerto_contratista'].value=tieneTMC?'SI':'NO';
+      }
+
       updateSubcausaOptions(row.subcausa_falla||'');
 
       if(el['duracion_falla']){
@@ -1527,6 +2233,8 @@ window.openTicketModal=function(row=null){
       }
     }else{
       if(el['hubo_tiempo_muerto']) el['hubo_tiempo_muerto'].value='NO';
+      if(el['reporte_contratista']) el['reporte_contratista'].value='NO';
+      if(el['hubo_tiempo_muerto_contratista']) el['hubo_tiempo_muerto_contratista'].value='NO';
       updateSubcausaOptions();
       modal.classList.add('show');
     }
@@ -1534,6 +2242,12 @@ window.openTicketModal=function(row=null){
     try{
       toggleTiempoMuertoFields();
       if(tiemposMuertosForm.length) renderTiemposMuertosForm();
+      toggleGestionContratista();
+      if(form.elements['reporte_contratista']?.value==='SI'){
+        toggleTiempoMuertoContratistaFields();
+        if(tiemposMuertosContratistaForm.length) renderTiemposMuertosContratistaForm();
+        updateGestionContratistaCalculos();
+      }
     }catch(error){
       console.warn('No se pudieron cargar todos los tiempos muertos, pero el formulario seguirá abierto.',error);
       tiemposMuertosForm=[];
@@ -1543,7 +2257,7 @@ window.openTicketModal=function(row=null){
     }
 
     updateDuracionForm();
-    updateCoordRequirement();
+    updateRequiredFieldsForClose();
   }catch(error){
     console.error('Error abriendo el formulario de edición:',error,row);
     modal.classList.add('show');
@@ -1560,7 +2274,18 @@ window.closeHistoryModal=function(){ document.getElementById('historyModal').cla
 document.getElementById('historyModal').addEventListener('click', function(e){ if(e.target.id==='historyModal'){ /* no cerrar */ } });
 
 ['fecha_inicio','hora_inicio','fecha_fin','hora_fin'].forEach(name=>{ document.addEventListener('input',e=>{ if(e.target&&e.target.name===name) updateDuracionForm(); }); document.addEventListener('change',e=>{ if(e.target&&e.target.name===name) updateDuracionForm(); }); });
-document.addEventListener('change',e=>{if(e.target&&e.target.name==='hubo_tiempo_muerto') toggleTiempoMuertoFields();});
+document.addEventListener('change',e=>{
+  if(!e.target) return;
+  if(e.target.name==='estado') updateRequiredFieldsForClose();
+  if(e.target.name==='hubo_tiempo_muerto') toggleTiempoMuertoFields();
+  if(e.target.name==='reporte_contratista') toggleGestionContratista();
+  if(e.target.name==='hubo_tiempo_muerto_contratista') toggleTiempoMuertoContratistaFields();
+  if(e.target.name==='fecha_hora_reporte_contratista' || e.target.name==='fecha_hora_fin_gestion_contratista') updateGestionContratistaCalculos();
+});
+document.addEventListener('input',e=>{
+  if(!e.target) return;
+  if(e.target.name==='fecha_hora_reporte_contratista' || e.target.name==='fecha_hora_fin_gestion_contratista') updateGestionContratistaCalculos();
+});
 
 document.addEventListener('blur', e=>{
   if(e.target && e.target.name === 'coord_dano') validarYNormalizarCoordFalla(e.target, false);
@@ -1600,7 +2325,63 @@ document.getElementById('ticketForm').addEventListener('submit', async function(
     const tm=huboTiempoMuerto?obtenerTiemposMuertosValidados():{ok:true,rangos:[],minutos:0,texto:null};
     if(!tm.ok){ msg.textContent=tm.error; msg.style.color='#fecaca'; return; }
     const primerRango=tm.rangos[0]||{};
-    const payload={ticket:(el['ticket']?.value||'').trim(),id_cliente:(el['id_cliente']?.value||'').trim()||null,nombre_cliente:(el['nombre_cliente']?.value||'').trim(),direccion_cliente:(el['direccion_cliente']?.value||'').trim()||null,coordenada_cliente:(el['coordenada_cliente']?.value||'').trim()||null,demonico:(el['demonico']?.value||'').trim()||null,equipo_switch:(el['equipo_switch']?.value||'').trim()||null,puerto_switch:(el['puerto_switch']?.value||'').trim()||null,odf_espejo:(el['odf_espejo']?.value||'').trim()||null,odf_salida:(el['odf_salida']?.value||'').trim()||null,puerto_odf_salida:(el['puerto_odf_salida']?.value||'').trim()||null,responsable:(el['responsable']?.value||'').trim()||null,fecha_inicio:fechaInicio,hora_inicio:horaInicio,fecha_fin:fechaFin||null,hora_fin:horaFin||null,duracion_falla_minutos:durMin,duracion_falla:el['duracion_falla']?.value||null,estado:estadoTicket,prioridad:el['prioridad']?.value||'MEDIA',tipo_falla:(el['tipo_falla']?.value||'').trim()||null,subcausa_falla:(el['subcausa_falla']?.value||'').trim()||null,causa:(el['causa']?.value||'').trim()||null,solucion:(el['solucion']?.value||'').trim()||null,coord_dano:coordFallaNormalizada,fecha_hora_medida_otdr:localDateTimeToBogotaISO(el['fecha_hora_medida_otdr']?.value)||null,fecha_hora_llegada_afectacion:localDateTimeToBogotaISO(el['fecha_hora_llegada_afectacion']?.value)||null,hubo_tiempo_muerto:huboTiempoMuerto?'SI':'NO',tiempos_muertos:huboTiempoMuerto?tm.rangos:[],tiempo_muerto_inicio:huboTiempoMuerto?(primerRango.inicio||null):null,tiempo_muerto_fin:huboTiempoMuerto?(primerRango.fin||null):null,tiempo_muerto_minutos:huboTiempoMuerto?tm.minutos:0,tiempo_muerto_total:huboTiempoMuerto?tm.texto:null,motivo_tiempo_muerto:huboTiempoMuerto?(primerRango.motivo||null):null,observacion:(el['observacion']?.value||'').trim()||null};
+
+    const reporteContratista=el['reporte_contratista']?.value==='SI';
+    const huboTiempoMuertoContratista=reporteContratista && el['hubo_tiempo_muerto_contratista']?.value==='SI';
+    const estadoCerrado=(el['estado']?.value||'').toUpperCase()==='CERRADO';
+
+    if(reporteContratista && estadoCerrado){
+      if(!el['fecha_hora_reporte_contratista']?.value){
+        msg.textContent='Para cerrar el ticket debes registrar la fecha y hora de reporte al contratista.';
+        msg.style.color='#fecaca';
+        el['fecha_hora_reporte_contratista']?.focus();
+        return;
+      }
+      if(!el['fecha_hora_fin_gestion_contratista']?.value){
+        msg.textContent='Para cerrar el ticket debes registrar la fecha y hora de fin de gestión del contratista.';
+        msg.style.color='#fecaca';
+        el['fecha_hora_fin_gestion_contratista']?.focus();
+        return;
+      }
+      if(!el['hubo_tiempo_muerto_contratista']?.value){
+        msg.textContent='Para cerrar el ticket debes indicar si hubo tiempos muertos del contratista.';
+        msg.style.color='#fecaca';
+        el['hubo_tiempo_muerto_contratista']?.focus();
+        return;
+      }
+      if(calcularMinutosDateTime(el['fecha_hora_reporte_contratista'].value,el['fecha_hora_fin_gestion_contratista'].value)===null){
+        msg.textContent='La fecha/hora fin de gestión del contratista debe ser posterior a la fecha/hora de reporte.';
+        msg.style.color='#fecaca';
+        return;
+      }
+    }
+
+    if(reporteContratista && el['fecha_hora_reporte_contratista']?.value && el['fecha_hora_fin_gestion_contratista']?.value){
+      if(calcularMinutosDateTime(el['fecha_hora_reporte_contratista'].value,el['fecha_hora_fin_gestion_contratista'].value)===null){
+        msg.textContent='La fecha/hora fin de gestión del contratista debe ser posterior a la fecha/hora de reporte.';
+        msg.style.color='#fecaca';
+        return;
+      }
+    }
+
+    const tmContratista=huboTiempoMuertoContratista
+      ? obtenerTiemposMuertosContratistaValidados()
+      : {ok:true,rangos:[],minutos:0,texto:null};
+
+    if(!tmContratista.ok){
+      msg.textContent=tmContratista.error;
+      msg.style.color='#fecaca';
+      return;
+    }
+
+    const duracionGestionContratistaMin=reporteContratista
+      ? calcularMinutosDateTime(el['fecha_hora_reporte_contratista'].value,el['fecha_hora_fin_gestion_contratista'].value)
+      : null;
+
+    const tiempoEfectivoContratistaMin=reporteContratista && duracionGestionContratistaMin!==null
+      ? Math.max(0,duracionGestionContratistaMin-tmContratista.minutos)
+      : null;
+    const payload={ticket:(el['ticket']?.value||'').trim(),id_cliente:(el['id_cliente']?.value||'').trim()||null,nombre_cliente:(el['nombre_cliente']?.value||'').trim(),direccion_cliente:(el['direccion_cliente']?.value||'').trim()||null,coordenada_cliente:(el['coordenada_cliente']?.value||'').trim()||null,demonico:(el['demonico']?.value||'').trim()||null,equipo_switch:(el['equipo_switch']?.value||'').trim()||null,puerto_switch:(el['puerto_switch']?.value||'').trim()||null,odf_espejo:(el['odf_espejo']?.value||'').trim()||null,odf_salida:(el['odf_salida']?.value||'').trim()||null,puerto_odf_salida:(el['puerto_odf_salida']?.value||'').trim()||null,responsable:(el['responsable']?.value||'').trim()||null,fecha_inicio:fechaInicio,hora_inicio:horaInicio,fecha_fin:fechaFin||null,hora_fin:horaFin||null,duracion_falla_minutos:durMin,duracion_falla:el['duracion_falla']?.value||null,estado:estadoTicket,prioridad:el['prioridad']?.value||'MEDIA',motivo_ticket:(el['motivo_ticket']?.value||'').trim()||null,tipo_falla:(el['tipo_falla']?.value||'').trim()||null,subcausa_falla:(el['subcausa_falla']?.value||'').trim()||null,causa:(el['causa']?.value||'').trim()||null,solucion:(el['solucion']?.value||'').trim()||null,coord_dano:coordFallaNormalizada,fecha_hora_medida_otdr:localDateTimeToBogotaISO(el['fecha_hora_medida_otdr']?.value)||null,fecha_hora_llegada_afectacion:localDateTimeToBogotaISO(el['fecha_hora_llegada_afectacion']?.value)||null,hubo_tiempo_muerto:huboTiempoMuerto?'SI':'NO',tiempos_muertos:huboTiempoMuerto?tm.rangos:[],tiempo_muerto_inicio:huboTiempoMuerto?(primerRango.inicio||null):null,tiempo_muerto_fin:huboTiempoMuerto?(primerRango.fin||null):null,tiempo_muerto_minutos:huboTiempoMuerto?tm.minutos:0,tiempo_muerto_total:huboTiempoMuerto?tm.texto:null,motivo_tiempo_muerto:huboTiempoMuerto?(primerRango.motivo||null):null,reporte_contratista:reporteContratista?'SI':'NO',fecha_hora_reporte_contratista:reporteContratista?localDateTimeToBogotaISO(el['fecha_hora_reporte_contratista']?.value):null,fecha_hora_fin_gestion_contratista:reporteContratista?localDateTimeToBogotaISO(el['fecha_hora_fin_gestion_contratista']?.value):null,duracion_gestion_contratista_minutos:reporteContratista?duracionGestionContratistaMin:null,duracion_gestion_contratista:reporteContratista&&duracionGestionContratistaMin!==null?minutosTexto(duracionGestionContratistaMin):null,hubo_tiempo_muerto_contratista:huboTiempoMuertoContratista?'SI':'NO',tiempos_muertos_contratista:huboTiempoMuertoContratista?tmContratista.rangos:[],tiempo_muerto_contratista_minutos:huboTiempoMuertoContratista?tmContratista.minutos:0,tiempo_muerto_contratista_total:huboTiempoMuertoContratista?tmContratista.texto:null,tiempo_efectivo_contratista_minutos:reporteContratista?tiempoEfectivoContratistaMin:null,tiempo_efectivo_contratista:reporteContratista&&tiempoEfectivoContratistaMin!==null?minutosTexto(tiempoEfectivoContratistaMin):null,observacion:(el['observacion']?.value||'').trim()||null};
     let result; const rowId=el['id']?.value||'';
     if(rowId){
       const oldRow=ticketRows.find(x=>String(x.id)===String(rowId))||{};
@@ -1628,13 +2409,63 @@ window.changeTicketStatusByIndex=async function(index,estado,selectEl=null,event
   return changeTicketStatus(row.id,estado,selectEl);
 };
 
+
+function getCamposFaltantesParaCerrarRow(row){
+  const checks=[
+    ['fecha_inicio','Fecha inicio'],
+    ['hora_inicio','Hora inicio'],
+    ['ticket','Ticket'],
+    ['responsable','Responsable'],
+    ['id_cliente','ID del cliente'],
+    ['nombre_cliente','Nombre cliente'],
+    ['equipo_switch','Equipo / Switch'],
+    ['puerto_switch','Puerto switch'],
+    ['odf_salida','ODF salida'],
+    ['puerto_odf_salida','Puerto ODF salida'],
+    ['tipo_falla','Tipo de falla'],
+    ['subcausa_falla','Subcausa / subcategoría'],
+    ['fecha_hora_medida_otdr','Fecha y hora de medida con OTDR'],
+    ['fecha_hora_llegada_afectacion','Fecha y hora de llegada al punto de afectación'],
+    ['fecha_fin','Fecha fin'],
+    ['hora_fin','Hora fin'],
+    ['coord_dano','Coord falla / daño'],
+    ['solucion','Solución']
+  ];
+
+  return checks
+    .filter(([key])=>!String(row?.[key]??'').trim())
+    .map(([,label])=>label);
+}
+
 window.changeTicketStatus=async function(id,estado,selectEl=null){
   try{
     const client=await resolveClient(); const row=findTicketById(id); const prev=row?.estado||'';
+    if(estado==='CERRADO'){
+      const faltantes=getCamposFaltantesParaCerrarRow(row);
+      if(faltantes.length){
+        alert(
+          'No puedes cerrar este ticket todavía.\n\nFaltan los siguientes campos obligatorios:\n- ' +
+          faltantes.join('\n- ') +
+          '\n\nAbre Editar y completa la información.'
+        );
+        if(selectEl) selectEl.value=prev;
+        return;
+      }
+    }
     if(estado==='CERRADO' && !String(row?.coord_dano||'').trim()){
       if(selectEl) selectEl.value=prev;
       alert('No puedes cerrar el ticket sin registrar primero la coordenada de la falla o daño. Abre Editar, diligencia la coordenada y luego guarda el ticket como CERRADO.');
       return;
+    }
+    if(estado==='CERRADO' && String(row?.reporte_contratista||'').toUpperCase()==='SI'){
+      const faltaReporte=!row?.fecha_hora_reporte_contratista;
+      const faltaFin=!row?.fecha_hora_fin_gestion_contratista;
+      const faltaHuboTM=!String(row?.hubo_tiempo_muerto_contratista||'').trim();
+      if(faltaReporte || faltaFin || faltaHuboTM){
+        alert('Para cerrar este ticket debes completar primero la sección Gestión contratista.');
+        if(selectEl) selectEl.value=prev;
+        return;
+      }
     }
     const {error}=await client.from('om_tickets').update({estado}).eq('id',id); if(error) throw error;
     if(row) row.estado=estado;
@@ -1713,6 +2544,19 @@ window.showHistory = async function(ticketId, ticketCodigo){
 document.addEventListener('input',e=>{if(e.target?.classList?.contains('column-filter'))renderTickets();});
 document.addEventListener('change',e=>{if(e.target?.classList?.contains('column-filter'))renderTickets();});
 loadTickets();
+
+// Actualiza los tiempos visibles de tickets no cerrados automáticamente.
+// No vuelve a consultar Supabase; solo recalcula la tabla con la hora actual.
+setInterval(()=>{
+  try{
+    if(ticketRows.some(r=>!ticketEstaCerrado(r))){
+      renderTickets();
+    }
+  }catch(error){
+    console.warn('No se pudieron refrescar los tiempos en vivo:',error);
+  }
+},30000);
+
 </script>
 <script>
 (function(){
