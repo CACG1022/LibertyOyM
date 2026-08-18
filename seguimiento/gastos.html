@@ -834,6 +834,71 @@
       .sidebar{position:relative;height:auto}
       .sidebar-toggle-tab{display:none}
     }
+
+
+    .etiquetas-panel{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+      gap:12px;
+      margin-bottom:18px;
+    }
+
+    .etiqueta-card{
+      border:1px solid rgba(255,255,255,.12);
+      border-left:5px solid var(--etiqueta-color,#38bdf8);
+      border-radius:16px;
+      padding:13px 14px;
+      background:rgba(17,24,39,.82);
+      box-shadow:var(--shadow);
+      cursor:pointer;
+      transition:.15s ease;
+    }
+
+    .etiqueta-card:hover{transform:translateY(-1px);filter:brightness(1.06)}
+    .etiqueta-card.active{box-shadow:0 0 0 2px var(--etiqueta-color,#38bdf8), var(--shadow)}
+    .etiqueta-title{font-weight:900;margin-bottom:6px;color:#fff}
+    .etiqueta-meta{font-size:12px;color:#b9c7dc;line-height:1.35}
+    .etiqueta-value{font-size:18px;font-weight:900;margin-top:6px;color:#fff}
+
+    .etiqueta-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      border-radius:999px;
+      padding:5px 9px;
+      border:1px solid var(--etiqueta-color,#38bdf8);
+      background:rgba(255,255,255,.04);
+      color:#fff;
+      font-size:12px;
+      font-weight:800;
+      white-space:nowrap;
+    }
+
+    .etiqueta-dot{
+      width:9px;
+      height:9px;
+      border-radius:999px;
+      background:var(--etiqueta-color,#38bdf8);
+      box-shadow:0 0 0 3px rgba(255,255,255,.08);
+    }
+
+    .etiqueta-list-item{
+      display:grid;
+      grid-template-columns:minmax(220px,1fr) minmax(120px,.55fr) minmax(120px,.6fr) auto;
+      gap:12px;
+      align-items:center;
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px;
+      background:rgba(15,23,42,.68);
+      margin-bottom:10px;
+    }
+
+    .color-row{display:flex;gap:8px;align-items:center}
+    .color-row input[type="color"]{width:58px;min-width:58px;padding:4px;height:42px}
+
+    @media(max-width:800px){.etiqueta-list-item{grid-template-columns:1fr}.etiquetas-panel{grid-template-columns:1fr}}
+
   </style>
 
   <!-- OpenCV.js para escáner avanzado con detección de bordes y corrección de perspectiva -->
@@ -902,11 +967,17 @@
         <div class="label" id="kpiRangoLabel">Gastos rango fechas</div>
         <div class="value" id="kpiRangoFechas">$0</div>
       </div>
+      <div class="kpi yellow" id="kpiEtiquetaFiltroCard">
+        <div class="label" id="kpiEtiquetaFiltroLabel">Gastos etiqueta seleccionada</div>
+        <div class="value" id="kpiEtiquetaFiltro">$0</div>
+      </div>
       <div class="kpi">
         <div class="label">Registros visibles</div>
         <div class="value" id="kpiRegistros">0</div>
       </div>
     </section>
+
+    <section class="etiquetas-panel" id="etiquetasPanel" style="display:none;"></section>
 
     <section class="toolbar">
       <div class="filters">
@@ -923,6 +994,10 @@
           <option value="Transaccion">Transacción</option>
           <option value="Nequi">Nequi</option>
         </select>
+        <select id="filtroEtiqueta" title="Filtrar por etiqueta">
+          <option value="">Todas las etiquetas</option>
+          <option value="__SIN_ETIQUETA__">Sin etiqueta</option>
+        </select>
         <input type="month" id="filtroMes" title="Filtrar por mes. Déjalo vacío para ver todos los meses." />
         <input type="date" id="filtroFechaDesde" title="Fecha inicial del rango" />
         <input type="date" id="filtroFechaHasta" title="Fecha final del rango" />
@@ -930,6 +1005,7 @@
       </div>
       <div class="actions">
         <button class="btn yellow" id="btnRegistrarMovimiento" onclick="abrirModalMovimiento()"><i data-lucide="landmark"></i> Registrar retiro/ajuste</button>
+        <button class="btn ghost" onclick="abrirModalEtiquetas()"><i data-lucide="tag"></i> Gestionar etiquetas</button>
         <button class="btn green" onclick="exportarExcel()"><i data-lucide="file-spreadsheet"></i> Exportar Excel</button>
         <button class="btn primary" onclick="abrirModalGasto()"><i data-lucide="plus"></i> Nuevo gasto</button>
       </div>
@@ -946,13 +1022,14 @@
               <th onclick="ordenarPor('numero_factura')">Factura</th>
               <th onclick="ordenarPor('metodo_pago')">Método</th>
               <th onclick="ordenarPor('tipo_gasto')">Tipo gasto</th>
+              <th onclick="ordenarPor('etiqueta_id')">Etiqueta</th>
               <th>Descripción / Actividad</th>
               <th>Soporte</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="tbodyGastos">
-            <tr><td colspan="9" class="empty">Cargando gastos...</td></tr>
+            <tr><td colspan="10" class="empty">Cargando gastos...</td></tr>
           </tbody>
         </table>
       </div>
@@ -1056,6 +1133,14 @@
           <div class="field">
             <label>Tipo de gasto</label>
             <select id="tipoGasto" required></select>
+          </div>
+
+          <div class="field">
+            <label>Etiqueta</label>
+            <select id="etiquetaGasto">
+              <option value="">Sin etiqueta</option>
+            </select>
+            <p class="small">Úsala para marcar gastos de préstamos u otros dineros específicos.</p>
           </div>
 
           <div class="field full">
@@ -1165,6 +1250,62 @@
           <button type="submit" class="btn yellow"><i data-lucide="save"></i> Guardar movimiento</button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal etiquetas de gastos -->
+<div class="modal" id="modalEtiquetas">
+  <div class="modal-box" style="width:min(980px,96vw)">
+    <div class="modal-head">
+      <h3>Etiquetas de gastos</h3>
+      <button class="icon-btn" onclick="cerrarModalEtiquetas()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="formEtiqueta">
+        <input type="hidden" id="etiquetaId" />
+        <div class="form-grid">
+          <div class="field">
+            <label>Nombre de la etiqueta</label>
+            <input type="text" id="etiquetaNombre" placeholder="Ej: Préstamo caja agosto" required />
+          </div>
+          <div class="field">
+            <label>Monto de referencia <span class="small">(opcional)</span></label>
+            <input type="text" id="etiquetaMontoReferencia" placeholder="$0" />
+          </div>
+          <div class="field">
+            <label>Color</label>
+            <div class="color-row">
+              <input type="color" id="etiquetaColor" value="#38bdf8" />
+              <input type="text" id="etiquetaColorTexto" value="#38bdf8" />
+            </div>
+          </div>
+          <div class="field">
+            <label>Estado</label>
+            <select id="etiquetaActiva">
+              <option value="true">Activa</option>
+              <option value="false">Inactiva</option>
+            </select>
+          </div>
+          <div class="field full">
+            <label>Descripción / origen</label>
+            <textarea id="etiquetaDescripcion" rows="3" placeholder="Ej: Dinero prestado para cubrir gastos de operación..."></textarea>
+          </div>
+        </div>
+        <div class="footer-actions">
+          <button type="button" class="btn ghost" onclick="limpiarFormularioEtiqueta()">Nueva etiqueta</button>
+          <button type="submit" class="btn primary"><i data-lucide="save"></i> Guardar etiqueta</button>
+        </div>
+      </form>
+
+      <div class="section-title" style="margin-top:18px">
+        <div>
+          <h3>Etiquetas creadas</h3>
+          <span>El valor gastado se calcula con los gastos que tengan asignada cada etiqueta.</span>
+        </div>
+      </div>
+      <div id="listaEtiquetas"></div>
     </div>
   </div>
 </div>
@@ -1280,6 +1421,7 @@
   let usuarioActual = null;
   let gastos = [];
   let movimientosCaja = [];
+  let etiquetasGastos = [];
   let gastosFiltrados = [];
   let movimientosFiltrados = [];
   let sortKey = "fecha";
@@ -1298,6 +1440,15 @@
   let scannerRecorteBaseDataUrl = null;
 
   const $ = (id) => document.getElementById(id);
+
+  function escHTML(value){
+    return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+  }
 
   function formatCOP(value){
     const number = Number(value || 0);
@@ -1495,10 +1646,25 @@
       $("movValor").value = formatCOP(limpiarMoneda($("movValor").value));
     });
 
+    if($("etiquetaMontoReferencia")){
+      $("etiquetaMontoReferencia").addEventListener("blur", () => {
+        $("etiquetaMontoReferencia").value = formatCOP(limpiarMoneda($("etiquetaMontoReferencia").value));
+      });
+    }
+    if($("etiquetaColor")){
+      $("etiquetaColor").addEventListener("input", () => $("etiquetaColorTexto").value = $("etiquetaColor").value);
+    }
+    if($("etiquetaColorTexto")){
+      $("etiquetaColorTexto").addEventListener("input", () => {
+        if(/^#[0-9A-Fa-f]{6}$/.test($("etiquetaColorTexto").value)) $("etiquetaColor").value = $("etiquetaColorTexto").value;
+      });
+    }
+
     $("buscar").addEventListener("input", aplicarFiltros);
     $("filtroUsuario").addEventListener("change", aplicarFiltros);
     $("filtroTipo").addEventListener("change", aplicarFiltros);
     $("filtroMetodo").addEventListener("change", aplicarFiltros);
+    $("filtroEtiqueta").addEventListener("change", aplicarFiltros);
     $("filtroMes").addEventListener("change", aplicarFiltros);
     $("filtroFechaDesde").addEventListener("change", aplicarFiltros);
     $("filtroFechaHasta").addEventListener("change", aplicarFiltros);
@@ -1533,6 +1699,7 @@
 
     $("formGasto").addEventListener("submit", guardarGasto);
     $("formMovimiento").addEventListener("submit", guardarMovimiento);
+    if($("formEtiqueta")) $("formEtiqueta").addEventListener("submit", guardarEtiqueta);
   }
 
   function mostrarPreviewFactura(file){
@@ -1571,6 +1738,7 @@
       $("numeroFactura").value = gasto.numero_factura || "";
       $("metodoPago").value = gasto.metodo_pago || "";
       $("tipoGasto").value = gasto.tipo_gasto || "";
+      if($("etiquetaGasto")) $("etiquetaGasto").value = gasto.etiqueta_id || "";
       $("descripcion").value = gasto.descripcion || "";
       if(gasto.factura_drive_url){
         $("facturaActual").innerHTML = `Soporte actual: <a href="${gasto.factura_drive_url}" target="_blank" style="color:#38bdf8">Ver factura en Drive</a>`;
@@ -2270,6 +2438,7 @@
       metodo_pago: $("metodoPago").value,
       descripcion: $("descripcion").value.trim(),
       tipo_gasto: $("tipoGasto").value,
+      etiqueta_id: $("etiquetaGasto")?.value || null,
       ...facturaInfo
     };
 
@@ -2361,9 +2530,10 @@
   }
 
   async function cargarTodo(){
-    await Promise.all([cargarGastos(), cargarMovimientosCaja()]);
+    await Promise.all([cargarEtiquetas(), cargarGastos(), cargarMovimientosCaja()]);
     llenarFiltroUsuarios();
-    await cargarKPIs();
+    llenarFiltroEtiquetas();
+    aplicarFiltros();
   }
 
   async function cargarGastos(){
@@ -2375,7 +2545,7 @@
 
     if(error){
       console.error(error);
-      $("tbodyGastos").innerHTML = `<tr><td colspan="9" class="empty">Error cargando gastos: ${error.message}</td></tr>`;
+      $("tbodyGastos").innerHTML = `<tr><td colspan="10" class="empty">Error cargando gastos: ${error.message}</td></tr>`;
       return;
     }
 
@@ -2397,6 +2567,206 @@
     }
 
     movimientosCaja = data || [];
+  }
+
+
+  async function cargarEtiquetas(){
+    const { data, error } = await supabaseClient
+      .from("gastos_etiquetas")
+      .select("*")
+      .order("created_at", { ascending:false });
+
+    if(error){
+      console.warn("No se pudieron cargar las etiquetas. Verifica que hayas ejecutado el SQL:", error);
+      etiquetasGastos = [];
+      return;
+    }
+
+    etiquetasGastos = data || [];
+  }
+
+  function getEtiquetaById(id){
+    if(!id) return null;
+    return etiquetasGastos.find(e => String(e.id) === String(id)) || null;
+  }
+
+  function colorHexSeguro(color){
+    const c = String(color || "").trim();
+    return /^#[0-9A-Fa-f]{6}$/.test(c) ? c : "#38bdf8";
+  }
+
+  function hexToRgba(hex, alpha=0.14){
+    const c = colorHexSeguro(hex).replace("#", "");
+    const r = parseInt(c.slice(0,2), 16);
+    const g = parseInt(c.slice(2,4), 16);
+    const b = parseInt(c.slice(4,6), 16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+
+  function etiquetaNombre(id){
+    const etiqueta = getEtiquetaById(id);
+    return etiqueta ? etiqueta.nombre : "Sin etiqueta";
+  }
+
+  function badgeEtiqueta(id){
+    const etiqueta = getEtiquetaById(id);
+    if(!etiqueta) return `<span class="small">Sin etiqueta</span>`;
+    const color = colorHexSeguro(etiqueta.color);
+    return `<span class="etiqueta-chip" style="--etiqueta-color:${color}"><span class="etiqueta-dot"></span>${escHTML(etiqueta.nombre)}</span>`;
+  }
+
+  function gastosPorEtiqueta(id, base=null){
+    const rows = base || gastos.filter(g => gastoVisibleParaUsuario(g));
+    return rows.filter(g => String(g.etiqueta_id || "") === String(id || ""));
+  }
+
+  function totalGastosEtiqueta(id, base=null){
+    return gastosPorEtiqueta(id, base).reduce((acc, g) => acc + Number(g.valor || 0), 0);
+  }
+
+  function llenarFiltroEtiquetas(){
+    const selects = [$("filtroEtiqueta"), $("etiquetaGasto")];
+    selects.forEach(select => {
+      if(!select) return;
+      const current = select.value;
+      const isFiltro = select.id === "filtroEtiqueta";
+      select.innerHTML = isFiltro
+        ? '<option value="">Todas las etiquetas</option><option value="__SIN_ETIQUETA__">Sin etiqueta</option>'
+        : '<option value="">Sin etiqueta</option>';
+      etiquetasGastos.filter(e => e.activa !== false || String(e.id) === String(current)).forEach(e => {
+        const opt = document.createElement("option");
+        opt.value = e.id;
+        opt.textContent = `${e.nombre}${e.activa === false ? " (inactiva)" : ""}`;
+        select.appendChild(opt);
+      });
+      if(Array.from(select.options).some(o => o.value === current)) select.value = current;
+    });
+  }
+
+  function renderEtiquetasPanel(){
+    const panel = $("etiquetasPanel");
+    if(!panel) return;
+    const visibles = etiquetasGastos.filter(e => e.activa !== false);
+    if(!visibles.length){
+      panel.style.display = "none";
+      panel.innerHTML = "";
+      return;
+    }
+    panel.style.display = "grid";
+    const filtro = $("filtroEtiqueta")?.value || "";
+    panel.innerHTML = visibles.map(e => {
+      const color = colorHexSeguro(e.color);
+      const gastado = totalGastosEtiqueta(e.id);
+      const referencia = Number(e.monto_referencia || 0);
+      const saldo = referencia ? referencia - gastado : null;
+      return `<div class="etiqueta-card ${String(filtro)===String(e.id)?"active":""}" style="--etiqueta-color:${color}" onclick="filtrarPorEtiqueta('${e.id}')">
+        <div class="etiqueta-title">${escHTML(e.nombre)}</div>
+        <div class="etiqueta-meta">Gastado: ${formatCOP(gastado)}${referencia ? ` · Referencia: ${formatCOP(referencia)}` : ""}</div>
+        <div class="etiqueta-value">${saldo === null ? formatCOP(gastado) : `Saldo ref.: ${formatCOP(saldo)}`}</div>
+      </div>`;
+    }).join("");
+  }
+
+  function filtrarPorEtiqueta(id){
+    const filtro = $("filtroEtiqueta");
+    if(!filtro) return;
+    filtro.value = String(filtro.value) === String(id) ? "" : id;
+    aplicarFiltros();
+  }
+
+  function abrirModalEtiquetas(){
+    limpiarFormularioEtiqueta();
+    renderListaEtiquetas();
+    $("modalEtiquetas")?.classList.add("show");
+    lucide.createIcons();
+  }
+
+  function cerrarModalEtiquetas(){
+    $("modalEtiquetas")?.classList.remove("show");
+  }
+
+  function limpiarFormularioEtiqueta(){
+    if($("formEtiqueta")) $("formEtiqueta").reset();
+    if($("etiquetaId")) $("etiquetaId").value = "";
+    if($("etiquetaColor")) $("etiquetaColor").value = "#38bdf8";
+    if($("etiquetaColorTexto")) $("etiquetaColorTexto").value = "#38bdf8";
+    if($("etiquetaActiva")) $("etiquetaActiva").value = "true";
+  }
+
+  function editarEtiqueta(id){
+    const e = getEtiquetaById(id);
+    if(!e) return;
+    $("etiquetaId").value = e.id;
+    $("etiquetaNombre").value = e.nombre || "";
+    $("etiquetaMontoReferencia").value = e.monto_referencia ? formatCOP(e.monto_referencia) : "";
+    $("etiquetaColor").value = colorHexSeguro(e.color);
+    $("etiquetaColorTexto").value = colorHexSeguro(e.color);
+    $("etiquetaActiva").value = e.activa === false ? "false" : "true";
+    $("etiquetaDescripcion").value = e.descripcion || "";
+    $("etiquetaNombre").focus();
+  }
+
+  async function guardarEtiqueta(e){
+    e.preventDefault();
+    if(!usuarioActual){ toast("No hay usuario autenticado."); return; }
+    const id = $("etiquetaId")?.value || null;
+    const payload = {
+      nombre: $("etiquetaNombre").value.trim(),
+      descripcion: $("etiquetaDescripcion").value.trim(),
+      monto_referencia: limpiarMoneda($("etiquetaMontoReferencia").value),
+      color: colorHexSeguro($("etiquetaColorTexto").value || $("etiquetaColor").value),
+      activa: $("etiquetaActiva").value === "true",
+      created_by: usuarioActual.email || null,
+      updated_at: new Date().toISOString()
+    };
+    if(!payload.nombre){ toast("Ingresa el nombre de la etiqueta."); return; }
+    let error;
+    if(id){
+      const resp = await supabaseClient.from("gastos_etiquetas").update(payload).eq("id", id);
+      error = resp.error;
+    }else{
+      const resp = await supabaseClient.from("gastos_etiquetas").insert(payload);
+      error = resp.error;
+    }
+    if(error){
+      console.error(error);
+      toast("Error guardando etiqueta: " + error.message + ". Revisa que hayas ejecutado el SQL.");
+      return;
+    }
+    toast("Etiqueta guardada correctamente.");
+    limpiarFormularioEtiqueta();
+    await cargarEtiquetas();
+    llenarFiltroEtiquetas();
+    renderEtiquetasPanel();
+    renderListaEtiquetas();
+    aplicarFiltros();
+  }
+
+  function renderListaEtiquetas(){
+    const lista = $("listaEtiquetas");
+    if(!lista) return;
+    if(!etiquetasGastos.length){
+      lista.innerHTML = '<div class="empty">Aún no hay etiquetas. Crea la primera para marcar gastos de préstamos u otros dineros.</div>';
+      return;
+    }
+    lista.innerHTML = etiquetasGastos.map(e => {
+      const color = colorHexSeguro(e.color);
+      const gastado = totalGastosEtiqueta(e.id);
+      const referencia = Number(e.monto_referencia || 0);
+      const saldo = referencia ? referencia - gastado : null;
+      return `<div class="etiqueta-list-item">
+        <div>
+          <span class="etiqueta-chip" style="--etiqueta-color:${color}"><span class="etiqueta-dot"></span>${escHTML(e.nombre)}</span>
+          <div class="small" style="margin-top:6px">${escHTML(e.descripcion || "")}</div>
+        </div>
+        <div><b>${referencia ? formatCOP(referencia) : "N/A"}</b><br><span class="small">Referencia</span></div>
+        <div><b>${formatCOP(gastado)}</b><br><span class="small">Gastado${saldo === null ? "" : ` · saldo ref. ${formatCOP(saldo)}`}</span></div>
+        <div class="actions">
+          <button class="icon-btn" title="Editar etiqueta" onclick="editarEtiqueta('${e.id}')"><i data-lucide="pencil"></i></button>
+        </div>
+      </div>`;
+    }).join("");
+    lucide.createIcons();
   }
 
   function llenarFiltroUsuarios(){
@@ -2444,6 +2814,7 @@
 
   async function cargarKPIs(){
     const usuarioFiltro = $("filtroUsuario")?.value || "";
+    const etiquetaFiltro = $("filtroEtiqueta")?.value || "";
     const mesFiltro = $("filtroMes")?.value || mesActual();
 
     const gastosVisiblesUsuario = gastos.filter(g => gastoVisibleParaUsuario(g));
@@ -2550,8 +2921,22 @@
       }
     }
 
+    let totalEtiquetaFiltro = 0;
+    if(etiquetaFiltro){
+      totalEtiquetaFiltro = gastosBase
+        .filter(g => etiquetaFiltro === "__SIN_ETIQUETA__" ? !g.etiqueta_id : String(g.etiqueta_id || "") === String(etiquetaFiltro))
+        .reduce((acc, g) => acc + Number(g.valor || 0), 0);
+    }
+
+    if($("kpiEtiquetaFiltroLabel")){
+      $("kpiEtiquetaFiltroLabel").textContent = etiquetaFiltro
+        ? `Gastos ${etiquetaFiltro === "__SIN_ETIQUETA__" ? "sin etiqueta" : etiquetaNombre(etiquetaFiltro)}`
+        : "Gastos etiqueta seleccionada";
+    }
+
     $("kpiMes").textContent = formatCOP(totalMes);
     if($("kpiRangoFechas")) $("kpiRangoFechas").textContent = formatCOP(totalRangoFechas);
+    if($("kpiEtiquetaFiltro")) $("kpiEtiquetaFiltro").textContent = formatCOP(totalEtiquetaFiltro);
     $("kpiRegistros").textContent = gastosFiltrados.length + (puedeVerMovimientosCaja() ? movimientosFiltrados.length : 0);
   }
 
@@ -2587,6 +2972,7 @@
     $("filtroUsuario").value = "";
     $("filtroTipo").value = "";
     $("filtroMetodo").value = "";
+    $("filtroEtiqueta").value = "";
     $("filtroMes").value = "";
     $("filtroFechaDesde").value = "";
     $("filtroFechaHasta").value = "";
@@ -2607,6 +2993,7 @@
     const usuarioFiltro = $("filtroUsuario").value;
     const tipo = $("filtroTipo").value;
     const metodo = $("filtroMetodo").value;
+    const etiqueta = $("filtroEtiqueta")?.value || "";
     const mes = $("filtroMes").value;
     const fechaDesde = $("filtroFechaDesde")?.value || "";
     const fechaHasta = $("filtroFechaHasta")?.value || "";
@@ -2618,7 +3005,8 @@
         g.numero_factura,
         g.descripcion,
         g.tipo_gasto,
-        g.metodo_pago
+        g.metodo_pago,
+        etiquetaNombre(g.etiqueta_id)
       ].join(" ").toLowerCase();
 
       const usuarioKey = g.usuario_id || g.usuario_email || g.usuario_nombre;
@@ -2627,10 +3015,11 @@
       const matchUsuario = !usuarioFiltro || usuarioKey === usuarioFiltro;
       const matchTipo = !tipo || g.tipo_gasto === tipo;
       const matchMetodo = !metodo || g.metodo_pago === metodo;
+      const matchEtiqueta = !etiqueta || (etiqueta === "__SIN_ETIQUETA__" ? !g.etiqueta_id : String(g.etiqueta_id || "") === String(etiqueta));
       const matchMes = !mes || String(g.fecha || "").startsWith(mes);
       const matchRangoFechas = fechaEnRango(g.fecha, fechaDesde, fechaHasta);
 
-      return gastoVisibleParaUsuario(g) && matchQ && matchUsuario && matchTipo && matchMetodo && matchMes && matchRangoFechas;
+      return gastoVisibleParaUsuario(g) && matchQ && matchUsuario && matchTipo && matchMetodo && matchEtiqueta && matchMes && matchRangoFechas;
     });
 
     movimientosFiltrados = movimientosCaja.filter(m => {
@@ -2725,6 +3114,7 @@
 
     renderTabla();
     renderMovimientos();
+    renderEtiquetasPanel();
 
     if(typeof cargarKPIs === "function"){
       cargarKPIs();
@@ -2750,22 +3140,26 @@
     const tbody = $("tbodyGastos");
 
     if(!gastosFiltrados.length){
-      tbody.innerHTML = `<tr><td colspan="9" class="empty">No hay registros para los filtros seleccionados.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="10" class="empty">No hay registros para los filtros seleccionados.</td></tr>`;
       return;
     }
 
-    tbody.innerHTML = gastosFiltrados.map(g => `
-      <tr>
+    tbody.innerHTML = gastosFiltrados.map(g => {
+      const etiqueta = getEtiquetaById(g.etiqueta_id);
+      const rowStyle = etiqueta ? ` style="background:${hexToRgba(etiqueta.color, .13)}; box-shadow:inset 5px 0 0 ${colorHexSeguro(etiqueta.color)}"` : "";
+      return `
+      <tr${rowStyle}>
         <td>${g.fecha || ""}</td>
         <td>
-          <b>${g.usuario_nombre || ""}</b><br>
-          <span class="small">${g.usuario_email || ""}</span>
+          <b>${escHTML(g.usuario_nombre || "")}</b><br>
+          <span class="small">${escHTML(g.usuario_email || "")}</span>
         </td>
         <td><b>${formatCOP(g.valor)}</b></td>
-        <td>${g.numero_factura || ""}</td>
+        <td>${escHTML(g.numero_factura || "")}</td>
         <td>${badgeMetodo(g.metodo_pago)}</td>
-        <td>${g.tipo_gasto || ""}</td>
-        <td>${g.descripcion || ""}</td>
+        <td>${escHTML(g.tipo_gasto || "")}</td>
+        <td>${badgeEtiqueta(g.etiqueta_id)}</td>
+        <td>${escHTML(g.descripcion || "")}</td>
         <td>
           ${g.factura_drive_url ? `<a href="${g.factura_drive_url}" target="_blank" class="btn ghost" style="padding:8px 10px"><i data-lucide="external-link"></i> Ver</a>` : `<span class="small">Sin soporte</span>`}
         </td>
@@ -2779,7 +3173,8 @@
           </div>
         </td>
       </tr>
-    `).join("");
+    `;
+    }).join("");
 
     lucide.createIcons();
   }
@@ -2916,6 +3311,7 @@
       "Número factura": g.numero_factura,
       "Método de pago": g.metodo_pago,
       "Tipo gasto": g.tipo_gasto,
+      "Etiqueta": etiquetaNombre(g.etiqueta_id),
       "Descripción": g.descripcion,
       "URL Factura Drive": g.factura_drive_url
     }));
@@ -2936,11 +3332,22 @@
     const wb = XLSX.utils.book_new();
     const wsGastos = XLSX.utils.json_to_sheet(dataGastos);
     const wsMovimientos = XLSX.utils.json_to_sheet(dataMovimientos);
+    const dataEtiquetas = etiquetasGastos.map(e => ({
+      Etiqueta: e.nombre,
+      Descripción: e.descripcion || "",
+      Color: e.color || "",
+      "Monto referencia": Number(e.monto_referencia || 0),
+      "Total gastado": totalGastosEtiqueta(e.id),
+      "Saldo referencia": e.monto_referencia ? Number(e.monto_referencia || 0) - totalGastosEtiqueta(e.id) : "",
+      Activa: e.activa === false ? "No" : "Sí"
+    }));
+    const wsEtiquetas = XLSX.utils.json_to_sheet(dataEtiquetas);
 
     XLSX.utils.book_append_sheet(wb, wsGastos, "Gastos");
     if(puedeVerMovimientosCaja()){
       XLSX.utils.book_append_sheet(wb, wsMovimientos, "Movimientos Caja");
     }
+    XLSX.utils.book_append_sheet(wb, wsEtiquetas, "Etiquetas");
 
     XLSX.writeFile(wb, `gastos_movimientos_${new Date().toISOString().slice(0,10)}.xlsx`);
   }
@@ -2985,6 +3392,7 @@
 </script>
 </body>
 </html>
+
 
 
 
