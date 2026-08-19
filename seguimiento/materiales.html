@@ -44,7 +44,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     .small-btn{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:#fff;cursor:pointer;font-weight:700}
 
     .hidden-global-bodega{display:none!important}
-    .material-lines table{min-width:1430px}
+    .material-lines table{min-width:1600px}
     .material-lines select.control,
     .material-lines input.control{min-width:0}
 
@@ -176,6 +176,20 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       font-weight:900 !important;
       text-align:center !important;
     }
+    .line-wbs-input,.line-wbs-select{min-width:175px;font-weight:800}
+    .line-wbs-input[readonly]{
+      background:rgba(15,23,42,.75) !important;
+      cursor:not-allowed !important;
+      color:#bfdbfe !important;
+      border-color:rgba(96,165,250,.22) !important;
+    }
+    .line-wbs-input.wbs-missing,.line-wbs-select.wbs-missing{
+      border-color:#f59e0b !important;
+      box-shadow:0 0 0 2px rgba(245,158,11,.14) !important;
+    }
+    .wbs-note{
+      display:block;margin-top:5px;font-size:9px;line-height:1.15;color:#93c5fd;
+    }
 
 
     .row-reserva-ok{
@@ -220,7 +234,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     .span-2{grid-column:span 2}.span-4{grid-column:1/-1}.muted-note{font-size:10px;color:var(--muted)}
 
 
-    .material-lines table{min-width:1430px}
+    .material-lines table{min-width:1600px}
     .material-lines th,.material-lines td{vertical-align:top}
     .line-bodega-stock{min-width:210px}
     .line-serial{min-width:150px}
@@ -441,7 +455,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     .empty{padding:26px;text-align:center;color:var(--muted);display:none}
 
     .material-lines{border:1px solid var(--border);border-radius:16px;overflow:auto;background:rgba(255,255,255,.025)}
-    .material-lines table{min-width:1430px}
+    .material-lines table{min-width:1600px}
     .material-lines th{position:static;background:rgba(255,255,255,.04)}
     .line-actions{display:flex;gap:8px;align-items:center}
     .support-box{border:1px dashed rgba(159,208,255,.35);border-radius:16px;padding:14px;background:rgba(255,255,255,.025)}
@@ -961,6 +975,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                   <th style="width:190px">Bodega origen</th>
                   <th style="width:190px">Bodega destino</th>
                   <th style="width:170px">Stock SAP</th>
+                  <th style="width:165px">WBS</th>
                   <th style="width:150px">Cod serial</th>
                   <th style="width:150px">Cod reserva</th>
                   <th style="width:80px">Acción</th>
@@ -1055,6 +1070,96 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   </div>
 </div>
 
+
+<div id="wbsManagerModal" class="modal-backdrop">
+  <div class="modal" style="max-width:980px">
+    <div class="modal-header">
+      <div>
+        <h3 style="margin:0 0 6px 0;">Gestionar / reclasificar WBS</h3>
+        <div class="muted-note">
+          Permite mover una cantidad de inventario desde un WBS hacia otro WBS sin alterar el inventario total.
+        </div>
+      </div>
+      <button class="close-btn" type="button" onclick="closeWbsManagerModal()">✕</button>
+    </div>
+
+    <form id="wbsManagerForm" action="javascript:void(0)">
+      <div class="grid">
+        <div class="field">
+          <label>Código SAP *</label>
+          <input id="wbsMgrSap"
+                 list="wbsMgrSapList"
+                 required
+                 placeholder="Digite o seleccione SAP"
+                 oninput="wbsManagerSapChanged()"
+                 onchange="wbsManagerSapChanged()">
+          <datalist id="wbsMgrSapList"></datalist>
+        </div>
+
+        <div class="field span-2">
+          <label>Material</label>
+          <input id="wbsMgrMaterial" readonly placeholder="Descripción del material">
+        </div>
+
+        <div class="field">
+          <label>Unidad</label>
+          <input id="wbsMgrUnidad" readonly placeholder="EA / M">
+        </div>
+
+        <div class="field">
+          <label>Stock SAP / Bodega *</label>
+          <select id="wbsMgrStock" required onchange="wbsManagerStockChanged()">
+            <option value="">Selecciona bodega</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>WBS origen *</label>
+          <select id="wbsMgrOrigen" required onchange="wbsManagerOrigenChanged()">
+            <option value="">Selecciona WBS origen</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label>Cantidad a reclasificar *</label>
+          <input id="wbsMgrCantidad"
+                 type="number"
+                 min="0.01"
+                 step="0.01"
+                 required
+                 placeholder="0">
+        </div>
+
+        <div class="field">
+          <label>WBS destino</label>
+          <input id="wbsMgrDestino"
+                 list="wbsMgrDestinoList"
+                 placeholder="Nuevo WBS o vacío = SIN WBS">
+          <datalist id="wbsMgrDestinoList"></datalist>
+        </div>
+
+        <div class="field span-2">
+          <label>Observación</label>
+          <input id="wbsMgrObservacion"
+                 placeholder="Ej: reclasificación manual de inventario por WBS">
+        </div>
+      </div>
+
+      <div id="wbsMgrSaldoBox"
+           style="margin-top:14px;padding:13px;border:1px solid rgba(148,163,184,.22);border-radius:12px;background:rgba(15,23,42,.55);color:#bfdbfe">
+        Selecciona Código SAP y Stock SAP para consultar los WBS disponibles.
+      </div>
+
+      <div id="wbsMgrMsg" style="margin-top:9px;color:#86efac"></div>
+
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
+        <button type="button" class="small-btn" onclick="closeWbsManagerModal()">Cancelar</button>
+        <button type="submit" class="btn">Aplicar reclasificación WBS</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 const N8N_WEBHOOK_MATERIALES_URL = 'https://ftth-n8n2.pzveh5.easypanel.host/webhook/d9151e2f-0083-4bb7-89df-b5e2153b6cfd';
 function renderShell(){
@@ -1105,6 +1210,8 @@ function renderShell(){
         <option>AJUSTE_INICIAL</option>
 <option>CONSUMO_MTO_CORRECTIVO</option><option>CONSUMO_MTO_PREVENTIVO</option></select>
         <button class="btn ghost" onclick="openMatModal()">Crear material</button>
+        <button class="btn ghost" onclick="openWbsManagerModal()">Gestionar WBS</button>
+        <button class="btn ghost" onclick="exportarInventarioExcel()">Exportar inventario + WBS</button>
         <button class="btn ghost" onclick="exportarTodosMovimientosExcel()">Exportar movimientos Excel</button>
         <button class="btn ghost" onclick="loadAll()">Actualizar</button>
         <button class="btn" onclick="openMovModal()">Nuevo movimiento</button>
@@ -1781,6 +1888,187 @@ function renderConsumos(){
   `).join('');
 }
 
+
+
+function exportarInventarioExcel(){
+  try{
+    if(typeof XLSX==='undefined'){
+      throw new Error('No se pudo cargar la librería XLSX.');
+    }
+
+    // ============================================================
+    // HOJA 1: INVENTARIO POR WBS
+    // Una fila por Código SAP + Stock SAP/Bodega + WBS.
+    // No incluye historial de movimientos.
+    // ============================================================
+    const detalleWbs=[];
+
+    (resumen || []).forEach(r=>{
+      const codigoSap=String(r.codigo_sap || '').trim();
+      if(!codigoSap) return;
+
+      const material=String(r.material || '').trim();
+      const unidad=String(r.unidad || '').trim() || 'EA';
+      const totalSap=Number(r.total || 0);
+
+      if(totalSap<=0.000001) return;
+
+      const stocks=getBodegasStockPorSap(codigoSap);
+
+      // Si por alguna razón no hay ubicación SAP detectable, se intenta
+      // igualmente con una ubicación vacía para no perder el material.
+      const stocksAConsultar=stocks.length ? stocks : [''];
+
+      stocksAConsultar.forEach(stock=>{
+        const saldos=obtenerSaldosWbsMaterial(codigoSap,stock);
+
+        saldos.forEach(item=>{
+          const disponible=Number(item.disponible || 0);
+          if(disponible<=0.000001) return;
+
+          detalleWbs.push({
+            codigo_sap:codigoSap,
+            material,
+            unidad,
+            stock_sap:stock || 'SIN UBICACIÓN',
+            wbs:etiquetaWbsInventario(item.wbs),
+            disponible,
+            total_sap:totalSap
+          });
+        });
+      });
+    });
+
+    detalleWbs.sort((a,b)=>{
+      const sapCmp=String(a.codigo_sap).localeCompare(
+        String(b.codigo_sap),'es',{numeric:true}
+      );
+      if(sapCmp!==0) return sapCmp;
+
+      const stockCmp=String(a.stock_sap).localeCompare(String(b.stock_sap),'es');
+      if(stockCmp!==0) return stockCmp;
+
+      return String(a.wbs).localeCompare(String(b.wbs),'es',{numeric:true});
+    });
+
+    if(!detalleWbs.length){
+      alert('No hay material disponible para exportar.');
+      return;
+    }
+
+    const rowsWbs=detalleWbs.map(r=>({
+      'Código SAP':r.codigo_sap,
+      'Material':r.material,
+      'Unidad':r.unidad,
+      'Stock SAP / Bodega':r.stock_sap,
+      'WBS':r.wbs,
+      'Disponible WBS':r.disponible,
+      'Total disponible SAP':r.total_sap
+    }));
+
+    const wsWbs=XLSX.utils.json_to_sheet(rowsWbs);
+
+    wsWbs['!cols']=[
+      {wch:14}, // Código SAP
+      {wch:48}, // Material
+      {wch:10}, // Unidad
+      {wch:22}, // Stock SAP / Bodega
+      {wch:24}, // WBS
+      {wch:18}, // Disponible WBS
+      {wch:20}  // Total SAP
+    ];
+
+    if(wsWbs['!ref']){
+      wsWbs['!autofilter']={ref:wsWbs['!ref']};
+    }
+
+    // ============================================================
+    // HOJA 2: RESUMEN GENERAL DE INVENTARIO
+    // Conserva el mismo resumen que se ve en el panel.
+    // ============================================================
+    const resumenActual=(resumen || [])
+      .map(r=>({
+        codigo_sap:String(r.codigo_sap || '').trim(),
+        material:String(r.material || '').trim(),
+        unidad:String(r.unidad || '').trim(),
+        almagrario:Number(r.almagrario || 0),
+        nodo:Number(r.nodo || 0),
+        contratista:Number(r.contratista || 0),
+        wom:Number(r.wom || 0),
+        otros:Number(r.otros || 0),
+        total:Number(r.total || 0)
+      }))
+      .filter(r=>r.total>0.000001)
+      .sort((a,b)=>
+        String(a.codigo_sap).localeCompare(
+          String(b.codigo_sap),'es',{numeric:true}
+        )
+      );
+
+    const rowsResumen=resumenActual.map(r=>({
+      'Código SAP':r.codigo_sap,
+      'Material':r.material,
+      'Unidad':r.unidad,
+      'Almagrario':r.almagrario,
+      'Nodo':r.nodo,
+      'Contratista':r.contratista,
+      'WOM':r.wom,
+      'Otros':r.otros,
+      'Total disponible':r.total
+    }));
+
+    const wsResumen=XLSX.utils.json_to_sheet(rowsResumen);
+
+    wsResumen['!cols']=[
+      {wch:14},
+      {wch:48},
+      {wch:10},
+      {wch:14},
+      {wch:14},
+      {wch:14},
+      {wch:12},
+      {wch:12},
+      {wch:18}
+    ];
+
+    if(wsResumen['!ref']){
+      wsResumen['!autofilter']={ref:wsResumen['!ref']};
+    }
+
+    // ============================================================
+    // CREAR ARCHIVO
+    // ============================================================
+    const wb=XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      wb,
+      wsWbs,
+      'Inventario por WBS'
+    );
+
+    XLSX.utils.book_append_sheet(
+      wb,
+      wsResumen,
+      'Resumen inventario'
+    );
+
+    const fecha=new Date().toISOString().slice(0,10);
+
+    XLSX.writeFile(
+      wb,
+      `Inventario_materiales_WBS_${fecha}.xlsx`,
+      {compression:true}
+    );
+
+  }catch(err){
+    console.error('Error exportando inventario por WBS:',err);
+    alert(
+      'Error exportando inventario: '+
+      (err.message || err)
+    );
+  }
+}
+
 function exportarTodosMovimientosExcel(){
   try{
     if(!window.XLSX){
@@ -1812,6 +2100,7 @@ function exportarTodosMovimientosExcel(){
       'ID Cliente': r.id_cliente || '',
       'Cliente': r.cliente || '',
       'Observaciones': r.observaciones || '',
+      'WBS': r.wbs || '',
       'Cod_reserva': r.cod_reserva || '',
       'Soporte acta URL': r.soporte_acta_url || '',
       'Soporte acta nombre': r.soporte_acta_nombre || '',
@@ -2129,49 +2418,82 @@ function normalizarSapModal(v){
   return String(v || '').trim().toUpperCase().replace(/\s+/g,'');
 }
 
-function validarCodigosSapDuplicadosEnModal({enfocar = false} = {}){
-  const rows = Array.from(document.querySelectorAll('#materialLinesBody tr'));
-  const groups = new Map();
 
-  rows.forEach(tr => {
+function validarCodigosSapDuplicadosEnModal({enfocar = false} = {}){
+  const rows=Array.from(document.querySelectorAll('#materialLinesBody tr'));
+  const groups=new Map();
+  const tipo=String(getTipoMovimientoActual() || '').toUpperCase();
+
+  rows.forEach(tr=>{
     tr.classList.remove('sap-duplicate-row');
-    const input = tr.querySelector('.line-sap');
-    const codigo = normalizarSapModal(input?.value);
+
+    const codigo=normalizarSapModal(tr.querySelector('.line-sap')?.value);
     if(!codigo) return;
-    if(!groups.has(codigo)) groups.set(codigo, []);
-    groups.get(codigo).push(tr);
+
+    let wbsKey='';
+
+    if(tipo==='ENTRADA'){
+      wbsKey=normalizarWbsInventario(
+        tr.querySelector('.line-wbs-input')?.value || ''
+      );
+    }else if(esTipoConsumoMaterial(tipo)){
+      wbsKey=tr.querySelector('.line-wbs-select')?.value || '';
+      if(!wbsKey) return;
+    }else{
+      wbsKey=normalizarWbsInventario(
+        tr.querySelector('.line-wbs-input')?.value || ''
+      );
+    }
+
+    const composite=`${codigo}||${wbsKey}`;
+
+    if(!groups.has(composite)){
+      groups.set(composite,{codigo,wbs:wbsKey,filas:[]});
+    }
+    groups.get(composite).filas.push(tr);
   });
 
-  const duplicados = [];
-  groups.forEach((filas, codigo) => {
-    if(filas.length > 1){
-      duplicados.push({ codigo, filas });
-      filas.forEach(tr => tr.classList.add('sap-duplicate-row'));
+  const duplicados=[];
+
+  groups.forEach(group=>{
+    if(group.filas.length>1){
+      duplicados.push(group);
+      group.filas.forEach(tr=>tr.classList.add('sap-duplicate-row'));
     }
   });
 
   if(duplicados.length && enfocar){
-    const input = duplicados[0].filas[1]?.querySelector('.line-sap')
-      || duplicados[0].filas[0]?.querySelector('.line-sap');
+    const target=duplicados[0].filas[1] || duplicados[0].filas[0];
+    const input=esTipoConsumoMaterial(tipo)
+      ? target?.querySelector('.line-wbs-select')
+      : target?.querySelector('.line-sap');
     input?.focus();
-    input?.select?.();
   }
 
-  const msg = document.getElementById('movMsg');
+  const msg=document.getElementById('movMsg');
+
   if(msg && duplicados.length){
-    msg.style.color = '#fbbf24';
-    msg.textContent = `No se permiten códigos SAP repetidos dentro del mismo movimiento. Revisa: ${duplicados.map(x => x.codigo).join(', ')}.`;
-  }else if(msg && msg.textContent?.startsWith('No se permiten códigos SAP repetidos')){
-    msg.textContent = '';
+    msg.style.color='#fbbf24';
+    msg.textContent=
+      'No se permite repetir la misma combinación Código SAP + WBS dentro del movimiento. Revisa: '+
+      duplicados.map(x=>`${x.codigo} / ${etiquetaWbsInventario(x.wbs)}`).join(', ')+'.';
+  }else if(msg && (
+    msg.textContent?.startsWith('No se permiten códigos SAP repetidos') ||
+    msg.textContent?.startsWith('No se permite repetir la misma combinación')
+  )){
+    msg.textContent='';
   }
 
   return duplicados;
 }
 
 function asegurarSinCodigosSapDuplicados(){
-  const duplicados = validarCodigosSapDuplicadosEnModal({enfocar:true});
+  const duplicados=validarCodigosSapDuplicadosEnModal({enfocar:true});
   if(duplicados.length){
-    throw new Error(`No se permiten códigos SAP repetidos dentro del mismo movimiento: ${duplicados.map(x => x.codigo).join(', ')}.`);
+    throw new Error(
+      'No se permite repetir la misma combinación Código SAP + WBS dentro del movimiento: '+
+      duplicados.map(x=>`${x.codigo} / ${etiquetaWbsInventario(x.wbs)}`).join(', ')+'.'
+    );
   }
 }
 
@@ -2197,10 +2519,10 @@ function addMaterialLine(data = {}){
     <td>
       <input class="control line-sap" list="sapList" value="${esc(data.codigo_sap || '')}" oninput="onSapModalChanged(this)" onchange="onSapModalChanged(this)">
       <div class="sap-warning">Este material no se encuentra relacionado en STOCK SAP</div>
-      <div class="sap-duplicate-warning">Código SAP repetido en este movimiento. Elimina una de las filas duplicadas.</div>
+      <div class="sap-duplicate-warning">La combinación Código SAP + WBS está repetida en este movimiento.</div>
     </td>
     <td><input class="control line-material" list="materialList" value="${esc(data.material_nombre || data.material || '')}" required oninput="syncMaterialLineByName(this)" onchange="syncMaterialLineByName(this)"></td>
-    <td><input class="control line-cantidad" type="number" step="0.01" min="0.01" value="${esc(data.cantidad || '')}" required></td>
+    <td><input class="control line-cantidad" type="number" step="0.01" min="0.01" onchange="actualizarWbsLinea(this.closest(\'tr\'))" value="${esc(data.cantidad || '')}" required></td>
     <td>
       <input class="control line-unidad" value="${esc(normalizarUnidadSap(data.unidad || ''))}" readonly placeholder="Unidad">
     </td>
@@ -2215,9 +2537,22 @@ function addMaterialLine(data = {}){
       </select>
     </td>
     <td>
-      <select class="control line-bodega-stock">
+      <select class="control line-bodega-stock" onchange="actualizarWbsLinea(this.closest('tr'))">
         <option value="">Selecciona stock</option>
       </select>
+    </td>
+    <td>
+      <input class="control line-wbs-input"
+             value="${esc(data.wbs || '')}"
+             placeholder="WBS (opcional)"
+             autocomplete="off"
+             oninput="validarCodigosSapDuplicadosEnModal()">
+      <select class="control line-wbs-select"
+              style="display:none"
+              onchange="onWbsConsumoChanged(this)">
+        <option value="">Selecciona WBS</option>
+      </select>
+      <span class="wbs-note"></span>
     </td>
     <td><div class="serial-cell"><input class="barcode-field control line-serial" value="${esc(data.codigo_serial || data.cod_serial || '')}" placeholder="Serial" inputmode="text" autocomplete="off"><button type="button" class="scan-serial-btn" onclick="abrirEscanerSerial(this)" title="Escanear serial con cámara">📷</button></div></td>
     <td><input class="control line-reserva" value="${esc(data.cod_reserva || data.codigo_reserva || '')}" placeholder="Cod reserva"></td>
@@ -2228,12 +2563,14 @@ function addMaterialLine(data = {}){
   if(data.codigo_sap){
     syncMaterialLineBySap(tr.querySelector('.line-sap'));
     setBodegaStockValue(tr.querySelector('.line-bodega-stock'), data.bodega_origen_stock || data.bodega_stock || '');
+    actualizarWbsLinea(tr);
   }else{
     cargarBodegasStockEnLinea(tr, []);
   }
 
   actualizarRequeridosBodegasPorLinea();
   actualizarReservaInputs();
+  actualizarWbsLinea(tr);
   if(!cargandoLineasMovimiento) validarCodigosSapDuplicadosEnModal();
 }
 
@@ -2342,6 +2679,7 @@ function syncMaterialLineBySap(input){
     if(warning) warning.style.display = 'block';
   }
   if(!cargandoLineasMovimiento) validarCodigosSapDuplicadosEnModal();
+  actualizarWbsLinea(tr);
 }
 
 function syncMaterialLineByName(input){
@@ -2356,6 +2694,258 @@ function syncMaterialLineByName(input){
   }
 }
 
+
+
+
+const WBS_SIN_ASIGNAR = '__SIN_WBS__';
+
+function esTipoConsumoMaterial(tipo){
+  return [
+    'CONSUMO_INSTALACION',
+    'CONSUMO_MTO_CORRECTIVO',
+    'CONSUMO_MTO_PREVENTIVO'
+  ].includes(String(tipo || '').toUpperCase());
+}
+
+function normalizarWbsInventario(value){
+  const v=String(value ?? '').trim();
+  return v ? v : WBS_SIN_ASIGNAR;
+}
+
+function etiquetaWbsInventario(value){
+  return normalizarWbsInventario(value)===WBS_SIN_ASIGNAR
+    ? 'SIN WBS'
+    : String(value).trim();
+}
+
+function fechaMovimientoParaWbs(r){
+  const raw = r?.created_at ||
+    (r?.fecha ? `${r.fecha}T${String(r.hora || '00:00').slice(0,5)}:00` : '');
+  const d = raw ? new Date(raw) : null;
+  return d && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
+}
+
+function movimientoPerteneceActaActual(r){
+  if(currentGrupoMovimientoId &&
+     String(r?.grupo_movimiento_id || '')===String(currentGrupoMovimientoId)){
+    return true;
+  }
+  if(currentMovimientoId && String(r?.id || '')===String(currentMovimientoId)){
+    return true;
+  }
+  return false;
+}
+
+function obtenerStockSapBasePorWbs(codigoSap, bodegaStock){
+  const codigo=normalizarCodigoSap(codigoSap);
+  const stock=normalizarTextoInventario(bodegaStock);
+  let total=0;
+
+  (sapStock || []).forEach(s=>{
+    if(normalizarCodigoSap(s.codigo_sap)!==codigo) return;
+
+    const ubicacion=normalizarTextoInventario(
+      s.description_storage_location ||
+      s.storage_location ||
+      s.storage_location_description ||
+      ''
+    );
+
+    if(stock && ubicacion!==stock) return;
+
+    const parsed=parseStockSap(s.unrestricted_stock,s);
+    total += Number(parsed?.cantidad || 0);
+  });
+
+  return total;
+}
+
+function obtenerSaldosWbsMaterial(codigoSap, bodegaStock){
+  const codigo=normalizarCodigoSap(codigoSap);
+  const stock=normalizarTextoInventario(bodegaStock);
+  const saldos=new Map();
+
+  if(!codigo) return [];
+
+  const base=obtenerStockSapBasePorWbs(codigoSap,bodegaStock);
+  if(base){
+    saldos.set(WBS_SIN_ASIGNAR,base);
+  }
+
+  (movimientos || [])
+    .filter(r=>String(r.estado || '').toUpperCase()!=='ANULADO')
+    .filter(r=>movimientoAplicaParaInventario(r))
+    .filter(r=>!movimientoPerteneceActaActual(r))
+    .filter(r=>normalizarCodigoSap(r.codigo_sap)===codigo)
+    .forEach(r=>{
+      const movStock=normalizarTextoInventario(r.bodega_origen_stock || '');
+      if(stock && movStock && movStock!==stock) return;
+
+      const tipo=String(r.tipo_movimiento || '').toUpperCase();
+      if(tipo==='AJUSTE_INICIAL') return;
+
+      const qty=Number(r.cantidad || 0);
+      if(!Number.isFinite(qty) || qty===0) return;
+
+      const key=normalizarWbsInventario(r.wbs);
+      let delta=0;
+
+      if(['ENTRADA','AJUSTE_POSITIVO'].includes(tipo)){
+        delta=qty;
+      }else if([
+        'SALIDA',
+        'CONSUMO_INSTALACION',
+        'CONSUMO_MTO_CORRECTIVO',
+        'CONSUMO_MTO_PREVENTIVO',
+        'AJUSTE_NEGATIVO'
+      ].includes(tipo)){
+        delta=-qty;
+      }
+
+      if(delta){
+        saldos.set(key,Number(saldos.get(key)||0)+delta);
+      }
+    });
+
+  return [...saldos.entries()]
+    .map(([wbs,disponible])=>({
+      wbs,
+      disponible:Number(disponible || 0)
+    }))
+    .filter(x=>x.disponible>0.000001)
+    .sort((a,b)=>{
+      if(a.wbs===WBS_SIN_ASIGNAR) return 1;
+      if(b.wbs===WBS_SIN_ASIGNAR) return -1;
+      return String(a.wbs).localeCompare(String(b.wbs),'es',{numeric:true});
+    });
+}
+
+function cargarOpcionesWbsConsumo(tr, valorPreferido=''){
+  const select=tr?.querySelector('.line-wbs-select');
+  if(!select) return;
+
+  const sap=tr.querySelector('.line-sap')?.value || '';
+  const stock=tr.querySelector('.line-bodega-stock')?.value || '';
+  const unidad=tr.querySelector('.line-unidad')?.value || '';
+  const saldos=obtenerSaldosWbsMaterial(sap,stock);
+
+  const preferido=normalizarWbsInventario(valorPreferido);
+  const actual=select.value || preferido;
+
+  select.innerHTML='<option value="">Selecciona WBS</option>';
+
+  saldos.forEach(item=>{
+    const opt=document.createElement('option');
+    opt.value=item.wbs;
+    opt.textContent=
+      `${etiquetaWbsInventario(item.wbs)} — Disponible: `+
+      `${item.disponible.toLocaleString('es-CO',{maximumFractionDigits:2})} ${unidad}`;
+    opt.dataset.disponible=String(item.disponible);
+    select.appendChild(opt);
+  });
+
+  if(actual && !Array.from(select.options).some(o=>o.value===actual)){
+    const opt=document.createElement('option');
+    opt.value=actual;
+    opt.textContent=`${etiquetaWbsInventario(actual)} — WBS registrado en este movimiento`;
+    opt.dataset.disponible='';
+    select.appendChild(opt);
+  }
+
+  if(actual && Array.from(select.options).some(o=>o.value===actual)){
+    select.value=actual;
+  }else{
+    select.value='';
+  }
+}
+
+function actualizarWbsLinea(tr){
+  if(!tr) return;
+
+  const form=document.getElementById('movForm');
+  const tipo=String(form?.elements?.['tipo_movimiento']?.value || '').toUpperCase();
+
+  const input=tr.querySelector('.line-wbs-input');
+  const select=tr.querySelector('.line-wbs-select');
+  const note=tr.querySelector('.wbs-note');
+  const sap=tr.querySelector('.line-sap')?.value || '';
+  const stock=tr.querySelector('.line-bodega-stock')?.value || '';
+
+  if(!input || !select) return;
+
+  input.classList.remove('wbs-missing');
+  select.classList.remove('wbs-missing');
+
+  if(tipo==='ENTRADA'){
+    input.style.display='';
+    select.style.display='none';
+    input.readOnly=false;
+    input.placeholder='WBS (opcional)';
+    if(note) note.textContent='Editable. Si el material no tiene WBS, déjalo vacío.';
+    validarCodigosSapDuplicadosEnModal();
+    return;
+  }
+
+  if(esTipoConsumoMaterial(tipo)){
+    input.style.display='none';
+    select.style.display='';
+
+    const valorGuardado=normalizarWbsInventario(input.value);
+    cargarOpcionesWbsConsumo(tr,valorGuardado);
+
+    if(!sap){
+      select.value='';
+      if(note) note.textContent='Digite primero el Código SAP.';
+    }else if(!stock){
+      select.value='';
+      if(note) note.textContent='Seleccione primero el Stock SAP.';
+    }else if(select.options.length<=1){
+      select.classList.add('wbs-missing');
+      if(note) note.textContent='No hay saldo disponible para consumir en ningún WBS.';
+    }else{
+      if(note) note.textContent='Seleccione el WBS del cual se descontará este consumo.';
+    }
+
+    validarCodigosSapDuplicadosEnModal();
+    return;
+  }
+
+  input.style.display='';
+  select.style.display='none';
+  input.readOnly=true;
+  input.placeholder='WBS';
+  if(note) note.textContent='WBS informativo.';
+}
+
+function actualizarWbsTodasLasLineas(){
+  document.querySelectorAll('#materialLinesBody tr').forEach(tr=>actualizarWbsLinea(tr));
+}
+
+function onWbsConsumoChanged(select){
+  const tr=select?.closest('tr');
+  if(!tr) return;
+
+  const note=tr.querySelector('.wbs-note');
+  const opt=select.selectedOptions?.[0];
+  const disponible=Number(opt?.dataset?.disponible || 0);
+
+  if(select.value && note){
+    note.textContent=
+      `${etiquetaWbsInventario(select.value)} seleccionado`+
+      (disponible ? ` · Disponible: ${disponible.toLocaleString('es-CO',{maximumFractionDigits:2})}` : '');
+  }
+
+  validarCodigosSapDuplicadosEnModal();
+}
+
+function getSaldoWbsSeleccionado(codigoSap,bodegaStock,wbs){
+  const key=normalizarWbsInventario(
+    wbs===WBS_SIN_ASIGNAR ? '' : wbs
+  );
+
+  return obtenerSaldosWbsMaterial(codigoSap,bodegaStock)
+    .find(x=>x.wbs===key)?.disponible || 0;
+}
 
 function getMaterialLineItems(){
   asegurarSinCodigosSapDuplicados();
@@ -2374,6 +2964,17 @@ function getMaterialLineItems(){
       bodega_origen_nombre: getBodegaNombreById(bodegaOrigenId),
       bodega_destino_nombre: getBodegaNombreById(bodegaDestinoId),
       bodega_origen_stock: tr.querySelector('.line-bodega-stock')?.value || '',
+      wbs: (() => {
+        const tipoActual=String(tipo || '').toUpperCase();
+        if(tipoActual==='ENTRADA'){
+          return tr.querySelector('.line-wbs-input')?.value.trim() || '';
+        }
+        if(esTipoConsumoMaterial(tipoActual)){
+          const value=tr.querySelector('.line-wbs-select')?.value || '';
+          return value===WBS_SIN_ASIGNAR ? '' : value;
+        }
+        return tr.querySelector('.line-wbs-input')?.value.trim() || '';
+      })(),
       codigo_serial: tr.querySelector('.line-serial')?.value.trim() || '',
       cod_reserva: tr.querySelector('.line-reserva')?.value.trim() || ''
     };
@@ -2394,6 +2995,38 @@ function getMaterialLineItems(){
 
   const mismoOrigenDestino = items.find(x => tipo === 'TRANSFERENCIA' && x.bodega_origen_id && x.bodega_destino_id && String(x.bodega_origen_id) === String(x.bodega_destino_id));
   if(mismoOrigenDestino) throw new Error(`En una transferencia, origen y destino no pueden ser iguales para ${mismoOrigenDestino.codigo_sap || mismoOrigenDestino.material_nombre}.`);
+
+  if(esTipoConsumoMaterial(tipo)){
+    const rowsActuales=Array.from(document.querySelectorAll('#materialLinesBody tr'));
+
+    rowsActuales.forEach((tr,index)=>{
+      const item=items[index];
+      if(!item) return;
+
+      const select=tr.querySelector('.line-wbs-select');
+      const selected=select?.value || '';
+
+      if(!selected){
+        select?.focus();
+        throw new Error(`Debes seleccionar el WBS del código SAP ${item.codigo_sap}.`);
+      }
+
+      const saldo=getSaldoWbsSeleccionado(
+        item.codigo_sap,
+        item.bodega_origen_stock,
+        selected
+      );
+
+      if(Number(item.cantidad)>Number(saldo)+0.000001){
+        select?.focus();
+        throw new Error(
+          `Cantidad insuficiente para ${item.codigo_sap} en ${etiquetaWbsInventario(selected)}. `+
+          `Disponible: ${Number(saldo).toLocaleString('es-CO',{maximumFractionDigits:2})} ${item.unidad}. `+
+          `Solicitado: ${Number(item.cantidad).toLocaleString('es-CO',{maximumFractionDigits:2})} ${item.unidad}.`
+        );
+      }
+    });
+  }
 
   return items;
 }
@@ -2655,6 +3288,7 @@ function openMovModal(row = null){
         bodega_origen_id: r.bodega_origen_id || '',
         bodega_destino_id: r.bodega_destino_id || '',
         bodega_origen_stock: r.bodega_origen_stock || '',
+        wbs: r.wbs || '',
         codigo_serial: r.codigo_serial || '',
         cod_reserva: r.cod_reserva || ''
       });
@@ -2736,6 +3370,340 @@ function closeMovModal(){
   currentMovimientoId = null;
   currentGrupoMovimientoId = null;
 }
+
+
+function openWbsManagerModal(){
+  const form=document.getElementById('wbsManagerForm');
+  form?.reset();
+
+  const msg=document.getElementById('wbsMgrMsg');
+  if(msg){
+    msg.textContent='';
+    msg.style.color='#86efac';
+  }
+
+  const box=document.getElementById('wbsMgrSaldoBox');
+  if(box){
+    box.textContent='Selecciona Código SAP y Stock SAP para consultar los WBS disponibles.';
+  }
+
+  const sapList=document.getElementById('wbsMgrSapList');
+  if(sapList){
+    const rows=(sapStock || [])
+      .map(r=>({
+        sap:String(r.codigo_sap || '').trim(),
+        material:String(r.material_description || r.descripcion_gp_antiguo || '').trim()
+      }))
+      .filter(x=>x.sap);
+
+    const unique=new Map();
+    rows.forEach(x=>{
+      if(!unique.has(x.sap)) unique.set(x.sap,x);
+    });
+
+    sapList.innerHTML=[...unique.values()]
+      .sort((a,b)=>a.sap.localeCompare(b.sap,'es',{numeric:true}))
+      .map(x=>`<option value="${esc(x.sap)}">${esc(x.material)}</option>`)
+      .join('');
+  }
+
+  document.getElementById('wbsManagerModal')?.classList.add('show');
+  setTimeout(()=>document.getElementById('wbsMgrSap')?.focus(),80);
+}
+
+function closeWbsManagerModal(){
+  document.getElementById('wbsManagerModal')?.classList.remove('show');
+}
+
+function getMaterialInfoParaWbsManager(codigoSap){
+  return buscarMaterialPorSap(codigoSap) ||
+    (() => {
+      const row=(sapStock || []).find(
+        s=>normalizarCodigoSap(s.codigo_sap)===normalizarCodigoSap(codigoSap)
+      );
+      if(!row) return null;
+
+      const parsed=parseStockSap(row.unrestricted_stock,row);
+      return {
+        codigo_sap:String(row.codigo_sap || '').trim(),
+        material:row.material_description || row.descripcion_gp_antiguo || '',
+        unidad:normalizarUnidadSap(row.unidad || row.unidad_sap || parsed?.unidad || 'EA')
+      };
+    })();
+}
+
+function wbsManagerSapChanged(){
+  const sap=String(document.getElementById('wbsMgrSap')?.value || '').trim();
+  const materialInput=document.getElementById('wbsMgrMaterial');
+  const unidadInput=document.getElementById('wbsMgrUnidad');
+  const stockSelect=document.getElementById('wbsMgrStock');
+  const origenSelect=document.getElementById('wbsMgrOrigen');
+  const destinoList=document.getElementById('wbsMgrDestinoList');
+
+  if(materialInput) materialInput.value='';
+  if(unidadInput) unidadInput.value='';
+  if(stockSelect) stockSelect.innerHTML='<option value="">Selecciona bodega</option>';
+  if(origenSelect) origenSelect.innerHTML='<option value="">Selecciona WBS origen</option>';
+  if(destinoList) destinoList.innerHTML='';
+
+  if(!sap){
+    wbsManagerActualizarSaldoInfo();
+    return;
+  }
+
+  const info=getMaterialInfoParaWbsManager(sap);
+
+  if(info){
+    if(materialInput) materialInput.value=info.material || '';
+    if(unidadInput) unidadInput.value=normalizarUnidadSap(info.unidad || 'EA');
+  }
+
+  const stocks=getBodegasStockPorSap(sap);
+  if(stockSelect){
+    stockSelect.innerHTML=
+      '<option value="">Selecciona bodega</option>'+
+      stocks.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
+
+    if(stocks.length===1){
+      stockSelect.value=stocks[0];
+      wbsManagerStockChanged();
+    }
+  }
+
+  wbsManagerActualizarSaldoInfo();
+}
+
+function wbsManagerStockChanged(){
+  const sap=String(document.getElementById('wbsMgrSap')?.value || '').trim();
+  const stock=String(document.getElementById('wbsMgrStock')?.value || '').trim();
+  const origen=document.getElementById('wbsMgrOrigen');
+  const destinoList=document.getElementById('wbsMgrDestinoList');
+
+  if(origen){
+    origen.innerHTML='<option value="">Selecciona WBS origen</option>';
+  }
+  if(destinoList){
+    destinoList.innerHTML='';
+  }
+
+  if(!sap || !stock){
+    wbsManagerActualizarSaldoInfo();
+    return;
+  }
+
+  const unidad=document.getElementById('wbsMgrUnidad')?.value || '';
+  const saldos=obtenerSaldosWbsMaterial(sap,stock);
+
+  if(origen){
+    origen.innerHTML=
+      '<option value="">Selecciona WBS origen</option>'+
+      saldos.map(item=>
+        `<option value="${esc(item.wbs)}" data-disponible="${item.disponible}">`+
+        `${esc(etiquetaWbsInventario(item.wbs))} — Disponible: `+
+        `${item.disponible.toLocaleString('es-CO',{maximumFractionDigits:2})} ${esc(unidad)}`+
+        `</option>`
+      ).join('');
+  }
+
+  if(destinoList){
+    destinoList.innerHTML=saldos
+      .filter(item=>item.wbs!==WBS_SIN_ASIGNAR)
+      .map(item=>`<option value="${esc(item.wbs)}"></option>`)
+      .join('');
+  }
+
+  wbsManagerActualizarSaldoInfo();
+}
+
+function wbsManagerOrigenChanged(){
+  const select=document.getElementById('wbsMgrOrigen');
+  const qty=document.getElementById('wbsMgrCantidad');
+  const opt=select?.selectedOptions?.[0];
+  const disponible=Number(opt?.dataset?.disponible || 0);
+
+  if(qty){
+    qty.max=disponible>0 ? String(disponible) : '';
+    if(Number(qty.value || 0)>disponible){
+      qty.value='';
+    }
+  }
+
+  wbsManagerActualizarSaldoInfo();
+}
+
+function wbsManagerActualizarSaldoInfo(){
+  const sap=String(document.getElementById('wbsMgrSap')?.value || '').trim();
+  const stock=String(document.getElementById('wbsMgrStock')?.value || '').trim();
+  const unidad=document.getElementById('wbsMgrUnidad')?.value || '';
+  const box=document.getElementById('wbsMgrSaldoBox');
+
+  if(!box) return;
+
+  if(!sap || !stock){
+    box.textContent='Selecciona Código SAP y Stock SAP para consultar los WBS disponibles.';
+    return;
+  }
+
+  const saldos=obtenerSaldosWbsMaterial(sap,stock);
+
+  if(!saldos.length){
+    box.innerHTML='<b>No hay saldo disponible para reclasificar.</b>';
+    return;
+  }
+
+  box.innerHTML=
+    `<b>Distribución actual del SAP ${esc(sap)} en ${esc(stock)}:</b><br>`+
+    saldos.map(item=>
+      `${esc(etiquetaWbsInventario(item.wbs))}: `+
+      `<b>${item.disponible.toLocaleString('es-CO',{maximumFractionDigits:2})} ${esc(unidad)}</b>`
+    ).join(' &nbsp; | &nbsp; ');
+}
+
+function buscarBodegaFisicaParaWbs(stock){
+  const normal=normalizarTextoInventario(stock);
+
+  return (bodegas || []).find(b=>
+    normalizarTextoInventario(b.nombre || '')===normal
+  ) || (bodegas || []).find(b=>
+    bodegaKeyInventario(b.nombre || '')===bodegaKeyInventario(stock)
+  ) || null;
+}
+
+function wbsRealDesdeKey(key){
+  return key===WBS_SIN_ASIGNAR ? null : String(key || '').trim() || null;
+}
+
+document.getElementById('wbsManagerForm')?.addEventListener('submit', async function(e){
+  e.preventDefault();
+
+  const msg=document.getElementById('wbsMgrMsg');
+  if(msg){
+    msg.textContent='';
+    msg.style.color='#86efac';
+  }
+
+  const sap=normalizarCodigoSap(document.getElementById('wbsMgrSap')?.value);
+  const stock=String(document.getElementById('wbsMgrStock')?.value || '').trim();
+  const origenKey=String(document.getElementById('wbsMgrOrigen')?.value || '').trim();
+  const destinoTexto=String(document.getElementById('wbsMgrDestino')?.value || '').trim();
+  const destinoKey=normalizarWbsInventario(destinoTexto);
+  const cantidad=Number(document.getElementById('wbsMgrCantidad')?.value || 0);
+  const observacion=String(document.getElementById('wbsMgrObservacion')?.value || '').trim();
+  const unidad=normalizarUnidadSap(document.getElementById('wbsMgrUnidad')?.value || 'EA');
+  const materialNombre=String(document.getElementById('wbsMgrMaterial')?.value || '').trim();
+
+  try{
+    if(!sap) throw new Error('Debes seleccionar el Código SAP.');
+    if(!stock) throw new Error('Debes seleccionar el Stock SAP / Bodega.');
+    if(!origenKey) throw new Error('Debes seleccionar el WBS origen.');
+    if(!Number.isFinite(cantidad) || cantidad<=0){
+      throw new Error('La cantidad debe ser mayor a cero.');
+    }
+
+    if(normalizarWbsInventario(origenKey)===destinoKey){
+      throw new Error('El WBS origen y el WBS destino no pueden ser iguales.');
+    }
+
+    const saldoOrigen=getSaldoWbsSeleccionado(sap,stock,origenKey);
+
+    if(cantidad>saldoOrigen+0.000001){
+      throw new Error(
+        `La cantidad supera el saldo disponible en ${etiquetaWbsInventario(origenKey)}. `+
+        `Disponible: ${saldoOrigen.toLocaleString('es-CO',{maximumFractionDigits:2})} ${unidad}.`
+      );
+    }
+
+    const bodega=buscarBodegaFisicaParaWbs(stock);
+    if(!bodega){
+      throw new Error(
+        `No se encontró en om_bodegas una bodega equivalente a "${stock}". `+
+        'Debes crearla o ajustar su nombre para poder reclasificar el WBS.'
+      );
+    }
+
+    const material=await getOrCreateMaterial({
+      codigo_sap:sap,
+      material:materialNombre || sap,
+      unidad
+    });
+
+    const client=await resolveClient();
+    const userEmail=localStorage.getItem('user_email') || null;
+    const ahora=new Date();
+    const referencia=
+      `WBS-${ahora.getFullYear()}${String(ahora.getMonth()+1).padStart(2,'0')}`+
+      `${String(ahora.getDate()).padStart(2,'0')}-`+
+      `${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}`+
+      `${String(ahora.getSeconds()).padStart(2,'0')}-`+
+      Math.random().toString(36).slice(2,7).toUpperCase();
+
+    const detalle=
+      `Reclasificación manual WBS ${referencia}: `+
+      `${etiquetaWbsInventario(origenKey)} → ${etiquetaWbsInventario(destinoKey)}`+
+      (observacion ? ` | ${observacion}` : '');
+
+    const common={
+      fecha:ahora.toISOString().slice(0,10),
+      hora:ahora.toTimeString().slice(0,5),
+      estado:'RECIBIDO',
+      material_id:material.id,
+      cantidad,
+      unidad,
+      codigo_sap:sap,
+      material_descripcion:materialNombre || material.material || '',
+      bodega_origen_stock:stock,
+      observaciones:detalle,
+      created_by_email:userEmail
+    };
+
+    const payloads=[
+      {
+        ...common,
+        tipo_movimiento:'AJUSTE_NEGATIVO',
+        bodega_origen_id:bodega.id,
+        bodega_destino_id:null,
+        wbs:wbsRealDesdeKey(origenKey)
+      },
+      {
+        ...common,
+        tipo_movimiento:'AJUSTE_POSITIVO',
+        bodega_origen_id:null,
+        bodega_destino_id:bodega.id,
+        wbs:wbsRealDesdeKey(destinoKey)
+      }
+    ];
+
+    const result=await client
+      .from('om_materiales_movimientos')
+      .insert(payloads);
+
+    if(result.error) throw result.error;
+
+    if(msg){
+      msg.style.color='#86efac';
+      msg.textContent=
+        `WBS actualizado correctamente: ${cantidad.toLocaleString('es-CO',{maximumFractionDigits:2})} ${unidad} `+
+        `movidos de ${etiquetaWbsInventario(origenKey)} a ${etiquetaWbsInventario(destinoKey)}.`;
+    }
+
+    await loadAll();
+
+    setTimeout(()=>{
+      closeWbsManagerModal();
+    },900);
+
+  }catch(err){
+    console.error('Error reclasificando WBS:',err);
+
+    if(msg){
+      msg.style.color='#fecaca';
+      msg.textContent='Error: '+(err.message || err);
+    }else{
+      alert('Error reclasificando WBS: '+(err.message || err));
+    }
+  }
+});
+
 
 function openMatModal(){
   document.getElementById('matForm').reset();
@@ -3122,6 +4090,7 @@ function toggleMovementFields(){
 
   actualizarRequeridosBodegasPorLinea();
   actualizarReservaInputs();
+  actualizarWbsTodasLasLineas();
 }
 
 
@@ -3640,6 +4609,7 @@ document.getElementById('movForm').addEventListener('submit', async function(e){
         bodega_origen_id: item.bodega_origen_id || null,
         bodega_destino_id: item.bodega_destino_id || null,
         bodega_origen_stock: item.bodega_origen_stock || null,
+        wbs: item.wbs || null,
         codigo_serial: item.codigo_serial || null,
         cod_reserva: item.cod_reserva || null
       });
