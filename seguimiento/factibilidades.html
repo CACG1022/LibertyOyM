@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
   <script src="app.js"></script>
   <style>
     :root{--border:rgba(255,255,255,.10);--text:#eef4ff;--muted:#9ab0d0;--shadow:0 18px 40px rgba(0,0,0,.28)}
@@ -21,17 +22,19 @@
     .session-box small{display:block;color:var(--muted);margin-bottom:8px;word-break:break-all}
     .btn{border:none;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#2563eb,#22c55e);color:#fff}
     .btn.secondary{background:#1f3d79}.btn.ghost{background:rgba(255,255,255,.04);border:1px solid var(--border)}
+    .btn.doc-request{background:linear-gradient(135deg,#7c3aed,#c026d3);border:1px solid rgba(216,180,254,.45);box-shadow:0 10px 24px rgba(124,58,237,.22)}
+    .btn.doc-request:hover{filter:brightness(1.08)}
     .small-btn{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:#fff;cursor:pointer}.copy-msg{font-size:12px;color:#86efac;margin-left:10px;align-self:center}
     .small-btn.email-btn{display:block;width:100%;background:linear-gradient(135deg,#2563eb,#0891b2);border-color:rgba(147,197,253,.35);margin-top:8px;padding:6px 10px;line-height:1.05;font-size:11px;min-height:26px;white-space:nowrap}.actions-cell{min-width:150px}.actions-cell .small-btn:not(.email-btn){display:block;width:100%;padding:7px 10px;line-height:1.05;font-size:11px;min-height:26px}
     .template-help{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:8px;margin-top:8px}.template-token{font-size:12px;color:#bfdbfe;border:1px solid var(--border);border-radius:10px;padding:8px;background:rgba(255,255,255,.03);cursor:pointer}.template-token:hover{background:rgba(59,130,246,.16)}
     .main{padding:26px 28px}
     .header h1{margin:0 0 6px;font-size:28px}.header p{margin:0 0 20px;color:var(--muted)}
-    .toolbar-row{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
-    .toolbar-left,.toolbar-right{display:flex;gap:12px;flex-wrap:wrap}
-    .control{min-width:190px;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}
-    .summary{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:12px;margin-bottom:18px}
-    .stat{border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));padding:16px;box-shadow:var(--shadow);min-height:110px;cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease}
-    .stat .label{font-size:12px;color:var(--muted);margin-bottom:8px}.stat .value{font-size:30px;font-weight:800}.stat .sub{font-size:12px;color:#b9d6ff;margin-top:6px}.stat:hover{transform:translateY(-2px);border-color:rgba(96,165,250,.45)}.stat.active{border-color:rgba(34,197,94,.60);background:linear-gradient(180deg,rgba(34,197,94,.12),rgba(255,255,255,.02))}
+    .toolbar-row{display:grid;grid-template-columns:minmax(520px,1fr) minmax(760px,.95fr);gap:14px;align-items:start;margin-bottom:14px;padding:14px;border:1px solid var(--border);border-radius:20px;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.015));box-shadow:var(--shadow)}
+    .toolbar-left,.toolbar-right{display:grid;gap:10px;align-items:center}.toolbar-left{grid-template-columns:2fr 1.15fr 1fr}.toolbar-right{grid-template-columns:repeat(6,minmax(108px,1fr))}.toolbar-right .control{grid-column:1/-1}.toolbar-right .btn{width:100%;padding:10px 8px;min-height:38px;font-size:12px;line-height:1.05;white-space:nowrap}
+    .control{width:100%;min-width:0;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}
+    .summary{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:10px;margin-bottom:14px}
+    .stat{border:1px solid var(--border);border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));padding:13px 14px;box-shadow:var(--shadow);min-height:92px;cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease}
+    .stat .label{font-size:11px;color:var(--muted);margin-bottom:7px}.stat .value{font-size:26px;font-weight:900;line-height:1}.stat .sub{font-size:11px;color:#b9d6ff;margin-top:7px;line-height:1.25}.stat:hover{transform:translateY(-2px);border-color:rgba(96,165,250,.45)}.stat.active{border-color:rgba(34,197,94,.60);background:linear-gradient(180deg,rgba(34,197,94,.12),rgba(255,255,255,.02))}.stat.info{border-color:rgba(168,85,247,.38);background:linear-gradient(180deg,rgba(168,85,247,.10),rgba(255,255,255,.02))}
     .card{border:1px solid var(--border);border-radius:20px;background:linear-gradient(180deg,#08152c,#0a1730);box-shadow:var(--shadow)}
     .table-wrap{overflow:auto}
     table{width:100%;border-collapse:separate;border-spacing:0}
@@ -111,9 +114,21 @@
     .audit-value{max-width:320px;white-space:pre-wrap;word-break:break-word;color:#dbeafe}
     .audit-old{color:#fecaca}.audit-new{color:#bbf7d0}.audit-meta{font-size:12px;color:var(--muted);margin-bottom:12px}.audit-empty{padding:22px;text-align:center;color:var(--muted)}
 
-    @media (max-width:1400px){.summary{grid-template-columns:repeat(3,minmax(150px,1fr))}}
+
+
+    /* Dashboard Documentación */
+    .docdash-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:90;padding:18px}
+    .docdash-backdrop.show{display:flex}
+    .docdash-modal{width:min(1560px,98vw);max-height:94vh;overflow:auto;background:#f8fafc;color:#0f172a;border-radius:22px;box-shadow:0 24px 70px rgba(0,0,0,.34);border:1px solid rgba(15,23,42,.10)}
+    .docdash-head{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:20px 24px;background:linear-gradient(135deg,#f97316,#fb923c);color:white;border-radius:22px 22px 0 0}
+    .docdash-head h2{margin:0;font-size:24px;line-height:1.1}.docdash-head p{margin:6px 0 0;color:#fff7ed;font-size:13px}.docdash-close{width:40px;height:40px;border:0;border-radius:12px;background:rgba(255,255,255,.20);color:white;font-weight:900;cursor:pointer;font-size:18px}
+    .docdash-body{padding:20px 24px 26px}.docdash-grid{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:12px;margin-bottom:16px}.docdash-kpi{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:15px;box-shadow:0 8px 24px rgba(15,23,42,.08);min-height:104px}.docdash-kpi .dk-label{font-size:11px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.04em}.docdash-kpi .dk-value{font-size:30px;font-weight:950;color:#0f172a;margin-top:8px;line-height:1}.docdash-kpi .dk-sub{font-size:12px;color:#64748b;margin-top:8px}.docdash-kpi.orange{border-color:#fed7aa;background:linear-gradient(180deg,#fff7ed,#fff)}.docdash-kpi.red{border-color:#fecaca;background:linear-gradient(180deg,#fff1f2,#fff)}.docdash-kpi.green{border-color:#bbf7d0;background:linear-gradient(180deg,#f0fdf4,#fff)}
+    .docdash-panels{display:grid;grid-template-columns:1.25fr .75fr;gap:16px;margin-bottom:16px}.docdash-card{background:#fff;border:1px solid #e5e7eb;border-radius:20px;padding:18px;box-shadow:0 8px 24px rgba(15,23,42,.07)}.docdash-card h3{margin:0 0 12px;font-size:17px;color:#0f172a}.docdash-note{font-size:12px;color:#64748b;margin-top:8px}.docdash-bars{display:flex;align-items:end;gap:10px;min-height:250px;border-left:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;padding:12px 10px 0;overflow:auto}.docdash-bar-wrap{min-width:70px;display:flex;flex-direction:column;align-items:center;justify-content:end;height:235px}.docdash-bar{width:42px;border-radius:12px 12px 0 0;background:linear-gradient(180deg,#f97316,#ea580c);position:relative;min-height:5px;box-shadow:0 6px 12px rgba(249,115,22,.20)}.docdash-bar span{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:12px;font-weight:900;color:#0f172a;white-space:nowrap}.docdash-bar-label{font-size:11px;color:#475569;text-align:center;margin-top:7px;line-height:1.1}.docdash-bar-count{font-size:10px;color:#64748b;margin-top:2px}.docdash-split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.docdash-metric-list{display:grid;gap:10px}.docdash-metric{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-radius:14px;background:#f8fafc;border:1px solid #e5e7eb}.docdash-metric b{color:#0f172a}.docdash-pill{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:#ffedd5;color:#9a3412;font-weight:900;padding:5px 10px;font-size:12px}.docdash-table-wrap{max-height:300px;overflow:auto;border:1px solid #e5e7eb;border-radius:16px}.docdash-table{width:100%;border-collapse:separate;border-spacing:0}.docdash-table th{position:sticky;top:0;background:#fff7ed;color:#9a3412;text-align:left;padding:10px;font-size:12px;border-bottom:1px solid #fed7aa}.docdash-table td{padding:10px;border-bottom:1px solid #f1f5f9;font-size:12px;vertical-align:top;color:#334155}.docdash-table tr:hover td{background:#fff7ed}.docdash-empty{padding:20px;text-align:center;color:#64748b;background:#fff;border:1px dashed #cbd5e1;border-radius:16px}
+    @media (max-width:1300px){.docdash-grid{grid-template-columns:repeat(3,1fr)}.docdash-panels{grid-template-columns:1fr}.docdash-split{grid-template-columns:1fr}.toolbar-right{grid-template-columns:repeat(3,minmax(118px,1fr))}}
+
+    @media (max-width:1500px){.summary{grid-template-columns:repeat(3,minmax(150px,1fr))}.toolbar-row{grid-template-columns:1fr}.toolbar-left{grid-template-columns:1fr 1fr 1fr}.toolbar-right{grid-template-columns:repeat(6,minmax(108px,1fr))}.toolbar-right .control{grid-column:1/-1}}
     @media (max-width:1100px){.grid,.detail-grid{grid-template-columns:repeat(2,1fr)}}
-    @media (max-width:900px){.page{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.grid,.summary,.detail-grid{grid-template-columns:1fr}}.import-btn{white-space:nowrap}.preview-wrap{max-height:380px;overflow:auto;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02)}.preview-table{width:100%;border-collapse:separate;border-spacing:0}.preview-table th,.preview-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px;text-align:left;vertical-align:top}.preview-table th{color:#9fd0ff;background:#0a1730;position:sticky;top:0}.summary-row{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:12px;margin:10px 0 16px}.summary-mini{padding:12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.03)}.summary-mini .n{font-size:24px;font-weight:800}.summary-mini .l{font-size:12px;color:#9ab0d0}
+    @media (max-width:900px){.page{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.grid,.summary,.detail-grid,.toolbar-left,.toolbar-right{grid-template-columns:1fr}}.import-btn{white-space:nowrap}.preview-wrap{max-height:380px;overflow:auto;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02)}.preview-table{width:100%;border-collapse:separate;border-spacing:0}.preview-table th,.preview-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px;text-align:left;vertical-align:top}.preview-table th{color:#9fd0ff;background:#0a1730;position:sticky;top:0}.summary-row{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:12px;margin:10px 0 16px}.summary-mini{padding:12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.03)}.summary-mini .n{font-size:24px;font-weight:800}.summary-mini .l{font-size:12px;color:#9ab0d0}
   </style>
 </head>
 <body>
@@ -230,14 +245,14 @@
       <div class="form-section documentacion">
         <div class="section-title">Documentación</div>
         <div class="grid">
-          <div class="field"><label>Fecha de entrega de documentación</label><input type="date" name="fecha_entrega_documentacion" onchange="calcularDocumentacionFactibilidad()"></div>
+          <div class="field"><label>Fecha de entrega de documentación</label><input type="date" name="fecha_entrega_documentacion" onchange="calcularDocumentacionFactibilidad()" oninput="calcularDocumentacionFactibilidad()"></div>
           <div class="modal-kpi documentation">
             <div class="k-label">Tiempo entrega documentación</div>
             <div class="k-value" id="kpiTiempoDocumentacionFact">0 días</div>
             <div class="k-sub" id="kpiSubTiempoDocumentacionFact">Días hábiles entre entrega y documentación</div>
           </div>
           <div class="field span-2 doc-actions">
-            <button type="button" class="btn" onclick="openSolicitudDocumentacionContratista()">Solicitud de información a contratista</button>
+            <button type="button" class="btn doc-request" onclick="openSolicitudDocumentacionContratista()">Solicitud de información a contratista</button>
             <div class="muted-note">Genera correo en Outlook con el tiempo transcurrido documental.</div>
           </div>
         </div>
@@ -334,6 +349,22 @@
 </div>
 
 
+<div id="dashboardDocumentacionModal" class="docdash-backdrop">
+  <div class="docdash-modal">
+    <div class="docdash-head">
+      <div>
+        <h2>Dashboard Documentación</h2>
+        <p>Indicadores gerenciales de tiempos de entrega documental, pendientes y cumplimiento por mes.</p>
+      </div>
+      <button class="docdash-close" type="button" onclick="closeDashboardDocumentacion()">✕</button>
+    </div>
+    <div class="docdash-body" id="dashboardDocumentacionContent">
+      <div class="docdash-empty">Cargando métricas documentales...</div>
+    </div>
+  </div>
+</div>
+
+
 <script>
 function safeRenderError(message){
   document.body.innerHTML = `<div style="min-height:100vh;background:linear-gradient(180deg,#04101f,#07152a);color:#fff;font-family:Arial,Helvetica,sans-serif;display:flex;align-items:center;justify-content:center;padding:24px"><div style="max-width:900px;width:100%;border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:24px;background:rgba(255,255,255,.04)"><h2 style="margin-top:0">Error cargando el módulo de factibilidades</h2><p style="color:#cbd5e1">Revisa app.js, la configuración de Supabase y la consola del navegador.</p><pre style="white-space:pre-wrap;color:#fecaca">${String(message || '')}</pre></div></div>`;
@@ -372,6 +403,8 @@ function renderShell(){
             <button class="btn ghost import-btn" type="button" onclick="openImportPicker()">Cargar plantilla</button>
             <button class="btn ghost import-btn" type="button" onclick="openEmailTemplateConfig()">Config. plantilla correo</button>
             <button class="btn ghost import-btn" type="button" onclick="generarReporteDashboard()">Reporte Dashboard</button>
+            <button class="btn ghost import-btn" type="button" onclick="generarReporteDocumentacion()">Reporte Documentación</button>
+            <button class="btn ghost import-btn" type="button" onclick="openDashboardDocumentacion()">Dashboard Documentación</button>
             <button class="btn ghost" onclick="loadFactibilidades()">Actualizar</button>
             <input id="plantillaInput" type="file" accept=".txt,.csv,.tsv,text/plain" style="display:none">
           </div>
@@ -744,6 +777,185 @@ function generarReporteDashboard(){
   descargarBlob(nombreArchivo.replace('.xlsx','.csv'), new Blob(['\ufeff' + csv], {type:'text/csv;charset=utf-8;'}));
 }
 
+
+function esEstadoCerradoDocumental(row){
+  const e = normalizeEstadoReporte(row?.estado_general);
+  return e === 'ENTREGADA' || e === 'APROBADA';
+}
+function obtenerDiasDocumentacionRegistro(row){
+  const datos = calcularTiempoDocumentacionValores(row?.fecha_entrega, row?.fecha_entrega_documentacion, row?.fecha_agendamiento || row?.fecha_realizacion_viabilidad);
+  return datos.dias || 0;
+}
+function registrosPromedioDocumental(baseRows=(factRows || [])){
+  return (baseRows || []).filter(r => esEstadoCerradoDocumental(r) && r.fecha_entrega_documentacion && (r.fecha_entrega || r.fecha_agendamiento || r.fecha_realizacion_viabilidad));
+}
+function promedioTiempoDocumentacion(baseRows=(factRows || [])){
+  const rows = registrosPromedioDocumental(baseRows);
+  if(!rows.length) return { promedio: 0, total: 0 };
+  const suma = rows.reduce((acc, r) => acc + obtenerDiasDocumentacionRegistro(r), 0);
+  return { promedio: Math.round((suma / rows.length) * 10) / 10, total: rows.length };
+}
+function llaveMesDocumental(fecha){
+  const d = parseFechaLocal(fecha);
+  if(!d) return '';
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}`;
+}
+function etiquetaMesDocumental(ym){
+  const [y, m] = String(ym || '').split('-');
+  const nombres = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const idx = parseInt(m,10) - 1;
+  return `${nombres[idx] || m}/${y}`;
+}
+function resumenMensualDocumental(baseRows=(factRows || [])){
+  const mapa = new Map();
+  registrosPromedioDocumental(baseRows).forEach(r => {
+    const ym = llaveMesDocumental(r.fecha_entrega_documentacion || r.fecha_entrega || r.fecha_agendamiento);
+    if(!ym) return;
+    if(!mapa.has(ym)) mapa.set(ym, { mes: ym, etiqueta: etiquetaMesDocumental(ym), suma: 0, cantidad: 0 });
+    const item = mapa.get(ym);
+    item.suma += obtenerDiasDocumentacionRegistro(r);
+    item.cantidad++;
+  });
+  return Array.from(mapa.values()).sort((a,b) => a.mes.localeCompare(b.mes)).map(x => ({
+    mes: x.etiqueta,
+    cantidad: x.cantidad,
+    promedio: Math.round((x.suma / Math.max(1, x.cantidad)) * 10) / 10
+  }));
+}
+function registrosPendientesDocumentacion(baseRows=(factRows || [])){
+  const excluidos = new Set(['CANCELADA','RECHAZADA','NO VIABLE','NO_VIABLE']);
+  return (baseRows || [])
+    .filter(r => !r.fecha_entrega_documentacion)
+    .filter(r => !excluidos.has(String(r.estado_general || '').trim().toUpperCase()))
+    .filter(r => r.fecha_entrega || r.fecha_agendamiento || r.fecha_realizacion_viabilidad)
+    .map(r => ({...r, dias_doc_pendiente: obtenerDiasDocumentacionRegistro(r)}))
+    .sort((a,b) => (b.dias_doc_pendiente || 0) - (a.dias_doc_pendiente || 0));
+}
+function baseCerradasDocumentacion(baseRows=(factRows || [])){
+  return registrosPromedioDocumental(baseRows).map(r => ({
+    ciudad: getCiudadReporte(r),
+    id_cliente: r.id_cliente || '',
+    cambio: r.id_cambio || '',
+    id_tarea: r.id_tarea || '',
+    cliente: r.cliente || '',
+    direccion: r.direccion || '',
+    fecha_ingreso: formatDateReporte(r.fecha_ingreso, 'dmy'),
+    fecha_entrega: formatDateReporte(r.fecha_entrega, 'dmy'),
+    fecha_entrega_documentacion: formatDateReporte(r.fecha_entrega_documentacion, 'dmy'),
+    dias_habiles_documentacion: obtenerDiasDocumentacionRegistro(r),
+    estado_general: normalizeEstadoReporte(r.estado_general),
+    responsable: r.responsable || '',
+    operador: r.operador || ''
+  }));
+}
+function basePendientesDocumentacionReporte(baseRows=(factRows || [])){
+  return registrosPendientesDocumentacion(baseRows).map(r => ({
+    ranking: '',
+    ciudad: getCiudadReporte(r),
+    id_cliente: r.id_cliente || '',
+    cambio: r.id_cambio || '',
+    id_tarea: r.id_tarea || '',
+    cliente: r.cliente || '',
+    direccion: r.direccion || '',
+    fecha_base_documental: formatDateReporte(r.fecha_entrega || r.fecha_agendamiento || r.fecha_realizacion_viabilidad, 'dmy'),
+    dias_habiles_pendientes: r.dias_doc_pendiente || 0,
+    estado_general: normalizeEstadoReporte(r.estado_general),
+    responsable: r.responsable || '',
+    operador: r.operador || ''
+  })).map((r, i) => ({...r, ranking: i + 1}));
+}
+
+function xlsxEscXml(v){ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&apos;'); }
+function xlsxCol(n){ let s=''; while(n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26); } return s; }
+function xlsxCell(value, r, c, style=0){
+  const ref = `${xlsxCol(c)}${r}`;
+  if(typeof value === 'number' && Number.isFinite(value)) return `<c r="${ref}"${style?` s="${style}"`:''}><v>${value}</v></c>`;
+  return `<c r="${ref}" t="inlineStr"${style?` s="${style}"`:''}><is><t>${xlsxEscXml(value)}</t></is></c>`;
+}
+function xlsxSheetXml(rows, opts={}){
+  const merges = opts.merges || [];
+  const drawing = opts.drawing ? '<drawing r:id="rId1"/>' : '';
+  const cols = opts.cols ? `<cols>${opts.cols.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')}</cols>` : '';
+  const rowXml = rows.map((row, ri) => `<row r="${ri+1}">${row.map((cell, ci) => {
+    if(cell && typeof cell === 'object' && !Array.isArray(cell)) return xlsxCell(cell.v, ri+1, ci+1, cell.s || 0);
+    return xlsxCell(cell, ri+1, ci+1, 0);
+  }).join('')}</row>`).join('');
+  const mergeXml = merges.length ? `<mergeCells count="${merges.length}">${merges.map(m=>`<mergeCell ref="${m}"/>`).join('')}</mergeCells>` : '';
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetViews><sheetView workbookViewId="0"/></sheetViews>${cols}<sheetData>${rowXml}</sheetData>${mergeXml}<pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>${drawing}</worksheet>`;
+}
+function xlsxStylesXml(){
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="5"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="16"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="13"/><color rgb="FF1F4E79"/><name val="Calibri"/></font><font><b/><sz val="18"/><color rgb="FF1F4E79"/><name val="Calibri"/></font></fonts><fills count="6"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF1F4E79"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FF70AD47"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFC000"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFEDEDED"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFD9E2F3"/></left><right style="thin"><color rgb="FFD9E2F3"/></right><top style="thin"><color rgb="FFD9E2F3"/></top><bottom style="thin"><color rgb="FFD9E2F3"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="6"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/><xf numFmtId="0" fontId="2" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/><xf numFmtId="0" fontId="3" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/><xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/><xf numFmtId="0" fontId="2" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+}
+function xlsxChartXml(numRows){
+  const last = Math.max(2, numRows + 1);
+  const catRef = `'Promedio Mensual'!$A$2:$A$${last}`;
+  const valRef = `'Promedio Mensual'!$B$2:$B$${last}`;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><c:chart><c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="es-CO" sz="1400" b="1"/><a:t>Tiempo promedio mensual de entrega documental</a:t></a:r></a:p></c:rich></c:tx><c:layout/></c:title><c:plotArea><c:layout/><c:barChart><c:barDir val="col"/><c:grouping val="clustered"/><c:varyColors val="0"/><c:ser><c:idx val="0"/><c:order val="0"/><c:tx><c:v>Promedio días hábiles</c:v></c:tx><c:cat><c:strRef><c:f>${xlsxEscXml(catRef)}</c:f></c:strRef></c:cat><c:val><c:numRef><c:f>${xlsxEscXml(valRef)}</c:f></c:numRef></c:val><c:dLbls><c:dLblPos val="outEnd"/><c:showVal val="1"/><c:showLegendKey val="0"/><c:showCatName val="0"/><c:showSerName val="0"/></c:dLbls><c:spPr><a:solidFill><a:srgbClr val="4472C4"/></a:solidFill></c:spPr></c:ser><c:axId val="123456"/><c:axId val="654321"/></c:barChart><c:catAx><c:axId val="123456"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:tickLblPos val="nextTo"/><c:crossAx val="654321"/><c:crosses val="autoZero"/></c:catAx><c:valAx><c:axId val="654321"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:majorGridlines/><c:title><c:tx><c:rich><a:bodyPr/><a:lstStyle/><a:p><a:r><a:t>Días hábiles</a:t></a:r></a:p></c:rich></c:tx></c:title><c:numFmt formatCode="0.0" sourceLinked="0"/><c:tickLblPos val="nextTo"/><c:crossAx val="123456"/><c:crosses val="autoZero"/></c:valAx></c:plotArea><c:legend><c:legendPos val="b"/><c:layout/></c:legend><c:plotVisOnly val="1"/></c:chart></c:chartSpace>`;
+}
+function xlsxDrawingXml(){
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><xdr:twoCellAnchor><xdr:from><xdr:col>3</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>2</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:to><xdr:col>11</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>21</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to><xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="2" name="Gráfico Documental"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId1"/></a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor></xdr:wsDr>`;
+}
+function objectRowsToMatrix(rows){
+  if(!rows.length) return [[]];
+  const headers = Object.keys(rows[0]);
+  return [headers.map(h => ({v:h, s:2}))].concat(rows.map(r => headers.map(h => r[h])));
+}
+async function crearXlsxDocumental({resumenRows, mensualRows, pendientesRows, cerradasRows}){
+  if(!window.JSZip) throw new Error('No se pudo cargar JSZip. Revisa la conexión a internet o descarga el reporte cuando el CDN esté disponible.');
+  const zip = new JSZip();
+  const promedio = promedioTiempoDocumentacion(factRows || []);
+  const pendientes = pendientesRows.length;
+  const resumenSheet = [
+    [{v:'Reporte gerencial de documentación de factibilidades', s:1}],
+    [''],
+    [{v:'Fecha reporte', s:3}, new Date().toLocaleString('es-CO')],
+    [{v:'Promedio entrega documental', s:3}, `${promedio.promedio} días hábiles`],
+    [{v:'Registros con documentación recibida', s:3}, promedio.total],
+    [{v:'Registros pendientes documentación', s:3}, pendientes],
+    [''],
+    [{v:'Lectura ejecutiva', s:3}],
+    ['El promedio se calcula sobre registros en estado ENTREGADA o APROBADA que tienen fecha de entrega de documentación.'],
+    ['El ranking muestra los registros pendientes de documentación, ordenados de mayor a menor tiempo transcurrido.'],
+    [''],
+    [{v:'Recomendación', s:5}, 'Revisar los primeros registros del ranking y solicitar soporte documental al contratista.']
+  ];
+  const mensualMatrix = [[{v:'Mes',s:2},{v:'Promedio días hábiles',s:2},{v:'Cantidad registros',s:2}]].concat((mensualRows.length?mensualRows:[{mes:'Sin datos', promedio:0, cantidad:0}]).map(r => [r.mes, r.promedio, r.cantidad]));
+  const pendingMatrix = pendientesRows.length ? objectRowsToMatrix(pendientesRows) : [[{v:'Sin pendientes',s:2}]];
+  const closedMatrix = cerradasRows.length ? objectRowsToMatrix(cerradasRows) : [[{v:'Sin registros cerrados con documentación',s:2}]];
+
+  zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet2.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet3.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/worksheets/sheet4.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/drawings/drawing1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/><Override PartName="/xl/charts/chart1.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/></Types>`);
+  zip.folder('_rels').file('.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`);
+  zip.folder('xl').file('workbook.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Resumen" sheetId="1" r:id="rId1"/><sheet name="Promedio Mensual" sheetId="2" r:id="rId2"/><sheet name="Ranking Pendientes" sheetId="3" r:id="rId3"/><sheet name="Base Cerradas" sheetId="4" r:id="rId4"/></sheets></workbook>`);
+  zip.folder('xl').folder('_rels').file('workbook.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet2.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet3.xml"/><Relationship Id="rId4" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet4.xml"/><Relationship Id="rId5" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`);
+  zip.folder('xl').file('styles.xml', xlsxStylesXml());
+  zip.folder('xl').folder('worksheets').file('sheet1.xml', xlsxSheetXml(resumenSheet, {drawing:true, merges:['A1:C1'], cols:[28,22,18,16,16,16,16,16,16,16,16]}));
+  zip.folder('xl').folder('worksheets').file('sheet2.xml', xlsxSheetXml(mensualMatrix, {cols:[16,24,18]}));
+  zip.folder('xl').folder('worksheets').file('sheet3.xml', xlsxSheetXml(pendingMatrix, {cols:[10,16,16,14,14,32,48,22,22,20,22,20]}));
+  zip.folder('xl').folder('worksheets').file('sheet4.xml', xlsxSheetXml(closedMatrix, {cols:[16,16,14,14,32,48,14,16,26,22,18,22,20]}));
+  zip.folder('xl').folder('worksheets').folder('_rels').file('sheet1.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing1.xml"/></Relationships>`);
+  zip.folder('xl').folder('drawings').file('drawing1.xml', xlsxDrawingXml());
+  zip.folder('xl').folder('drawings').folder('_rels').file('drawing1.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart1.xml"/></Relationships>`);
+  zip.folder('xl').folder('charts').file('chart1.xml', xlsxChartXml(mensualRows.length || 1));
+  return await zip.generateAsync({type:'blob', mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+async function generarReporteDocumentacion(){
+  try{
+    const mensual = resumenMensualDocumental(factRows || []);
+    const pendientes = basePendientesDocumentacionReporte(factRows || []);
+    const cerradas = baseCerradasDocumentacion(factRows || []);
+    const blob = await crearXlsxDocumental({mensualRows: mensual, pendientesRows: pendientes, cerradasRows: cerradas, resumenRows: []});
+    const fecha = new Date().toISOString().slice(0,10);
+    descargarBlob(`reporte_documentacion_factibilidades_${fecha}.xlsx`, blob);
+  }catch(err){
+    console.error(err);
+    alert('No se pudo generar el reporte documental: ' + (err.message || err));
+  }
+}
+
 function normalizeHeader(s){
   return String(s || '').replace(/^"+|"+$/g,'').trim();
 }
@@ -1083,17 +1295,30 @@ function obtenerFechaInicioDocumentacion(fechaEntrega, fechaAgendamiento){
   return fechaEntrega || fechaAgendamiento || '';
 }
 function calcularTiempoDocumentacionValores(fechaEntrega, fechaDocumentacion, fechaAgendamiento){
-  const fechaInicio = obtenerFechaInicioDocumentacion(fechaEntrega, fechaAgendamiento);
-  if(!fechaInicio) return { dias: 0, texto: '0 días', fechaFin: '', fechaInicio: '', pendiente: true, origen: '' };
-  const fechaFin = fechaDocumentacion || hoyIsoLocal();
-  const dias = contarDiasHabilesColombia(fechaInicio, fechaFin);
+  const fechaInicioBase = obtenerFechaInicioDocumentacion(fechaEntrega, fechaAgendamiento);
+  if(!fechaInicioBase) return { dias: 0, texto: '0 días', fechaFin: '', fechaInicio: '', pendiente: true, origen: '', direccion: '' };
+
+  const fechaFinBase = fechaDocumentacion || hoyIsoLocal();
+  const inicioDate = parseFechaLocal(fechaInicioBase);
+  const finDate = parseFechaLocal(fechaFinBase);
+  if(!inicioDate || !finDate) return { dias: 0, texto: '0 días', fechaFin: fechaFinBase, fechaInicio: fechaInicioBase, pendiente: !fechaDocumentacion, origen: fechaEntrega ? 'fecha_entrega' : 'fecha_agendamiento', direccion: '' };
+
+  // Si la documentación se registra con fecha anterior a la fecha de entrega,
+  // igual se calcula la diferencia en días hábiles. Esto evita que quede en 0
+  // cuando el contratista entrega documentos antes de la fecha de cierre/entrega.
+  const docAntesDelInicio = !!fechaDocumentacion && finDate < inicioDate;
+  const desde = docAntesDelInicio ? fechaFinBase : fechaInicioBase;
+  const hasta = docAntesDelInicio ? fechaInicioBase : fechaFinBase;
+  const dias = contarDiasHabilesColombia(desde, hasta);
+
   return {
     dias,
     texto: `${dias} días`,
-    fechaFin,
-    fechaInicio,
+    fechaFin: fechaFinBase,
+    fechaInicio: fechaInicioBase,
     pendiente: !fechaDocumentacion,
-    origen: fechaEntrega ? 'fecha_entrega' : 'fecha_agendamiento'
+    origen: fechaEntrega ? 'fecha_entrega' : 'fecha_agendamiento',
+    direccion: docAntesDelInicio ? 'antes' : (fechaDocumentacion ? 'despues' : 'pendiente')
   };
 }
 function calcularDocumentacionFactibilidad(){
@@ -1116,7 +1341,8 @@ function calcularDocumentacionFactibilidad(){
       sub.textContent = `Pendiente por recibir · desde ${origen} hasta hoy (${fmtDate(datos.fechaFin)})`;
     }else{
       const origen = datos.origen === 'fecha_entrega' ? 'fecha de entrega' : 'fecha de agendamiento/realización';
-      sub.textContent = `Días hábiles entre ${origen} y documentación`;
+      if(datos.direccion === 'antes') sub.textContent = `Documentación registrada antes de la ${origen}`;
+      else sub.textContent = `Días hábiles entre ${origen} y documentación`;
     }
   }
 }
@@ -1222,7 +1448,7 @@ function mostrarAvisoCorreoDocumental(copiadoHtml){
   setTimeout(() => alert(texto), 800);
 }
 function buildCorreoDocumentalPlano(row, fechaEntregaTxt, fechaDocTxt, doc){
-  const nota = doc.pendiente ? ' (calculado al día actual, pendiente por recibir documentación)' : '';
+  const nota = doc.pendiente ? ' (calculado al día actual, pendiente por recibir documentación)' : (doc.direccion === 'antes' ? ' (documentación registrada antes de la fecha de entrega/base)' : '');
   return [
     'Buenos días,',
     '',
@@ -1254,7 +1480,7 @@ function openSolicitudDocumentacionContratista(){
   const subject = `Solicitud información documental factibilidad ${row.cliente || ''} - ${row.id_cliente || ''} - ${row.id_cambio || ''}`.replace(/\s+/g,' ').trim();
   const fechaEntregaTxt = fmtDate(row.fecha_entrega) || 'Sin fecha de entrega registrada';
   const fechaDocTxt = row.fecha_entrega_documentacion ? fmtDate(row.fecha_entrega_documentacion) : 'Pendiente por recibir';
-  const notaTiempo = doc.pendiente ? ' <span style="color:#d00000;">(calculado al día actual, pendiente por recibir documentación)</span>' : '';
+  const notaTiempo = doc.pendiente ? ' <span style="color:#d00000;">(calculado al día actual, pendiente por recibir documentación)</span>' : (doc.direccion === 'antes' ? ' <span style="color:#d00000;">(documentación registrada antes de la fecha de entrega/base)</span>' : '');
 
   // Outlook Web no interpreta HTML cuando se envía por el parámetro body del deeplink.
   // Por eso copiamos el cuerpo como HTML enriquecido al portapapeles y abrimos el correo
@@ -1377,6 +1603,120 @@ function esViabilidadMas20Dias(row){
   return !esEstadoCerradoMas20(row) && parseDiasTexto(calcularDuracionTotalRow(row)) > 20;
 }
 
+
+function promedioNumerico(values){
+  const nums = (values || []).map(Number).filter(Number.isFinite);
+  if(!nums.length) return 0;
+  return Math.round((nums.reduce((a,b)=>a+b,0) / nums.length) * 10) / 10;
+}
+function medianaNumerica(values){
+  const nums = (values || []).map(Number).filter(Number.isFinite).sort((a,b)=>a-b);
+  if(!nums.length) return 0;
+  const mid = Math.floor(nums.length / 2);
+  const val = nums.length % 2 ? nums[mid] : (nums[mid - 1] + nums[mid]) / 2;
+  return Math.round(val * 10) / 10;
+}
+function agruparPromedioDocumental(rows, keyFn, labelFn){
+  const map = new Map();
+  (rows || []).forEach(r => {
+    const key = keyFn(r) || 'Sin dato';
+    if(!map.has(key)) map.set(key, { key, label: labelFn ? labelFn(key, r) : key, suma:0, cantidad:0, max:0 });
+    const item = map.get(key);
+    const d = obtenerDiasDocumentacionRegistro(r);
+    item.suma += d; item.cantidad++; item.max = Math.max(item.max, d);
+  });
+  return Array.from(map.values()).map(x => ({
+    ...x,
+    promedio: Math.round((x.suma / Math.max(1, x.cantidad)) * 10) / 10
+  })).sort((a,b)=> b.promedio - a.promedio || b.cantidad - a.cantidad);
+}
+function buildDocDashboardRowsHtml(rows, type){
+  if(!rows.length) return '<div class="docdash-empty">No hay registros para mostrar.</div>';
+  const maxRows = rows.slice(0, 12);
+  if(type === 'pendientes'){
+    return `<div class="docdash-table-wrap"><table class="docdash-table"><thead><tr><th>#</th><th>Cliente</th><th>ID Cliente</th><th>Cambio</th><th>Estado</th><th>Base documental</th><th>Días hábiles</th></tr></thead><tbody>${maxRows.map((r,i)=>`
+      <tr><td>${i+1}</td><td><b>${esc(r.cliente || '')}</b><br>${esc(r.direccion || '')}</td><td>${esc(r.id_cliente || '')}</td><td>${esc(r.id_cambio || '')}</td><td>${esc(r.estado_general || '')}</td><td>${esc(fmtDate(r.fecha_entrega || r.fecha_agendamiento || r.fecha_realizacion_viabilidad))}</td><td><b style="color:#dc2626">${esc(r.dias_doc_pendiente || 0)}</b></td></tr>`).join('')}</tbody></table></div>`;
+  }
+  return `<div class="docdash-table-wrap"><table class="docdash-table"><thead><tr><th>#</th><th>Cliente</th><th>ID Cliente</th><th>Cambio</th><th>Entrega</th><th>Documentación</th><th>Días hábiles</th></tr></thead><tbody>${maxRows.map((r,i)=>`
+    <tr><td>${i+1}</td><td><b>${esc(r.cliente || '')}</b><br>${esc(r.direccion || '')}</td><td>${esc(r.id_cliente || '')}</td><td>${esc(r.id_cambio || '')}</td><td>${esc(fmtDate(r.fecha_entrega || r.fecha_agendamiento || r.fecha_realizacion_viabilidad))}</td><td>${esc(fmtDate(r.fecha_entrega_documentacion))}</td><td><b>${esc(obtenerDiasDocumentacionRegistro(r))}</b></td></tr>`).join('')}</tbody></table></div>`;
+}
+function renderDocBarChart(rows){
+  if(!rows.length) return '<div class="docdash-empty">No hay datos mensuales con documentación entregada.</div>';
+  const max = Math.max(...rows.map(r => Number(r.promedio) || 0), 1);
+  return `<div class="docdash-bars">${rows.map(r => {
+    const h = Math.max(8, Math.round(((Number(r.promedio) || 0) / max) * 205));
+    return `<div class="docdash-bar-wrap"><div class="docdash-bar" style="height:${h}px"><span>${esc(r.promedio)} d</span></div><div class="docdash-bar-label">${esc(r.mes)}</div><div class="docdash-bar-count">${esc(r.cantidad)} reg.</div></div>`;
+  }).join('')}</div><div class="docdash-note">Promedio mensual en días hábiles, calculado sobre registros ENTREGADA o APROBADA con fecha de documentación.</div>`;
+}
+function renderAgrupacionDoc(rows, titleLabel){
+  if(!rows.length) return '<div class="docdash-empty">No hay información para esta métrica.</div>';
+  const max = Math.max(...rows.slice(0,8).map(x => x.promedio), 1);
+  return `<div class="docdash-metric-list">${rows.slice(0,8).map(x => `
+    <div class="docdash-metric"><div style="min-width:0"><b>${esc(x.label || x.key)}</b><div class="docdash-note">${esc(x.cantidad)} registros · máximo ${esc(x.max)} días</div><div style="height:8px;background:#ffedd5;border-radius:999px;margin-top:7px;overflow:hidden"><div style="height:100%;width:${Math.round((x.promedio/max)*100)}%;background:linear-gradient(90deg,#f97316,#fb923c)"></div></div></div><span class="docdash-pill">${esc(x.promedio)} d</span></div>
+  `).join('')}</div>`;
+}
+function calcularDatosDashboardDocumentacion(){
+  const base = factRows || [];
+  const cerradasDoc = registrosPromedioDocumental(base);
+  const pendientesDoc = registrosPendientesDocumentacion(base);
+  const dias = cerradasDoc.map(obtenerDiasDocumentacionRegistro);
+  const promedio = promedioNumerico(dias);
+  const mediana = medianaNumerica(dias);
+  const min = dias.length ? Math.min(...dias) : 0;
+  const max = dias.length ? Math.max(...dias) : 0;
+  const aTiempo = cerradasDoc.filter(r => obtenerDiasDocumentacionRegistro(r) <= 5).length;
+  const porcentajeATiempo = cerradasDoc.length ? Math.round((aTiempo / cerradasDoc.length) * 1000) / 10 : 0;
+  const pendientesMayor5 = pendientesDoc.filter(r => (r.dias_doc_pendiente || 0) > 5).length;
+  const pendientesMayor20 = pendientesDoc.filter(r => (r.dias_doc_pendiente || 0) > 20).length;
+  const mensual = resumenMensualDocumental(base);
+  const rankingCerradas = [...cerradasDoc].sort((a,b)=>obtenerDiasDocumentacionRegistro(b)-obtenerDiasDocumentacionRegistro(a));
+  const porResponsable = agruparPromedioDocumental(cerradasDoc, r => r.responsable || 'Sin responsable');
+  const porOperador = agruparPromedioDocumental(cerradasDoc, r => r.operador || 'Sin operador');
+  const porCiudad = agruparPromedioDocumental(cerradasDoc, r => getCiudadReporte(r) || 'Sin ciudad');
+  return {base,cerradasDoc,pendientesDoc,dias,promedio,mediana,min,max,aTiempo,porcentajeATiempo,pendientesMayor5,pendientesMayor20,mensual,rankingCerradas,porResponsable,porOperador,porCiudad};
+}
+function openDashboardDocumentacion(){
+  const modal = document.getElementById('dashboardDocumentacionModal');
+  const content = document.getElementById('dashboardDocumentacionContent');
+  if(!modal || !content) return;
+  const d = calcularDatosDashboardDocumentacion();
+  content.innerHTML = `
+    <div class="docdash-grid">
+      <div class="docdash-kpi orange"><div class="dk-label">Promedio entrega documental</div><div class="dk-value">${esc(d.promedio)} d</div><div class="dk-sub">${esc(d.cerradasDoc.length)} registros cerrados con documentación</div></div>
+      <div class="docdash-kpi"><div class="dk-label">Mediana documental</div><div class="dk-value">${esc(d.mediana)} d</div><div class="dk-sub">Valor central del proceso</div></div>
+      <div class="docdash-kpi green"><div class="dk-label">Cumplimiento ≤ 5 días</div><div class="dk-value">${esc(d.porcentajeATiempo)}%</div><div class="dk-sub">${esc(d.aTiempo)} de ${esc(d.cerradasDoc.length)} registros</div></div>
+      <div class="docdash-kpi"><div class="dk-label">Mejor / mayor tiempo</div><div class="dk-value">${esc(d.min)} / ${esc(d.max)}</div><div class="dk-sub">Días hábiles mínimo y máximo</div></div>
+      <div class="docdash-kpi red"><div class="dk-label">Pendientes documentación</div><div class="dk-value">${esc(d.pendientesDoc.length)}</div><div class="dk-sub">Sin fecha de entrega documental</div></div>
+      <div class="docdash-kpi red"><div class="dk-label">Pendientes críticos</div><div class="dk-value">${esc(d.pendientesMayor20)}</div><div class="dk-sub">Más de 20 días hábiles</div></div>
+    </div>
+    <div class="docdash-panels">
+      <div class="docdash-card"><h3>Tiempo promedio mensual de entrega documental</h3>${renderDocBarChart(d.mensual)}</div>
+      <div class="docdash-card"><h3>Semáforo documental</h3><div class="docdash-metric-list">
+        <div class="docdash-metric"><b>Entregadas a tiempo ≤ 5 días</b><span class="docdash-pill">${esc(d.aTiempo)}</span></div>
+        <div class="docdash-metric"><b>Pendientes &gt; 5 días</b><span class="docdash-pill">${esc(d.pendientesMayor5)}</span></div>
+        <div class="docdash-metric"><b>Pendientes &gt; 20 días</b><span class="docdash-pill" style="background:#fee2e2;color:#b91c1c">${esc(d.pendientesMayor20)}</span></div>
+        <div class="docdash-metric"><b>Base total visible en módulo</b><span class="docdash-pill">${esc(d.base.length)}</span></div>
+      </div><div class="docdash-note">El cálculo excluye sábados, domingos y festivos de Colombia configurados en el módulo.</div></div>
+    </div>
+    <div class="docdash-panels">
+      <div class="docdash-card"><h3>Ranking pendientes por entrega de información</h3>${buildDocDashboardRowsHtml(d.pendientesDoc, 'pendientes')}<div class="docdash-note">Ordenado de mayor a menor tiempo transcurrido documental.</div></div>
+      <div class="docdash-card"><h3>Registros cerrados con mayor demora documental</h3>${buildDocDashboardRowsHtml(d.rankingCerradas, 'cerradas')}<div class="docdash-note">Útil para evidenciar casos con mayor desviación frente al contratista.</div></div>
+    </div>
+    <div class="docdash-panels">
+      <div class="docdash-card"><h3>Promedio por responsable</h3>${renderAgrupacionDoc(d.porResponsable)}</div>
+      <div class="docdash-card"><h3>Promedio por operador</h3>${renderAgrupacionDoc(d.porOperador)}</div>
+    </div>
+    <div class="docdash-card"><h3>Promedio por ciudad</h3>${renderAgrupacionDoc(d.porCiudad)}<div class="docdash-note">Estas métricas permiten revisar cumplimiento documental por ciudad, responsable, operador y mes.</div></div>
+  `;
+  modal.classList.add('show');
+}
+function closeDashboardDocumentacion(){
+  document.getElementById('dashboardDocumentacionModal')?.classList.remove('show');
+}
+document.addEventListener('click', function(e){
+  if(e.target && e.target.id === 'dashboardDocumentacionModal') closeDashboardDocumentacion();
+});
+
 function applyKpiFilter(rows){
   if(activeKpi === 'RADICADAS_EMSA' || activeKpi === 'GESTION_EMSA') activeKpi = null;
   switch(activeKpi){
@@ -1388,6 +1728,8 @@ function applyKpiFilter(rows){
       return rows.filter(r => calcularListaParaRadicar(r));
     case 'MAS_20_DIAS':
       return rows.filter(r => esViabilidadMas20Dias(r));
+    case 'PROM_DOC':
+      return registrosPromedioDocumental(rows);
     case 'APROBADAS':
       return rows.filter(r => ['APROBADA','ENTREGADA','FACTIBILIDAD REALIZADA'].includes(String(r.estado_general || '').trim().toUpperCase()));
     default:
@@ -1407,6 +1749,7 @@ function renderSummary(rows){
   const total = rows.length,
         listas = rows.filter(r => calcularListaParaRadicar(r)).length,
         mas20 = rows.filter(r => esViabilidadMas20Dias(r)).length,
+        docProm = promedioTiempoDocumentacion(rows),
         aprobadas = rows.filter(r => ['APROBADA','ENTREGADA','FACTIBILIDAD REALIZADA'].includes(String(r.estado_general || '').trim().toUpperCase())).length,
         pendientes = rows.filter(r => !['APROBADA','ENTREGADA','RECHAZADA','CANCELADA','FACTIBILIDAD REALIZADA','NO VIABLE','NO_VIABLE'].includes(String(r.estado_general || '').trim().toUpperCase())).length;
   document.getElementById('summary').innerHTML = `
@@ -1414,6 +1757,7 @@ function renderSummary(rows){
     <div class="stat ${activeKpi==='PENDIENTES'?'active':''}" data-kpi="PENDIENTES"><div class="label">Pendientes</div><div class="value">${pendientes}</div><div class="sub">Aún activas</div></div>
     <div class="stat ${activeKpi==='LISTAS_RADICAR'?'active':''}" data-kpi="LISTAS_RADICAR"><div class="label">Listas para radicar</div><div class="value">${listas}</div><div class="sub">Presupuesto + documentación</div></div>
     <div class="stat ${activeKpi==='MAS_20_DIAS'?'active':''}" data-kpi="MAS_20_DIAS"><div class="label">Viabilidades &gt; 20 días</div><div class="value">${mas20}</div><div class="sub">Excluye cerradas/no viables</div></div>
+    <div class="stat info ${activeKpi==='PROM_DOC'?'active':''}" data-kpi="PROM_DOC"><div class="label">Promedio entrega documentación</div><div class="value">${docProm.promedio}</div><div class="sub">Días hábiles · ${docProm.total} registros</div></div>
     <div class="stat ${activeKpi==='APROBADAS'?'active':''}" data-kpi="APROBADAS"><div class="label">Aprobadas</div><div class="value">${aprobadas}</div><div class="sub">Factibilidades cerradas</div></div>`;
   bindKpiClicks();
 }
@@ -1936,5 +2280,3 @@ loadFactibilidades();
 
 </body>
 </html>
-
-
