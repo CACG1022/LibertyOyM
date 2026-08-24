@@ -77,6 +77,15 @@
     .close-btn{width:40px;height:40px;border:none;border-radius:12px;background:rgba(255,255,255,.05);color:#fff;cursor:pointer}
     .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.field{margin-bottom:8px}.field label{display:block;margin-bottom:6px;font-size:13px;color:#cfe0ff}
     .field input,.field select,.field textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}.field textarea{min-height:90px;resize:vertical}
+    .form-section{border:1px solid rgba(147,197,253,.16);border-radius:18px;padding:16px;margin:14px 0;background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012));box-shadow:0 10px 26px rgba(0,0,0,.16)}
+    .form-section.identificacion{border-color:rgba(59,130,246,.30);background:linear-gradient(180deg,rgba(59,130,246,.10),rgba(255,255,255,.012))}
+    .form-section.tecnica{border-color:rgba(14,165,233,.28);background:linear-gradient(180deg,rgba(14,165,233,.08),rgba(255,255,255,.012))}
+    .form-section.permisos{border-color:rgba(245,158,11,.32);background:linear-gradient(180deg,rgba(245,158,11,.09),rgba(255,255,255,.012))}
+    .form-section.gestion{border-color:rgba(34,197,94,.28);background:linear-gradient(180deg,rgba(34,197,94,.08),rgba(255,255,255,.012))}
+    .form-section.documentacion{border-color:rgba(168,85,247,.34);background:linear-gradient(180deg,rgba(168,85,247,.10),rgba(255,255,255,.012))}
+    .section-title{display:flex;align-items:center;gap:10px;margin:0 0 14px;font-size:15px;font-weight:900;color:#fff;letter-spacing:.2px}.section-title:before{content:'';width:10px;height:10px;border-radius:50%;background:#60a5fa;box-shadow:0 0 0 4px rgba(96,165,250,.12)}
+    .form-section.permisos .section-title:before{background:#f59e0b;box-shadow:0 0 0 4px rgba(245,158,11,.12)}.form-section.gestion .section-title:before{background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.12)}.form-section.documentacion .section-title:before{background:#a855f7;box-shadow:0 0 0 4px rgba(168,85,247,.12)}
+    .doc-actions{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}.doc-actions .btn{min-height:42px}.modal-kpi.documentation{border-color:rgba(168,85,247,.42);background:linear-gradient(180deg,rgba(168,85,247,.14),rgba(255,255,255,.025))}
     .span-2{grid-column:span 2}.span-4{grid-column:1/-1}.muted-note{font-size:12px;color:var(--muted)}
     .check-row{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px}.check-item{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.03)}
     .modal-kpis{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:12px;margin:16px 0 14px}
@@ -125,58 +134,73 @@
     </div>
     <form id="factibilidadForm" action="javascript:void(0);" method="post">
       <input type="hidden" name="id">
-      <div class="grid">
-        <div class="field"><label>Fecha ingreso</label><input type="date" name="fecha_ingreso" required onchange="calcularTiemposMuertosFactibilidad()"></div>
-        <div class="field"><label>ID Cambio</label><input name="id_cambio" required></div>
-        <div class="field"><label>ID Tarea</label><input name="id_tarea" required></div>
-        <div class="field"><label>ID Cliente</label><input name="id_cliente" required></div>
-
-        <div class="field"><label>Operador</label><input name="operador"></div>
-        <div class="field span-2"><label>Cliente</label><input name="cliente" required></div>
-        <div class="field"><label>Responsable</label><input name="responsable"></div>
-
-        <div class="field span-2"><label>Dirección</label><input name="direccion"></div>
-        <div class="field"><label>Capacidad</label><input name="capacidad"></div>
-        <div class="field"><label>Tipo fibra</label>
-          <select name="tipo_fibra">
-            <option value="">Seleccionar</option>
-            <option>4H</option><option>12H</option><option>24H</option><option>48H</option><option>96H</option><option>N/A</option>
-          </select>
+      <div class="form-section identificacion">
+        <div class="section-title">Identificación de la solicitud</div>
+        <div class="grid">
+          <div class="field"><label>Fecha ingreso</label><input type="date" name="fecha_ingreso" required onchange="calcularTiemposMuertosFactibilidad(); calcularDocumentacionFactibilidad()"></div>
+          <div class="field"><label>ID Cambio</label><input name="id_cambio" required></div>
+          <div class="field"><label>ID Tarea</label><input name="id_tarea" required></div>
+          <div class="field"><label>ID Cliente</label><input name="id_cliente" required></div>
+          <div class="field"><label>Operador</label><input name="operador"></div>
+          <div class="field span-2"><label>Cliente</label><input name="cliente" required></div>
+          <div class="field"><label>Responsable</label><input name="responsable"></div>
+          <div class="field span-4"><label>Dirección</label><input name="direccion"></div>
         </div>
+      </div>
 
-        <div class="field"><label>FO Externa</label><input name="fo_externa"></div>
-        <div class="field"><label>FO Interna</label><input name="fo_interna"></div>
-        <div class="field"><label>Estado viabilidad planta externa</label>
-          <select name="estado_viabilidad_planta_externa">
-            <option>PENDIENTE</option><option>VIABLE</option><option>EN_GESTION</option><option>COMPLETA</option><option>NO_VIABLE</option><option>N/A</option>
-          </select>
+      <div class="form-section tecnica">
+        <div class="section-title">Información técnica de viabilidad</div>
+        <div class="grid">
+          <div class="field"><label>Capacidad</label><input name="capacidad"></div>
+          <div class="field"><label>Tipo fibra</label>
+            <select name="tipo_fibra">
+              <option value="">Seleccionar</option>
+              <option>4H</option><option>12H</option><option>24H</option><option>48H</option><option>96H</option><option>N/A</option>
+            </select>
+          </div>
+          <div class="field"><label>FO Externa</label><input name="fo_externa"></div>
+          <div class="field"><label>FO Interna</label><input name="fo_interna"></div>
+          <div class="field"><label>Estado viabilidad planta externa</label>
+            <select name="estado_viabilidad_planta_externa">
+              <option>PENDIENTE</option><option>VIABLE</option><option>EN_GESTION</option><option>COMPLETA</option><option>NO_VIABLE</option><option>N/A</option>
+            </select>
+          </div>
+          <div class="field"><label>Estado viabilidad planta interna</label>
+            <select name="estado_viabilidad_planta_interna">
+              <option>PENDIENTE</option><option>VIABLE</option><option>EN_GESTION</option><option>COMPLETA</option><option>NO_VIABLE</option><option>N/A</option>
+            </select>
+          </div>
         </div>
-        <div class="field"><label>Estado viabilidad planta interna</label>
-          <select name="estado_viabilidad_planta_interna">
-            <option>PENDIENTE</option><option>VIABLE</option><option>EN_GESTION</option><option>COMPLETA</option><option>NO_VIABLE</option><option>N/A</option>
-          </select>
-        </div>
+      </div>
 
-        <div class="field"><label>Fecha solicitud permisos</label><input type="date" name="fecha_solicitud_permisos" onchange="calcularTiemposMuertosFactibilidad()"></div>
-        <div class="field"><label>Fecha aprobación permisos</label><input type="date" name="fecha_aprobacion_permisos" onchange="calcularTiemposMuertosFactibilidad()"></div>
-        <div class="field"><label>Tiempo muerto permisos</label><input name="tiempo_muerto_permisos" readonly></div>
-        <div class="field"><label>Estado permisos</label>
-          <select name="estado_permisos">
-            <option>PENDIENTE</option><option>SOLICITADOS</option><option>EN_GESTION</option><option>APROBADOS</option><option>RECHAZADOS</option><option>NO_REQUIERE</option>
-          </select>
+      <div class="form-section permisos">
+        <div class="section-title">Permisos y tiempos muertos</div>
+        <div class="grid">
+          <div class="field"><label>Fecha solicitud permisos</label><input type="date" name="fecha_solicitud_permisos" onchange="calcularTiemposMuertosFactibilidad()"></div>
+          <div class="field"><label>Fecha aprobación permisos</label><input type="date" name="fecha_aprobacion_permisos" onchange="calcularTiemposMuertosFactibilidad()"></div>
+          <div class="field"><label>Tiempo muerto permisos</label><input name="tiempo_muerto_permisos" readonly></div>
+          <div class="field"><label>Estado permisos</label>
+            <select name="estado_permisos">
+              <option>PENDIENTE</option><option>SOLICITADOS</option><option>EN_GESTION</option><option>APROBADOS</option><option>RECHAZADOS</option><option>NO_REQUIERE</option>
+            </select>
+          </div>
         </div>
-        <div class="field"><label>Fecha agendamiento</label><input type="date" name="fecha_agendamiento"></div>
-        <div class="field"><label>Hora agendamiento</label><input type="time" name="hora_agendamiento"></div>
-        <div class="field"><label>Fecha de entrega</label><input type="date" name="fecha_entrega" onchange="calcularTiemposMuertosFactibilidad()"></div>
+      </div>
 
-        <div class="field"><label>Estado general</label>
-          <select name="estado_general">
-            <option>INGRESADA</option><option>SOLIC AGENDA CONTRATISTA</option><option>EN_VALIDACION</option><option>PENDIENTE_DOCUMENTACION</option><option>PENDIENTE_PRESUPUESTO</option><option>GESTION DE PERMISOS</option><option>FACTIBILIDAD REALIZADA</option>
-            <option>LISTA_PARA_RADICAR</option><option>RADICADA</option><option>EN_GESTION_EMSA</option><option>APROBADA</option><option>ENTREGADA</option><option>RECHAZADA</option><option>NO VIABLE</option><option>CANCELADA</option>
-          </select>
+      <div class="form-section gestion">
+        <div class="section-title">Gestión y cierre</div>
+        <div class="grid">
+          <div class="field"><label>Fecha agendamiento</label><input type="date" name="fecha_agendamiento" onchange="calcularDocumentacionFactibilidad()"></div>
+          <div class="field"><label>Hora agendamiento</label><input type="time" name="hora_agendamiento"></div>
+          <div class="field"><label>Fecha de entrega</label><input type="date" name="fecha_entrega" onchange="calcularTiemposMuertosFactibilidad(); calcularDocumentacionFactibilidad()"></div>
+          <div class="field"><label>Estado general</label>
+            <select name="estado_general">
+              <option>INGRESADA</option><option>SOLIC AGENDA CONTRATISTA</option><option>EN_VALIDACION</option><option>PENDIENTE_DOCUMENTACION</option><option>PENDIENTE_PRESUPUESTO</option><option>GESTION DE PERMISOS</option><option>FACTIBILIDAD REALIZADA</option>
+              <option>LISTA_PARA_RADICAR</option><option>RADICADA</option><option>EN_GESTION_EMSA</option><option>APROBADA</option><option>ENTREGADA</option><option>RECHAZADA</option><option>NO VIABLE</option><option>CANCELADA</option>
+            </select>
+          </div>
+          <div class="field span-4"><label>Observaciones</label><textarea name="observaciones"></textarea></div>
         </div>
-
-        <div class="field span-4"><label>Observaciones</label><textarea name="observaciones"></textarea></div>
       </div>
 
       <div class="modal-kpis" id="factibilidadDurationKpis">
@@ -201,6 +225,22 @@
         <label class="check-item"><input type="checkbox" name="checklist_presupuesto"> Presupuesto</label>
         <label class="check-item"><input type="checkbox" name="checklist_documentacion"> Documentación</label>
         <label class="check-item"><input type="checkbox" disabled name="checklist_radicacion_emsa" onchange="toggleRadicacionFields()"> Radicación EMSA (No applica en factibilidades)</label>
+      </div>
+
+      <div class="form-section documentacion">
+        <div class="section-title">Documentación</div>
+        <div class="grid">
+          <div class="field"><label>Fecha de entrega de documentación</label><input type="date" name="fecha_entrega_documentacion" onchange="calcularDocumentacionFactibilidad()"></div>
+          <div class="modal-kpi documentation">
+            <div class="k-label">Tiempo entrega documentación</div>
+            <div class="k-value" id="kpiTiempoDocumentacionFact">0 días</div>
+            <div class="k-sub" id="kpiSubTiempoDocumentacionFact">Días hábiles entre entrega y documentación</div>
+          </div>
+          <div class="field span-2 doc-actions">
+            <button type="button" class="btn" onclick="openSolicitudDocumentacionContratista()">Solicitud de información a contratista</button>
+            <div class="muted-note">Genera correo en Outlook con el tiempo transcurrido documental.</div>
+          </div>
+        </div>
       </div>
 
       <div id="radicacionFields" class="grid hidden" style="margin-top:14px">
@@ -645,48 +685,6 @@ function formatDateReporte(value, mode='iso'){
   if(mode === 'dmy') return `${parseInt(dd,10)}/${parseInt(mm,10)}/${yyyy}`;
   return `${yyyy}-${mm}-${dd}`;
 }
-
-// Convierte la fecha a un número serial entero de Excel.
-// Al ser entero, la celda contiene únicamente la fecha, sin fracción de hora.
-function excelDateReporte(value){
-  if(!value) return '';
-
-  let yyyy, mm, dd;
-
-  if(value instanceof Date && !isNaN(value)){
-    yyyy = value.getFullYear();
-    mm = value.getMonth() + 1;
-    dd = value.getDate();
-  }else{
-    const raw = String(value).trim();
-    const iso = raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-
-    if(iso){
-      yyyy = Number(iso[1]);
-      mm = Number(iso[2]);
-      dd = Number(iso[3]);
-    }else{
-      const dmy = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
-      if(dmy){
-        dd = Number(dmy[1]);
-        mm = Number(dmy[2]);
-        yyyy = Number(dmy[3]);
-      }else{
-        const parsed = new Date(raw);
-        if(isNaN(parsed)) return '';
-        yyyy = parsed.getFullYear();
-        mm = parsed.getMonth() + 1;
-        dd = parsed.getDate();
-      }
-    }
-  }
-
-  const utc = Date.UTC(yyyy, mm - 1, dd);
-  const check = new Date(utc);
-  if(check.getUTCFullYear() !== yyyy || check.getUTCMonth() + 1 !== mm || check.getUTCDate() !== dd) return '';
-
-  return Math.floor(utc / 86400000) + 25569;
-}
 function getCiudadReporte(row){
   const ciudad = row?.ciudad || row?.Ciudad || row?.municipio || row?.ciudad_operacion;
   return ciudad ? String(ciudad).trim().toUpperCase() : 'VILLAVICENCIO';
@@ -711,11 +709,11 @@ function generarReporteDashboard(){
       cambio: r.id_cambio || '',
       cliente: r.cliente || '',
       direccion: r.direccion || '',
-      fecha_ingreso: excelDateReporte(r.fecha_ingreso),
-      'Fecha solicitud Permisos': excelDateReporte(r.fecha_solicitud_permisos),
-      'Fecha aprobacion Permisos': excelDateReporte(r.fecha_aprobacion_permisos),
-      'Fecha de realizacion viabilidad': excelDateReporte(r.fecha_realizacion_viabilidad || r.fecha_agendamiento),
-      fecha_entrega: excelDateReporte(r.fecha_entrega),
+      fecha_ingreso: formatDateReporte(r.fecha_ingreso, 'dmy'),
+      'Fecha solicitud Permisos': formatDateReporte(r.fecha_solicitud_permisos, 'dmy'),
+      'Fecha aprobacion Permisos': formatDateReporte(r.fecha_aprobacion_permisos, 'dmy'),
+      'Fecha de realizacion viabilidad': formatDateReporte(r.fecha_realizacion_viabilidad || r.fecha_agendamiento, 'dmy'),
+      fecha_entrega: formatDateReporte(r.fecha_entrega, 'dmy'),
       estado_general: normalizeEstadoReporte(r.estado_general)
     }));
 
@@ -729,25 +727,7 @@ function generarReporteDashboard(){
 
   if(window.XLSX){
     const headers = ['ciudad','id_cliente','cambio','cliente','direccion','fecha_ingreso','Fecha solicitud Permisos','Fecha aprobacion Permisos','Fecha de realizacion viabilidad','fecha_entrega','estado_general'];
-    const ws = XLSX.utils.json_to_sheet(rows, {
-      header: headers,
-      cellDates: false,
-      dateNF: 'dd/mm/yyyy'
-    });
-
-    // Columnas de fecha: F, G, H, I y J. Se fuerza el tipo fecha y el formato visible.
-    const dateColumns = [5, 6, 7, 8, 9];
-    dateColumns.forEach(col => {
-      for(let rowIndex = 1; rowIndex <= rows.length; rowIndex++){
-        const ref = XLSX.utils.encode_cell({ r: rowIndex, c: col });
-        const cell = ws[ref];
-        if(cell && typeof cell.v === 'number'){
-          cell.t = 'n';
-          cell.z = 'dd/mm/yyyy';
-        }
-      }
-    });
-
+    const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
     ws['!cols'] = [
       {wch:16},{wch:16},{wch:14},{wch:36},{wch:48},{wch:14},{wch:24},{wch:26},{wch:30},{wch:14},{wch:16}
     ];
@@ -760,13 +740,7 @@ function generarReporteDashboard(){
 
   // Respaldo si no carga la librería XLSX por restricción de red: descarga CSV compatible con Excel.
   const headers = ['ciudad','id_cliente','cambio','cliente','direccion','fecha_ingreso','Fecha solicitud Permisos','Fecha aprobacion Permisos','Fecha de realizacion viabilidad','fecha_entrega','estado_general'];
-  const dateHeaders = new Set(['fecha_ingreso','Fecha solicitud Permisos','Fecha aprobacion Permisos','Fecha de realizacion viabilidad','fecha_entrega']);
-  const csv = [headers.join(';')].concat(rows.map(row => headers.map(h => {
-    const value = dateHeaders.has(h) && row[h] instanceof Date
-      ? `${row[h].getDate()}/${row[h].getMonth()+1}/${row[h].getFullYear()}`
-      : (row[h] ?? '');
-    return `"${String(value).replace(/"/g,'""')}"`;
-  }).join(';'))).join('\r\n');
+  const csv = [headers.join(';')].concat(rows.map(row => headers.map(h => `"${String(row[h] ?? '').replace(/"/g,'""')}"`).join(';'))).join('\r\n');
   descargarBlob(nombreArchivo.replace('.xlsx','.csv'), new Blob(['\ufeff' + csv], {type:'text/csv;charset=utf-8;'}));
 }
 
@@ -1084,6 +1058,243 @@ function contarNoHabilesYFestivos(fechaInicio, fechaFin, rangosExcluir=[]){
 
   return total;
 }
+function esDiaHabilColombia(date){
+  if(!date) return false;
+  const dia = date.getDay();
+  if(dia === 0 || dia === 6) return false;
+  return !obtenerFestivoColombia(dateToIsoLocal(date));
+}
+function contarDiasHabilesColombia(fechaInicio, fechaFin){
+  const inicio = parseFechaLocal(fechaInicio);
+  const fin = parseFechaLocal(fechaFin);
+  if(!inicio || !fin || fin <= inicio) return 0;
+  let total = 0;
+  const actual = new Date(inicio);
+  actual.setDate(actual.getDate() + 1);
+  while(actual <= fin){
+    if(esDiaHabilColombia(actual)) total++;
+    actual.setDate(actual.getDate() + 1);
+  }
+  return total;
+}
+function obtenerFechaInicioDocumentacion(fechaEntrega, fechaAgendamiento){
+  // Prioridad: Fecha de entrega. Si aún está vacía, usamos fecha de agendamiento/realización
+  // para que el KPI avance en tiempo real mientras el contratista entrega la documentación.
+  return fechaEntrega || fechaAgendamiento || '';
+}
+function calcularTiempoDocumentacionValores(fechaEntrega, fechaDocumentacion, fechaAgendamiento){
+  const fechaInicio = obtenerFechaInicioDocumentacion(fechaEntrega, fechaAgendamiento);
+  if(!fechaInicio) return { dias: 0, texto: '0 días', fechaFin: '', fechaInicio: '', pendiente: true, origen: '' };
+  const fechaFin = fechaDocumentacion || hoyIsoLocal();
+  const dias = contarDiasHabilesColombia(fechaInicio, fechaFin);
+  return {
+    dias,
+    texto: `${dias} días`,
+    fechaFin,
+    fechaInicio,
+    pendiente: !fechaDocumentacion,
+    origen: fechaEntrega ? 'fecha_entrega' : 'fecha_agendamiento'
+  };
+}
+function calcularDocumentacionFactibilidad(){
+  const form = document.getElementById('factibilidadForm');
+  if(!form) return;
+  const el = form.elements;
+  const kpi = document.getElementById('kpiTiempoDocumentacionFact');
+  const sub = document.getElementById('kpiSubTiempoDocumentacionFact');
+  const datos = calcularTiempoDocumentacionValores(
+    el['fecha_entrega']?.value,
+    el['fecha_entrega_documentacion']?.value,
+    el['fecha_agendamiento']?.value
+  );
+  if(kpi) kpi.textContent = datos.texto;
+  if(sub){
+    if(!datos.fechaInicio){
+      sub.textContent = 'Registra fecha de entrega o fecha de agendamiento para iniciar el conteo documental';
+    }else if(datos.pendiente){
+      const origen = datos.origen === 'fecha_entrega' ? 'fecha de entrega' : 'fecha de agendamiento/realización';
+      sub.textContent = `Pendiente por recibir · desde ${origen} hasta hoy (${fmtDate(datos.fechaFin)})`;
+    }else{
+      const origen = datos.origen === 'fecha_entrega' ? 'fecha de entrega' : 'fecha de agendamiento/realización';
+      sub.textContent = `Días hábiles entre ${origen} y documentación`;
+    }
+  }
+}
+function obtenerDatosFormularioFactibilidad(){
+  const form = document.getElementById('factibilidadForm');
+  const el = form?.elements || {};
+  return {
+    cliente: el['cliente']?.value || '',
+    id_cliente: el['id_cliente']?.value || '',
+    id_cambio: el['id_cambio']?.value || '',
+    id_tarea: el['id_tarea']?.value || '',
+    direccion: el['direccion']?.value || '',
+    operador: el['operador']?.value || '',
+    responsable: el['responsable']?.value || '',
+    estado_general: el['estado_general']?.value || '',
+    fecha_ingreso: el['fecha_ingreso']?.value || '',
+    fecha_entrega: el['fecha_entrega']?.value || '',
+    fecha_entrega_documentacion: el['fecha_entrega_documentacion']?.value || '',
+    fecha_agendamiento: el['fecha_agendamiento']?.value || ''
+  };
+}
+
+function stripHtmlToText(html){
+  const div = document.createElement('div');
+  div.innerHTML = String(html || '').replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n\n');
+  return (div.textContent || div.innerText || '').replace(/\n{3,}/g, '\n\n').trim();
+}
+async function copiarHtmlAlPortapapeles(html){
+  const textoPlano = stripHtmlToText(html);
+
+  // 1) Intenta copiar HTML real al portapapeles.
+  // Esto permite que Outlook conserve negritas y colores al pegar con Ctrl+V.
+  if(navigator.clipboard && window.ClipboardItem && window.isSecureContext){
+    const item = new ClipboardItem({
+      'text/html': new Blob([html], { type: 'text/html' }),
+      'text/plain': new Blob([textoPlano], { type: 'text/plain' })
+    });
+    await navigator.clipboard.write([item]);
+    return true;
+  }
+
+  // 2) Fallback para archivo local / contextos no seguros: copia enriquecida con execCommand.
+  // Es una técnica compatible con Chrome/Edge para conservar el formato al pegar.
+  const box = document.createElement('div');
+  box.innerHTML = html;
+  box.contentEditable = 'true';
+  box.style.position = 'fixed';
+  box.style.left = '-99999px';
+  box.style.top = '0';
+  box.style.opacity = '0';
+  document.body.appendChild(box);
+
+  const range = document.createRange();
+  range.selectNodeContents(box);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+
+  let ok = false;
+  try{ ok = document.execCommand('copy'); }catch(e){ ok = false; }
+  sel.removeAllRanges();
+  document.body.removeChild(box);
+
+  if(ok) return true;
+
+  // 3) Último recurso: copia texto plano.
+  if(navigator.clipboard){
+    await navigator.clipboard.writeText(textoPlano);
+    return false;
+  }
+  const ta = document.createElement('textarea');
+  ta.value = textoPlano;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+  return false;
+}
+function openOutlookComposeWithBody(to, cc, subject, bodyText){
+  const toValue = normalizeEmailRecipients(to);
+  const ccValue = normalizeEmailRecipients(cc);
+  const params = [];
+  if(toValue) params.push('to=' + encodeURIComponent(toValue));
+  if(ccValue) params.push('cc=' + encodeURIComponent(ccValue));
+  params.push('subject=' + encodeURIComponent(subject || ''));
+
+  // Outlook Web por deeplink solo acepta cuerpo en texto plano.
+  // Usamos CRLF para evitar saltos dobles innecesarios entre líneas.
+  const cleanBody = String(bodyText || '')
+    .replace(/\r?\n/g, '\r\n')
+    .replace(/(\r\n){3,}/g, '\r\n\r\n')
+    .trim();
+  params.push('body=' + encodeURIComponent(cleanBody));
+  window.open('https://outlook.office.com/mail/deeplink/compose?' + params.join('&'), '_blank');
+}
+function mostrarAvisoCorreoDocumental(copiadoHtml){
+  const texto = copiadoHtml
+    ? 'Se copió el correo con formato al portapapeles. Outlook Web no permite insertar HTML con negritas/colores desde el enlace. En la ventana de Outlook, haz clic en el cuerpo del correo y pega con Ctrl+V para conservar las negritas y el tiempo en rojo.'
+    : 'Outlook Web abrió el correo en texto plano. No fue posible copiar formato enriquecido desde este navegador; puedes copiar manualmente el cuerpo desde el sistema.';
+  setTimeout(() => alert(texto), 800);
+}
+function buildCorreoDocumentalPlano(row, fechaEntregaTxt, fechaDocTxt, doc){
+  const nota = doc.pendiente ? ' (calculado al día actual, pendiente por recibir documentación)' : '';
+  return [
+    'Buenos días,',
+    '',
+    'Cordial saludo.',
+    '',
+    'Solicito por favor su apoyo con el envío de la información documental correspondiente a la factibilidad realizada:',
+    '',
+    `Cliente: ${row.cliente || ''}`,
+    `ID Cliente: ${row.id_cliente || ''}`,
+    `ID Cambio: ${row.id_cambio || ''}`,
+    `ID Tarea: ${row.id_tarea || ''}`,
+    `Dirección: ${row.direccion || ''}`,
+    `Operador: ${row.operador || ''}`,
+    `Estado actual: ${row.estado_general || ''}`,
+    `Fecha de entrega: ${fechaEntregaTxt}`,
+    `Fecha entrega documentación: ${fechaDocTxt}`,
+    '',
+    `Tiempo transcurrido documental: ${doc.texto} hábiles${nota}`,
+    '',
+    'Agradezco nos compartan la documentación pendiente lo más pronto posible para poder cerrar el seguimiento documental.',
+    '',
+    'Cordialmente,'
+  ].join('\n');
+}
+
+function openSolicitudDocumentacionContratista(){
+  const row = obtenerDatosFormularioFactibilidad();
+  const doc = calcularTiempoDocumentacionValores(row.fecha_entrega, row.fecha_entrega_documentacion, row.fecha_agendamiento);
+  const subject = `Solicitud información documental factibilidad ${row.cliente || ''} - ${row.id_cliente || ''} - ${row.id_cambio || ''}`.replace(/\s+/g,' ').trim();
+  const fechaEntregaTxt = fmtDate(row.fecha_entrega) || 'Sin fecha de entrega registrada';
+  const fechaDocTxt = row.fecha_entrega_documentacion ? fmtDate(row.fecha_entrega_documentacion) : 'Pendiente por recibir';
+  const notaTiempo = doc.pendiente ? ' <span style="color:#d00000;">(calculado al día actual, pendiente por recibir documentación)</span>' : '';
+
+  // Outlook Web no interpreta HTML cuando se envía por el parámetro body del deeplink.
+  // Por eso copiamos el cuerpo como HTML enriquecido al portapapeles y abrimos el correo
+  // con el asunto listo. Al pegar con Ctrl+V en el cuerpo, conserva negritas y color rojo.
+  const bodyHtml = `
+    <div style="font-family:Segoe UI,Arial,sans-serif;font-size:12pt;color:#333;">
+      <p>Buenos días,</p>
+      <p>Cordial saludo.</p>
+      <p>Solicito por favor su apoyo con el envío de la información documental correspondiente a la factibilidad realizada:</p>
+      <p>
+        <b>Cliente:</b> ${esc(row.cliente)}<br>
+        <b>ID Cliente:</b> ${esc(row.id_cliente)}<br>
+        <b>ID Cambio:</b> ${esc(row.id_cambio)}<br>
+        <b>ID Tarea:</b> ${esc(row.id_tarea)}<br>
+        <b>Dirección:</b> ${esc(row.direccion)}<br>
+        <b>Operador:</b> ${esc(row.operador)}<br>
+        <b>Estado actual:</b> ${esc(row.estado_general)}<br>
+        <b>Fecha de entrega:</b> ${esc(fechaEntregaTxt)}<br>
+        <b>Fecha entrega documentación:</b> ${esc(fechaDocTxt)}
+      </p>
+      <p><b>Tiempo transcurrido documental:</b> <span style="color:#d00000;font-weight:700;">${esc(doc.texto)} hábiles</span>${notaTiempo}</p>
+      <p>Agradezco nos compartan la documentación pendiente lo más pronto posible para poder cerrar el seguimiento documental.</p>
+      <p>Cordialmente,</p>
+    </div>`;
+
+  // Importante: Outlook Web no admite HTML enriquecido por URL.
+  // Por eso NO enviamos el body por deeplink; se copia primero el cuerpo con formato
+  // y se abre Outlook con el asunto listo para pegarlo con Ctrl+V.
+  copiarHtmlAlPortapapeles(bodyHtml)
+    .then((copiadoHtml) => {
+      openOutlookComposeWithBody('', '', subject, '');
+      mostrarAvisoCorreoDocumental(copiadoHtml);
+    })
+    .catch((err) => {
+      console.error('No se pudo copiar el correo con formato:', err);
+      const bodyPlain = buildCorreoDocumentalPlano(row, fechaEntregaTxt, fechaDocTxt, doc);
+      openOutlookComposeWithBody('', '', subject, bodyPlain);
+      mostrarAvisoCorreoDocumental(false);
+    });
+}
 function calcularTiemposMuertosFactibilidad(){
   const form = document.getElementById('factibilidadForm');
   if(!form) return;
@@ -1112,6 +1323,7 @@ function calcularTiemposMuertosFactibilidad(){
   if(totalEl) totalEl.textContent = total === '' ? '0 días' : `${total} días`;
   if(muertoEl) muertoEl.textContent = `${tiempoMuerto} días`;
   if(efectivaEl) efectivaEl.textContent = efectiva === '' ? '0 días' : `${efectiva} días`;
+  calcularDocumentacionFactibilidad();
 }
 
 
@@ -1408,7 +1620,7 @@ window.openFormModal = function(row=null){
   if(row){
     Object.keys(row).forEach(k => { if(el[k]){ if(el[k].type === 'checkbox') el[k].checked = !!row[k]; else el[k].value = row[k] ?? ''; } });
   }
-  toggleRadicacionFields(); actualizarIndicadoresRadicacion(); calcularTiemposMuertosFactibilidad(); modal.classList.add('show');
+  toggleRadicacionFields(); actualizarIndicadoresRadicacion(); calcularTiemposMuertosFactibilidad(); calcularDocumentacionFactibilidad(); modal.classList.add('show');
 };
 window.closeFormModal = function(){ document.getElementById('formModal').classList.remove('show'); };
 document.getElementById('formModal').addEventListener('click', function(e){ if(e.target.id === 'formModal'){} });
@@ -1438,6 +1650,8 @@ window.showDetail = function(id){
       <div class="detail-card"><div class="detail-title">Fecha agendamiento</div><div class="detail-value">${esc(fmtDate(row.fecha_agendamiento))}</div></div>
       <div class="detail-card"><div class="detail-title">Hora agendamiento</div><div class="detail-value">${esc(row.hora_agendamiento || '')}</div></div>
       <div class="detail-card"><div class="detail-title">Fecha de entrega</div><div class="detail-value">${esc(fmtDate(row.fecha_entrega))}</div></div>
+      <div class="detail-card"><div class="detail-title">Fecha entrega documentación</div><div class="detail-value">${esc(fmtDate(row.fecha_entrega_documentacion))}</div></div>
+      <div class="detail-card"><div class="detail-title">Tiempo entrega documentación</div><div class="detail-value">${esc(calcularTiempoDocumentacionValores(row.fecha_entrega, row.fecha_entrega_documentacion, row.fecha_agendamiento).texto)} hábiles</div></div>
       <div class="detail-card"><div class="detail-title">Duración total factibilidad</div><div class="detail-value">${esc(calcularDuracionTotalRow(row))}</div></div>
       <div class="detail-card"><div class="detail-title">Tiempo muerto factibilidad</div><div class="detail-value">${esc(calcularTiempoMuertoRow(row))}</div></div>
       <div class="detail-card"><div class="detail-title">Duración efectiva factibilidad</div><div class="detail-value">${esc(calcularDuracionEfectivaRow(row))}</div></div>
@@ -1613,6 +1827,7 @@ document.getElementById('factibilidadForm').addEventListener('submit', async fun
       fecha_agendamiento: el['fecha_agendamiento'].value || null,
       hora_agendamiento: el['hora_agendamiento'].value || null,
       fecha_entrega: el['fecha_entrega'].value || null,
+      fecha_entrega_documentacion: el['fecha_entrega_documentacion']?.value || null,
       estado_general: el['estado_general'].value,
       observaciones: (el['observaciones'].value || '').trim() || null,
       responsable: (el['responsable'].value || '').trim() || null,
