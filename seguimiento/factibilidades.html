@@ -205,7 +205,7 @@
       <div class="form-section gestion">
         <div class="section-title">Gestión y cierre</div>
         <div class="grid">
-          <div class="field"><label>Fecha agendamiento</label><input type="date" name="fecha_agendamiento" onchange="calcularDocumentacionFactibilidad()"></div>
+          <div class="field"><label>Fecha agendamiento/Visita</label><input type="date" name="fecha_agendamiento" onchange="calcularDocumentacionFactibilidad()"></div>
           <div class="field"><label>Hora agendamiento</label><input type="time" name="hora_agendamiento"></div>
           <div class="field"><label>Fecha de entrega</label><input type="date" name="fecha_entrega" onchange="calcularTiemposMuertosFactibilidad(); calcularDocumentacionFactibilidad()"></div>
           <div class="field"><label>Estado general</label>
@@ -787,7 +787,7 @@ function obtenerDiasDocumentacionRegistro(row){
   return datos.dias || 0;
 }
 function registrosPromedioDocumental(baseRows=(factRows || [])){
-  return (baseRows || []).filter(r => esEstadoCerradoDocumental(r) && r.fecha_entrega_documentacion && (r.fecha_entrega || r.fecha_agendamiento || r.fecha_realizacion_viabilidad));
+  return (baseRows || []).filter(r => esEstadoCerradoDocumental(r) && r.fecha_entrega_documentacion && (r.fecha_agendamiento || r.fecha_realizacion_viabilidad));
 }
 function promedioTiempoDocumentacion(baseRows=(factRows || [])){
   const rows = registrosPromedioDocumental(baseRows);
@@ -809,7 +809,7 @@ function etiquetaMesDocumental(ym){
 function resumenMensualDocumental(baseRows=(factRows || [])){
   const mapa = new Map();
   registrosPromedioDocumental(baseRows).forEach(r => {
-    const ym = llaveMesDocumental(r.fecha_entrega_documentacion || r.fecha_entrega || r.fecha_agendamiento);
+    const ym = llaveMesDocumental(r.fecha_entrega_documentacion || r.fecha_agendamiento || r.fecha_realizacion_viabilidad);
     if(!ym) return;
     if(!mapa.has(ym)) mapa.set(ym, { mes: ym, etiqueta: etiquetaMesDocumental(ym), suma: 0, cantidad: 0 });
     const item = mapa.get(ym);
@@ -827,7 +827,7 @@ function registrosPendientesDocumentacion(baseRows=(factRows || [])){
   return (baseRows || [])
     .filter(r => !r.fecha_entrega_documentacion)
     .filter(r => !excluidos.has(String(r.estado_general || '').trim().toUpperCase()))
-    .filter(r => r.fecha_entrega || r.fecha_agendamiento || r.fecha_realizacion_viabilidad)
+    .filter(r => r.fecha_agendamiento || r.fecha_realizacion_viabilidad)
     .map(r => ({...r, dias_doc_pendiente: obtenerDiasDocumentacionRegistro(r)}))
     .sort((a,b) => (b.dias_doc_pendiente || 0) - (a.dias_doc_pendiente || 0));
 }
@@ -857,7 +857,7 @@ function basePendientesDocumentacionReporte(baseRows=(factRows || [])){
     id_tarea: r.id_tarea || '',
     cliente: r.cliente || '',
     direccion: r.direccion || '',
-    fecha_base_documental: formatDateReporte(r.fecha_entrega || r.fecha_agendamiento || r.fecha_realizacion_viabilidad, 'dmy'),
+    fecha_agendamiento_base: formatDateReporte(r.fecha_agendamiento || r.fecha_realizacion_viabilidad, 'dmy'),
     dias_habiles_pendientes: r.dias_doc_pendiente || 0,
     estado_general: normalizeEstadoReporte(r.estado_general),
     responsable: r.responsable || '',
@@ -1290,9 +1290,9 @@ function contarDiasHabilesColombia(fechaInicio, fechaFin){
   return total;
 }
 function obtenerFechaInicioDocumentacion(fechaEntrega, fechaAgendamiento){
-  // Prioridad: Fecha de entrega. Si aún está vacía, usamos fecha de agendamiento/realización
-  // para que el KPI avance en tiempo real mientras el contratista entrega la documentación.
-  return fechaEntrega || fechaAgendamiento || '';
+  // Regla solicitada: el tiempo documental se calcula SIEMPRE desde la Fecha de agendamiento/realización,
+  // no desde la Fecha de entrega. Se conserva el parámetro fechaEntrega solo por compatibilidad con llamadas existentes.
+  return fechaAgendamiento || '';
 }
 function calcularTiempoDocumentacionValores(fechaEntrega, fechaDocumentacion, fechaAgendamiento){
   const fechaInicioBase = obtenerFechaInicioDocumentacion(fechaEntrega, fechaAgendamiento);
@@ -1301,11 +1301,11 @@ function calcularTiempoDocumentacionValores(fechaEntrega, fechaDocumentacion, fe
   const fechaFinBase = fechaDocumentacion || hoyIsoLocal();
   const inicioDate = parseFechaLocal(fechaInicioBase);
   const finDate = parseFechaLocal(fechaFinBase);
-  if(!inicioDate || !finDate) return { dias: 0, texto: '0 días', fechaFin: fechaFinBase, fechaInicio: fechaInicioBase, pendiente: !fechaDocumentacion, origen: fechaEntrega ? 'fecha_entrega' : 'fecha_agendamiento', direccion: '' };
+  if(!inicioDate || !finDate) return { dias: 0, texto: '0 días', fechaFin: fechaFinBase, fechaInicio: fechaInicioBase, pendiente: !fechaDocumentacion, origen: 'fecha_agendamiento', direccion: '' };
 
-  // Si la documentación se registra con fecha anterior a la fecha de entrega,
+  // Si la documentación se registra con fecha anterior a la fecha de agendamiento,
   // igual se calcula la diferencia en días hábiles. Esto evita que quede en 0
-  // cuando el contratista entrega documentos antes de la fecha de cierre/entrega.
+  // cuando se diligencia una fecha documental anterior a la fecha base.
   const docAntesDelInicio = !!fechaDocumentacion && finDate < inicioDate;
   const desde = docAntesDelInicio ? fechaFinBase : fechaInicioBase;
   const hasta = docAntesDelInicio ? fechaInicioBase : fechaFinBase;
@@ -1317,7 +1317,7 @@ function calcularTiempoDocumentacionValores(fechaEntrega, fechaDocumentacion, fe
     fechaFin: fechaFinBase,
     fechaInicio: fechaInicioBase,
     pendiente: !fechaDocumentacion,
-    origen: fechaEntrega ? 'fecha_entrega' : 'fecha_agendamiento',
+    origen: 'fecha_agendamiento',
     direccion: docAntesDelInicio ? 'antes' : (fechaDocumentacion ? 'despues' : 'pendiente')
   };
 }
@@ -1335,12 +1335,12 @@ function calcularDocumentacionFactibilidad(){
   if(kpi) kpi.textContent = datos.texto;
   if(sub){
     if(!datos.fechaInicio){
-      sub.textContent = 'Registra fecha de entrega o fecha de agendamiento para iniciar el conteo documental';
+      sub.textContent = 'Registra fecha de agendamiento para iniciar el conteo documental';
     }else if(datos.pendiente){
-      const origen = datos.origen === 'fecha_entrega' ? 'fecha de entrega' : 'fecha de agendamiento/realización';
+      const origen = 'fecha de agendamiento/realización';
       sub.textContent = `Pendiente por recibir · desde ${origen} hasta hoy (${fmtDate(datos.fechaFin)})`;
     }else{
-      const origen = datos.origen === 'fecha_entrega' ? 'fecha de entrega' : 'fecha de agendamiento/realización';
+      const origen = 'fecha de agendamiento/realización';
       if(datos.direccion === 'antes') sub.textContent = `Documentación registrada antes de la ${origen}`;
       else sub.textContent = `Días hábiles entre ${origen} y documentación`;
     }
@@ -1448,7 +1448,7 @@ function mostrarAvisoCorreoDocumental(copiadoHtml){
   setTimeout(() => alert(texto), 800);
 }
 function buildCorreoDocumentalPlano(row, fechaEntregaTxt, fechaDocTxt, doc){
-  const nota = doc.pendiente ? ' (calculado al día actual, pendiente por recibir documentación)' : (doc.direccion === 'antes' ? ' (documentación registrada antes de la fecha de entrega/base)' : '');
+  const nota = doc.pendiente ? ' (calculado al día actual, pendiente por recibir documentación)' : (doc.direccion === 'antes' ? ' (documentación registrada antes de la fecha de agendamiento/base)' : '');
   return [
     'Buenos días,',
     '',
@@ -1480,7 +1480,7 @@ function openSolicitudDocumentacionContratista(){
   const subject = `Solicitud información documental factibilidad ${row.cliente || ''} - ${row.id_cliente || ''} - ${row.id_cambio || ''}`.replace(/\s+/g,' ').trim();
   const fechaEntregaTxt = fmtDate(row.fecha_entrega) || 'Sin fecha de entrega registrada';
   const fechaDocTxt = row.fecha_entrega_documentacion ? fmtDate(row.fecha_entrega_documentacion) : 'Pendiente por recibir';
-  const notaTiempo = doc.pendiente ? ' <span style="color:#d00000;">(calculado al día actual, pendiente por recibir documentación)</span>' : (doc.direccion === 'antes' ? ' <span style="color:#d00000;">(documentación registrada antes de la fecha de entrega/base)</span>' : '');
+  const notaTiempo = doc.pendiente ? ' <span style="color:#d00000;">(calculado al día actual, pendiente por recibir documentación)</span>' : (doc.direccion === 'antes' ? ' <span style="color:#d00000;">(documentación registrada antes de la fecha de agendamiento/base)</span>' : '');
 
   // Outlook Web no interpreta HTML cuando se envía por el parámetro body del deeplink.
   // Por eso copiamos el cuerpo como HTML enriquecido al portapapeles y abrimos el correo
@@ -1635,10 +1635,10 @@ function buildDocDashboardRowsHtml(rows, type){
   const maxRows = rows.slice(0, 12);
   if(type === 'pendientes'){
     return `<div class="docdash-table-wrap"><table class="docdash-table"><thead><tr><th>#</th><th>Cliente</th><th>ID Cliente</th><th>Cambio</th><th>Estado</th><th>Base documental</th><th>Días hábiles</th></tr></thead><tbody>${maxRows.map((r,i)=>`
-      <tr><td>${i+1}</td><td><b>${esc(r.cliente || '')}</b><br>${esc(r.direccion || '')}</td><td>${esc(r.id_cliente || '')}</td><td>${esc(r.id_cambio || '')}</td><td>${esc(r.estado_general || '')}</td><td>${esc(fmtDate(r.fecha_entrega || r.fecha_agendamiento || r.fecha_realizacion_viabilidad))}</td><td><b style="color:#dc2626">${esc(r.dias_doc_pendiente || 0)}</b></td></tr>`).join('')}</tbody></table></div>`;
+      <tr><td>${i+1}</td><td><b>${esc(r.cliente || '')}</b><br>${esc(r.direccion || '')}</td><td>${esc(r.id_cliente || '')}</td><td>${esc(r.id_cambio || '')}</td><td>${esc(r.estado_general || '')}</td><td>${esc(fmtDate(r.fecha_agendamiento || r.fecha_realizacion_viabilidad))}</td><td><b style="color:#dc2626">${esc(r.dias_doc_pendiente || 0)}</b></td></tr>`).join('')}</tbody></table></div>`;
   }
   return `<div class="docdash-table-wrap"><table class="docdash-table"><thead><tr><th>#</th><th>Cliente</th><th>ID Cliente</th><th>Cambio</th><th>Entrega</th><th>Documentación</th><th>Días hábiles</th></tr></thead><tbody>${maxRows.map((r,i)=>`
-    <tr><td>${i+1}</td><td><b>${esc(r.cliente || '')}</b><br>${esc(r.direccion || '')}</td><td>${esc(r.id_cliente || '')}</td><td>${esc(r.id_cambio || '')}</td><td>${esc(fmtDate(r.fecha_entrega || r.fecha_agendamiento || r.fecha_realizacion_viabilidad))}</td><td>${esc(fmtDate(r.fecha_entrega_documentacion))}</td><td><b>${esc(obtenerDiasDocumentacionRegistro(r))}</b></td></tr>`).join('')}</tbody></table></div>`;
+    <tr><td>${i+1}</td><td><b>${esc(r.cliente || '')}</b><br>${esc(r.direccion || '')}</td><td>${esc(r.id_cliente || '')}</td><td>${esc(r.id_cambio || '')}</td><td>${esc(fmtDate(r.fecha_agendamiento || r.fecha_realizacion_viabilidad))}</td><td>${esc(fmtDate(r.fecha_entrega_documentacion))}</td><td><b>${esc(obtenerDiasDocumentacionRegistro(r))}</b></td></tr>`).join('')}</tbody></table></div>`;
 }
 function renderDocBarChart(rows){
   if(!rows.length) return '<div class="docdash-empty">No hay datos mensuales con documentación entregada.</div>';
@@ -1995,7 +1995,7 @@ window.showDetail = function(id){
       <div class="detail-card"><div class="detail-title">Hora agendamiento</div><div class="detail-value">${esc(row.hora_agendamiento || '')}</div></div>
       <div class="detail-card"><div class="detail-title">Fecha de entrega</div><div class="detail-value">${esc(fmtDate(row.fecha_entrega))}</div></div>
       <div class="detail-card"><div class="detail-title">Fecha entrega documentación</div><div class="detail-value">${esc(fmtDate(row.fecha_entrega_documentacion))}</div></div>
-      <div class="detail-card"><div class="detail-title">Tiempo entrega documentación</div><div class="detail-value">${esc(calcularTiempoDocumentacionValores(row.fecha_entrega, row.fecha_entrega_documentacion, row.fecha_agendamiento).texto)} hábiles</div></div>
+      <div class="detail-card"><div class="detail-title">Tiempo documentación desde agendamiento</div><div class="detail-value">${esc(calcularTiempoDocumentacionValores(row.fecha_entrega, row.fecha_entrega_documentacion, row.fecha_agendamiento).texto)} hábiles</div></div>
       <div class="detail-card"><div class="detail-title">Duración total factibilidad</div><div class="detail-value">${esc(calcularDuracionTotalRow(row))}</div></div>
       <div class="detail-card"><div class="detail-title">Tiempo muerto factibilidad</div><div class="detail-value">${esc(calcularTiempoMuertoRow(row))}</div></div>
       <div class="detail-card"><div class="detail-title">Duración efectiva factibilidad</div><div class="detail-value">${esc(calcularDuracionEfectivaRow(row))}</div></div>
@@ -2280,3 +2280,4 @@ loadFactibilidades();
 
 </body>
 </html>
+
