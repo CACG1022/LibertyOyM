@@ -244,16 +244,16 @@ function buildFactibilidadLiquidacion(f){
 function mergeRows(){
   const liqByKey = new Map(liquidaciones.map(l => [`${l.tipo_origen}|${l.id_cambio}`, l]));
   const eligibleInst = instalaciones.filter(x => x.estado_general === 'ENTREGADA').map(buildInstallacionLiquidacion);
-  const eligibleFact = factibilidades.filter(x => x.estado_general === 'APROBADA').map(buildFactibilidadLiquidacion);
+  const eligibleFact = factibilidades.filter(x => ['APROBADA','ENTREGADA'].includes(String(x.estado_general || '').trim().toUpperCase())).map(buildFactibilidadLiquidacion);
   rows = [...eligibleInst, ...eligibleFact].map(base => { const saved = liqByKey.get(`${base.tipo_origen}|${base.id_cambio}`); return saved ? {...base, ...saved, existe:true} : {...base, existe:false}; });
 }
 async function syncEligible(){
   try{
     const client = await resolveClient(); const email = localStorage.getItem('user_email') || null;
-    const candidates = [...instalaciones.filter(x=>x.estado_general==='ENTREGADA').map(buildInstallacionLiquidacion), ...factibilidades.filter(x=>x.estado_general==='APROBADA').map(buildFactibilidadLiquidacion)].filter(x=>x.id_cambio);
+    const candidates = [...instalaciones.filter(x=>x.estado_general==='ENTREGADA').map(buildInstallacionLiquidacion), ...factibilidades.filter(x=>['APROBADA','ENTREGADA'].includes(String(x.estado_general || '').trim().toUpperCase())).map(buildFactibilidadLiquidacion)].filter(x=>x.id_cambio);
     const existingKeys = new Set(liquidaciones.map(x => `${x.tipo_origen}|${x.id_cambio}`));
     const toInsert = candidates.filter(x => !existingKeys.has(`${x.tipo_origen}|${x.id_cambio}`)).map(x => ({...x, created_by_email: email}));
-    if(!toInsert.length){ alert('No hay nuevas instalaciones entregadas o factibilidades aprobadas pendientes por sincronizar.'); return; }
+    if(!toInsert.length){ alert('No hay nuevas instalaciones ENTREGADAS o factibilidades APROBADAS/ENTREGADAS pendientes por sincronizar.'); return; }
     const { error } = await client.from('om_liquidaciones').insert(toInsert); if(error) throw error;
     alert(`Se agregaron ${toInsert.length} registros nuevos a liquidaciones.`); await loadAll();
   }catch(err){ console.error(err); alert('Error sincronizando liquidaciones: ' + (err.message || err)); }
@@ -728,7 +728,7 @@ async function loadAll(){
     const client=await resolveClient();
     const [instRes,factRes,liqRes]=await Promise.all([
       client.from('instalaciones').select('*').eq('estado_general','ENTREGADA').order('fecha_entrega',{ascending:false}),
-      client.from('factibilidades').select('*').eq('estado_general','APROBADA').order('fecha_ingreso',{ascending:false}),
+      client.from('factibilidades').select('*').in('estado_general',['APROBADA','ENTREGADA']).order('fecha_ingreso',{ascending:false}),
       client.from('om_liquidaciones').select('*').order('updated_at',{ascending:false})
     ]);
     if(instRes.error) throw instRes.error; if(factRes.error) throw factRes.error; if(liqRes.error) throw liqRes.error;
@@ -742,3 +742,4 @@ loadAll();
 </script>
 </body>
 </html>
+
