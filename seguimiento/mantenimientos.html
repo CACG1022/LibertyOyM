@@ -52,9 +52,55 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;background:lin
 
 @media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.filters-grid{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:repeat(2,1fr)}.span4{grid-column:1/-1}}
 @media(max-width:650px){.kpis,.filters-grid,.grid{grid-template-columns:1fr}.span2,.span4{grid-column:auto}.wrap{padding:12px}.top{padding:12px;align-items:flex-start;flex-direction:column}}
+
+/* Sidebar corporativo Nodo O&M - tomado del módulo de Instalaciones */
+.page{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh;transition:grid-template-columns .25s ease}
+.page.sidebar-hidden{grid-template-columns:0 minmax(0,1fr)}
+.sidebar{background:linear-gradient(180deg,#08142a,#081126);border-right:1px solid rgba(255,255,255,.10);padding:18px 16px;position:sticky;top:0;height:100vh;overflow:auto;transition:transform .25s ease,opacity .25s ease;z-index:30}
+.page.sidebar-hidden .sidebar{transform:translateX(-100%);opacity:0;pointer-events:none;padding-left:0;padding-right:0;border-right:0}
+.sidebar-toggle-tab{position:fixed;left:240px;top:50%;transform:translateY(-50%);width:28px;height:72px;border:1px solid rgba(255,255,255,.10);border-left:0;border-radius:0 14px 14px 0;background:linear-gradient(135deg,#1d4ed8,#0f766e);color:#fff;font-weight:900;cursor:pointer;z-index:80;box-shadow:0 18px 40px rgba(0,0,0,.28);transition:left .25s ease}
+.page.sidebar-hidden .sidebar-toggle-tab{left:0}
+.brand{font-size:18px;font-weight:800;margin-bottom:4px}.subbrand{font-size:12px;color:#9ab0d0;margin-bottom:24px}
+.nav a{display:block;padding:12px;border-radius:12px;color:#fff;text-decoration:none;margin-bottom:8px;border:1px solid transparent}
+.nav a:hover,.nav a.active{background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.10)}
+.session-box{margin-top:24px;padding:14px;border:1px solid rgba(255,255,255,.10);border-radius:16px;background:rgba(255,255,255,.03)}
+.session-box small{display:block;color:#9ab0d0;margin-bottom:8px;word-break:break-all}
+.session-btn{width:100%;border:none;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;background:#1f3d79;color:#fff}
+.module-content{min-width:0;overflow:hidden}
+.page .top{left:auto}
+@media(max-width:900px){.page{grid-template-columns:1fr}.sidebar{position:fixed;left:0;top:0;width:240px;transform:translateX(-100%);opacity:0;pointer-events:none}.page:not(.sidebar-hidden) .sidebar{transform:translateX(0);opacity:1;pointer-events:auto}.sidebar-toggle-tab{left:0}.page:not(.sidebar-hidden) .sidebar-toggle-tab{left:240px}.module-content{width:100%}}
+
 </style>
 </head>
 <body>
+<div class="page" id="omPage">
+  <aside class="sidebar" ondblclick="toggleSidebar()">
+    <div class="brand">Nodo O&amp;M</div>
+    <div class="subbrand">Control y seguimiento</div>
+    <nav class="nav">
+      <a href="index.html">Inicio</a>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="fallas.html">Tickets / Fallas</a>
+      <a href="mantenimientos.html">Mantenimientos</a>
+      <a href="preventivos.html" class="active">Preventivos</a>
+      <a href="instalaciones.html">Instalaciones</a>
+      <a href="factibilidades.html">Factibilidades</a>
+      <a href="traslados.html">Traslados</a>
+      <a href="materiales.html">Materiales</a>
+      <a href="liquidaciones.html">Liquidaciones</a>
+      <a href="gastos.html">Gastos</a>
+      <a href="tareas.html">Tareas y Alertas</a>
+      <a href="reportes.html">Reportes</a>
+      <a href="https://cacg1022.github.io/LibertyOyM/visormapa.html">Visor</a>
+      <a href="https://cacg1022.github.io/LibertyOyM/seguimiento/nodo.html">Nodo</a>
+    </nav>
+    <div class="session-box">
+      <small>Sesión<br><span id="sidebarUserEmail">Sin iniciar</span></small>
+      <button class="session-btn" type="button" onclick="safeLogoutPreventivos()">Cerrar sesión</button>
+    </div>
+  </aside>
+  <button id="sidebarToggleTab" class="sidebar-toggle-tab" title="Ocultar / mostrar barra lateral" type="button" onclick="toggleSidebar()">‹</button>
+  <div class="module-content">
 <header class="top">
   <div class="title"><h1>PREVENTIVOS</h1><small>Seguimiento de mantenimiento preventivo de infraestructura y red de fibra óptica</small></div>
   <div class="actions">
@@ -93,6 +139,8 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;background:lin
     </tr></thead><tbody id="tbody"></tbody></table></div>
   </section>
 </main>
+  </div>
+</div>
 
 <div class="modal" id="modal">
 <div class="box">
@@ -240,7 +288,35 @@ let dashboardDetailRows = [];
 const tipos = ['AIRE ACONDICIONADO','PLANTA ELECTRICA','UPS','BANCO DE BATERIAS','RECTIFICADOR / SISTEMA DC','SISTEMA CONTRAINCENDIOS','TABLERO ELECTRICO','PUESTA A TIERRA','TRANSFERENCIA AUTOMATICA','GENERADOR','CONTROL DE ACCESO','CCTV','ASEO Y CONDICIONES LOCATIVAS','ODF / DISTRIBUIDOR OPTICO','RACK / GABINETE','SWITCH / ROUTER / EQUIPO TRANSMISION','MUFla / CIERRE DE EMPALME','CAJA DE EMPALME / NAP','CAMBIO / ASEGURAMIENTO DE HERrajes','PODA / LIBERACION DE FIBRA','RETESADO / ACOMODO DE CABLE','CANALIZACION / CAMARA / DUCTO','RUTA DE FIBRA / INSPECCION RED EXTERNA','MEDICION OTDR / POTENCIA','LIMPIEZA DE CONECTORES','RESERVA DE FIBRA','POSTERIA / APOYOS','OTRO'];
 const fields=['codigo','ciudad','sitio','ubicacion','tipo','categoria','prioridad','estado','fecha_programada','hora_programada','frecuencia','proxima_fecha','actividad','observaciones_programacion','activo_nombre','activo_marca','activo_modelo','activo_serial','activo_codigo','red_tramo','origen','destino','latitud','longitud','propietario_red','elemento_critico','orden_trabajo','ticket','responsable','contratista','fecha_inicio','fecha_fin','personal_participante','supervisor','actividades_ejecutadas','materiales_utilizados','costo_mano_obra','costo_materiales','otros_costos','indisponibilidad_min','resultado','criticidad_hallazgo','genera_correctivo','ot_correctivo','hallazgos','recomendaciones','acciones_pendientes','condicion_final','porcentaje_cumplimiento','pruebas_realizadas','mediciones','evidencias_url','permiso_trabajo','ats','epp_ok','senalizacion_ok','limpieza_ok','servicio_normalizado'];
 
-document.addEventListener('DOMContentLoaded',()=>{tipo.innerHTML=tipos.map(x=>`<option>${x}</option>`).join(''); fTipo.innerHTML='<option value="">Todos</option>'+tipos.map(x=>`<option>${x}</option>`).join(''); setDefaultDates(); loadData();});
+
+function safeLogoutPreventivos(){
+  try{ if(typeof logout==='function'){ logout(); return; } }catch(e){}
+  localStorage.removeItem('user_email');
+  location.href='index.html';
+}
+function toggleSidebar(){
+  const page=document.getElementById('omPage');
+  const tab=document.getElementById('sidebarToggleTab');
+  if(!page)return;
+  page.classList.toggle('sidebar-hidden');
+  const hidden=page.classList.contains('sidebar-hidden');
+  localStorage.setItem('om_sidebar_hidden',hidden?'1':'0');
+  if(tab)tab.textContent=hidden?'›':'‹';
+}
+function restoreSidebarState(){
+  const page=document.getElementById('omPage');
+  const tab=document.getElementById('sidebarToggleTab');
+  if(!page)return;
+  let hidden=localStorage.getItem('om_sidebar_hidden')==='1';
+  if(window.matchMedia && window.matchMedia('(max-width:900px)').matches && localStorage.getItem('om_sidebar_hidden')===null) hidden=true;
+  page.classList.toggle('sidebar-hidden',hidden);
+  if(tab)tab.textContent=hidden?'›':'‹';
+  const email=localStorage.getItem('user_email')||'';
+  const label=document.getElementById('sidebarUserEmail');
+  if(label)label.textContent=email||'Sin iniciar';
+}
+
+document.addEventListener('DOMContentLoaded',()=>{restoreSidebarState();tipo.innerHTML=tipos.map(x=>`<option>${x}</option>`).join(''); fTipo.innerHTML='<option value="">Todos</option>'+tipos.map(x=>`<option>${x}</option>`).join(''); setDefaultDates(); loadData();});
 function setDefaultDates(){const d=new Date(); fDesde.value=`${d.getFullYear()}-01-01`; fHasta.value=d.toISOString().slice(0,10)}
 function normalizeStatus(r){if(r.estado==='EJECUTADO'||r.estado==='CANCELADO') return r.estado; if(r.fecha_programada && r.fecha_programada < new Date().toISOString().slice(0,10)) return 'VENCIDO'; return r.estado||'PENDIENTE'}
 async function loadData(){if(!sb){data=JSON.parse(localStorage.getItem('preventivos_demo')||'[]'); render(); return} const {data:d,error}=await sb.from('preventivos').select('*').order('fecha_programada',{ascending:false}); if(error){alert(error.message);return} data=d||[]; render()}
@@ -488,3 +564,4 @@ function exportCSV(){let rows=filtered();if(!rows.length)return alert('No hay da
 function fmt(v){if(!v)return'';let s=String(v);return s.includes('T')?new Date(s).toLocaleString('es-CO'):s.slice(0,10)} function esc(v){return String(v??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
 </script>
 </body></html>
+
