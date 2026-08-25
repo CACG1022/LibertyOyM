@@ -279,8 +279,8 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;background:lin
 
 <script>
 // Configure aquí su proyecto Supabase
-const SUPABASE_URL = 'PEGAR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'PEGAR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://lvwmpwnzavqdspdfvceb.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2d21wd256YXZxZHNwZGZ2Y2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxOTg3MzYsImV4cCI6MjA5MTc3NDczNn0.u6g4OCm4kl-LEmyIf9VWwf43cdqYbik7Y60rdKQ8npI';
 const sb = (SUPABASE_URL.startsWith('http') && !SUPABASE_ANON_KEY.startsWith('PEGAR')) ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 let data = [];
 let dashboardCharts = {};
