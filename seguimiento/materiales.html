@@ -2419,6 +2419,7 @@ function normalizarSapModal(v){
 }
 
 
+
 function validarCodigosSapDuplicadosEnModal({enfocar = false} = {}){
   const rows=Array.from(document.querySelectorAll('#materialLinesBody tr'));
   const groups=new Map();
@@ -2427,47 +2428,68 @@ function validarCodigosSapDuplicadosEnModal({enfocar = false} = {}){
   rows.forEach(tr=>{
     tr.classList.remove('sap-duplicate-row');
 
-    const codigo=normalizarSapModal(tr.querySelector('.line-sap')?.value);
-    if(!codigo) return;
+    const sap=normalizarSapModal(
+      tr.querySelector('.line-sap')?.value
+    );
 
-    let wbsKey='';
+    if(!sap) return;
+
+    let wbs='';
 
     if(tipo==='ENTRADA'){
-      wbsKey=normalizarWbsInventario(
+      // En entradas el WBS puede quedar vacío. Vacío = SIN WBS.
+      wbs=normalizarWbsInventario(
         tr.querySelector('.line-wbs-input')?.value || ''
       );
     }else if(esTipoConsumoMaterial(tipo)){
-      wbsKey=tr.querySelector('.line-wbs-select')?.value || '';
-      if(!wbsKey) return;
+      // En consumos NO validar duplicados hasta que el usuario
+      // haya escogido explícitamente un WBS.
+      wbs=String(
+        tr.querySelector('.line-wbs-select')?.value || ''
+      ).trim();
+
+      if(!wbs) return;
     }else{
-      wbsKey=normalizarWbsInventario(
+      wbs=normalizarWbsInventario(
         tr.querySelector('.line-wbs-input')?.value || ''
       );
     }
 
-    const composite=`${codigo}||${wbsKey}`;
+    const clave=`${sap}||${wbs}`;
 
-    if(!groups.has(composite)){
-      groups.set(composite,{codigo,wbs:wbsKey,filas:[]});
+    if(!groups.has(clave)){
+      groups.set(clave,{
+        sap,
+        wbs,
+        rows:[]
+      });
     }
-    groups.get(composite).filas.push(tr);
+
+    groups.get(clave).rows.push(tr);
   });
 
   const duplicados=[];
 
   groups.forEach(group=>{
-    if(group.filas.length>1){
-      duplicados.push(group);
-      group.filas.forEach(tr=>tr.classList.add('sap-duplicate-row'));
-    }
+    if(group.rows.length<=1) return;
+
+    duplicados.push(group);
+
+    group.rows.forEach(tr=>{
+      tr.classList.add('sap-duplicate-row');
+    });
   });
 
   if(duplicados.length && enfocar){
-    const target=duplicados[0].filas[1] || duplicados[0].filas[0];
-    const input=esTipoConsumoMaterial(tipo)
+    const target=
+      duplicados[0].rows[1] ||
+      duplicados[0].rows[0];
+
+    const control=esTipoConsumoMaterial(tipo)
       ? target?.querySelector('.line-wbs-select')
-      : target?.querySelector('.line-sap');
-    input?.focus();
+      : target?.querySelector('.line-wbs-input');
+
+    control?.focus();
   }
 
   const msg=document.getElementById('movMsg');
@@ -2475,12 +2497,19 @@ function validarCodigosSapDuplicadosEnModal({enfocar = false} = {}){
   if(msg && duplicados.length){
     msg.style.color='#fbbf24';
     msg.textContent=
-      'No se permite repetir la misma combinación Código SAP + WBS dentro del movimiento. Revisa: '+
-      duplicados.map(x=>`${x.codigo} / ${etiquetaWbsInventario(x.wbs)}`).join(', ')+'.';
-  }else if(msg && (
-    msg.textContent?.startsWith('No se permiten códigos SAP repetidos') ||
-    msg.textContent?.startsWith('No se permite repetir la misma combinación')
-  )){
+      'Puedes repetir un Código SAP si utilizas un WBS diferente. '+
+      'Actualmente está repetida la misma combinación: '+
+      duplicados.map(x=>
+        `${x.sap} / ${etiquetaWbsInventario(x.wbs)}`
+      ).join(', ')+'.';
+  }else if(
+    msg &&
+    (
+      msg.textContent?.startsWith('No se permiten códigos SAP repetidos') ||
+      msg.textContent?.startsWith('No se permite repetir la misma combinación') ||
+      msg.textContent?.startsWith('Puedes repetir un Código SAP')
+    )
+  ){
     msg.textContent='';
   }
 
@@ -2488,13 +2517,19 @@ function validarCodigosSapDuplicadosEnModal({enfocar = false} = {}){
 }
 
 function asegurarSinCodigosSapDuplicados(){
-  const duplicados=validarCodigosSapDuplicadosEnModal({enfocar:true});
-  if(duplicados.length){
-    throw new Error(
-      'No se permite repetir la misma combinación Código SAP + WBS dentro del movimiento: '+
-      duplicados.map(x=>`${x.codigo} / ${etiquetaWbsInventario(x.wbs)}`).join(', ')+'.'
-    );
-  }
+  const duplicados=
+    validarCodigosSapDuplicadosEnModal({enfocar:true});
+
+  if(!duplicados.length) return;
+
+  throw new Error(
+    'El mismo Código SAP sí puede aparecer varias veces, '+
+    'pero cada fila debe utilizar un WBS diferente. '+
+    'Combinación repetida: '+
+    duplicados.map(x=>
+      `${x.sap} / ${etiquetaWbsInventario(x.wbs)}`
+    ).join(', ')+'.'
+  );
 }
 
 function onSapModalChanged(input){
@@ -2519,7 +2554,7 @@ function addMaterialLine(data = {}){
     <td>
       <input class="control line-sap" list="sapList" value="${esc(data.codigo_sap || '')}" oninput="onSapModalChanged(this)" onchange="onSapModalChanged(this)">
       <div class="sap-warning">Este material no se encuentra relacionado en STOCK SAP</div>
-      <div class="sap-duplicate-warning">La combinación Código SAP + WBS está repetida en este movimiento.</div>
+      <div class="sap-duplicate-warning">Esta combinación Código SAP + WBS ya está usada en otra fila.</div>
     </td>
     <td><input class="control line-material" list="materialList" value="${esc(data.material_nombre || data.material || '')}" required oninput="syncMaterialLineByName(this)" onchange="syncMaterialLineByName(this)"></td>
     <td><input class="control line-cantidad" type="number" step="0.01" min="0.01" onchange="actualizarWbsLinea(this.closest(\'tr\'))" value="${esc(data.cantidad || '')}" required></td>
@@ -2829,7 +2864,7 @@ function cargarOpcionesWbsConsumo(tr, valorPreferido=''){
   const unidad=tr.querySelector('.line-unidad')?.value || '';
   const saldos=obtenerSaldosWbsMaterial(sap,stock);
 
-  const preferido=normalizarWbsInventario(valorPreferido);
+  const preferido=String(valorPreferido || '').trim();
   const actual=select.value || preferido;
 
   select.innerHTML='<option value="">Selecciona WBS</option>';
@@ -2890,8 +2925,11 @@ function actualizarWbsLinea(tr){
     input.style.display='none';
     select.style.display='';
 
-    const valorGuardado=normalizarWbsInventario(input.value);
-    cargarOpcionesWbsConsumo(tr,valorGuardado);
+    const valorGuardado=String(input.value || '').trim();
+    cargarOpcionesWbsConsumo(
+      tr,
+      valorGuardado ? valorGuardado : ''
+    );
 
     if(!sap){
       select.value='';
@@ -2939,9 +2977,9 @@ function onWbsConsumoChanged(select){
 }
 
 function getSaldoWbsSeleccionado(codigoSap,bodegaStock,wbs){
-  const key=normalizarWbsInventario(
-    wbs===WBS_SIN_ASIGNAR ? '' : wbs
-  );
+  const key = wbs === WBS_SIN_ASIGNAR
+    ? WBS_SIN_ASIGNAR
+    : normalizarWbsInventario(wbs);
 
   return obtenerSaldosWbsMaterial(codigoSap,bodegaStock)
     .find(x=>x.wbs===key)?.disponible || 0;
@@ -2971,7 +3009,7 @@ function getMaterialLineItems(){
         }
         if(esTipoConsumoMaterial(tipoActual)){
           const value=tr.querySelector('.line-wbs-select')?.value || '';
-          return value===WBS_SIN_ASIGNAR ? '' : value;
+          return value;
         }
         return tr.querySelector('.line-wbs-input')?.value.trim() || '';
       })(),
@@ -3288,7 +3326,11 @@ function openMovModal(row = null){
         bodega_origen_id: r.bodega_origen_id || '',
         bodega_destino_id: r.bodega_destino_id || '',
         bodega_origen_stock: r.bodega_origen_stock || '',
-        wbs: r.wbs || '',
+        wbs: esTipoConsumoMaterial(r.tipo_movimiento)
+          ? ((r.wbs === null || r.wbs === undefined || String(r.wbs).trim() === '')
+              ? WBS_SIN_ASIGNAR
+              : String(r.wbs).trim())
+          : (r.wbs || ''),
         codigo_serial: r.codigo_serial || '',
         cod_reserva: r.cod_reserva || ''
       });
@@ -4609,7 +4651,9 @@ document.getElementById('movForm').addEventListener('submit', async function(e){
         bodega_origen_id: item.bodega_origen_id || null,
         bodega_destino_id: item.bodega_destino_id || null,
         bodega_origen_stock: item.bodega_origen_stock || null,
-        wbs: item.wbs || null,
+        wbs: (item.wbs === WBS_SIN_ASIGNAR || !String(item.wbs || '').trim())
+          ? null
+          : String(item.wbs).trim(),
         codigo_serial: item.codigo_serial || null,
         cod_reserva: item.cod_reserva || null
       });
