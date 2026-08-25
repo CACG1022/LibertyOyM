@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Módulo de Preventivos - Red de Fibra Óptica</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --orange:#f59e0b;--orange2:#f97316;--bg:#030b16;--bg2:#071321;
+  --card:#0b1728;--card2:#0d1d33;--text:#f8fafc;--muted:#94a3b8;
+  --border:#243852;--border-soft:#16283f;--green:#22c55e;--red:#ef4444;
+  --amber:#f59e0b;--blue:#60a5fa;--cyan:#22d3ee;--violet:#a78bfa;
+}
+*{box-sizing:border-box}
+html{color-scheme:dark}
+body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:radial-gradient(circle at 20% 0%,#0c1d32 0,#05101e 34%,#020812 78%);color:var(--text);min-height:100vh}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(20,42,70,.16),rgba(1,6,13,.32));z-index:-1}
+.top{background:rgba(3,12,24,.94);backdrop-filter:blur(14px);border-bottom:1px solid #18314f;padding:16px 24px;display:flex;gap:16px;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;box-shadow:0 8px 28px rgba(0,0,0,.22)}
+.title h1{margin:0;font-size:24px;letter-spacing:.02em}.title small{color:#9fb0c7}.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid transparent;border-radius:9px;padding:9px 14px;font-weight:700;cursor:pointer;transition:.18s ease;box-shadow:none}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.08)}
+.btn.primary{background:linear-gradient(135deg,#f59e0b,#f97316);color:#fff;border-color:#fb923c;box-shadow:0 7px 20px rgba(249,115,22,.18)}
+.btn.secondary{background:#111e31;color:#e6edf7;border:1px solid #2a405d}.btn.secondary:hover{background:#17273d}.btn.danger{background:#35141a;color:#fecaca;border:1px solid #7f1d1d}
+.wrap{padding:20px 24px;max-width:1700px;margin:auto}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:12px;margin-bottom:16px}.kpi{background:linear-gradient(180deg,#0d1b2f,#091625);border:1px solid #233a57;border-radius:14px;padding:13px 14px;box-shadow:0 10px 24px rgba(0,0,0,.13);position:relative;overflow:hidden}.kpi:before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#f59e0b}.kpi:nth-child(2):before{background:#60a5fa}.kpi:nth-child(3):before{background:#ef4444}.kpi:nth-child(4):before{background:#22c55e}.kpi:nth-child(5):before{background:#a78bfa}.kpi:nth-child(6):before{background:#22d3ee}.kpi .v{font-size:25px;font-weight:800;margin-top:5px;color:#fff}.kpi .l{font-size:11px;color:#9fb0c7;text-transform:uppercase;font-weight:800;letter-spacing:.06em}
+.filters,.panel{background:rgba(9,22,38,.96);border:1px solid #203a58;border-radius:14px;padding:14px;margin-bottom:16px;box-shadow:0 14px 30px rgba(0,0,0,.13)}
+.filters-grid{display:grid;grid-template-columns:repeat(7,minmax(140px,1fr));gap:10px}.field{display:flex;flex-direction:column;gap:5px}.field label{font-size:12px;font-weight:700;color:#c2ccda}
+.field input,.field select,.field textarea{width:100%;padding:10px 11px;border:1px solid #29405f;border-radius:9px;background:#0a1628;color:#f8fafc;outline:none;transition:.16s ease}.field input:focus,.field select:focus,.field textarea:focus{border-color:#4f86c6;box-shadow:0 0 0 3px rgba(59,130,246,.13);background:#0c1a2e}.field input::placeholder,.field textarea::placeholder{color:#61728a}.field textarea{min-height:78px;resize:vertical}.field option{background:#0a1628;color:#fff}
+.table-wrap{overflow:auto;max-height:560px;border-radius:10px;border:1px solid #203650;background:#071321}table{border-collapse:collapse;width:100%;min-width:1650px;background:#071321}th,td{padding:9px 10px;border-bottom:1px solid #152a42;font-size:12px;text-align:left;vertical-align:top}th{position:sticky;top:0;background:#0e2037;z-index:3;color:#dbeafe;border-bottom:1px solid #294663}tbody tr:nth-child(even){background:#091829}tbody tr:hover{background:#0d2139}.panel a{color:#60a5fa}
+.pill{display:inline-block;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:800;border:1px solid transparent}.PENDIENTE{background:#39270b;color:#fcd34d;border-color:#74521d}.PROGRAMADO{background:#10284a;color:#93c5fd;border-color:#1e4b7a}.EN_EJECUCION{background:#291b4b;color:#c4b5fd;border-color:#503b80}.EJECUTADO{background:#0e3324;color:#86efac;border-color:#1d6b48}.VENCIDO{background:#3b151a;color:#fca5a5;border-color:#7f1d1d}.CANCELADO{background:#202b39;color:#cbd5e1;border-color:#475569}
+.modal{position:fixed;inset:0;background:rgba(0,5,12,.82);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:18px;z-index:100}.modal.open{display:flex}.box{background:linear-gradient(180deg,#07182d,#061425);width:min(1220px,96vw);max-height:94vh;overflow:auto;border-radius:17px;border:1px solid #244363;box-shadow:0 28px 80px rgba(0,0,0,.6)}.box::-webkit-scrollbar,.table-wrap::-webkit-scrollbar{width:9px;height:9px}.box::-webkit-scrollbar-thumb,.table-wrap::-webkit-scrollbar-thumb{background:#53657b;border-radius:10px}.box::-webkit-scrollbar-track,.table-wrap::-webkit-scrollbar-track{background:#0a1523}
+.box-head{padding:15px 18px;border-bottom:1px solid #203c5c;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:rgba(6,20,37,.96);backdrop-filter:blur(10px);z-index:2}.box-head strong{font-size:16px}.box-body{padding:18px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.span2{grid-column:span 2}.span4{grid-column:1/-1}
+.section{grid-column:1/-1;margin:4px 0 0;border:1px solid #24476c;border-radius:13px;padding:12px 14px;font-weight:800;color:#eef6ff;background:linear-gradient(90deg,rgba(28,78,132,.28),rgba(8,30,54,.56));box-shadow:inset 3px 0 0 #60a5fa}.section:nth-of-type(2n){border-color:#6c501d;background:linear-gradient(90deg,rgba(124,78,11,.20),rgba(37,25,9,.38));box-shadow:inset 3px 0 0 #f59e0b}.checks{display:flex;gap:15px;flex-wrap:wrap;padding:8px 0}.checks label{font-size:13px;color:#d7e0ec}.checks input{accent-color:#f59e0b}.footer{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;padding-top:14px;border-top:1px solid #1b314b}.hint{font-size:12px;color:var(--muted)}
+
+.dashboard-box{width:min(1500px,97vw);max-height:95vh}
+.dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.dash-card{background:linear-gradient(180deg,#0b1a2d,#081523);border:1px solid #24415f;border-radius:14px;padding:14px;min-height:330px}
+.dash-card.wide{grid-column:1/-1}.dash-card h3{margin:0 0 10px;font-size:14px;color:#eaf3ff}.chart-holder{position:relative;height:275px}.dash-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}.dash-mini{background:#091829;border:1px solid #24415f;border-radius:12px;padding:12px}.dash-mini .n{font-size:24px;font-weight:800;margin-top:4px}.dash-mini .t{font-size:11px;text-transform:uppercase;color:#9fb0c7;font-weight:800;letter-spacing:.04em}.row-actions{display:flex;gap:6px;white-space:nowrap}.btn.small{padding:7px 10px;font-size:11px}
+@media(max-width:900px){.dashboard-grid{grid-template-columns:1fr}.dash-card.wide{grid-column:auto}.dash-kpis{grid-template-columns:repeat(2,1fr)}}
+.detail-modal-box{width:min(1400px,96vw);max-height:90vh}
+.detail-headline{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+.detail-summary{font-size:13px;color:#9fb0c7}
+.detail-table-wrap{overflow:auto;border:1px solid #24415f;border-radius:12px;max-height:58vh}
+.detail-table{width:100%;border-collapse:collapse;min-width:1250px}
+.detail-table th{position:sticky;top:0;z-index:2;background:#0d2238;color:#dbeafe;text-align:left;font-size:11px;padding:10px;border-bottom:1px solid #31516f}
+.detail-table td{padding:9px 10px;border-bottom:1px solid #17334d;font-size:11px;vertical-align:top}
+.detail-table tr:hover td{background:#0b1d31}
+.chart-holder canvas{cursor:pointer}
+.chart-click-hint{font-size:10px;color:#7f93ad;margin-top:4px}
+
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(3,1fr)}.filters-grid{grid-template-columns:repeat(3,1fr)}.grid{grid-template-columns:repeat(2,1fr)}.span4{grid-column:1/-1}}
+@media(max-width:650px){.kpis,.filters-grid,.grid{grid-template-columns:1fr}.span2,.span4{grid-column:auto}.wrap{padding:12px}.top{padding:12px;align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="title"><h1>PREVENTIVOS</h1><small>Seguimiento de mantenimiento preventivo de infraestructura y red de fibra óptica</small></div>
+  <div class="actions">
+    <button class="btn secondary" onclick="loadData()">Actualizar</button>
+    <button class="btn secondary" onclick="exportCSV()">Exportar CSV</button>
+    <button class="btn secondary" onclick="openDashboard()">Dashboard</button>
+    <button class="btn primary" onclick="openForm()">+ Nuevo preventivo</button>
+  </div>
+</header>
+<main class="wrap">
+  <section class="kpis">
+    <div class="kpi"><div class="l">Total registros</div><div class="v" id="kTotal">0</div></div>
+    <div class="kpi"><div class="l">Programados / pendientes</div><div class="v" id="kPend">0</div></div>
+    <div class="kpi"><div class="l">Vencidos</div><div class="v" id="kVenc">0</div></div>
+    <div class="kpi"><div class="l">Ejecutados</div><div class="v" id="kEjec">0</div></div>
+    <div class="kpi"><div class="l">Con hallazgos críticos</div><div class="v" id="kCrit">0</div></div>
+    <div class="kpi"><div class="l">Cumplimiento</div><div class="v" id="kCumpl">0%</div></div>
+  </section>
+
+  <section class="filters">
+    <div class="filters-grid">
+      <div class="field"><label>Ciudad</label><select id="fCiudad" onchange="render()"><option value="">Todas</option></select></div>
+      <div class="field"><label>Tipo preventivo</label><select id="fTipo" onchange="render()"><option value="">Todos</option></select></div>
+      <div class="field"><label>Estado</label><select id="fEstado" onchange="render()"><option value="">Todos</option><option>PENDIENTE</option><option>PROGRAMADO</option><option>EN EJECUCION</option><option>EJECUTADO</option><option>VENCIDO</option><option>CANCELADO</option></select></div>
+      <div class="field"><label>Responsable</label><input id="fResp" oninput="render()" placeholder="Buscar responsable"></div>
+      <div class="field"><label>Desde</label><input id="fDesde" type="date" onchange="render()"></div>
+      <div class="field"><label>Hasta</label><input id="fHasta" type="date" onchange="render()"></div>
+      <div class="field"><label>Búsqueda</label><input id="fQ" oninput="render()" placeholder="Nodo, activo, ubicación, OT..."></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><strong>Registro de mantenimientos</strong><span class="hint" id="countLabel"></span></div>
+    <div class="table-wrap"><table><thead><tr>
+      <th>Acción</th><th>Estado</th><th>Fecha programada</th><th>Fecha ejecución</th><th>Ciudad</th><th>Sitio/Nodo</th><th>Tipo</th><th>Activo / elemento</th><th>Red / tramo</th><th>OT / Ticket</th><th>Responsable</th><th>Contratista</th><th>Resultado</th><th>Criticidad hallazgo</th><th>Próximo preventivo</th><th>Costo</th><th>Evidencias</th>
+    </tr></thead><tbody id="tbody"></tbody></table></div>
+  </section>
+</main>
+
+<div class="modal" id="modal">
+<div class="box">
+  <div class="box-head"><strong id="formTitle">Nuevo preventivo</strong><button class="btn secondary" onclick="closeForm()">Cerrar</button></div>
+  <div class="box-body">
+    <form id="frm" onsubmit="savePreventivo(event)"><input type="hidden" id="id">
+      <div class="grid">
+        <div class="section">1. Identificación y programación</div>
+        <div class="field"><label>Código preventivo</label><input id="codigo" placeholder="Ej: PREV-2026-0001"></div>
+        <div class="field"><label>Ciudad *</label><input id="ciudad" required></div>
+        <div class="field"><label>Sitio / Nodo / POP</label><input id="sitio"></div>
+        <div class="field"><label>Dirección / ubicación</label><input id="ubicacion"></div>
+        <div class="field"><label>Tipo de preventivo *</label><select id="tipo" required></select></div>
+        <div class="field"><label>Categoría</label><select id="categoria"><option>INFRAESTRUCTURA NODO</option><option>ENERGIA</option><option>CLIMATIZACION</option><option>CONTRAINCENDIOS</option><option>RED EXTERNA</option><option>FIBRA OPTICA</option><option>SEGURIDAD FISICA</option><option>OTRO</option></select></div>
+        <div class="field"><label>Prioridad</label><select id="prioridad"><option>BAJA</option><option selected>MEDIA</option><option>ALTA</option><option>CRITICA</option></select></div>
+        <div class="field"><label>Estado *</label><select id="estado"><option>PENDIENTE</option><option>PROGRAMADO</option><option>EN EJECUCION</option><option>EJECUTADO</option><option>CANCELADO</option></select></div>
+        <div class="field"><label>Fecha programada *</label><input id="fecha_programada" type="date" required></div>
+        <div class="field"><label>Hora programada</label><input id="hora_programada" type="time"></div>
+        <div class="field"><label>Frecuencia</label><select id="frecuencia"><option value="">Sin periodicidad</option><option>MENSUAL</option><option>BIMESTRAL</option><option>TRIMESTRAL</option><option>SEMESTRAL</option><option>ANUAL</option></select></div>
+        <div class="field"><label>Próximo preventivo</label><input id="proxima_fecha" type="date"></div>
+        <div class="field span2"><label>Alcance / actividad programada *</label><textarea id="actividad" required placeholder="Describa las actividades previstas"></textarea></div>
+        <div class="field span2"><label>Observaciones de programación</label><textarea id="observaciones_programacion"></textarea></div>
+
+        <div class="section">2. Activo, equipo o elemento intervenido</div>
+        <div class="field"><label>Activo / elemento</label><input id="activo_nombre" placeholder="Aire acondicionado, planta, banco baterías, mufla..."></div>
+        <div class="field"><label>Marca</label><input id="activo_marca"></div>
+        <div class="field"><label>Modelo</label><input id="activo_modelo"></div>
+        <div class="field"><label>Serial / placa</label><input id="activo_serial"></div>
+        <div class="field"><label>Código activo</label><input id="activo_codigo"></div>
+        <div class="field"><label>Red / tramo / anillo</label><input id="red_tramo"></div>
+        <div class="field"><label>Origen</label><input id="origen"></div>
+        <div class="field"><label>Destino</label><input id="destino"></div>
+        <div class="field"><label>Latitud</label><input id="latitud" type="number" step="any"></div>
+        <div class="field"><label>Longitud</label><input id="longitud" type="number" step="any"></div>
+        <div class="field"><label>Propietario red</label><input id="propietario_red"></div>
+        <div class="field"><label>Elemento crítico</label><select id="elemento_critico"><option value="false">No</option><option value="true">Sí</option></select></div>
+
+        <div class="section">3. Gestión de la ejecución</div>
+        <div class="field"><label>OT / Orden de trabajo</label><input id="orden_trabajo"></div>
+        <div class="field"><label>Ticket / Caso</label><input id="ticket"></div>
+        <div class="field"><label>Responsable *</label><input id="responsable" required></div>
+        <div class="field"><label>Contratista / cuadrilla</label><input id="contratista"></div>
+        <div class="field"><label>Fecha inicio</label><input id="fecha_inicio" type="datetime-local"></div>
+        <div class="field"><label>Fecha fin</label><input id="fecha_fin" type="datetime-local"></div>
+        <div class="field"><label>Personal participante</label><input id="personal_participante"></div>
+        <div class="field"><label>Supervisor / aprobador</label><input id="supervisor"></div>
+        <div class="field span2"><label>Actividades ejecutadas</label><textarea id="actividades_ejecutadas"></textarea></div>
+        <div class="field span2"><label>Materiales / repuestos utilizados</label><textarea id="materiales_utilizados" placeholder="Incluya cantidades y referencias"></textarea></div>
+        <div class="field"><label>Costo mano de obra</label><input id="costo_mano_obra" type="number" step="0.01" min="0"></div>
+        <div class="field"><label>Costo materiales</label><input id="costo_materiales" type="number" step="0.01" min="0"></div>
+        <div class="field"><label>Otros costos</label><input id="otros_costos" type="number" step="0.01" min="0"></div>
+        <div class="field"><label>Tiempo indisponibilidad (min)</label><input id="indisponibilidad_min" type="number" min="0"></div>
+
+        <div class="section">4. Verificación, hallazgos y cierre</div>
+        <div class="field"><label>Resultado</label><select id="resultado"><option value="">Sin definir</option><option>SATISFACTORIO</option><option>SATISFACTORIO CON OBSERVACIONES</option><option>REQUIERE CORRECTIVO</option><option>NO EJECUTADO</option></select></div>
+        <div class="field"><label>Criticidad del hallazgo</label><select id="criticidad_hallazgo"><option>NINGUNA</option><option>BAJA</option><option>MEDIA</option><option>ALTA</option><option>CRITICA</option></select></div>
+        <div class="field"><label>¿Genera correctivo?</label><select id="genera_correctivo"><option value="false">No</option><option value="true">Sí</option></select></div>
+        <div class="field"><label>OT correctivo asociada</label><input id="ot_correctivo"></div>
+        <div class="field span2"><label>Hallazgos</label><textarea id="hallazgos"></textarea></div>
+        <div class="field span2"><label>Recomendaciones</label><textarea id="recomendaciones"></textarea></div>
+        <div class="field span2"><label>Acciones pendientes</label><textarea id="acciones_pendientes"></textarea></div>
+        <div class="field span2"><label>Condición final del activo / red</label><textarea id="condicion_final"></textarea></div>
+        <div class="field"><label>% cumplimiento checklist</label><input id="porcentaje_cumplimiento" type="number" min="0" max="100" step="0.01"></div>
+        <div class="field"><label>Pruebas realizadas</label><input id="pruebas_realizadas" placeholder="OTDR, potencia, autonomía, temperatura..."></div>
+        <div class="field span2"><label>Resultados de mediciones</label><textarea id="mediciones"></textarea></div>
+
+        <div class="section">5. Evidencias y seguridad</div>
+        <div class="field span2"><label>URL evidencias / carpeta</label><input id="evidencias_url" placeholder="SharePoint, Drive, OneDrive..."></div>
+        <div class="field"><label>Permiso de trabajo</label><input id="permiso_trabajo"></div>
+        <div class="field"><label>Riesgo / ATS</label><input id="ats"></div>
+        <div class="field span4"><div class="checks">
+          <label><input type="checkbox" id="epp_ok"> EPP verificado</label><label><input type="checkbox" id="senalizacion_ok"> Señalización instalada</label><label><input type="checkbox" id="limpieza_ok"> Área limpia al finalizar</label><label><input type="checkbox" id="servicio_normalizado"> Servicio normalizado</label>
+        </div></div>
+      </div>
+      <div class="footer"><button type="button" class="btn danger" id="deleteBtn" style="display:none;margin-right:auto" onclick="deletePreventivo()">Eliminar</button><button type="button" class="btn secondary" onclick="closeForm()">Cancelar</button><button class="btn primary" type="submit">Guardar</button></div>
+    </form>
+  </div>
+</div></div>
+
+<div class="modal" id="dashboardModal">
+  <div class="box dashboard-box">
+    <div class="box-head">
+      <div><strong>Dashboard de mantenimientos preventivos</strong><div class="hint">Análisis mensual, cumplimiento, tipos de mantenimiento, ciudades, costos y hallazgos.</div><div class="chart-click-hint">Haz clic sobre una barra, punto, segmento o KPI para ver los registros asociados.</div></div>
+      <button class="btn secondary" onclick="closeDashboard()">Cerrar</button>
+    </div>
+    <div class="box-body">
+      <div class="dash-kpis">
+        <div class="dash-mini"><div class="t">Ejecutados año</div><div class="n" id="dEjecAnio">0</div></div>
+        <div class="dash-mini"><div class="t">Programados año</div><div class="n" id="dProgAnio">0</div></div>
+        <div class="dash-mini"><div class="t">Cumplimiento</div><div class="n" id="dCumpl">0%</div></div>
+        <div class="dash-mini"><div class="t">Vencidos actuales</div><div class="n" id="dVenc">0</div></div>
+        <div class="dash-mini"><div class="t">Costo ejecutado</div><div class="n" id="dCosto">$0</div></div>
+      </div>
+      <div class="dashboard-grid">
+        <div class="dash-card wide"><h3>Preventivos programados vs ejecutados por mes</h3><div class="chart-holder"><canvas id="chartMes"></canvas></div></div>
+        <div class="dash-card"><h3>Preventivos realizados por tipo</h3><div class="chart-holder"><canvas id="chartTipo"></canvas></div></div>
+        <div class="dash-card"><h3>Preventivos realizados por ciudad</h3><div class="chart-holder"><canvas id="chartCiudad"></canvas></div></div>
+        <div class="dash-card"><h3>Estado actual de los preventivos</h3><div class="chart-holder"><canvas id="chartEstado"></canvas></div></div>
+        <div class="dash-card"><h3>Hallazgos por criticidad</h3><div class="chart-holder"><canvas id="chartCriticidad"></canvas></div></div>
+        <div class="dash-card wide"><h3>Costo de mantenimientos ejecutados por mes</h3><div class="chart-holder"><canvas id="chartCosto"></canvas></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="dashboardDetailModal">
+  <div class="box detail-modal-box">
+    <div class="box-head">
+      <div>
+        <strong id="dashboardDetailTitle">Detalle del indicador</strong>
+        <div class="hint" id="dashboardDetailSubtitle"></div>
+      </div>
+      <button class="btn secondary" onclick="closeDashboardDetail()">Cerrar</button>
+    </div>
+    <div class="box-body">
+      <div class="detail-headline">
+        <div class="detail-summary" id="dashboardDetailSummary"></div>
+        <button class="btn secondary small" type="button" onclick="exportDashboardDetailCSV()">Exportar detalle CSV</button>
+      </div>
+      <div class="detail-table-wrap">
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th>Código</th><th>Estado</th><th>Fecha programada</th><th>Fecha ejecución</th>
+              <th>Ciudad</th><th>Sitio/Nodo</th><th>Tipo</th><th>Activo / elemento</th>
+              <th>Red / tramo</th><th>OT / Ticket</th><th>Responsable</th><th>Contratista</th>
+              <th>Resultado</th><th>Criticidad</th><th>Costo</th><th>Próximo preventivo</th>
+            </tr>
+          </thead>
+          <tbody id="dashboardDetailBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Configure aquí su proyecto Supabase
+const SUPABASE_URL = 'PEGAR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'PEGAR_SUPABASE_ANON_KEY';
+const sb = (SUPABASE_URL.startsWith('http') && !SUPABASE_ANON_KEY.startsWith('PEGAR')) ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+let data = [];
+let dashboardCharts = {};
+let dashboardDetailRows = [];
+const tipos = ['AIRE ACONDICIONADO','PLANTA ELECTRICA','UPS','BANCO DE BATERIAS','RECTIFICADOR / SISTEMA DC','SISTEMA CONTRAINCENDIOS','TABLERO ELECTRICO','PUESTA A TIERRA','TRANSFERENCIA AUTOMATICA','GENERADOR','CONTROL DE ACCESO','CCTV','ASEO Y CONDICIONES LOCATIVAS','ODF / DISTRIBUIDOR OPTICO','RACK / GABINETE','SWITCH / ROUTER / EQUIPO TRANSMISION','MUFla / CIERRE DE EMPALME','CAJA DE EMPALME / NAP','CAMBIO / ASEGURAMIENTO DE HERrajes','PODA / LIBERACION DE FIBRA','RETESADO / ACOMODO DE CABLE','CANALIZACION / CAMARA / DUCTO','RUTA DE FIBRA / INSPECCION RED EXTERNA','MEDICION OTDR / POTENCIA','LIMPIEZA DE CONECTORES','RESERVA DE FIBRA','POSTERIA / APOYOS','OTRO'];
+const fields=['codigo','ciudad','sitio','ubicacion','tipo','categoria','prioridad','estado','fecha_programada','hora_programada','frecuencia','proxima_fecha','actividad','observaciones_programacion','activo_nombre','activo_marca','activo_modelo','activo_serial','activo_codigo','red_tramo','origen','destino','latitud','longitud','propietario_red','elemento_critico','orden_trabajo','ticket','responsable','contratista','fecha_inicio','fecha_fin','personal_participante','supervisor','actividades_ejecutadas','materiales_utilizados','costo_mano_obra','costo_materiales','otros_costos','indisponibilidad_min','resultado','criticidad_hallazgo','genera_correctivo','ot_correctivo','hallazgos','recomendaciones','acciones_pendientes','condicion_final','porcentaje_cumplimiento','pruebas_realizadas','mediciones','evidencias_url','permiso_trabajo','ats','epp_ok','senalizacion_ok','limpieza_ok','servicio_normalizado'];
+
+document.addEventListener('DOMContentLoaded',()=>{tipo.innerHTML=tipos.map(x=>`<option>${x}</option>`).join(''); fTipo.innerHTML='<option value="">Todos</option>'+tipos.map(x=>`<option>${x}</option>`).join(''); setDefaultDates(); loadData();});
+function setDefaultDates(){const d=new Date(); fDesde.value=`${d.getFullYear()}-01-01`; fHasta.value=d.toISOString().slice(0,10)}
+function normalizeStatus(r){if(r.estado==='EJECUTADO'||r.estado==='CANCELADO') return r.estado; if(r.fecha_programada && r.fecha_programada < new Date().toISOString().slice(0,10)) return 'VENCIDO'; return r.estado||'PENDIENTE'}
+async function loadData(){if(!sb){data=JSON.parse(localStorage.getItem('preventivos_demo')||'[]'); render(); return} const {data:d,error}=await sb.from('preventivos').select('*').order('fecha_programada',{ascending:false}); if(error){alert(error.message);return} data=d||[]; render()}
+function filtered(){let q=fQ.value.toLowerCase(),resp=fResp.value.toLowerCase(); return data.filter(r=>{let st=normalizeStatus(r); return (!fCiudad.value||r.ciudad===fCiudad.value)&&(!fTipo.value||r.tipo===fTipo.value)&&(!fEstado.value||st===fEstado.value)&&(!resp||(r.responsable||'').toLowerCase().includes(resp))&&(!fDesde.value||!r.fecha_programada||r.fecha_programada>=fDesde.value)&&(!fHasta.value||!r.fecha_programada||r.fecha_programada<=fHasta.value)&&(!q||[r.codigo,r.sitio,r.ubicacion,r.activo_nombre,r.red_tramo,r.orden_trabajo,r.ticket].join(' ').toLowerCase().includes(q))})}
+function render(){const rows=filtered(); const cities=[...new Set(data.map(x=>x.ciudad).filter(Boolean))].sort(); const keep=fCiudad.value; fCiudad.innerHTML='<option value="">Todas</option>'+cities.map(x=>`<option>${esc(x)}</option>`).join(''); fCiudad.value=keep; tbody.innerHTML=rows.map(r=>{let st=normalizeStatus(r),cost=(+r.costo_mano_obra||0)+(+r.costo_materiales||0)+(+r.otros_costos||0);return `<tr><td><div class="row-actions"><button class="btn secondary small" onclick="editForm('${r.id}')">Editar</button><button class="btn secondary small" onclick="duplicateRecord('${r.id}')">Duplicar</button></div></td><td><span class="pill ${st.replaceAll(' ','_')}">${st}</span></td><td>${fmt(r.fecha_programada)}</td><td>${fmt(r.fecha_fin||r.fecha_inicio)}</td><td>${esc(r.ciudad)}</td><td>${esc(r.sitio)}</td><td>${esc(r.tipo)}</td><td>${esc(r.activo_nombre)}</td><td>${esc(r.red_tramo)}</td><td>${esc(r.orden_trabajo||r.ticket)}</td><td>${esc(r.responsable)}</td><td>${esc(r.contratista)}</td><td>${esc(r.resultado)}</td><td>${esc(r.criticidad_hallazgo)}</td><td>${fmt(r.proxima_fecha)}</td><td>${cost.toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0})}</td><td>${r.evidencias_url?`<a href="${esc(r.evidencias_url)}" target="_blank">Abrir</a>`:''}</td></tr>`}).join(''); countLabel.textContent=`${rows.length} registros mostrados`; updateKpis(rows)}
+function updateKpis(rows){kTotal.textContent=rows.length;let pend=rows.filter(r=>['PENDIENTE','PROGRAMADO'].includes(normalizeStatus(r))).length,ven=rows.filter(r=>normalizeStatus(r)==='VENCIDO').length,ej=rows.filter(r=>normalizeStatus(r)==='EJECUTADO').length,cr=rows.filter(r=>['ALTA','CRITICA'].includes(r.criticidad_hallazgo)).length;kPend.textContent=pend;kVenc.textContent=ven;kEjec.textContent=ej;kCrit.textContent=cr;let vencEjec=rows.filter(r=>['EJECUTADO','VENCIDO'].includes(normalizeStatus(r))).length;kCumpl.textContent=(vencEjec?Math.round(ej/vencEjec*100):0)+'%'}
+function openForm(){frm.reset();id.value='';formTitle.textContent='Nuevo preventivo';deleteBtn.style.display='none';estado.value='PENDIENTE';prioridad.value='MEDIA';criticidad_hallazgo.value='NINGUNA';fecha_programada.value=new Date().toISOString().slice(0,10);modal.classList.add('open')}
+function editForm(i){const r=data.find(x=>String(x.id)===String(i));if(!r)return;openForm();id.value=r.id;formTitle.textContent='Editar preventivo';deleteBtn.style.display='block';fields.forEach(k=>{const el=document.getElementById(k);if(!el)return;if(el.type==='checkbox')el.checked=!!r[k];else if(el.type==='datetime-local'&&r[k])el.value=String(r[k]).slice(0,16);else el.value=r[k]??''})}
+function closeForm(){modal.classList.remove('open')}
+async function savePreventivo(e){e.preventDefault();let obj={};fields.forEach(k=>{const el=document.getElementById(k);if(el.type==='checkbox')obj[k]=el.checked;else if(['number'].includes(el.type))obj[k]=el.value===''?null:Number(el.value);else if(['elemento_critico','genera_correctivo'].includes(k))obj[k]=el.value==='true';else obj[k]=el.value||null});obj.estado=obj.estado||'PENDIENTE'; if(!obj.codigo)obj.codigo='PREV-'+new Date().getFullYear()+'-'+String(Date.now()).slice(-6); if(!sb){if(id.value){obj.id=id.value;data=data.map(x=>String(x.id)===String(id.value)?{...x,...obj}:x)}else{obj.id=crypto.randomUUID();data.unshift(obj)}localStorage.setItem('preventivos_demo',JSON.stringify(data));closeForm();render();return}let res=id.value?await sb.from('preventivos').update(obj).eq('id',id.value):await sb.from('preventivos').insert(obj);if(res.error){alert(res.error.message);return}closeForm();loadData()}
+async function deletePreventivo(){if(!id.value||!confirm('¿Eliminar este registro?'))return;if(!sb){data=data.filter(x=>String(x.id)!==String(id.value));localStorage.setItem('preventivos_demo',JSON.stringify(data));closeForm();render();return}const {error}=await sb.from('preventivos').delete().eq('id',id.value);if(error){alert(error.message);return}closeForm();loadData()}
+function duplicateRecord(i){
+  const r=data.find(x=>String(x.id)===String(i));
+  if(!r)return;
+  openForm();
+  id.value='';
+  formTitle.textContent='Duplicar preventivo';
+  deleteBtn.style.display='none';
+  fields.forEach(k=>{
+    const el=document.getElementById(k); if(!el)return;
+    if(el.type==='checkbox') el.checked=!!r[k];
+    else if(el.type==='datetime-local'&&r[k]) el.value=String(r[k]).slice(0,16);
+    else el.value=r[k]??'';
+  });
+  // Se limpian identificadores y datos propios de una ejecución para evitar duplicados involuntarios.
+  codigo.value=''; orden_trabajo.value=''; ticket.value=''; ot_correctivo.value=''; evidencias_url.value='';
+  fecha_inicio.value=''; fecha_fin.value=''; estado.value='PENDIENTE'; resultado.value='';
+  hallazgos.value=''; acciones_pendientes.value=''; recomendaciones.value=''; mediciones.value='';
+  porcentaje_cumplimiento.value='';
+}
+
+function closeDashboard(){dashboardModal.classList.remove('open')}
+function openDashboard(){dashboardModal.classList.add('open'); renderDashboard()}
+function closeDashboardDetail(){dashboardDetailModal.classList.remove('open')}
+function destroyDashboardCharts(){Object.values(dashboardCharts).forEach(c=>{try{c.destroy()}catch(e){}});dashboardCharts={}}
+
+const valueLabelPlugin={
+  id:'valueLabelPlugin',
+  afterDatasetsDraw(chart){
+    const {ctx}=chart;
+    ctx.save();
+    chart.data.datasets.forEach((dataset,datasetIndex)=>{
+      const meta=chart.getDatasetMeta(datasetIndex);
+      if(meta.hidden)return;
+      meta.data.forEach((element,index)=>{
+        const val=Number(dataset.data[index]);
+        if(!Number.isFinite(val) || val===0)return;
+        const p=element.tooltipPosition();
+        let text=dataset._format==='currency'
+          ? '$'+val.toLocaleString('es-CO',{maximumFractionDigits:0})
+          : val.toLocaleString('es-CO',{maximumFractionDigits:1});
+        ctx.font='700 11px Arial';
+        ctx.lineWidth=3;
+        ctx.strokeStyle='rgba(4,15,27,.92)';
+        ctx.fillStyle='#f8fbff';
+        let x=p.x,y=p.y-5;
+        ctx.textAlign='center';
+        ctx.textBaseline='bottom';
+
+        if(chart.config.type==='doughnut'){
+          const props=element.getProps(['x','y','startAngle','endAngle','innerRadius','outerRadius'],true);
+          const angle=(props.startAngle+props.endAngle)/2;
+          const radius=(props.innerRadius+props.outerRadius)/2;
+          x=props.x+Math.cos(angle)*radius;
+          y=props.y+Math.sin(angle)*radius;
+          ctx.textBaseline='middle';
+        }
+        if(chart.options.indexAxis==='y'){
+          ctx.textAlign='left';
+          ctx.textBaseline='middle';
+          x=p.x+7;
+          y=p.y;
+        }
+        ctx.strokeText(text,x,y);
+        ctx.fillText(text,x,y);
+      });
+    });
+    ctx.restore();
+  }
+};
+
+function totalCostRow(r){return (+r.costo_mano_obra||0)+(+r.costo_materiales||0)+(+r.otros_costos||0)}
+function execDate(r){return r.fecha_fin||r.fecha_inicio||''}
+function monthOf(v){return v?Number(String(v).slice(5,7))-1:-1}
+
+function showDashboardDetail(title,subtitle,rows){
+  dashboardDetailRows=[...rows];
+  dashboardDetailTitle.textContent=title;
+  dashboardDetailSubtitle.textContent=subtitle||'';
+  const totalCost=rows.reduce((a,r)=>a+totalCostRow(r),0);
+  dashboardDetailSummary.textContent=`${rows.length} registro(s) · Costo acumulado: ${totalCost.toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0})}`;
+  dashboardDetailBody.innerHTML=rows.length?rows.map(r=>{
+    const st=normalizeStatus(r), cost=totalCostRow(r);
+    return `<tr>
+      <td>${esc(r.codigo)}</td><td><span class="pill ${st.replaceAll(' ','_')}">${esc(st)}</span></td>
+      <td>${fmt(r.fecha_programada)}</td><td>${fmt(r.fecha_fin||r.fecha_inicio)}</td>
+      <td>${esc(r.ciudad)}</td><td>${esc(r.sitio)}</td><td>${esc(r.tipo)}</td><td>${esc(r.activo_nombre)}</td>
+      <td>${esc(r.red_tramo)}</td><td>${esc(r.orden_trabajo||r.ticket)}</td><td>${esc(r.responsable)}</td><td>${esc(r.contratista)}</td>
+      <td>${esc(r.resultado)}</td><td>${esc(r.criticidad_hallazgo)}</td>
+      <td>${cost.toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0})}</td><td>${fmt(r.proxima_fecha)}</td>
+    </tr>`;
+  }).join(''):`<tr><td colspan="16" style="text-align:center;color:#9fb0c7;padding:24px">No hay registros para este dato.</td></tr>`;
+  dashboardDetailModal.classList.add('open');
+}
+
+function exportDashboardDetailCSV(){
+  if(!dashboardDetailRows.length)return alert('No hay registros en el detalle para exportar');
+  const cols=['codigo','estado','fecha_programada','fecha_inicio','fecha_fin','ciudad','sitio','tipo','activo_nombre','red_tramo','orden_trabajo','ticket','responsable','contratista','resultado','criticidad_hallazgo','proxima_fecha'];
+  const head=[...cols,'costo_total'];
+  const csv='\ufeff'+head.join(';')+'\n'+dashboardDetailRows.map(r=>{
+    const vals=cols.map(c=>c==='estado'?normalizeStatus(r):r[c]);
+    vals.push(totalCostRow(r));
+    return vals.map(v=>'"'+String(v??'').replaceAll('"','""')+'"').join(';');
+  }).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  a.download='detalle_dashboard_preventivos.csv';
+  a.click();
+}
+
+function chartClickHandler(resolver){
+  return (evt,elements,chart)=>{
+    const pts=chart.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);
+    if(!pts.length)return;
+    const p=pts[0];
+    const result=resolver(p.index,p.datasetIndex,chart);
+    if(result)showDashboardDetail(result.title,result.subtitle,result.rows||[]);
+  };
+}
+
+function renderDashboard(){
+  destroyDashboardCharts();
+  const year=new Date().getFullYear();
+  const yearRows=data.filter(r=>{const d=r.fecha_fin||r.fecha_inicio||r.fecha_programada; return d && Number(String(d).slice(0,4))===year});
+  const execRows=yearRows.filter(r=>normalizeStatus(r)==='EJECUTADO');
+  const progRows=yearRows.filter(r=>r.fecha_programada);
+  const vencRows=data.filter(r=>normalizeStatus(r)==='VENCIDO');
+  const cumplimientoDen=yearRows.filter(r=>['EJECUTADO','VENCIDO'].includes(normalizeStatus(r))).length;
+  const totalCost=execRows.reduce((a,r)=>a+totalCostRow(r),0);
+
+  dEjecAnio.textContent=execRows.length;
+  dProgAnio.textContent=progRows.length;
+  dVenc.textContent=vencRows.length;
+  dCumpl.textContent=(cumplimientoDen?Math.round(execRows.length/cumplimientoDen*100):0)+'%';
+  dCosto.textContent=totalCost.toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0});
+
+  [
+    [dEjecAnio,'Ejecutados del año',String(year),execRows],
+    [dProgAnio,'Programados del año',String(year),progRows],
+    [dVenc,'Preventivos vencidos','Estado actual',vencRows],
+    [dCosto,'Costo ejecutado del año',String(year),execRows],
+    [dCumpl,'Registros considerados en cumplimiento',String(year),yearRows.filter(r=>['EJECUTADO','VENCIDO'].includes(normalizeStatus(r)))]
+  ].forEach(([el,title,sub,rows])=>{
+    el.parentElement.style.cursor='pointer';
+    el.parentElement.onclick=()=>showDashboardDetail(title,sub,rows);
+  });
+
+  const months=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const prog=months.map((_,m)=>yearRows.filter(r=>r.fecha_programada&&monthOf(r.fecha_programada)===m).length);
+  const exec=months.map((_,m)=>execRows.filter(r=>execDate(r)&&monthOf(execDate(r))===m).length);
+  const cost=months.map((_,m)=>execRows.filter(r=>execDate(r)&&monthOf(execDate(r))===m).reduce((a,r)=>a+totalCostRow(r),0));
+
+  const baseOpts={
+    responsive:true,maintainAspectRatio:false,
+    interaction:{mode:'nearest',intersect:true},
+    plugins:{legend:{labels:{color:'#dbeafe'}},tooltip:{enabled:true}},
+    scales:{
+      x:{ticks:{color:'#9fb0c7'},grid:{color:'rgba(148,163,184,.10)'}},
+      y:{beginAtZero:true,ticks:{color:'#9fb0c7',precision:0},grid:{color:'rgba(148,163,184,.10)'},suggestedMax:Math.max(5,...prog,...exec)+2}
+    }
+  };
+
+  dashboardCharts.mes=new Chart(chartMes,{
+    type:'bar',plugins:[valueLabelPlugin],
+    data:{labels:months,datasets:[{label:'Programados',data:prog},{label:'Ejecutados',data:exec}]},
+    options:{...baseOpts,onClick:chartClickHandler((idx,ds)=>{
+      const rows=ds===0
+        ? yearRows.filter(r=>r.fecha_programada&&monthOf(r.fecha_programada)===idx)
+        : execRows.filter(r=>execDate(r)&&monthOf(execDate(r))===idx);
+      return {title:`${ds===0?'Programados':'Ejecutados'} - ${months[idx]} ${year}`,subtitle:`${rows.length} registro(s)`,rows};
+    })}
+  });
+
+  const group=(rows,key)=>{const o={};rows.forEach(r=>{const k=r[key]||'SIN INFORMACIÓN';o[k]=(o[k]||0)+1});return o};
+
+  const t=group(execRows,'tipo'), tLabels=Object.keys(t);
+  dashboardCharts.tipo=new Chart(chartTipo,{
+    type:'bar',plugins:[valueLabelPlugin],
+    data:{labels:tLabels,datasets:[{label:'Ejecutados',data:Object.values(t)}]},
+    options:{...baseOpts,indexAxis:'y',onClick:chartClickHandler(idx=>{
+      const label=tLabels[idx], rows=execRows.filter(r=>(r.tipo||'SIN INFORMACIÓN')===label);
+      return {title:`Tipo: ${label}`,subtitle:`Preventivos ejecutados en ${year}`,rows};
+    })}
+  });
+
+  const c=group(execRows,'ciudad'), cLabels=Object.keys(c);
+  dashboardCharts.ciudad=new Chart(chartCiudad,{
+    type:'bar',plugins:[valueLabelPlugin],
+    data:{labels:cLabels,datasets:[{label:'Ejecutados',data:Object.values(c)}]},
+    options:{...baseOpts,onClick:chartClickHandler(idx=>{
+      const label=cLabels[idx], rows=execRows.filter(r=>(r.ciudad||'SIN INFORMACIÓN')===label);
+      return {title:`Ciudad: ${label}`,subtitle:`Preventivos ejecutados en ${year}`,rows};
+    })}
+  });
+
+  const states={};data.forEach(r=>{const st=normalizeStatus(r);states[st]=(states[st]||0)+1});
+  const stateLabels=Object.keys(states);
+  dashboardCharts.estado=new Chart(chartEstado,{
+    type:'doughnut',plugins:[valueLabelPlugin],
+    data:{labels:stateLabels,datasets:[{data:Object.values(states)}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#dbeafe'}}},
+      onClick:chartClickHandler(idx=>{
+        const label=stateLabels[idx], rows=data.filter(r=>normalizeStatus(r)===label);
+        return {title:`Estado: ${label}`,subtitle:'Todos los registros',rows};
+      })
+    }
+  });
+
+  const cr=group(execRows,'criticidad_hallazgo'), crLabels=Object.keys(cr);
+  dashboardCharts.crit=new Chart(chartCriticidad,{
+    type:'doughnut',plugins:[valueLabelPlugin],
+    data:{labels:crLabels,datasets:[{data:Object.values(cr)}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#dbeafe'}}},
+      onClick:chartClickHandler(idx=>{
+        const label=crLabels[idx], rows=execRows.filter(r=>(r.criticidad_hallazgo||'SIN INFORMACIÓN')===label);
+        return {title:`Criticidad: ${label}`,subtitle:`Preventivos ejecutados en ${year}`,rows};
+      })
+    }
+  });
+
+  dashboardCharts.costo=new Chart(chartCosto,{
+    type:'line',plugins:[valueLabelPlugin],
+    data:{labels:months,datasets:[{label:'Costo mensual',data:cost,tension:.25,fill:false,_format:'currency',pointRadius:5,pointHoverRadius:7}]},
+    options:{
+      ...baseOpts,
+      onClick:chartClickHandler(idx=>{
+        const rows=execRows.filter(r=>execDate(r)&&monthOf(execDate(r))===idx);
+        return {title:`Costo ejecutado - ${months[idx]} ${year}`,subtitle:`Total: ${cost[idx].toLocaleString('es-CO',{style:'currency',currency:'COP',maximumFractionDigits:0})}`,rows};
+      }),
+      scales:{x:baseOpts.scales.x,y:{...baseOpts.scales.y,suggestedMax:undefined,ticks:{color:'#9fb0c7',callback:v=>'$'+Number(v).toLocaleString('es-CO')}}}
+    }
+  });
+}
+function exportCSV(){let rows=filtered();if(!rows.length)return alert('No hay datos para exportar');let cols=['codigo','estado','fecha_programada','fecha_inicio','fecha_fin','ciudad','sitio','ubicacion','tipo','categoria','activo_nombre','activo_serial','red_tramo','orden_trabajo','ticket','responsable','contratista','resultado','criticidad_hallazgo','hallazgos','acciones_pendientes','proxima_fecha','evidencias_url'];let csv='\ufeff'+cols.join(';')+'\n'+rows.map(r=>cols.map(c=>'"'+String(r[c]??'').replaceAll('"','""')+'"').join(';')).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='preventivos.csv';a.click()}
+function fmt(v){if(!v)return'';let s=String(v);return s.includes('T')?new Date(s).toLocaleString('es-CO'):s.slice(0,10)} function esc(v){return String(v??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
+</script>
+</body></html>
