@@ -21,7 +21,7 @@
     }
     .app{height:100vh;display:grid;grid-template-rows:auto 1fr}
     .topbar{
-      padding:14px 16px;display:grid;grid-template-columns:230px 1fr 180px 170px 140px 140px 140px 140px 145px 145px 120px;gap:10px;
+      padding:14px 16px;display:grid;grid-template-columns:230px 1fr 180px 170px 140px 140px 140px 140px 155px 145px 145px 120px;gap:10px;
       border-bottom:1px solid rgba(38,50,69,.5);background:rgba(7,17,31,.68);backdrop-filter:blur(8px);align-items:center;
     }
     .brand{font-size:20px;font-weight:700;white-space:nowrap}
@@ -108,6 +108,80 @@
     .port-section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 4px;color:#9fb6d2;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
     .port-section-title span:last-child{padding:1px 5px;border:1px solid #33465f;border-radius:999px;background:#0c1a2b;color:#d4e8fb}
     .ports{display:grid;grid-template-columns:repeat(auto-fill,minmax(14px,1fr));gap:3px}
+
+    /* ===== Identificación visual por cable ===== */
+    .cable-legend{
+      display:flex;
+      flex-wrap:wrap;
+      gap:5px 8px;
+      align-items:center;
+      margin:5px 0 7px;
+      padding:5px 6px;
+      border:1px solid rgba(80,112,148,.22);
+      border-radius:8px;
+      background:rgba(5,14,25,.38);
+    }
+    .cable-legend-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:5px;
+      font-size:8px;
+      color:#d5e7f8;
+      white-space:nowrap;
+    }
+    .cable-legend-swatch{
+      width:10px;
+      height:10px;
+      border-radius:3px;
+      background:var(--chip-color);
+      box-shadow:0 0 0 1px rgba(255,255,255,.20);
+    }
+    .port.cable-marked{
+      border-color:var(--cable-color) !important;
+      box-shadow:
+        0 0 0 2px color-mix(in srgb, var(--cable-color) 45%, transparent),
+        inset 0 0 0 1px rgba(255,255,255,.08);
+    }
+    .port.cable-marked::before{
+      content:'';
+      position:absolute;
+      inset:-3px;
+      border-radius:8px;
+      background:var(--cable-color);
+      opacity:.20;
+      z-index:-1;
+      pointer-events:none;
+    }
+    .port.cable-marked:hover::before{opacity:.34}
+    .port.cable-start::before{
+      box-shadow:-3px 0 0 0 var(--cable-color);
+    }
+    .port.cable-end::before{
+      box-shadow:3px 0 0 0 var(--cable-color);
+    }
+    .port-box.cable-marked{
+      border-color:var(--cable-color) !important;
+      box-shadow:
+        0 0 0 2px color-mix(in srgb, var(--cable-color) 45%, transparent),
+        inset 0 0 0 1px rgba(255,255,255,.10);
+    }
+    .cable-section-caption{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      margin:4px 0 5px;
+      color:#9fb6d2;
+      font-size:8px;
+      line-height:1.2;
+    }
+    .cable-section-caption .swatch{
+      width:9px;
+      height:9px;
+      border-radius:3px;
+      background:var(--caption-color);
+      flex:0 0 auto;
+    }
+
     .port.wan,.port-box.wan{box-shadow:inset 0 0 0 1px rgba(38,198,255,.75)}
     .port.admin,.port-box.admin{box-shadow:inset 0 0 0 1px rgba(168,85,247,.8)}
     .special-port-label{font-size:6px;letter-spacing:-.02em}
@@ -118,12 +192,30 @@
     .port:hover{transform:translateY(-1px) scale(1.04);border-color:#7ddfff;box-shadow:0 0 0 3px rgba(38,198,255,.12);z-index:5}
     .port.free{background:var(--free)} .port.occupied{background:var(--ok)} .port.reserved{background:var(--warn)} .port.danado{background:var(--danger)}
     .port.connecting{box-shadow:0 0 0 3px rgba(255,215,0,.35); border-color:#ffd84d}
-    .port::after{
-      content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);
-      background:#06101d;color:#d8e6f8;font-size:11px;padding:6px 8px;border-radius:8px;border:1px solid #2b3a4d;
-      white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s ease;z-index:20
+    .port::after{display:none!important}
+    .floating-port-tooltip{
+      position:fixed;
+      z-index:20000;
+      max-width:min(430px,calc(100vw - 24px));
+      padding:7px 9px;
+      border-radius:8px;
+      border:1px solid #38516d;
+      background:#06101d;
+      color:#e6f1ff;
+      box-shadow:0 8px 22px rgba(0,0,0,.45);
+      font-size:11px;
+      line-height:1.35;
+      white-space:normal;
+      overflow-wrap:anywhere;
+      pointer-events:none;
+      opacity:0;
+      transform:translateY(4px);
+      transition:opacity .10s ease, transform .10s ease;
     }
-    .port:hover::after{opacity:1}
+    .floating-port-tooltip.show{
+      opacity:1;
+      transform:translateY(0);
+    }
 
     .rack-node.racku{width:420px}
     .rack-visual{display:grid;grid-template-columns:44px 1fr;padding:10px;gap:10px}
@@ -360,6 +452,109 @@
       .connection-filter-list{grid-template-columns:1fr}
     }
 
+
+    .tray-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+    .tray-toolbar button{width:auto;min-width:130px}
+    .tray-help{
+      padding:12px;border:1px solid #2d3c50;border-radius:14px;background:#0b1728;
+      color:#b9cbe0;font-size:12px;line-height:1.55
+    }
+    .tray-status{
+      margin-top:10px;padding:9px 11px;border-radius:10px;background:#0a1626;
+      border:1px solid #2a3d56;color:#7ddfff;font-size:11px
+    }
+    .tray-list{display:grid;gap:8px;max-height:280px;overflow:auto;margin-top:12px}
+    .tray-list-item{
+      display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:8px;
+      padding:9px 10px;border:1px solid #2d3c50;border-radius:12px;background:#0b1728
+    }
+    .tray-list-name{font-size:12px;font-weight:700}
+    .tray-list-meta{font-size:10px;color:var(--muted);margin-top:2px}
+    .tray-small-btn{width:auto!important;min-width:78px!important;padding:6px 9px!important;font-size:11px!important}
+    .tray-danger-btn{background:#7f1d1d!important;border:1px solid #ef4444!important}
+    .tray-drawing-active{cursor:crosshair!important}
+    .tray-point{
+      pointer-events:all;cursor:grab;filter:drop-shadow(0 0 5px rgba(38,198,255,.9))
+    }
+    .tray-point:active{cursor:grabbing}
+    .tray-segment{pointer-events:stroke;cursor:pointer}
+
+
+    .cable-section{border:1px solid #2d3c50;border-radius:16px;background:rgba(10,18,31,.72);padding:14px;margin-bottom:14px}
+    .cable-section h4{margin:0 0 12px;font-size:15px;color:#dff3ff}
+    .cable-list{display:grid;gap:8px;margin-top:12px;max-height:260px;overflow:auto}
+    .cable-item{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:10px;border:1px solid #2d3c50;border-radius:12px;background:#0b1728}
+    .cable-name{font-size:12px;font-weight:700;color:#e3effc}
+    .cable-meta{font-size:10px;color:var(--muted);margin-top:2px}
+    .cable-actions{display:flex;gap:6px}
+    .cable-actions button{width:auto;min-width:80px;padding:6px 9px;font-size:11px}
+
+
+    /* ===== Ajustes visuales ODF + colores configurables ===== */
+    .eq-odf-inline{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:5px;
+      flex-wrap:nowrap;
+      white-space:nowrap;
+    }
+    .eq-odf-inline .eq-type,
+    .eq-odf-inline .eq-u,
+    .eq-odf-inline .eq-edit-btn,
+    .eq-odf-inline .eq-port-count-inline{
+      margin:0;
+      flex:0 0 auto;
+    }
+    .eq-port-count-inline{
+      font-size:9px;
+      padding:3px 6px;
+      border-radius:999px;
+      border:1px solid #33465f;
+      background:#0c1a2b;
+      color:#d4e8fb;
+    }
+    .port-section-title.odf-normal-title span:last-child{
+      display:none;
+    }
+    .cable-color-row{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:10px;
+      align-items:center;
+      margin-top:8px;
+    }
+    .cable-color-control{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .cable-color-control input[type="color"]{
+      width:42px;
+      height:30px;
+      padding:2px;
+      border-radius:8px;
+      cursor:pointer;
+      background:#0b1728;
+    }
+    .cable-color-control button{
+      width:auto;
+      min-width:76px;
+      padding:6px 8px;
+      font-size:10px;
+    }
+    body.cable-colors-off .cable-legend{
+      display:none !important;
+    }
+    body.cable-colors-off .port.cable-marked,
+    body.cable-colors-off .port-box.cable-marked{
+      border-color:rgba(255,255,255,.10) !important;
+      box-shadow:none !important;
+    }
+    body.cable-colors-off .port.cable-marked::before{
+      display:none !important;
+    }
+
     @media(max-width:1100px){
       .dashboard-filters{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
@@ -383,6 +578,7 @@
     <div class="topbar">
       <div class="brand">Inventario Visual Fibra</div>
       <input id="searchClient" placeholder="Buscar cliente por nombre o ID de servicio" onkeydown="if(event.key==='Enter'){searchClients()}">
+      <select id="cableFilter" onchange="changeCableFilter()"><option value="">Todos los cables</option></select>
       <select id="rackFilter" onchange="loadDashboard()"><option value="">Todos los racks</option></select>
       <select id="viewMode" onchange="changeViewMode()">
         <option value="compact">Vista compacta</option>
@@ -391,9 +587,19 @@
       <button class="secondary" onclick="searchClients()">Buscar cliente</button>
       <button class="secondary" onclick="openRackModal()">Agregar rack</button>
       <button class="secondary" onclick="openEquipmentModal()">Agregar equipo</button>
+      <button class="secondary" onclick="openCableModal()">Cables</button>
+      <select id="cableColorsToggle" onchange="changeCableColorsVisibility()">
+        <option value="off">Colores cables: No</option>
+        <option value="on">Colores cables: Sí</option>
+      </select>
       <button class="secondary" onclick="openDashboardModal()">Dashboard</button>
       <button class="secondary" onclick="exportOccupiedPortsExcel()">Reporte Excel</button>
       <button class="secondary" onclick="openConnectionEquipmentFilter()">Filtrar conexiones</button>
+      <button class="secondary" onclick="openCableTrayModal()">Canaletas</button>
+      <select id="connectionRouteMode" onchange="changeConnectionRouteMode()">
+        <option value="directas">Líneas directas</option>
+        <option value="canaletas">Usar canaletas</option>
+      </select>
       <select id="toggleConnections" onchange="changeConnectionsVisibility()">
         <option value="show">Mostrar conexiones</option>
         <option value="hide">Ocultar conexiones</option>
@@ -418,6 +624,102 @@
   <div id="toast" class="toast hidden"></div>
 
 
+
+
+
+  <div id="cableModal" class="modal-backdrop">
+    <div class="modal medium">
+      <h3>Gestión de cables</h3>
+      <div class="modal-subtitle">Crea cables de fibra y asígnalos a un rango de puertos de un ODF.</div>
+
+      <div class="cable-section">
+        <h4>Crear y asignar cable</h4>
+
+        <div class="field"><label>Nombre del cable</label><input id="cableName" placeholder="Ej. Cable 1"></div>
+
+        <div class="form-grid">
+          <div class="field">
+            <label>Capilaridad</label>
+            <select id="cableCapacity">
+              <option value="24H">24H</option>
+              <option value="48H">48H</option>
+              <option value="72H">72H</option>
+              <option value="96H">96H</option>
+              <option value="144H">144H</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Tipo de fibra</label>
+            <select id="cableFiberType">
+              <option value="ADSS">ADSS</option>
+              <option value="ARMADA">ARMADA</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>ODF existente</label>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center">
+            <select id="cableOdf"></select>
+            <button type="button" class="secondary" style="width:auto" onclick="refreshCableOdfSelect()">Actualizar ODF</button>
+          </div>
+          <div id="cableOdfInfo" style="margin-top:6px;font-size:10px;color:var(--muted)"></div>
+        </div>
+
+        <div class="field">
+          <label>Puertos / rangos a asignar</label>
+          <input id="cablePortExpression" placeholder="Ej. 97-109,111-144  ó  110,120">
+          <div style="margin-top:6px;font-size:10px;color:var(--muted);line-height:1.45">
+            Puedes combinar rangos y puertos individuales separados por coma.
+            Ejemplos: <strong>1-48</strong>, <strong>97-109,111-144</strong>,
+            <strong>110,120</strong> o <strong>1-24,30,35-40</strong>.
+          </div>
+          <div id="cablePortExpressionInfo" style="margin-top:6px;font-size:10px;color:#7ddfff"></div>
+        </div>
+
+        <div class="actions"><button onclick="saveCableAndAssign()">Guardar cable y asignar</button></div>
+      </div>
+
+      <div class="cable-section">
+        <h4>Cables registrados</h4>
+        <div id="cableList" class="cable-list"></div>
+      </div>
+
+      <div class="actions"><button class="secondary" onclick="closeCableModal()">Cerrar</button></div>
+    </div>
+  </div>
+
+  <div id="cableTrayModal" class="modal-backdrop">
+    <div class="modal medium">
+      <h3>Administrador de canaletas</h3>
+      <div class="modal-subtitle">
+        Dibuja rutas maestras para ordenar las conexiones amarillas.
+      </div>
+
+      <div class="tray-help">
+        <strong>Cómo dibujar:</strong><br>
+        1. Pulsa <strong>Nueva canaleta</strong>.<br>
+        2. Haz clic dentro del plano para agregar puntos.<br>
+        3. Haz doble clic para finalizar.<br>
+        4. Después puedes arrastrar los puntos azules para reorganizar la ruta.<br>
+        5. Con el modo <strong>Usar canaletas</strong>, los cables seguirán la canaleta más cercana.
+      </div>
+
+      <div class="tray-toolbar">
+        <button onclick="startCableTrayDrawing()">Nueva canaleta</button>
+        <button class="secondary" onclick="cancelCableTrayDrawing()">Cancelar dibujo</button>
+        <button class="secondary" onclick="toggleCableTraysVisibility()">Mostrar / ocultar</button>
+        <button class="danger" onclick="deleteAllCableTrays()">Eliminar todas</button>
+      </div>
+
+      <div id="cableTrayStatus" class="tray-status">Sin dibujo activo.</div>
+      <div id="cableTrayList" class="tray-list"></div>
+
+      <div class="actions">
+        <button class="secondary" onclick="closeCableTrayModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
 
   <div id="connectionEquipmentFilterModal" class="modal-backdrop">
     <div class="modal medium">
@@ -496,6 +798,32 @@
           </table>
         </div>
       </div>
+
+      <div class="dashboard-card" style="margin-top:16px">
+        <h4>Ocupación de cables</h4>
+        <div class="dashboard-filter-summary">
+          Ordenados automáticamente de mayor a menor porcentaje de ocupación.
+          El porcentaje se calcula sobre la capilaridad total del cable.
+        </div>
+        <div class="dashboard-table-wrap">
+          <table class="dashboard-table" style="min-width:820px">
+            <thead>
+              <tr>
+                <th>Cable</th>
+                <th>Capilaridad</th>
+                <th>Tipo de fibra</th>
+                <th>ODF</th>
+                <th>Puertos asignados</th>
+                <th>Ocupados</th>
+                <th>Disponibles</th>
+                <th>% ocupación</th>
+              </tr>
+            </thead>
+            <tbody id="dashboardCableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="actions"><button class="secondary" onclick="closeDashboardModal()">Cerrar</button></div>
     </div>
   </div>
@@ -720,14 +1048,20 @@
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
     let supabase = null;
-    let racks = [], equipments = [], ports = [], clients = [], assignments = [], links = [];
+    let racks = [], equipments = [], ports = [], clients = [], assignments = [], links = [], cables = [];
     let currentPortContext = null;
     let currentEquipmentViewId = null;
     let editingEquipmentId = null;
     let pendingDragPrefill = null;
     let filteredClientPortIds = null;
     let connectionEquipmentFilterIds = null;
+    let cableTrays = [];
+    let cableTraysVisible = true;
+    let connectionRouteMode = 'directas';
+    let activeTrayDrawing = null;
+    let draggingTrayPoint = null;
     let filteredClientLinkKeys = null;
+    let selectedCableId = '';
     let dragConnection = {
       sourcePortId: null,
       sourceEl: null,
@@ -740,8 +1074,13 @@
     const POS_KEY = 'rack_visual_positions_v4';
     const VIEW_KEY = 'rack_visual_view_mode';
     const CONNECTIONS_KEY = 'rack_visual_show_connections';
+    const CABLE_TRAYS_KEY = 'rack_visual_cable_trays_v1';
+    const CABLE_TRAYS_VISIBLE_KEY = 'rack_visual_cable_trays_visible_v1';
+    const CONNECTION_ROUTE_MODE_KEY = 'rack_visual_connection_route_mode_v2';
     const CONNECTION_EQUIPMENT_FILTER_KEY = 'rack_visual_connection_equipment_filter_v1';
     const ROUTES_KEY = 'rack_visual_link_routes_v3';
+    const CABLE_COLORS_KEY = 'rack_visual_cable_colors_v1';
+    const CABLE_COLORS_VISIBLE_KEY = 'rack_visual_cable_colors_visible_v1';
     const DEFAULT_URL = 'https://lvwmpwnzavqdspdfvceb.supabase.co';
     const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2d21wd256YXZxZHNwZGZ2Y2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxOTg3MzYsImV4cCI6MjA5MTc3NDczNn0.u6g4OCm4kl-LEmyIf9VWwf43cdqYbik7Y60rdKQ8npI';
 
@@ -1045,7 +1384,7 @@
     };
     window.closeDeleteEquipmentModal = () => document.getElementById('deleteEquipmentModal').classList.remove('show');
 
-    ['rackModal','equipmentModal','deleteEquipmentModal','equipmentViewModal'].forEach(id => {
+    ['cableModal','cableTrayModal','rackModal','equipmentModal','deleteEquipmentModal','equipmentViewModal'].forEach(id => {
       document.addEventListener('click', (e) => {
         if (e.target && e.target.id === id) document.getElementById(id).classList.remove('show');
       });
@@ -1074,6 +1413,14 @@
         supabase.from('port_links').select('*')
       ]);
 
+      let cablesRes = { data: [], error: null };
+      try {
+        cablesRes = await supabase.from('cables').select('*').order('nombre');
+      } catch (cableLoadError) {
+        console.warn('No se pudo cargar el módulo de cables:', cableLoadError);
+        cablesRes = { data: [], error: cableLoadError };
+      }
+
       if (racksRes.error || eqRes.error || portsRes.error || clientsRes.error || assignmentsRes.error || linksRes.error) {
         console.error(racksRes.error, eqRes.error, portsRes.error, clientsRes.error, assignmentsRes.error, linksRes.error);
         toast('Error cargando datos');
@@ -1086,6 +1433,10 @@
       clients = clientsRes.data || [];
       assignments = assignmentsRes.data || [];
       links = linksRes.data || [];
+      cables = (!cablesRes?.error && Array.isArray(cablesRes?.data)) ? cablesRes.data : [];
+      if (cablesRes?.error) {
+        console.warn('Inventario cargado correctamente, pero la tabla cables no está disponible:', cablesRes.error);
+      }
 
       if (rackFilter) {
         equipments = equipments.filter(e => e.rack_id === rackFilter);
@@ -1111,6 +1462,25 @@
         });
         select.value = current;
       });
+
+      const cableSelect = document.getElementById('cableFilter');
+      if (cableSelect) {
+        const currentCable = selectedCableId || cableSelect.value;
+        cableSelect.innerHTML = '<option value="">Todos los cables</option>';
+        cables.forEach(cable => {
+          const opt = document.createElement('option');
+          opt.value = cable.id;
+          opt.textContent = `${cable.nombre} · ${cable.capilaridad} · ${cable.tipo_fibra}`;
+          cableSelect.appendChild(opt);
+        });
+        const exists = cables.some(cable => String(cable.id) === String(currentCable));
+        if (currentCable && exists) {
+          cableSelect.value = currentCable;
+        } else {
+          selectedCableId = '';
+          cableSelect.value = '';
+        }
+      }
     }
 
     const getRackById = id => racks.find(r => r.id === id) || null;
@@ -1151,6 +1521,556 @@
         if (insAssign.error) throw insAssign.error;
       }
     }
+
+
+
+    const CABLE_VISUAL_PALETTE = [
+      '#38bdf8', '#a78bfa', '#f472b6', '#fb923c', '#facc15',
+      '#34d399', '#2dd4bf', '#60a5fa', '#c084fc', '#f87171',
+      '#84cc16', '#22d3ee', '#e879f9', '#f59e0b', '#4ade80'
+    ];
+
+    function getSavedCableColors() {
+      try {
+        const data = JSON.parse(localStorage.getItem(CABLE_COLORS_KEY) || '{}');
+        return data && typeof data === 'object' ? data : {};
+      } catch {
+        return {};
+      }
+    }
+
+    function saveCableColorLocal(cableId, color) {
+      const map = getSavedCableColors();
+      map[String(cableId)] = color;
+      localStorage.setItem(CABLE_COLORS_KEY, JSON.stringify(map));
+    }
+
+    function getCableColorsVisible() {
+      const saved = localStorage.getItem(CABLE_COLORS_VISIBLE_KEY);
+      return saved === 'on';
+    }
+
+    function applyCableColorsVisibility() {
+      const visible = getCableColorsVisible();
+      document.body.classList.toggle('cable-colors-off', !visible);
+      const sel = document.getElementById('cableColorsToggle');
+      if (sel) sel.value = visible ? 'on' : 'off';
+    }
+
+    window.changeCableColorsVisibility = function() {
+      const visible = document.getElementById('cableColorsToggle')?.value !== 'off';
+      localStorage.setItem(CABLE_COLORS_VISIBLE_KEY, visible ? 'on' : 'off');
+      applyCableColorsVisibility();
+      renderWorkspace();
+      toast(visible ? 'Colores de cables activados' : 'Colores de cables desactivados');
+    };
+
+    function getCableVisualColor(cableId) {
+      if (!cableId) return null;
+
+      const saved = getSavedCableColors();
+      if (saved[String(cableId)]) return saved[String(cableId)];
+
+      const sorted = [...cables].sort((a, b) =>
+        String(a.nombre || '').localeCompare(String(b.nombre || ''))
+      );
+      const index = sorted.findIndex(c => String(c.id) === String(cableId));
+      const color = index >= 0
+        ? CABLE_VISUAL_PALETTE[index % CABLE_VISUAL_PALETTE.length]
+        : CABLE_VISUAL_PALETTE[0];
+
+      saveCableColorLocal(cableId, color);
+      return color;
+    }
+
+    window.setCableVisualColor = function(cableId, color) {
+      if (!color) return;
+      saveCableColorLocal(cableId, color);
+      renderCableList();
+      renderWorkspace();
+      toast('Color del cable actualizado');
+    };
+
+    function renderCableLegendForPorts(groupPorts) {
+      const cableIds = [...new Set(
+        groupPorts
+          .map(p => p.cable_id)
+          .filter(Boolean)
+          .map(String)
+      )];
+
+      if (!cableIds.length) return null;
+
+      const legend = document.createElement('div');
+      legend.className = 'cable-legend';
+
+      cableIds
+        .map(id => getCableById(id))
+        .filter(Boolean)
+        .sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || '')))
+        .forEach(cable => {
+          const chip = document.createElement('span');
+          chip.className = 'cable-legend-chip';
+          const color = getCableVisualColor(cable.id);
+          chip.innerHTML = `
+            <span class="cable-legend-swatch" style="--chip-color:${color}"></span>
+            <span>${cable.nombre}</span>
+          `;
+          legend.appendChild(chip);
+        });
+
+      return legend.childElementCount ? legend : null;
+    }
+
+    function applyCableVisualToPort(portEl, port, orderedPorts, index) {
+      if (!port?.cable_id) return;
+
+      const color = getCableVisualColor(port.cable_id);
+      portEl.classList.add('cable-marked');
+      portEl.style.setProperty('--cable-color', color);
+
+      const prev = orderedPorts[index - 1];
+      const next = orderedPorts[index + 1];
+
+      if (!prev || String(prev.cable_id || '') !== String(port.cable_id || '')) {
+        portEl.classList.add('cable-start');
+      }
+
+      if (!next || String(next.cable_id || '') !== String(port.cable_id || '')) {
+        portEl.classList.add('cable-end');
+      }
+    }
+
+    function applyCableVisualToPortBox(portBox, port) {
+      if (!port?.cable_id) return;
+      const color = getCableVisualColor(port.cable_id);
+      portBox.classList.add('cable-marked');
+      portBox.style.setProperty('--cable-color', color);
+    }
+
+    function getCableById(id) {
+      return cables.find(c => String(c.id) === String(id)) || null;
+    }
+
+    function isPortVisibleByCable(port) {
+      if (!selectedCableId) return true;
+      return String(port?.cable_id || '') === String(selectedCableId);
+    }
+
+    function isLinkVisibleByCable(link) {
+      if (!selectedCableId) return true;
+      const p1 = getPortById(link.port_id_origen);
+      const p2 = getPortById(link.port_id_destino);
+      return isPortVisibleByCable(p1) || isPortVisibleByCable(p2);
+    }
+
+    window.changeCableFilter = function() {
+      selectedCableId = document.getElementById('cableFilter')?.value || '';
+      renderWorkspace();
+      const cable = getCableById(selectedCableId);
+      toast(cable ? `Filtro aplicado: ${cable.nombre}` : 'Filtro de cable limpiado');
+    };
+
+    function fillCableOdfSelect() {
+      const select = document.getElementById('cableOdf');
+      const info = document.getElementById('cableOdfInfo');
+      if (!select) return;
+
+      const current = select.value;
+
+      const odfs = equipments
+        .filter(eq => {
+          const tipo = String(eq.tipo || '').trim().toLowerCase();
+          return tipo === 'odf' || tipo.includes('odf');
+        })
+        .sort((a,b) => {
+          const rackA = getRackById(a.rack_id)?.nombre || '';
+          const rackB = getRackById(b.rack_id)?.nombre || '';
+          return `${rackA} ${a.nombre}`.localeCompare(`${rackB} ${b.nombre}`);
+        });
+
+      select.innerHTML = '<option value="">Selecciona un ODF existente</option>';
+
+      odfs.forEach(eq => {
+        const rack = getRackById(eq.rack_id);
+        const normalPorts = ports.filter(p =>
+          String(p.equipment_id) === String(eq.id) &&
+          String(getPortType(p)).toLowerCase() === 'normal'
+        ).length;
+
+        const opt = document.createElement('option');
+        opt.value = eq.id;
+        opt.textContent = `${rack?.nombre || 'Sin rack'} · ${eq.nombre} · ${normalPorts} puertos`;
+        select.appendChild(opt);
+      });
+
+      if (current && odfs.some(eq => String(eq.id) === String(current))) {
+        select.value = current;
+      }
+
+      if (info) {
+        info.textContent = odfs.length
+          ? `${odfs.length} ODF disponibles cargados desde el inventario actual.`
+          : 'No se encontraron equipos con tipo ODF en el inventario.';
+      }
+    }
+
+    window.refreshCableOdfSelect = async function() {
+      try {
+        const eqRes = await supabase.from('equipment').select('*').order('posicion_rack').order('nombre');
+        const portsRes = await supabase.from('ports').select('*').order('numero_puerto');
+
+        if (eqRes.error) throw eqRes.error;
+        if (portsRes.error) throw portsRes.error;
+
+        equipments = eqRes.data || [];
+        ports = portsRes.data || [];
+        fillCableOdfSelect();
+        toast('ODF actualizados');
+      } catch (error) {
+        console.error(error);
+        toast(error.message || 'No se pudieron actualizar los ODF');
+      }
+    };
+
+    function renderCableList() {
+      const list = document.getElementById('cableList');
+      if (!list) return;
+
+      if (!cables.length) {
+        list.innerHTML = '<div class="dashboard-empty">No hay cables registrados.</div>';
+        return;
+      }
+
+      list.innerHTML = cables.map(cable => {
+        const assignedPorts = ports.filter(p => String(p.cable_id || '') === String(cable.id));
+        const odfs = [...new Set(
+          assignedPorts.map(p => getEquipmentById(p.equipment_id)?.nombre).filter(Boolean)
+        )];
+
+        return `
+          <div class="cable-item">
+            <div>
+              <div class="cable-name">${cable.nombre}</div>
+              <div class="cable-meta">
+                ${cable.capilaridad} · ${cable.tipo_fibra} · ${assignedPorts.length} puertos${odfs.length ? ' · ' + odfs.join(', ') : ''}
+                ${assignedPorts.length ? `<br>Puertos: ${compressPortNumbers(assignedPorts.map(p => p.numero_puerto))}` : ''}
+              </div>
+            </div>
+            <div>
+              <div class="cable-actions">
+                <button class="secondary" onclick="filterByCable('${cable.id}')">Filtrar</button>
+                <button class="danger" onclick="deleteCable('${cable.id}')">Eliminar</button>
+              </div>
+              <div class="cable-color-row">
+                <div class="cable-color-control">
+                  <span style="font-size:10px;color:var(--muted)">Color</span>
+                  <input type="color"
+                         value="${getCableVisualColor(cable.id)}"
+                         title="Escoger color de ${cable.nombre}"
+                         onchange="setCableVisualColor('${cable.id}', this.value)">
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+
+    async function reloadCablesOnly() {
+      try {
+        const res = await supabase.from('cables').select('*').order('nombre');
+        if (res.error) {
+          console.warn('No se pudo cargar cables:', res.error);
+          cables = [];
+        } else {
+          cables = res.data || [];
+        }
+        renderFilters();
+        renderCableList();
+      } catch (error) {
+        console.warn('Módulo cables no disponible:', error);
+        cables = [];
+        renderFilters();
+      }
+    }
+
+    window.openCableModal = async function() {
+      document.getElementById('cableModal').classList.add('show');
+      fillCableOdfSelect();
+      renderCableList();
+
+      const odfCount = equipments.filter(eq => {
+        const tipo = String(eq.tipo || '').trim().toLowerCase();
+        return tipo === 'odf' || tipo.includes('odf');
+      }).length;
+
+      if (!odfCount) {
+        await refreshCableOdfSelect();
+      }
+    };
+
+    window.closeCableModal = function() {
+      document.getElementById('cableModal').classList.remove('show');
+    };
+
+    window.filterByCable = function(cableId) {
+      selectedCableId = String(cableId);
+      const select = document.getElementById('cableFilter');
+      if (select) select.value = selectedCableId;
+      closeCableModal();
+      renderWorkspace();
+      const cable = getCableById(cableId);
+      toast(`Mostrando puertos del cable ${cable?.nombre || ''}`);
+    };
+
+
+    document.addEventListener('change', event => {
+      if (event.target?.id === 'cableOdf') {
+        const odfId = event.target.value;
+        if (!odfId) return;
+
+        const normalPorts = ports
+          .filter(p => String(p.equipment_id) === String(odfId) && String(getPortType(p)).toLowerCase() === 'normal')
+          .map(p => Number(p.numero_puerto))
+          .filter(Number.isFinite)
+          .sort((a,b) => a-b);
+
+        if (!normalPorts.length) return;
+
+        const expressionInput = document.getElementById('cablePortExpression');
+
+        if (expressionInput && !expressionInput.value) {
+          expressionInput.value = `${normalPorts[0]}-${normalPorts[normalPorts.length - 1]}`;
+          updateCablePortExpressionInfo();
+        }
+      }
+    });
+
+
+    function parsePortExpression(expression) {
+      const text = String(expression || '').trim();
+      if (!text) return { ports: [], invalid: [] };
+
+      const tokens = text
+        .replace(/;/g, ',')
+        .split(',')
+        .map(t => t.trim())
+        .filter(Boolean);
+
+      const values = new Set();
+      const invalid = [];
+
+      tokens.forEach(token => {
+        // Individual port
+        if (/^\d+$/.test(token)) {
+          values.add(Number(token));
+          return;
+        }
+
+        // Range: 97-109 (spaces around hyphen are allowed)
+        const rangeMatch = token.match(/^(\d+)\s*-\s*(\d+)$/);
+        if (rangeMatch) {
+          const start = Number(rangeMatch[1]);
+          const end = Number(rangeMatch[2]);
+
+          if (end < start) {
+            invalid.push(token);
+            return;
+          }
+
+          // Guard against accidental huge ranges.
+          if ((end - start) > 5000) {
+            invalid.push(token);
+            return;
+          }
+
+          for (let n = start; n <= end; n++) values.add(n);
+          return;
+        }
+
+        invalid.push(token);
+      });
+
+      return {
+        ports: [...values].sort((a,b) => a-b),
+        invalid
+      };
+    }
+
+    function compressPortNumbers(numbers) {
+      const nums = [...new Set(
+        (numbers || []).map(Number).filter(Number.isFinite)
+      )].sort((a,b) => a-b);
+
+      if (!nums.length) return '';
+
+      const result = [];
+      let start = nums[0];
+      let prev = nums[0];
+
+      for (let i = 1; i <= nums.length; i++) {
+        const current = nums[i];
+
+        if (current === prev + 1) {
+          prev = current;
+          continue;
+        }
+
+        result.push(start === prev ? String(start) : `${start}-${prev}`);
+        start = current;
+        prev = current;
+      }
+
+      return result.join(', ');
+    }
+
+    function getCableCapacityNumber(capacity) {
+      const match = String(capacity || '').match(/\d+/);
+      return match ? Number(match[0]) : 0;
+    }
+
+    function updateCablePortExpressionInfo() {
+      const input = document.getElementById('cablePortExpression');
+      const info = document.getElementById('cablePortExpressionInfo');
+      if (!input || !info) return;
+
+      const parsed = parsePortExpression(input.value);
+
+      if (!input.value.trim()) {
+        info.textContent = '';
+        return;
+      }
+
+      if (parsed.invalid.length) {
+        info.textContent = `Formato no válido: ${parsed.invalid.join(', ')}`;
+        return;
+      }
+
+      const capacity = getCableCapacityNumber(document.getElementById('cableCapacity')?.value);
+      const remaining = capacity ? capacity - parsed.ports.length : null;
+
+      info.textContent = `${parsed.ports.length} puerto(s) seleccionados` +
+        (capacity ? ` de ${capacity} fibras` : '') +
+        (remaining !== null && remaining >= 0 ? ` · ${remaining} fibra(s) disponibles` : '');
+    }
+
+    document.addEventListener('input', event => {
+      if (event.target?.id === 'cablePortExpression') {
+        updateCablePortExpressionInfo();
+      }
+    });
+
+    document.addEventListener('change', event => {
+      if (event.target?.id === 'cableCapacity') {
+        updateCablePortExpressionInfo();
+      }
+    });
+
+    window.saveCableAndAssign = async function() {
+      const nombre = document.getElementById('cableName').value.trim();
+      const capilaridad = document.getElementById('cableCapacity').value;
+      const tipo_fibra = document.getElementById('cableFiberType').value;
+      const odfId = document.getElementById('cableOdf').value;
+      const expression = document.getElementById('cablePortExpression').value.trim();
+      const parsed = parsePortExpression(expression);
+
+      if (!nombre) return toast('El nombre del cable es obligatorio');
+      if (!odfId) return toast('Selecciona el ODF');
+      if (!expression) return toast('Indica los puertos o rangos que deseas asignar');
+      if (parsed.invalid.length) return toast(`Formato no válido: ${parsed.invalid.join(', ')}`);
+      if (!parsed.ports.length) return toast('No se encontraron puertos válidos en la expresión');
+
+      const capacityNumber = getCableCapacityNumber(capilaridad);
+      if (capacityNumber && parsed.ports.length > capacityNumber) {
+        return toast(`La selección contiene ${parsed.ports.length} puertos y el cable es de ${capacityNumber} fibras`);
+      }
+
+      const odf = getEquipmentById(odfId);
+      if (!odf || !String(odf.tipo || '').toLowerCase().includes('odf')) {
+        return toast('El equipo seleccionado debe ser un ODF');
+      }
+
+      const requestedSet = new Set(parsed.ports.map(Number));
+
+      const normalOdfPorts = ports.filter(p =>
+        String(p.equipment_id) === String(odfId) &&
+        String(getPortType(p)).toLowerCase() === 'normal'
+      );
+
+      const availableNumbers = new Set(normalOdfPorts.map(p => Number(p.numero_puerto)));
+      const missingNumbers = parsed.ports.filter(n => !availableNumbers.has(Number(n)));
+
+      if (missingNumbers.length) {
+        return toast(`Estos puertos no existen en el ODF: ${compressPortNumbers(missingNumbers)}`);
+      }
+
+      const targetPorts = normalOdfPorts.filter(p =>
+        requestedSet.has(Number(p.numero_puerto))
+      );
+
+      if (!targetPorts.length) return toast('No se encontraron puertos para asignar');
+
+      const conflicting = targetPorts.filter(p => p.cable_id);
+      if (conflicting.length && !confirm(`${conflicting.length} puertos ya tienen otro cable asignado. ¿Deseas reemplazarlo?`)) return;
+
+      try {
+        const existingCable = cables.find(c => c.nombre.toLowerCase() === nombre.toLowerCase());
+        let cableId;
+
+        if (existingCable) {
+          cableId = existingCable.id;
+          const upd = await supabase.from('cables').update({ capilaridad, tipo_fibra }).eq('id', cableId);
+          if (upd.error) throw upd.error;
+        } else {
+          const ins = await supabase.from('cables').insert({ nombre, capilaridad, tipo_fibra }).select().single();
+          if (ins.error) throw ins.error;
+          cableId = ins.data.id;
+        }
+
+        const updPorts = await supabase.from('ports')
+          .update({ cable_id: cableId })
+          .in('id', targetPorts.map(p => p.id));
+        if (updPorts.error) throw updPorts.error;
+
+        document.getElementById('cableName').value = '';
+        document.getElementById('cablePortExpression').value = '';
+        document.getElementById('cablePortExpressionInfo').textContent = '';
+
+        await loadDashboard();
+        await reloadCablesOnly();
+        fillCableOdfSelect();
+        renderCableList();
+        toast(`Cable asignado a ${targetPorts.length} puertos`);
+      } catch (error) {
+        console.error(error);
+        toast(error.message || 'Error guardando el cable');
+      }
+    };
+
+    window.deleteCable = async function(cableId) {
+      const cable = getCableById(cableId);
+      if (!cable) return;
+      if (!confirm(`¿Eliminar el cable ${cable.nombre} y quitarlo de todos sus puertos?`)) return;
+
+      try {
+        const clear = await supabase.from('ports').update({ cable_id: null }).eq('cable_id', cableId);
+        if (clear.error) throw clear.error;
+
+        const del = await supabase.from('cables').delete().eq('id', cableId);
+        if (del.error) throw del.error;
+
+        if (String(selectedCableId) === String(cableId)) selectedCableId = '';
+        await loadDashboard();
+        await reloadCablesOnly();
+        renderCableList();
+        toast('Cable eliminado');
+      } catch (error) {
+        console.error(error);
+        toast(error.message || 'Error eliminando el cable');
+      }
+    };
 
     function getClientByPort(portId) {
       const assignment = getAssignmentByPort(portId);
@@ -1496,6 +2416,341 @@
       saveRoutes(routes);
     }
 
+
+    function loadCableTrays() {
+      try {
+        const raw = localStorage.getItem(CABLE_TRAYS_KEY);
+        cableTrays = raw ? JSON.parse(raw) : [];
+        if (!Array.isArray(cableTrays)) cableTrays = [];
+      } catch {
+        cableTrays = [];
+      }
+
+      cableTraysVisible = localStorage.getItem(CABLE_TRAYS_VISIBLE_KEY) !== 'false';
+      connectionRouteMode = localStorage.getItem(CONNECTION_ROUTE_MODE_KEY) || 'directas';
+      updateConnectionRouteModeSelector();
+    }
+
+    function saveCableTrays() {
+      localStorage.setItem(CABLE_TRAYS_KEY, JSON.stringify(cableTrays));
+    }
+
+    function updateConnectionRouteModeSelector() {
+      const selector = document.getElementById('connectionRouteMode');
+      if (selector) selector.value = connectionRouteMode;
+    }
+
+    window.changeConnectionRouteMode = function() {
+      connectionRouteMode = document.getElementById('connectionRouteMode')?.value || 'directas';
+      localStorage.setItem(CONNECTION_ROUTE_MODE_KEY, connectionRouteMode);
+      drawPersistentLinks();
+      toast(connectionRouteMode === 'canaletas'
+        ? 'Las conexiones usarán las canaletas dibujadas'
+        : 'Las conexiones se mostrarán directamente');
+    };
+
+    window.openCableTrayModal = function() {
+      renderCableTrayList();
+      document.getElementById('cableTrayModal').classList.add('show');
+    };
+
+    window.closeCableTrayModal = function() {
+      document.getElementById('cableTrayModal').classList.remove('show');
+    };
+
+    function setCableTrayStatus(message) {
+      const el = document.getElementById('cableTrayStatus');
+      if (el) el.textContent = message;
+    }
+
+    function renderCableTrayList() {
+      const list = document.getElementById('cableTrayList');
+      if (!list) return;
+
+      if (!cableTrays.length) {
+        list.innerHTML = '<div class="dashboard-empty">No hay canaletas creadas.</div>';
+        return;
+      }
+
+      list.innerHTML = cableTrays.map((tray, index) => `
+        <div class="tray-list-item">
+          <div>
+            <div class="tray-list-name">${tray.name || `Canaleta ${index + 1}`}</div>
+            <div class="tray-list-meta">${tray.points?.length || 0} puntos</div>
+          </div>
+          <button class="secondary tray-small-btn" onclick="focusCableTray('${tray.id}')">Ver</button>
+          <button class="danger tray-small-btn tray-danger-btn" onclick="deleteCableTray('${tray.id}')">Eliminar</button>
+        </div>
+      `).join('');
+    }
+
+    window.startCableTrayDrawing = function() {
+      closeCableTrayModal();
+
+      activeTrayDrawing = {
+        id: `tray_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+        name: `Canaleta ${cableTrays.length + 1}`,
+        points: []
+      };
+
+      document.getElementById('workspace').classList.add('tray-drawing-active');
+      setCableTrayStatus('Dibujo activo: haz clic en el plano y doble clic para finalizar.');
+      toast('Haz clic en el plano para crear la canaleta. Doble clic para finalizar.');
+      drawPersistentLinks();
+    };
+
+    window.cancelCableTrayDrawing = function() {
+      activeTrayDrawing = null;
+      document.getElementById('workspace').classList.remove('tray-drawing-active');
+      setCableTrayStatus('Dibujo cancelado.');
+      drawPersistentLinks();
+    };
+
+    window.toggleCableTraysVisibility = function() {
+      cableTraysVisible = !cableTraysVisible;
+      localStorage.setItem(CABLE_TRAYS_VISIBLE_KEY, String(cableTraysVisible));
+      drawPersistentLinks();
+      renderCableTrayList();
+      toast(cableTraysVisible ? 'Canaletas visibles' : 'Canaletas ocultas');
+    };
+
+    window.deleteCableTray = function(trayId) {
+      const tray = cableTrays.find(item => item.id === trayId);
+      if (!tray) return;
+      if (!confirm(`¿Eliminar ${tray.name || 'esta canaleta'}?`)) return;
+
+      cableTrays = cableTrays.filter(item => item.id !== trayId);
+      saveCableTrays();
+      renderCableTrayList();
+      drawPersistentLinks();
+      toast('Canaleta eliminada');
+    };
+
+    window.deleteAllCableTrays = function() {
+      if (!cableTrays.length) return toast('No hay canaletas para eliminar');
+      if (!confirm('¿Eliminar todas las canaletas dibujadas?')) return;
+
+      cableTrays = [];
+      saveCableTrays();
+      renderCableTrayList();
+      drawPersistentLinks();
+      toast('Todas las canaletas fueron eliminadas');
+    };
+
+    window.focusCableTray = function(trayId) {
+      const tray = cableTrays.find(item => item.id === trayId);
+      if (!tray?.points?.length) return;
+
+      closeCableTrayModal();
+      const workspace = document.getElementById('workspace');
+      const first = tray.points[0];
+      workspace.scrollTo({
+        left: Math.max(0, first.x - workspace.clientWidth / 2),
+        top: Math.max(0, first.y - workspace.clientHeight / 2),
+        behavior: 'smooth'
+      });
+    };
+
+    function workspaceCoordinatesFromEvent(ev) {
+      const workspace = document.getElementById('workspace');
+      const rect = workspace.getBoundingClientRect();
+      return {
+        x: ev.clientX - rect.left + workspace.scrollLeft,
+        y: ev.clientY - rect.top + workspace.scrollTop
+      };
+    }
+
+    function distance(a, b) {
+      return Math.hypot(Number(a.x) - Number(b.x), Number(a.y) - Number(b.y));
+    }
+
+    function nearestPointOnSegment(point, a, b) {
+      const ax = Number(a.x), ay = Number(a.y);
+      const bx = Number(b.x), by = Number(b.y);
+      const px = Number(point.x), py = Number(point.y);
+      const dx = bx - ax, dy = by - ay;
+      const len2 = dx * dx + dy * dy;
+
+      if (!len2) return { x: ax, y: ay, t: 0, distance: Math.hypot(px - ax, py - ay) };
+
+      const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / len2));
+      const x = ax + t * dx;
+      const y = ay + t * dy;
+
+      return { x, y, t, distance: Math.hypot(px - x, py - y) };
+    }
+
+    function nearestLocationOnTray(point, tray) {
+      if (!tray?.points?.length) return null;
+
+      if (tray.points.length === 1) {
+        return {
+          point: { ...tray.points[0] },
+          segmentIndex: 0,
+          t: 0,
+          distance: distance(point, tray.points[0])
+        };
+      }
+
+      let best = null;
+      for (let i = 0; i < tray.points.length - 1; i++) {
+        const candidate = nearestPointOnSegment(point, tray.points[i], tray.points[i + 1]);
+        if (!best || candidate.distance < best.distance) {
+          best = {
+            point: { x: candidate.x, y: candidate.y },
+            segmentIndex: i,
+            t: candidate.t,
+            distance: candidate.distance
+          };
+        }
+      }
+      return best;
+    }
+
+    function chooseBestTray(start, end) {
+      let best = null;
+
+      cableTrays.forEach(tray => {
+        if (!Array.isArray(tray.points) || tray.points.length < 2) return;
+
+        const a = nearestLocationOnTray(start, tray);
+        const b = nearestLocationOnTray(end, tray);
+        if (!a || !b) return;
+
+        const score = a.distance + b.distance;
+        if (!best || score < best.score) best = { tray, a, b, score };
+      });
+
+      return best;
+    }
+
+    function buildTrayRoute(best, start, end) {
+      const { tray, a, b } = best;
+      const route = [start, a.point];
+
+      if (a.segmentIndex === b.segmentIndex) {
+        route.push(b.point, end);
+        return route;
+      }
+
+      if (a.segmentIndex < b.segmentIndex) {
+        for (let i = a.segmentIndex + 1; i <= b.segmentIndex; i++) {
+          route.push({ ...tray.points[i] });
+        }
+      } else {
+        for (let i = a.segmentIndex; i > b.segmentIndex; i--) {
+          route.push({ ...tray.points[i] });
+        }
+      }
+
+      route.push(b.point, end);
+      return route;
+    }
+
+    function createSvgPolyline(points, options = {}) {
+      const overlay = getOverlay();
+      const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+      polyline.setAttribute('points', points.map(p => `${p.x},${p.y}`).join(' '));
+      polyline.setAttribute('fill', 'none');
+      polyline.setAttribute('stroke', options.color || '#ffd84d');
+      polyline.setAttribute('stroke-width', options.width || 2.6);
+      polyline.setAttribute('stroke-linecap', 'round');
+      polyline.setAttribute('stroke-linejoin', 'round');
+      if (options.dashed) polyline.setAttribute('stroke-dasharray', options.dashed);
+      if (options.className) polyline.setAttribute('class', options.className);
+      overlay.appendChild(polyline);
+      return polyline;
+    }
+
+    function drawCableTrays() {
+      if (!cableTraysVisible) return;
+
+      const allTrays = activeTrayDrawing
+        ? [...cableTrays, activeTrayDrawing]
+        : cableTrays;
+
+      allTrays.forEach(tray => {
+        if (!tray.points?.length) return;
+
+        if (tray.points.length > 1) {
+          createSvgPolyline(tray.points, {
+            color: '#26c6ff',
+            width: 9,
+            dashed: '12 8',
+            className: 'tray-segment'
+          }).setAttribute('stroke-opacity', '.30');
+
+          createSvgPolyline(tray.points, {
+            color: '#7ddfff',
+            width: 2,
+            className: 'tray-segment'
+          }).setAttribute('stroke-opacity', '.95');
+        }
+
+        tray.points.forEach((point, pointIndex) => {
+          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          circle.setAttribute('cx', point.x);
+          circle.setAttribute('cy', point.y);
+          circle.setAttribute('r', 6);
+          circle.setAttribute('fill', '#26c6ff');
+          circle.setAttribute('stroke', '#06101d');
+          circle.setAttribute('stroke-width', '2');
+          circle.setAttribute('class', 'tray-point');
+          circle.dataset.trayId = tray.id;
+          circle.dataset.pointIndex = String(pointIndex);
+          getOverlay().appendChild(circle);
+
+          if (!activeTrayDrawing || tray.id !== activeTrayDrawing.id) {
+            circle.addEventListener('mousedown', ev => {
+              ev.preventDefault();
+              ev.stopPropagation();
+              draggingTrayPoint = { trayId: tray.id, pointIndex };
+            });
+
+            circle.addEventListener('contextmenu', ev => {
+              ev.preventDefault();
+              ev.stopPropagation();
+
+              const savedTray = cableTrays.find(item => item.id === tray.id);
+              if (!savedTray) return;
+              if (savedTray.points.length <= 2) {
+                toast('Una canaleta debe conservar al menos 2 puntos');
+                return;
+              }
+
+              savedTray.points.splice(pointIndex, 1);
+              saveCableTrays();
+              drawPersistentLinks();
+            });
+          }
+        });
+      });
+    }
+
+    function drawLinkUsingTray(link, start, end) {
+      const best = chooseBestTray(start, end);
+      if (!best) {
+        drawRoutedLink(link, start.x, start.y, end.x, end.y);
+        return;
+      }
+
+      const route = buildTrayRoute(best, start, end);
+      createSvgPolyline(route, {
+        color: '#ffd84d',
+        width: 2.7,
+        className: 'route-path'
+      });
+
+      [start, end].forEach(point => {
+        const c = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        c.setAttribute('cx', point.x);
+        c.setAttribute('cy', point.y);
+        c.setAttribute('r', 3.5);
+        c.setAttribute('fill', '#ffd84d');
+        getOverlay().appendChild(c);
+      });
+    }
+
     function getOverlay() {
       return document.getElementById('linkOverlay');
     }
@@ -1556,16 +2811,26 @@
       clearOverlay();
       if (mode !== 'compact') return;
 
+      drawCableTrays();
+
       if (getConnectionsVisible()) {
         links.forEach(link => {
           if (!isLinkInClientFilter(link)) return;
           if (!isLinkVisibleByEquipmentFilter(link)) return;
+          if (!isLinkVisibleByCable(link)) return;
+
           const p1 = document.querySelector(`.port[data-port-id="${link.port_id_origen}"]`);
           const p2 = document.querySelector(`.port[data-port-id="${link.port_id_destino}"]`);
           if (!p1 || !p2) return;
+
           const c1 = getPortCenter(p1);
           const c2 = getPortCenter(p2);
-          drawRoutedLink(link, c1.x, c1.y, c2.x, c2.y);
+
+          if (connectionRouteMode === 'canaletas' && cableTrays.length) {
+            drawLinkUsingTray(link, c1, c2);
+          } else {
+            drawRoutedLink(link, c1.x, c1.y, c2.x, c2.y);
+          }
         });
       }
 
@@ -1575,8 +2840,73 @@
       }
     }
 
+
+    let floatingPortTooltip = null;
+
+    function getFloatingPortTooltip() {
+      if (!floatingPortTooltip) {
+        floatingPortTooltip = document.createElement('div');
+        floatingPortTooltip.className = 'floating-port-tooltip';
+        document.body.appendChild(floatingPortTooltip);
+      }
+      return floatingPortTooltip;
+    }
+
+    function positionFloatingPortTooltip(anchorEl, tooltip) {
+      const rect = anchorEl.getBoundingClientRect();
+      const margin = 8;
+
+      // First render invisibly to know its size.
+      tooltip.style.left = '0px';
+      tooltip.style.top = '0px';
+      tooltip.style.visibility = 'hidden';
+      tooltip.classList.add('show');
+
+      const tw = tooltip.offsetWidth;
+      const th = tooltip.offsetHeight;
+
+      let left = rect.left + (rect.width / 2) - (tw / 2);
+      let top = rect.top - th - margin;
+
+      // If there is not enough space above, place it below.
+      if (top < margin) {
+        top = rect.bottom + margin;
+      }
+
+      // Keep it inside the viewport horizontally.
+      left = Math.max(margin, Math.min(left, window.innerWidth - tw - margin));
+
+      // Keep it inside the viewport vertically.
+      if (top + th > window.innerHeight - margin) {
+        top = Math.max(margin, window.innerHeight - th - margin);
+      }
+
+      tooltip.style.left = `${Math.round(left)}px`;
+      tooltip.style.top = `${Math.round(top)}px`;
+      tooltip.style.visibility = 'visible';
+    }
+
+    function showPortFloatingTooltip(portEl) {
+      const text = portEl?.dataset?.tip;
+      if (!text) return;
+
+      const tooltip = getFloatingPortTooltip();
+      tooltip.textContent = text;
+      positionFloatingPortTooltip(portEl, tooltip);
+      tooltip.classList.add('show');
+    }
+
+    function hidePortFloatingTooltip() {
+      if (!floatingPortTooltip) return;
+      floatingPortTooltip.classList.remove('show');
+    }
+
     function setupPortInteraction(portEl, eq, port, client) {
       let startX = 0, startY = 0, pointerDown = false;
+
+      portEl.addEventListener('mouseenter', () => showPortFloatingTooltip(portEl));
+      portEl.addEventListener('mouseleave', hidePortFloatingTooltip);
+      portEl.addEventListener('mousedown', hidePortFloatingTooltip);
 
       portEl.addEventListener('mousedown', (e) => {
         if (getViewMode() !== 'compact') return;
@@ -1700,7 +3030,7 @@
       }
 
       ordered.forEach(eq => {
-        const eqPorts = ports.filter(p => p.equipment_id === eq.id).sort((a,b) => a.numero_puerto - b.numero_puerto);
+        const eqPorts = ports.filter(p => p.equipment_id === eq.id).filter(isPortVisibleByCable).sort((a,b) => a.numero_puerto - b.numero_puerto);
         const eqBox = document.createElement('div');
         eqBox.className = 'eq-box';
 
@@ -1711,9 +3041,18 @@
               <div class="eq-meta">${eq.demonico || '-'} · ${eq.marca || '-'} ${eq.modelo || ''}${eq.serial ? ' · S/N ' + eq.serial : ''}</div>
             </div>
             <div style="text-align:right">
-              <div class="eq-type">${eq.tipo.toUpperCase()}</div>
-              <div class="eq-u">U${eq.posicion_rack || '-'}</div>
-              <button class="eq-edit-btn" type="button" data-edit-eq="${eq.id}">Editar</button>
+              ${isOdfEquipment(eq) ? `
+                <div class="eq-odf-inline">
+                  <div class="eq-type">${eq.tipo.toUpperCase()}</div>
+                  <div class="eq-u">U${eq.posicion_rack || '-'}</div>
+                  <button class="eq-edit-btn" type="button" data-edit-eq="${eq.id}">Editar</button>
+                  <div class="eq-port-count-inline">${ports.filter(p => p.equipment_id === eq.id && getPortType(p) === 'normal').length}</div>
+                </div>
+              ` : `
+                <div class="eq-type">${eq.tipo.toUpperCase()}</div>
+                <div class="eq-u">U${eq.posicion_rack || '-'}</div>
+                <button class="eq-edit-btn" type="button" data-edit-eq="${eq.id}">Editar</button>
+              `}
             </div>
           </div>
           <div class="ports"></div>
@@ -1742,24 +3081,32 @@
 
           const section = document.createElement('div');
           section.className = 'port-section';
-          section.innerHTML = `<div class="port-section-title"><span>${group.title}</span><span>${groupPorts.length}</span></div><div class="ports"></div>`;
+          const odfNormalTitleClass = isOdfEquipment(eq) && group.type === 'normal' ? ' odf-normal-title' : '';
+          section.innerHTML = `<div class="port-section-title${odfNormalTitleClass}"><span>${group.title}</span><span>${groupPorts.length}</span></div><div class="ports"></div>`;
 
           const portsDiv = section.querySelector('.ports');
 
-          groupPorts.forEach(port => {
+          if (group.type === 'normal') {
+            const cableLegend = renderCableLegendForPorts(groupPorts);
+            if (cableLegend) portsDiv.before(cableLegend);
+          }
+
+          groupPorts.forEach((port, portIndex) => {
             const client = getClientByPort(port.id);
+            const cable = getCableById(port.cable_id);
             const portEl = document.createElement('div');
             const matchesFilter = isPortInClientFilter(port.id);
             const visualClass = filteredClientPortIds ? (matchesFilter ? 'occupied' : 'free') : portClass(port.estado);
             const type = getPortType(port);
 
             portEl.className = `port ${visualClass} ${type}`;
+            applyCableVisualToPort(portEl, port, groupPorts, portIndex);
             portEl.textContent = getPortDisplayLabel(port);
             if (type !== 'normal') portEl.classList.add('special-port-label');
 
             portEl.dataset.tip = client
-              ? `${getPortDisplayLabel(port)} · ${client.nombre_cliente}${client.identificador_servicio ? ' · ' + client.identificador_servicio : ''}`
-              : `${getPortDisplayLabel(port)} · ${port.estado} · ${getLinkSummary(port.id)}`;
+              ? `${getPortDisplayLabel(port)} · ${client.nombre_cliente}${client.identificador_servicio ? ' · ' + client.identificador_servicio : ''}${cable ? ' · Cable: ' + cable.nombre : ''}`
+              : `${getPortDisplayLabel(port)} · ${port.estado} · ${getLinkSummary(port.id)}${cable ? ' · Cable: ' + cable.nombre : ''}`;
             portEl.dataset.portId = port.id;
             portEl.dataset.equipmentId = eq.id;
             portEl.style.opacity = filteredClientPortIds && !matchesFilter ? '0.22' : '1';
@@ -1845,7 +3192,9 @@
         node.style.left = pos.x + 'px';
         node.style.top = pos.y + 'px';
 
-        const rackEquipments = equipments.filter(e => e.rack_id === rack.id);
+        const rackEquipments = equipments
+          .filter(e => e.rack_id === rack.id)
+          .filter(e => !selectedCableId || ports.some(p => p.equipment_id === e.id && isPortVisibleByCable(p)));
 
         if (mode === 'compact') {
           renderCompactRack(node, rack, rackEquipments);
@@ -1866,7 +3215,7 @@
     function openEquipmentPortsModal(equipment) {
       currentEquipmentViewId = equipment.id;
       const grid = document.getElementById('equipmentPortsGrid');
-      const eqPorts = ports.filter(p => p.equipment_id === equipment.id).sort((a,b) => a.numero_puerto - b.numero_puerto);
+      const eqPorts = ports.filter(p => p.equipment_id === equipment.id).filter(isPortVisibleByCable).sort((a,b) => a.numero_puerto - b.numero_puerto);
       document.getElementById('evTitle').textContent = `Puertos de ${equipment.nombre}`;
       document.getElementById('evSubtitle').textContent = `Equipo ${equipment.tipo.toUpperCase()} · U${equipment.posicion_rack || '-'} · Haz clic sobre un puerto para editar.`;
       grid.innerHTML = '';
@@ -1887,15 +3236,22 @@
         section.innerHTML = `<div class="port-section-title"><span>${group.title}</span><span>${groupPorts.length}</span></div><div class="ports-grid"></div>`;
         const sectionGrid = section.querySelector('.ports-grid');
 
+        if (group.type === 'normal') {
+          const cableLegend = renderCableLegendForPorts(groupPorts);
+          if (cableLegend) sectionGrid.before(cableLegend);
+        }
+
         groupPorts.forEach(port => {
           const client = getClientByPort(port.id);
           const type = getPortType(port);
           const item = document.createElement('div');
           item.className = `port-box ${portClass(port.estado)} ${type}`;
+          applyCableVisualToPortBox(item, port);
           item.textContent = getPortDisplayLabel(port);
+          const cable = getCableById(port.cable_id);
           item.title = client
-            ? `${getPortDisplayLabel(port)} · ${client.nombre_cliente}${client.identificador_servicio ? ' · ' + client.identificador_servicio : ''}`
-            : `${getPortDisplayLabel(port)} · ${getLinkSummary(port.id)}`;
+            ? `${getPortDisplayLabel(port)} · ${client.nombre_cliente}${client.identificador_servicio ? ' · ' + client.identificador_servicio : ''}${cable ? ' · Cable: ' + cable.nombre : ''}`
+            : `${getPortDisplayLabel(port)} · ${getLinkSummary(port.id)}${cable ? ' · Cable: ' + cable.nombre : ''}`;
 
           item.addEventListener('click', () => {
             closeEquipmentViewModal();
@@ -2629,6 +3985,89 @@
       renderDashboardEquipmentTable(dashboardEquipmentRows);
     };
 
+
+    function getCableCapacityValue(cable) {
+      const match = String(cable?.capilaridad || '').match(/\d+/);
+      return match ? Number(match[0]) : 0;
+    }
+
+    function renderDashboardCableOccupancy() {
+      const tbody = document.getElementById('dashboardCableBody');
+      if (!tbody) return;
+
+      if (!cables.length) {
+        tbody.innerHTML = '<tr><td colspan="8" class="dashboard-empty">No hay cables registrados.</td></tr>';
+        return;
+      }
+
+      const rows = cables.map(cable => {
+        const cablePorts = ports.filter(p =>
+          String(p.cable_id || '') === String(cable.id)
+        );
+
+        const capacity = getCableCapacityValue(cable);
+        const occupied = cablePorts.filter(p =>
+          p.estado === 'ocupado' || getAssignmentByPort(p.id)
+        ).length;
+
+        const assigned = cablePorts.length;
+        const available = Math.max(0, capacity - occupied);
+        const occupancy = capacity ? (occupied / capacity) * 100 : 0;
+
+        const odfs = [...new Set(
+          cablePorts.map(p => {
+            const eq = getEquipmentById(p.equipment_id);
+            const rack = getRackById(eq?.rack_id);
+            if (!eq) return '';
+            return `${rack?.nombre || 'Sin rack'} / ${eq.nombre}`;
+          }).filter(Boolean)
+        )];
+
+        return {
+          name: cable.nombre || '',
+          capacityLabel: cable.capilaridad || '',
+          capacity,
+          fiberType: cable.tipo_fibra || '',
+          odf: odfs.join(' · ') || 'Sin ODF',
+          assigned,
+          occupied,
+          available,
+          occupancy
+        };
+      }).sort((a, b) =>
+        b.occupancy - a.occupancy ||
+        b.occupied - a.occupied ||
+        String(a.name).localeCompare(String(b.name))
+      );
+
+      tbody.innerHTML = rows.map(row => {
+        const level = getOccupancyClass(row.occupancy);
+        const rowClass =
+          level === 'low'
+            ? 'occupancy-low'
+            : level === 'medium'
+              ? 'occupancy-medium'
+              : 'occupancy-high';
+
+        return `
+          <tr class="${rowClass}">
+            <td><strong>${row.name}</strong></td>
+            <td>${row.capacityLabel}</td>
+            <td>${row.fiberType}</td>
+            <td>${row.odf}</td>
+            <td>${row.assigned}</td>
+            <td>${row.occupied}</td>
+            <td>${row.available}</td>
+            <td>
+              <span class="occupancy-badge ${level}">
+                ${row.occupancy.toFixed(1)}%
+              </span>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
     function renderDashboard() {
       const totalPorts = ports.length;
       const occupied = ports.filter(p => p.estado === 'ocupado' || getAssignmentByPort(p.id)).length;
@@ -2639,11 +4078,25 @@
       const availability = totalPorts ? free / totalPorts * 100 : 0;
       const occupancy = totalPorts ? occupied / totalPorts * 100 : 0;
 
+      const cableCapacityTotal = cables.reduce((sum, cable) => sum + getCableCapacityValue(cable), 0);
+      const cableOccupiedTotal = cables.reduce((sum, cable) => {
+        const occupiedCablePorts = ports.filter(p =>
+          String(p.cable_id || '') === String(cable.id) &&
+          (p.estado === 'ocupado' || getAssignmentByPort(p.id))
+        ).length;
+        return sum + occupiedCablePorts;
+      }, 0);
+      const cableOccupancyGeneral = cableCapacityTotal
+        ? (cableOccupiedTotal / cableCapacityTotal) * 100
+        : 0;
+
       const kpis = [
         ['Clientes en inventario', clientsCount, 'Clientes únicos asociados'],
         ['Equipos registrados', equipments.length, `${racks.length} racks registrados`],
         ['Puertos totales', totalPorts, `${occupied} ocupados · ${free} libres`],
-        ['Disponibilidad general', `${availability.toFixed(1)}%`, `${occupancy.toFixed(1)}% de ocupación`]
+        ['Disponibilidad general', `${availability.toFixed(1)}%`, `${occupancy.toFixed(1)}% de ocupación`],
+        ['Cables registrados', cables.length, `${cableCapacityTotal} fibras de capacidad total`],
+        ['Ocupación general cables', `${cableOccupancyGeneral.toFixed(1)}%`, `${cableOccupiedTotal} fibras/puertos ocupados`]
       ];
 
       document.getElementById('dashboardKpis').innerHTML = kpis.map(k => `
@@ -2716,6 +4169,7 @@
       );
 
       renderDashboardEquipmentTable(dashboardEquipmentRows);
+      renderDashboardCableOccupancy();
     }
 
 
@@ -2904,6 +4358,9 @@
           'Tipo de puerto': getPortType(port).toUpperCase(),
           'Puerto': getPortDisplayLabel(port),
           'Estado': String(port.estado || '').toUpperCase(),
+          'Cable': getCableById(port.cable_id)?.nombre || '',
+          'Capilaridad cable': getCableById(port.cable_id)?.capilaridad || '',
+          'Tipo fibra cable': getCableById(port.cable_id)?.tipo_fibra || '',
           'Cliente': client?.nombre_cliente || '',
           'ID servicio / cliente': client?.identificador_servicio || '',
           'Rack origen': connection.origin.rack,
@@ -3013,10 +4470,66 @@
     }
 
     document.getElementById('workspace').addEventListener('scroll', () => {
+      hidePortFloatingTooltip();
       requestAnimationFrame(drawPersistentLinks);
     });
 
+    window.addEventListener('resize', hidePortFloatingTooltip);
+
+
+    const cableTrayWorkspace = document.getElementById('workspace');
+
+    cableTrayWorkspace.addEventListener('click', ev => {
+      if (!activeTrayDrawing) return;
+      if (ev.target.closest('.rack-node')) return;
+      if (ev.detail > 1) return;
+
+      const point = workspaceCoordinatesFromEvent(ev);
+      activeTrayDrawing.points.push(point);
+      setCableTrayStatus(`${activeTrayDrawing.points.length} puntos agregados. Doble clic para finalizar.`);
+      drawPersistentLinks();
+    });
+
+    cableTrayWorkspace.addEventListener('dblclick', ev => {
+      if (!activeTrayDrawing) return;
+      if (ev.target.closest('.rack-node')) return;
+
+      ev.preventDefault();
+      ev.stopPropagation();
+
+      if (activeTrayDrawing.points.length < 2) {
+        toast('La canaleta debe tener al menos 2 puntos');
+        return;
+      }
+
+      cableTrays.push(activeTrayDrawing);
+      activeTrayDrawing = null;
+      cableTrayWorkspace.classList.remove('tray-drawing-active');
+      saveCableTrays();
+      setCableTrayStatus('Canaleta guardada.');
+      drawPersistentLinks();
+      toast('Canaleta creada correctamente');
+    });
+
+    document.addEventListener('mousemove', ev => {
+      if (!draggingTrayPoint) return;
+
+      const tray = cableTrays.find(item => item.id === draggingTrayPoint.trayId);
+      if (!tray?.points?.[draggingTrayPoint.pointIndex]) return;
+
+      tray.points[draggingTrayPoint.pointIndex] = workspaceCoordinatesFromEvent(ev);
+      saveCableTrays();
+      requestAnimationFrame(drawPersistentLinks);
+    });
+
+    document.addEventListener('mouseup', () => {
+      draggingTrayPoint = null;
+    });
+
+
     initSupabase();
+    applyCableColorsVisibility();
+    loadCableTrays();
     loadConnectionEquipmentFilter();
     loadDashboard();
   </script>
