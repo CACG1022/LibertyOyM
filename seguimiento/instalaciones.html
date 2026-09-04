@@ -48,6 +48,27 @@
     tbody tr.row-entregada{background:rgba(34,197,94,.14)}
     tbody tr.row-entregada:hover{background:rgba(34,197,94,.22)}
     tbody tr.row-entregada td{border-bottom-color:rgba(34,197,94,.25)}
+
+    /* Colores de fila por Estado general */
+    tbody tr.row-cancelada{
+      background:rgba(239,68,68,.18);
+    }
+    tbody tr.row-cancelada:hover{
+      background:rgba(239,68,68,.28);
+    }
+    tbody tr.row-cancelada td{
+      border-bottom-color:rgba(239,68,68,.32);
+    }
+
+    tbody tr.row-gestion-emsa{
+      background:rgba(245,158,11,.17);
+    }
+    tbody tr.row-gestion-emsa:hover{
+      background:rgba(245,158,11,.27);
+    }
+    tbody tr.row-gestion-emsa td{
+      border-bottom-color:rgba(245,158,11,.32);
+    }
     .title{font-weight:700;margin-bottom:4px}.desc{font-size:12px;color:var(--muted);white-space:pre-wrap}
     .badge{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--border)}
     .estado-INGRESADA{background:rgba(59,130,246,.16);color:#bfdbfe}
@@ -1587,7 +1608,15 @@ function renderTable(){
   empty.style.display = 'none';
 
   body.innerHTML = rows.map(r => `
-    <tr class="${r.estado_general === 'ENTREGADA' ? 'row-entregada' : ''}" onclick="showDetail('${r.id}')">
+    <tr class="${
+      normalizarTextoReporte(r.estado_general).toUpperCase() === 'CANCELADA'
+        ? 'row-cancelada'
+        : normalizarTextoReporte(r.estado_general).toUpperCase() === 'EN_GESTION EMSA'
+          ? 'row-gestion-emsa'
+          : normalizarTextoReporte(r.estado_general).toUpperCase() === 'ENTREGADA'
+            ? 'row-entregada'
+            : ''
+    }" onclick="showDetail('${r.id}')">
       <td>${esc(fmtDate(r.fecha_ingreso))}</td>
       <td><div class="title">${esc(r.id_cambio)}</div></td>
       <td>${esc(r.id_tarea)}</td>
