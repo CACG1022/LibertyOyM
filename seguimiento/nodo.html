@@ -604,12 +604,94 @@
     .rack-node.qr-rack-highlight{border-color:#26c6ff!important;box-shadow:0 0 0 2px rgba(38,198,255,.22),0 20px 50px rgba(0,0,0,.42)!important}
     @media(max-width:800px){.qr-layout{grid-template-columns:1fr}.qr-summary-grid{grid-template-columns:1fr 1fr}.qr-scanner-modal{padding:12px}}
 
+
+    /* ===== Optimización para celular ===== */
+    .mobile-menu-toggle{display:none}
+    @media(max-width:700px){
+      html,body{width:100%;height:100%;overscroll-behavior:none}
+      body{overflow:hidden}
+      .app{height:100dvh;grid-template-rows:auto minmax(0,1fr)}
+      .topbar{
+        position:relative;z-index:120;display:grid;grid-template-columns:minmax(0,1fr) auto;
+        gap:7px;padding:8px 9px;max-height:47dvh;overflow-y:auto;overflow-x:hidden;
+        background:rgba(5,13,25,.96);border-bottom:1px solid #26384f;backdrop-filter:blur(12px)
+      }
+      .brand{grid-column:1;font-size:17px;align-self:center;overflow:hidden;text-overflow:ellipsis}
+      .mobile-menu-toggle{display:block;grid-column:2;width:auto!important;min-width:118px;padding:8px 10px!important;font-size:12px!important}
+      #searchClient{grid-column:1/-1;font-size:16px;min-height:44px}
+      .topbar input,.topbar select,.topbar button{min-height:42px;font-size:13px;padding:8px 9px;border-radius:10px}
+      .topbar.mobile-collapsed > select,
+      .topbar.mobile-collapsed > button:not(.mobile-menu-toggle):not(.mobile-priority){display:none!important}
+      .topbar.mobile-collapsed .mobile-priority{display:block!important}
+      .topbar.mobile-collapsed .mobile-priority:nth-of-type(n){min-width:0}
+      .topbar .mobile-priority{width:100%}
+      .qr-main-btn{font-weight:900;background:linear-gradient(135deg,#0891b2,#2563eb)!important}
+
+      .workspace-wrap{padding:6px;min-height:0}
+      .workspace{border-radius:14px;min-height:0;height:100%;touch-action:pan-x pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+      .workspace-title{top:10px;left:12px;right:12px;font-size:10px;max-width:70%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+      .mini-legend{right:10px;top:auto;bottom:10px;max-width:calc(100% - 20px);overflow-x:auto;gap:7px;padding:6px 8px;border-radius:12px}
+      .legend-item{font-size:10px;white-space:nowrap}.dot{width:9px;height:9px}
+
+      .modal-backdrop{padding:0;align-items:stretch;justify-content:stretch}
+      .modal,.modal.medium,.modal.large,.dashboard-modal,.qr-scanner-modal{
+        width:100vw!important;height:100dvh!important;max-width:none!important;max-height:none!important;
+        margin:0!important;border-radius:0!important;padding:12px!important;overflow:auto!important;
+        -webkit-overflow-scrolling:touch
+      }
+      .modal h3{font-size:17px;margin-bottom:8px;padding-right:36px}
+      .modal-subtitle{font-size:11px;line-height:1.4;margin-bottom:10px}
+      .modal .actions{position:sticky;bottom:0;z-index:20;background:linear-gradient(180deg,rgba(15,23,42,0),#0f172a 28%);padding-top:16px;padding-bottom:max(4px,env(safe-area-inset-bottom))}
+      .modal button,.modal input,.modal select,.modal textarea{font-size:16px;min-height:44px}
+
+      .qr-scanner-modal{padding-top:max(10px,env(safe-area-inset-top))!important;padding-bottom:max(10px,env(safe-area-inset-bottom))!important}
+      .qr-layout{grid-template-columns:1fr;gap:10px}
+      .qr-reader-card,.qr-result-card{padding:10px;border-radius:12px}
+      #qrReader{min-height:230px;max-height:42dvh;border-radius:10px}
+      #qrReader video{max-height:42dvh!important;object-fit:cover!important}
+      .qr-toolbar{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+      .qr-toolbar button{width:100%;min-width:0;font-size:13px!important}
+      .qr-manual{grid-template-columns:1fr auto;gap:7px}
+      .qr-manual input{min-width:0}
+      .qr-manual button{min-width:88px;font-size:13px!important}
+      .qr-status{font-size:11px;padding:8px 10px}
+      .qr-client-head{display:block}
+      .qr-client-name{font-size:19px;line-height:1.15;padding-right:0}
+      .qr-client-id{font-size:11px}
+      .qr-badge{display:inline-block;margin-top:8px;font-size:10px}
+      .qr-summary-grid{grid-template-columns:1fr 1fr;gap:6px;margin:9px 0}
+      .qr-mini-kpi{padding:8px}.qr-mini-kpi span{font-size:9px}.qr-mini-kpi strong{font-size:16px}
+      .qr-section-title{margin:11px 0 6px;font-size:11px}
+      .qr-table-wrap{max-height:215px;-webkit-overflow-scrolling:touch}
+      .qr-table{font-size:10px;min-width:560px}.qr-table th,.qr-table td{padding:7px 6px}
+      .qr-voice-text{font-size:11px;max-height:145px}
+
+      .form-grid,.dashboard-filters,.dashboard-grid{grid-template-columns:1fr!important}
+      .dashboard-kpis{grid-template-columns:1fr 1fr!important;gap:7px}
+      .tray-list-item,.cable-item{grid-template-columns:1fr!important}
+      .tray-toolbar,.connection-filter-toolbar,.cable-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+      .tray-toolbar button,.connection-filter-toolbar button,.cable-actions button{width:100%!important;min-width:0!important}
+
+      /* Evita que los controles pequeños sean difíciles de pulsar */
+      .port{touch-action:manipulation}
+      .eq-edit-btn,.tray-small-btn{min-height:34px!important;min-width:64px!important}
+    }
+
+    @media(max-width:420px){
+      .topbar{padding:7px}
+      .brand{font-size:15px}
+      .mobile-menu-toggle{min-width:108px;font-size:11px!important}
+      .qr-summary-grid,.dashboard-kpis{grid-template-columns:1fr 1fr!important}
+      #qrReader{min-height:210px}
+    }
+
   </style>
 </head>
 <body>
   <div class="app">
     <div class="topbar">
       <div class="brand">Inventario Visual Fibra</div>
+      <button id="mobileMenuBtn" class="secondary mobile-menu-toggle" type="button" onclick="toggleMobileMenu()">☰ Más opciones</button>
       <input id="searchClient" placeholder="Buscar cliente por nombre o ID de servicio" onkeydown="if(event.key==='Enter'){searchClients()}">
       <select id="cableFilter" onchange="changeCableFilter()"><option value="">Todos los cables</option></select>
       <select id="rackFilter" onchange="loadDashboard()"><option value="">Todos los racks</option></select>
@@ -617,8 +699,8 @@
         <option value="compact">Vista compacta</option>
         <option value="racku">Vista rack U</option>
       </select>
-      <button class="secondary" onclick="searchClients()">Buscar cliente</button>
-      <button class="secondary" onclick="openQrScannerModal()">📷 Escáner QR</button>
+      <button class="secondary mobile-priority" onclick="searchClients()">Buscar cliente</button>
+      <button class="secondary mobile-priority qr-main-btn" onclick="openQrScannerModal()">📷 Escáner QR</button>
       <button class="secondary" onclick="openRackModal()">Agregar rack</button>
       <button class="secondary" onclick="openEquipmentModal()">Agregar equipo</button>
       <button class="secondary" onclick="openCableModal()">Cables</button>
@@ -5104,6 +5186,34 @@
     loadConnectionEquipmentFilter();
     loadDashboard();
   </script>
+  <script>
+    function applyMobileTopbarState(){
+      const bar=document.querySelector('.topbar');
+      const btn=document.getElementById('mobileMenuBtn');
+      if(!bar||!btn) return;
+      if(window.innerWidth<=700){
+        if(!bar.dataset.mobileInitialized){
+          bar.classList.add('mobile-collapsed');
+          bar.dataset.mobileInitialized='1';
+        }
+        btn.textContent=bar.classList.contains('mobile-collapsed')?'☰ Más opciones':'✕ Menos opciones';
+      }else{
+        bar.classList.remove('mobile-collapsed');
+        delete bar.dataset.mobileInitialized;
+      }
+    }
+    function toggleMobileMenu(){
+      const bar=document.querySelector('.topbar');
+      const btn=document.getElementById('mobileMenuBtn');
+      if(!bar||!btn) return;
+      bar.classList.toggle('mobile-collapsed');
+      btn.textContent=bar.classList.contains('mobile-collapsed')?'☰ Más opciones':'✕ Menos opciones';
+      setTimeout(()=>{ if(typeof drawConnections==='function') drawConnections(); },80);
+    }
+    window.addEventListener('resize',applyMobileTopbarState);
+    window.addEventListener('DOMContentLoaded',applyMobileTopbarState);
+  </script>
+
 </body>
 </html>
 
