@@ -571,6 +571,39 @@
     @media (max-width:900px){
       .form-grid{grid-template-columns:1fr}
     }
+
+
+    /* ===== Módulo QR / Asistente técnico ===== */
+    .qr-scanner-modal{width:min(980px,100%);max-height:94vh;overflow:auto}
+    .qr-layout{display:grid;grid-template-columns:minmax(300px,.9fr) minmax(360px,1.1fr);gap:16px}
+    .qr-reader-card,.qr-result-card{border:1px solid #2d3c50;border-radius:16px;background:rgba(10,18,31,.78);padding:14px}
+    #qrReader{width:100%;min-height:290px;border-radius:14px;overflow:hidden;background:#050d18;border:1px solid #2a3d56}
+    .qr-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+    .qr-toolbar button{width:auto;min-width:120px}
+    .qr-manual{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}
+    .qr-manual button{width:auto;min-width:110px}
+    .qr-status{margin-top:10px;padding:10px 12px;border-radius:12px;border:1px solid #2a3d56;background:#081525;color:#9ddfff;font-size:12px;line-height:1.45}
+    .qr-client-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding-bottom:12px;border-bottom:1px solid #26374d}
+    .qr-client-name{font-size:22px;font-weight:900;color:#f0f8ff}
+    .qr-client-id{font-size:12px;color:#9fb4ce;margin-top:4px}
+    .qr-badge{padding:6px 10px;border-radius:999px;background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.45);color:#bbf7d0;font-size:11px;font-weight:800;white-space:nowrap}
+    .qr-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:12px 0}
+    .qr-mini-kpi{padding:10px;border:1px solid #2a3d56;border-radius:12px;background:#0a1626}
+    .qr-mini-kpi span{display:block;font-size:10px;color:#8ea3bf;margin-bottom:3px}
+    .qr-mini-kpi strong{font-size:18px}
+    .qr-section-title{margin:14px 0 8px;font-size:12px;color:#7ddfff;text-transform:uppercase;letter-spacing:.05em;font-weight:800}
+    .qr-table-wrap{max-height:240px;overflow:auto;border:1px solid #26374d;border-radius:12px}
+    .qr-table{width:100%;border-collapse:collapse;font-size:11px;min-width:620px}
+    .qr-table th{position:sticky;top:0;background:#102033;padding:8px;text-align:left;z-index:1}
+    .qr-table td{padding:8px;border-top:1px solid rgba(49,68,93,.5)}
+    .qr-empty{padding:18px;text-align:center;color:#8ea3bf;font-size:12px}
+    .qr-voice-text{margin-top:10px;padding:10px;border-radius:12px;background:#07111f;border:1px solid #26374d;color:#c8d8ea;font-size:11px;line-height:1.5;max-height:120px;overflow:auto}
+    .port.qr-highlight{z-index:25!important;animation:qrPulse 1.05s ease-in-out infinite;box-shadow:0 0 0 3px rgba(38,198,255,.4),0 0 18px rgba(38,198,255,.95)!important;border-color:#d9f7ff!important;transform:scale(1.18)!important}
+    .port.qr-highlight-direct{background:#22c55e!important;box-shadow:0 0 0 3px rgba(34,197,94,.42),0 0 20px rgba(34,197,94,.95)!important}
+    @keyframes qrPulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.75)}}
+    .rack-node.qr-rack-highlight{border-color:#26c6ff!important;box-shadow:0 0 0 2px rgba(38,198,255,.22),0 20px 50px rgba(0,0,0,.42)!important}
+    @media(max-width:800px){.qr-layout{grid-template-columns:1fr}.qr-summary-grid{grid-template-columns:1fr 1fr}.qr-scanner-modal{padding:12px}}
+
   </style>
 </head>
 <body>
@@ -585,6 +618,7 @@
         <option value="racku">Vista rack U</option>
       </select>
       <button class="secondary" onclick="searchClients()">Buscar cliente</button>
+      <button class="secondary" onclick="openQrScannerModal()">📷 Escáner QR</button>
       <button class="secondary" onclick="openRackModal()">Agregar rack</button>
       <button class="secondary" onclick="openEquipmentModal()">Agregar equipo</button>
       <button class="secondary" onclick="openCableModal()">Cables</button>
@@ -862,6 +896,79 @@
     </div>
   </div>
 
+
+
+  <div id="qrScannerModal" class="modal-backdrop">
+    <div class="modal qr-scanner-modal">
+      <h3>Escáner QR · Asistente técnico</h3>
+      <div class="modal-subtitle">Escanea un QR que contenga únicamente el ID del cliente / servicio. El sistema localizará sus puertos, iluminará la ruta y leerá la información en voz alta.</div>
+
+      <div class="qr-layout">
+        <div class="qr-reader-card">
+          <div id="qrReader"></div>
+          <div class="qr-toolbar">
+            <button id="qrStartBtn" onclick="startQrCamera()">Iniciar cámara</button>
+            <button class="secondary" onclick="stopQrCamera()">Detener cámara</button>
+            <button class="secondary" onclick="repeatQrVoice()">🔊 Repetir voz</button>
+          </div>
+          <div class="field" style="margin-top:10px">
+            <label>También puedes escanear una imagen con QR</label>
+            <input id="qrImageInput" type="file" accept="image/*" onchange="scanQrImage(this)">
+          </div>
+          <div class="qr-manual">
+            <input id="qrManualId" placeholder="ID del cliente / servicio" onkeydown="if(event.key==='Enter'){lookupQrClient(this.value)}">
+            <button class="secondary" onclick="lookupQrClient(document.getElementById('qrManualId').value)">Buscar</button>
+          </div>
+          <div id="qrScannerStatus" class="qr-status">Listo. Presiona “Iniciar cámara” y apunta al código QR.</div>
+        </div>
+
+        <div class="qr-result-card">
+          <div id="qrResultEmpty" class="qr-empty">Aún no se ha escaneado ningún cliente.</div>
+          <div id="qrResultContent" class="hidden">
+            <div class="qr-client-head">
+              <div>
+                <div id="qrClientName" class="qr-client-name">-</div>
+                <div id="qrClientId" class="qr-client-id">-</div>
+              </div>
+              <div class="qr-badge">CLIENTE LOCALIZADO</div>
+            </div>
+            <div class="qr-summary-grid">
+              <div class="qr-mini-kpi"><span>Puertos asociados</span><strong id="qrPortsCount">0</strong></div>
+              <div class="qr-mini-kpi"><span>Equipos involucrados</span><strong id="qrEquipmentCount">0</strong></div>
+              <div class="qr-mini-kpi"><span>Racks involucrados</span><strong id="qrRackCount">0</strong></div>
+              <div class="qr-mini-kpi"><span>Fecha instalación</span><strong id="qrInstallDate" style="font-size:14px">-</strong></div>
+            </div>
+
+            <div class="qr-section-title">Puertos del cliente</div>
+            <div class="qr-table-wrap">
+              <table class="qr-table">
+                <thead><tr><th>Rack</th><th>Equipo</th><th>Tipo</th><th>Puerto</th><th>Estado</th><th>Cable</th></tr></thead>
+                <tbody id="qrPortsBody"></tbody>
+              </table>
+            </div>
+
+            <div class="qr-section-title">Conexiones encontradas</div>
+            <div class="qr-table-wrap">
+              <table class="qr-table">
+                <thead><tr><th>Origen</th><th>Destino</th><th>Tipo</th></tr></thead>
+                <tbody id="qrLinksBody"></tbody>
+              </table>
+            </div>
+
+            <div class="qr-section-title">Lectura del asistente</div>
+            <div id="qrVoiceText" class="qr-voice-text"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="secondary" onclick="clearQrClientHighlight()">Limpiar resaltado</button>
+        <button onclick="showQrPortsOnWorkspace()">✨ Ver puertos en el plano</button>
+        <button class="secondary" onclick="closeQrScannerModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="rackModal" class="modal-backdrop">
     <div class="modal">
       <h3>Agregar rack</h3>
@@ -1044,6 +1151,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
@@ -1062,6 +1170,14 @@
     let draggingTrayPoint = null;
     let filteredClientLinkKeys = null;
     let selectedCableId = '';
+    let qrScannerInstance = null;
+    let qrCameraRunning = false;
+    let qrLastClient = null;
+    let qrLastVoiceText = '';
+    let qrDirectPortIds = new Set();
+    let qrHighlightedPortIds = new Set();
+    let qrLastBeepAt = 0;
+
     let dragConnection = {
       sourcePortId: null,
       sourceEl: null,
@@ -1400,9 +1516,9 @@
       }
     });
 
-    async function fetchAll() {
+    async function fetchAll(ignoreRackFilter = false) {
       if (!supabase) return;
-      const rackFilter = document.getElementById('rackFilter').value;
+      const rackFilter = ignoreRackFilter ? '' : document.getElementById('rackFilter').value;
 
       const [racksRes, eqRes, portsRes, clientsRes, assignmentsRes, linksRes] = await Promise.all([
         supabase.from('racks').select('*').order('nombre'),
@@ -3183,6 +3299,7 @@
       racks.forEach((rack, idx) => {
         const node = document.createElement('div');
         node.className = 'rack-node';
+        node.dataset.rackId = rack.id;
 
         const pos = saved[rack.id] || {
           x: 30 + ((idx % 4) * (mode === 'compact' ? 340 : 450)),
@@ -3210,6 +3327,7 @@
       });
 
       requestAnimationFrame(drawPersistentLinks);
+      if (qrHighlightedPortIds.size) requestAnimationFrame(applyQrPortHighlights);
     }
 
     function openEquipmentPortsModal(equipment) {
@@ -4424,6 +4542,459 @@
       toast('Reporte Excel generado');
     };
 
+
+    function escapeHtmlQr(value) {
+      return String(value ?? '')
+        .replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
+        .replaceAll('"','&quot;').replaceAll("'",'&#039;');
+    }
+
+    function normalizeQrClientId(rawValue) {
+      let value = String(rawValue || '').trim();
+      if (!value) return '';
+      try {
+        if (/^https?:\/\//i.test(value)) {
+          const url = new URL(value);
+          value = url.searchParams.get('id') || url.searchParams.get('cliente') || url.searchParams.get('service') || value;
+        }
+      } catch {}
+      value = value.replace(/^cliente\s*[:=]\s*/i,'').replace(/^id\s*[:=]\s*/i,'').trim();
+      return value;
+    }
+
+    function qrPortLocation(portId) {
+      const port = getPortById(portId);
+      if (!port) return null;
+      const eq = getEquipmentById(port.equipment_id);
+      const rack = eq ? getRackById(eq.rack_id) : null;
+      return { port, eq, rack };
+    }
+
+    function qrLocationText(portId) {
+      const loc = qrPortLocation(portId);
+      if (!loc) return 'Puerto no disponible';
+      const rackName = loc.rack?.nombre || 'Rack sin nombre';
+      const eqName = loc.eq?.nombre || 'Equipo sin nombre';
+      return `${rackName} · ${eqName} · puerto ${getPortDisplayLabel(loc.port)}`;
+    }
+
+    function getQrClientAssignments(clientId) {
+      const clientAssignments = assignments.filter(a => String(a.client_id) === String(clientId));
+      return clientAssignments.map(a => qrPortLocation(a.port_id)).filter(Boolean);
+    }
+
+    function getQrClientLinks(directPortIds) {
+      const direct = new Set([...directPortIds].map(String));
+      return links.filter(link => direct.has(String(link.port_id_origen)) || direct.has(String(link.port_id_destino)));
+    }
+
+    function setQrStatus(message, isError=false) {
+      const el = document.getElementById('qrScannerStatus');
+      if (!el) return;
+      el.textContent = message;
+      el.style.color = isError ? '#fecaca' : '#9ddfff';
+      el.style.borderColor = isError ? 'rgba(239,68,68,.55)' : '#2a3d56';
+    }
+
+    function applyQrPortHighlights() {
+      document.querySelectorAll('.port.qr-highlight,.port.qr-highlight-direct').forEach(el => {
+        el.classList.remove('qr-highlight','qr-highlight-direct');
+      });
+      document.querySelectorAll('.rack-node.qr-rack-highlight').forEach(el => el.classList.remove('qr-rack-highlight'));
+
+      if (!qrHighlightedPortIds.size) return;
+      const rackIds = new Set();
+      qrHighlightedPortIds.forEach(portId => {
+        document.querySelectorAll(`.port[data-port-id="${CSS.escape(String(portId))}"]`).forEach(el => {
+          el.classList.add('qr-highlight');
+          if (qrDirectPortIds.has(String(portId))) el.classList.add('qr-highlight-direct');
+          const eqId = el.dataset.equipmentId;
+          const eq = getEquipmentById(eqId);
+          if (eq?.rack_id) rackIds.add(String(eq.rack_id));
+        });
+      });
+      rackIds.forEach(rackId => {
+        const node = document.querySelector(`.rack-node[data-rack-id="${CSS.escape(rackId)}"]`);
+        if (node) node.classList.add('qr-rack-highlight');
+      });
+    }
+
+    function qrVoiceEquipmentLabel(loc) {
+      if (!loc) return 'equipo no disponible';
+      const eqName = String(loc.eq?.nombre || 'sin nombre').trim();
+      const eqType = String(loc.eq?.tipo || '').trim().toUpperCase();
+      // Para la lectura por voz no se menciona el rack. Los ODF se identifican como ODF;
+      // cualquier otro tipo se anuncia de forma sencilla como "equipo".
+      if (eqType.includes('ODF')) return `ODF ${eqName}`;
+      return `equipo ${eqName}`;
+    }
+
+    function qrVoiceLocationText(portId) {
+      const loc = qrPortLocation(portId);
+      if (!loc) return 'puerto no disponible';
+      return `${qrVoiceEquipmentLabel(loc)}, puerto ${getPortDisplayLabel(loc.port)}`;
+    }
+
+    function formatQrElapsedSince(dateValue) {
+      if (!dateValue) return '';
+      const d = new Date(dateValue);
+      if (Number.isNaN(d.getTime())) return '';
+      let diff = Date.now() - d.getTime();
+      if (diff < 0) diff = 0;
+      const minutes = Math.floor(diff / 60000);
+      const days = Math.floor(minutes / 1440);
+      const years = Math.floor(days / 365);
+      const months = Math.floor((days % 365) / 30);
+      const remDays = days - (years * 365) - (months * 30);
+      if (years > 0) return `${years} ${years === 1 ? 'año' : 'años'}${months ? ` y ${months} ${months === 1 ? 'mes' : 'meses'}` : ''}`;
+      if (months > 0) return `${months} ${months === 1 ? 'mes' : 'meses'}${remDays ? ` y ${remDays} ${remDays === 1 ? 'día' : 'días'}` : ''}`;
+      if (days > 0) return `${days} ${days === 1 ? 'día' : 'días'}`;
+      const hours = Math.floor(minutes / 60);
+      if (hours > 0) return `${hours} ${hours === 1 ? 'hora' : 'horas'}`;
+      return `${Math.max(0, minutes)} ${minutes === 1 ? 'minuto' : 'minutos'}`;
+    }
+
+    function qrTicketStartDate(ticket) {
+      if (!ticket?.fecha_inicio) return null;
+      const datePart = String(ticket.fecha_inicio).slice(0,10);
+      const timePart = String(ticket.hora_inicio || '00:00:00').trim() || '00:00:00';
+      const d = new Date(`${datePart}T${timePart}`);
+      return Number.isNaN(d.getTime()) ? new Date(datePart) : d;
+    }
+
+    async function getQrLastFailure(serviceId) {
+      if (!supabase || !serviceId) return { ticket: null, error: null };
+      try {
+        const { data, error } = await supabase
+          .from('om_tickets')
+          .select('ticket,id_cliente,nombre_cliente,fecha_inicio,hora_inicio,fecha_fin,hora_fin,estado,tipo_falla,causa,subcausa_falla,motivo_ticket,duracion_falla,duracion_falla_minutos')
+          .eq('id_cliente', String(serviceId).trim())
+          .order('fecha_inicio', { ascending: false })
+          .order('hora_inicio', { ascending: false })
+          .limit(1);
+        if (error) throw error;
+        return { ticket: Array.isArray(data) && data.length ? data[0] : null, error: null };
+      } catch (error) {
+        console.warn('No se pudo consultar la última falla en om_tickets:', error);
+        return { ticket: null, error };
+      }
+    }
+
+    async function getQrInstallation(serviceId) {
+      if (!supabase || !serviceId) return { installation: null, error: null };
+      try {
+        const { data, error } = await supabase
+          .from('instalaciones')
+          .select('id_cliente,cliente,fecha_entrega,estado_general,id_cambio,id_tarea')
+          .eq('id_cliente', String(serviceId).trim())
+          .not('fecha_entrega', 'is', null)
+          .order('fecha_entrega', { ascending: false })
+          .limit(1);
+        if (error) throw error;
+        return { installation: Array.isArray(data) && data.length ? data[0] : null, error: null };
+      } catch (error) {
+        console.warn('No se pudo consultar la fecha de instalación en instalaciones:', error);
+        return { installation: null, error };
+      }
+    }
+
+    function qrInstallationDate(installation) {
+      if (!installation?.fecha_entrega) return null;
+      const raw = String(installation.fecha_entrega).slice(0, 10);
+      const parts = raw.split('-').map(Number);
+      if (parts.length === 3 && parts.every(Number.isFinite)) {
+        const [y,m,d] = parts;
+        return new Date(y, m - 1, d, 12, 0, 0);
+      }
+      const parsed = new Date(installation.fecha_entrega);
+      return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+
+    function formatQrDateLong(dateValue) {
+      const d = dateValue instanceof Date ? dateValue : new Date(dateValue);
+      if (!d || Number.isNaN(d.getTime())) return '';
+      return new Intl.DateTimeFormat('es-CO', { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+    }
+
+    function formatQrDateShort(dateValue) {
+      const d = dateValue instanceof Date ? dateValue : new Date(dateValue);
+      if (!d || Number.isNaN(d.getTime())) return '-';
+      return new Intl.DateTimeFormat('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
+    }
+
+    function buildQrInstallationVoiceText(installation, installationLookupError=false) {
+      if (installationLookupError) return 'No fue posible consultar la fecha de instalación en este momento.';
+      if (!installation) return 'No se encontró una fecha de instalación registrada para este cliente.';
+      const date = qrInstallationDate(installation);
+      if (!date) return 'No se encontró una fecha de instalación válida para este cliente.';
+      return `La fecha de instalación fue el ${formatQrDateLong(date)}.`;
+    }
+
+    function playQrDetectedBeep() {
+      const now = Date.now();
+      if (now - qrLastBeepAt < 1200) return;
+      qrLastBeepAt = now;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1050, ctx.currentTime);
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.13);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.14);
+        osc.onended = () => { try { ctx.close(); } catch (_) {} };
+      } catch (error) {
+        console.warn('No fue posible reproducir el sonido de lectura QR:', error);
+      }
+    }
+
+    function buildQrFailureVoiceText(lastFailure, failureLookupError=false) {
+      if (failureLookupError) return 'No fue posible consultar el historial de fallas en este momento.';
+      if (!lastFailure) return 'No se encontraron fallas registradas para este cliente.';
+      const start = qrTicketStartDate(lastFailure);
+      const elapsed = start ? formatQrElapsedSince(start) : '';
+      let text = elapsed ? `La última falla registrada fue hace ${elapsed}` : 'Se encontró una falla registrada';
+      if (lastFailure.ticket) text += `, ticket ${lastFailure.ticket}`;
+      if (lastFailure.tipo_falla) text += `, tipo de falla ${lastFailure.tipo_falla}`;
+      const cause = String(lastFailure.subcausa_falla || lastFailure.causa || '').trim();
+      if (cause) text += `, causa ${cause}`;
+      return `${text}.`;
+    }
+
+    function buildQrVoiceText(client, directLocations, clientLinks, installation=null, installationLookupError=false, lastFailure=null, failureLookupError=false) {
+      const serviceId = client.identificador_servicio || client.id || 'sin identificador';
+      const parts = [`Cliente ${client.nombre_cliente || 'sin nombre'} ${serviceId}.`];
+      parts.push(buildQrInstallationVoiceText(installation, installationLookupError));
+      parts.push(buildQrFailureVoiceText(lastFailure, failureLookupError));
+      if (directLocations.length) {
+        parts.push(`Se encontraron ${directLocations.length} puertos asociados.`);
+        directLocations.slice(0, 10).forEach((loc) => {
+          parts.push(`Puerto en ${qrVoiceEquipmentLabel(loc)}, puerto ${getPortDisplayLabel(loc.port)}.`);
+        });
+      } else {
+        parts.push('No se encontraron puertos directamente asociados.');
+      }
+      if (clientLinks.length) {
+        parts.push(`Hay ${clientLinks.length} conexiones relacionadas.`);
+        clientLinks.slice(0, 10).forEach((link, index) => {
+          parts.push(`Conexión ${index + 1}: desde ${qrVoiceLocationText(link.port_id_origen)}, hacia ${qrVoiceLocationText(link.port_id_destino)}.`);
+        });
+      }
+      if (directLocations.length > 10 || clientLinks.length > 10) parts.push('La pantalla muestra el detalle completo.');
+      return parts.join(' ');
+    }
+
+    function speakQrText(text) {
+      qrLastVoiceText = text || '';
+      if (!qrLastVoiceText || !('speechSynthesis' in window)) {
+        if (!('speechSynthesis' in window)) setQrStatus('La información fue encontrada, pero este navegador no soporta lectura por voz.', true);
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utter = new SpeechSynthesisUtterance(qrLastVoiceText);
+      utter.lang = 'es-CO';
+      utter.rate = 0.96;
+      utter.pitch = 1;
+      const voices = window.speechSynthesis.getVoices?.() || [];
+      const preferred = voices.find(v => /^es(-|_)?CO/i.test(v.lang)) || voices.find(v => /^es/i.test(v.lang));
+      if (preferred) utter.voice = preferred;
+      window.speechSynthesis.speak(utter);
+    }
+
+    window.repeatQrVoice = function() {
+      if (!qrLastVoiceText) return toast('Primero escanea o busca un cliente');
+      speakQrText(qrLastVoiceText);
+    };
+
+    async function renderQrClientResult(client) {
+      const directLocations = getQrClientAssignments(client.id);
+      qrDirectPortIds = new Set(directLocations.map(loc => String(loc.port.id)));
+      const clientLinks = getQrClientLinks(qrDirectPortIds);
+      const resultsForFilter = directLocations.map(loc => ({ port_id: loc.port.id }));
+      buildClientFilterFromResults(resultsForFilter);
+      qrHighlightedPortIds = new Set([...filteredClientPortIds].map(String));
+
+      // Para que los puertos sean visibles claramente al escanear, usamos vista compacta.
+      if (getViewMode() !== 'compact') setViewMode('compact');
+      renderWorkspace();
+      requestAnimationFrame(() => {
+        applyQrPortHighlights();
+        drawPersistentLinks();
+      });
+
+      document.getElementById('qrResultEmpty').classList.add('hidden');
+      document.getElementById('qrResultContent').classList.remove('hidden');
+      document.getElementById('qrClientName').textContent = client.nombre_cliente || 'Cliente sin nombre';
+      document.getElementById('qrClientId').textContent = `ID: ${client.identificador_servicio || client.id || '-'}`;
+      document.getElementById('qrPortsCount').textContent = directLocations.length;
+      document.getElementById('qrEquipmentCount').textContent = new Set(directLocations.map(x => x.eq?.id).filter(Boolean)).size;
+      document.getElementById('qrRackCount').textContent = new Set(directLocations.map(x => x.rack?.id).filter(Boolean)).size;
+
+      const portsBody = document.getElementById('qrPortsBody');
+      portsBody.innerHTML = directLocations.length ? directLocations.map(loc => {
+        const cable = getCableById(loc.port.cable_id);
+        return `<tr>
+          <td>${escapeHtmlQr(loc.rack?.nombre || '-')}</td>
+          <td>${escapeHtmlQr(loc.eq?.nombre || '-')}</td>
+          <td>${escapeHtmlQr(String(loc.eq?.tipo || '-').toUpperCase())}</td>
+          <td><strong>${escapeHtmlQr(getPortDisplayLabel(loc.port))}</strong></td>
+          <td>${escapeHtmlQr(loc.port.estado || '-')}</td>
+          <td>${escapeHtmlQr(cable?.nombre || '-')}</td>
+        </tr>`;
+      }).join('') : '<tr><td colspan="6" class="qr-empty">Sin puertos asociados.</td></tr>';
+
+      const linksBody = document.getElementById('qrLinksBody');
+      linksBody.innerHTML = clientLinks.length ? clientLinks.map(link => `<tr>
+        <td>${escapeHtmlQr(qrLocationText(link.port_id_origen))}</td>
+        <td>${escapeHtmlQr(qrLocationText(link.port_id_destino))}</td>
+        <td>${escapeHtmlQr(link.tipo_enlace || '-')}</td>
+      </tr>`).join('') : '<tr><td colspan="3" class="qr-empty">Sin conexiones relacionadas.</td></tr>';
+
+      const serviceId = client.identificador_servicio || client.id || '';
+      setQrStatus(`Cliente localizado: ${client.nombre_cliente || ''}. Consultando fecha de instalación y última falla...`);
+      const [installationResult, failureResult] = await Promise.all([
+        getQrInstallation(serviceId),
+        getQrLastFailure(serviceId)
+      ]);
+      const installDate = qrInstallationDate(installationResult.installation);
+      document.getElementById('qrInstallDate').textContent = installDate ? formatQrDateShort(installDate) : '-';
+      const voiceText = buildQrVoiceText(
+        client,
+        directLocations,
+        clientLinks,
+        installationResult.installation,
+        !!installationResult.error,
+        failureResult.ticket,
+        !!failureResult.error
+      );
+      document.getElementById('qrVoiceText').textContent = voiceText;
+      qrLastClient = client;
+      setQrStatus(`Cliente localizado: ${client.nombre_cliente || ''}. Puertos iluminados, fecha de instalación y última falla consultadas.`);
+      speakQrText(voiceText);
+    }
+
+    window.lookupQrClient = async function(rawId) {
+      const id = normalizeQrClientId(rawId);
+      if (!id) return setQrStatus('El QR no contiene un ID válido.', true);
+      document.getElementById('qrManualId').value = id;
+
+      if (!supabase) return setQrStatus('No hay conexión con Supabase.', true);
+      setQrStatus(`Buscando ID ${id}...`);
+
+      // Refrescamos para que el escaneo use siempre la información más reciente de Supabase.
+      await fetchAll(true);
+      renderFilters();
+
+      const normalized = id.toLowerCase();
+      let client = clients.find(c => String(c.identificador_servicio || '').trim().toLowerCase() === normalized);
+      if (!client) client = clients.find(c => String(c.id || '').trim().toLowerCase() === normalized);
+
+      if (!client) {
+        clearQrClientHighlight(false);
+        setQrStatus(`No se encontró un cliente con el ID ${id}.`, true);
+        toast('Cliente no encontrado');
+        return;
+      }
+
+      await renderQrClientResult(client);
+      // Evita lecturas repetidas del mismo QR mientras permanece frente a la cámara.
+      if (qrCameraRunning) await stopQrCamera();
+    };
+
+    window.startQrCamera = async function() {
+      if (!window.Html5Qrcode) return setQrStatus('No se pudo cargar el lector QR. Verifica conexión a Internet.', true);
+      if (qrCameraRunning) return;
+      try {
+        qrScannerInstance = qrScannerInstance || new Html5Qrcode('qrReader');
+        const config = { fps: 10, qrbox: { width: 240, height: 240 }, aspectRatio: 1.0 };
+        await qrScannerInstance.start(
+          { facingMode: 'environment' },
+          config,
+          decodedText => {
+            playQrDetectedBeep();
+            lookupQrClient(decodedText);
+          },
+          () => {}
+        );
+        qrCameraRunning = true;
+        setQrStatus('Cámara activa. Apunta al QR del cliente.');
+      } catch (error) {
+        console.error(error);
+        setQrStatus('No fue posible abrir la cámara. Usa HTTPS/localhost, concede permiso de cámara o utiliza “Escanear imagen”.', true);
+      }
+    };
+
+    window.stopQrCamera = async function() {
+      if (!qrScannerInstance || !qrCameraRunning) return;
+      try { await qrScannerInstance.stop(); } catch (error) { console.warn(error); }
+      qrCameraRunning = false;
+      setQrStatus(qrLastClient ? 'Escaneo completado. La información permanece resaltada.' : 'Cámara detenida.');
+    };
+
+    window.scanQrImage = async function(input) {
+      const file = input?.files?.[0];
+      if (!file) return;
+      if (!window.Html5Qrcode) return setQrStatus('No se pudo cargar el lector QR.', true);
+      try {
+        if (qrCameraRunning) await stopQrCamera();
+        qrScannerInstance = qrScannerInstance || new Html5Qrcode('qrReader');
+        const decodedText = await qrScannerInstance.scanFile(file, true);
+        await lookupQrClient(decodedText);
+      } catch (error) {
+        console.error(error);
+        setQrStatus('No fue posible leer un QR en esa imagen.', true);
+      } finally {
+        input.value = '';
+      }
+    };
+
+    window.openQrScannerModal = async function() {
+      document.getElementById('qrScannerModal').classList.add('show');
+      setQrStatus('Actualizando inventario...');
+      await loadDashboard();
+      setQrStatus('Listo. Presiona “Iniciar cámara” y apunta al código QR.');
+    };
+
+    window.showQrPortsOnWorkspace = async function() {
+      if (!qrLastClient) return toast('Primero escanea o busca un cliente');
+      await stopQrCamera();
+      document.getElementById('qrScannerModal').classList.remove('show');
+      renderWorkspace();
+      requestAnimationFrame(() => {
+        applyQrPortHighlights();
+        drawPersistentLinks();
+      });
+      toast(`Puertos de ${qrLastClient.nombre_cliente || 'cliente'} resaltados`);
+    };
+
+    window.closeQrScannerModal = async function() {
+      await stopQrCamera();
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      document.getElementById('qrScannerModal').classList.remove('show');
+    };
+
+    window.clearQrClientHighlight = function(showToast=true) {
+      qrLastClient = null;
+      qrLastVoiceText = '';
+      qrDirectPortIds = new Set();
+      qrHighlightedPortIds = new Set();
+      clearClientFilter();
+      renderWorkspace();
+      const empty = document.getElementById('qrResultEmpty');
+      const content = document.getElementById('qrResultContent');
+      if (empty) empty.classList.remove('hidden');
+      if (content) content.classList.add('hidden');
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      if (showToast) toast('Resaltado QR limpiado');
+    };
+
     window.searchClients = async function() {
       if (!supabase) return toast('Sin conexión a Supabase');
       const text = document.getElementById('searchClient').value.trim();
@@ -4535,7 +5106,4 @@
   </script>
 </body>
 </html>
-
-
-
 
