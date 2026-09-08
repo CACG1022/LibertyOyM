@@ -4883,9 +4883,21 @@
       const utter = new SpeechSynthesisUtterance(qrLastVoiceText);
       utter.lang = 'es-CO';
       utter.rate = 0.96;
-      utter.pitch = 1;
+      utter.pitch = 0.90;
+
+      // Prioriza una voz masculina en español de Colombia cuando el dispositivo la tenga disponible.
+      // La Web Speech API no expone el género de forma estándar, por eso se identifican primero
+      // nombres masculinos frecuentes de voces del sistema y luego se usa la mejor voz es-CO disponible.
       const voices = window.speechSynthesis.getVoices?.() || [];
-      const preferred = voices.find(v => /^es(-|_)?CO/i.test(v.lang)) || voices.find(v => /^es/i.test(v.lang));
+      const maleName = /(gonzalo|carlos|juan|jorge|diego|miguel|pablo|andres|andr[eé]s|alejandro|fernando|ricardo|male|hombre)/i;
+      const esCO = voices.filter(v => /^es(?:-|_)?CO$/i.test(v.lang || '') || /^es(?:-|_)?CO/i.test(v.lang || ''));
+      const spanish = voices.filter(v => /^es|^es[-_]/i.test(v.lang || ''));
+      const preferred =
+        esCO.find(v => maleName.test(v.name || '')) ||
+        esCO.find(v => /microsoft gonzalo/i.test(v.name || '')) ||
+        esCO[0] ||
+        spanish.find(v => maleName.test(v.name || '')) ||
+        spanish[0];
       if (preferred) utter.voice = preferred;
       window.speechSynthesis.speak(utter);
     }
@@ -5216,4 +5228,5 @@
 
 </body>
 </html>
+
 
