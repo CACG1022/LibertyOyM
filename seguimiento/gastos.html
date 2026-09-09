@@ -11,6 +11,7 @@
   <!-- Iconos y Excel -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 
   <style>
     :root{
@@ -433,6 +434,9 @@
     .badge.cash{color:#86efac;background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.25)}
     .badge.bank{color:#93c5fd;background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.25)}
     .badge.nequi{color:#f0abfc;background:rgba(217,70,239,.1);border-color:rgba(217,70,239,.25)}
+    .badge.legalizado{color:#bbf7d0;background:rgba(34,197,94,.11);border-color:rgba(34,197,94,.32)}
+    .badge.pendiente-legalizar{color:#fde68a;background:rgba(245,158,11,.11);border-color:rgba(245,158,11,.32)}
+    .download-status{font-size:12px;color:#bfdbfe;margin-left:8px;align-self:center}
 
     .actions{
       display:flex;
@@ -998,6 +1002,11 @@
           <option value="">Todas las etiquetas</option>
           <option value="__SIN_ETIQUETA__">Sin etiqueta</option>
         </select>
+        <select id="filtroEstadoLegalizacion" title="Filtrar por estado de legalización">
+          <option value="">Todos los estados</option>
+          <option value="LEGALIZADO">LEGALIZADO</option>
+          <option value="PENDIENTE POR LEGALIZAR">PENDIENTE POR LEGALIZAR</option>
+        </select>
         <input type="month" id="filtroMes" title="Filtrar por mes. Déjalo vacío para ver todos los meses." />
         <input type="date" id="filtroFechaDesde" title="Fecha inicial del rango" />
         <input type="date" id="filtroFechaHasta" title="Fecha final del rango" />
@@ -1007,6 +1016,8 @@
         <button class="btn yellow" id="btnRegistrarMovimiento" onclick="abrirModalMovimiento()"><i data-lucide="landmark"></i> Registrar retiro/ajuste</button>
         <button class="btn ghost" onclick="abrirModalEtiquetas()"><i data-lucide="tag"></i> Gestionar etiquetas</button>
         <button class="btn green" onclick="exportarExcel()"><i data-lucide="file-spreadsheet"></i> Exportar Excel</button>
+        <button class="btn ghost" id="btnDescargarSoportes" onclick="descargarSoportesFiltrados()"><i data-lucide="file-archive"></i> Descargar soportes</button>
+        <span class="download-status" id="downloadStatus"></span>
         <button class="btn primary" onclick="abrirModalGasto()"><i data-lucide="plus"></i> Nuevo gasto</button>
       </div>
     </section>
@@ -1023,13 +1034,14 @@
               <th onclick="ordenarPor('metodo_pago')">Método</th>
               <th onclick="ordenarPor('tipo_gasto')">Tipo gasto</th>
               <th onclick="ordenarPor('etiqueta_id')">Etiqueta</th>
+              <th onclick="ordenarPor('estado_legalizacion')">Estado</th>
               <th>Descripción / Actividad</th>
               <th>Soporte</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody id="tbodyGastos">
-            <tr><td colspan="10" class="empty">Cargando gastos...</td></tr>
+            <tr><td colspan="11" class="empty">Cargando gastos...</td></tr>
           </tbody>
         </table>
       </div>
@@ -1141,6 +1153,14 @@
               <option value="">Sin etiqueta</option>
             </select>
             <p class="small">Úsala para marcar gastos de préstamos u otros dineros específicos.</p>
+          </div>
+
+          <div class="field">
+            <label>Estado legalización</label>
+            <select id="estadoLegalizacion" required>
+              <option value="PENDIENTE POR LEGALIZAR">PENDIENTE POR LEGALIZAR</option>
+              <option value="LEGALIZADO">LEGALIZADO</option>
+            </select>
           </div>
 
           <div class="field full">
@@ -1387,6 +1407,13 @@
    * Si la dejas vacía, el gasto se guarda sin subir factura a Drive.
    ***************************************************************/
   const N8N_WEBHOOK_DRIVE_URL = "https://ftth-n8n2.pzveh5.easypanel.host/webhook/6dffc669-abb7-4570-83c3-efb8a0ac3ff9";
+  /*
+    WEBHOOK PARA DESCARGAR SOPORTES FÍSICOS
+    Este webhook debe estar en n8n y debe devolver un archivo .zip como respuesta binaria.
+    El navegador no puede descargar directamente desde Google Drive por CORS, por eso se usa n8n como servidor intermedio.
+    Puedes dejarlo vacío: la primera vez el sistema te pedirá la URL y la guardará en este navegador.
+  */
+  const N8N_WEBHOOK_ZIP_SOPORTES_URL = "https://ftth-n8n2.pzveh5.easypanel.host/webhook/8d05c21e-eec5-4d89-b6d2-1e4efcee0618";
   const USUARIO_MOVIMIENTOS_CAJA = "camilo.carreno@libertynet.com";
   /*
     Configura aquí el correo real del usuario Diego.
@@ -1665,6 +1692,7 @@
     $("filtroTipo").addEventListener("change", aplicarFiltros);
     $("filtroMetodo").addEventListener("change", aplicarFiltros);
     $("filtroEtiqueta").addEventListener("change", aplicarFiltros);
+    $("filtroEstadoLegalizacion").addEventListener("change", aplicarFiltros);
     $("filtroMes").addEventListener("change", aplicarFiltros);
     $("filtroFechaDesde").addEventListener("change", aplicarFiltros);
     $("filtroFechaHasta").addEventListener("change", aplicarFiltros);
@@ -1729,6 +1757,7 @@
     $("facturaActual").textContent = "";
     $("previewFactura").style.display = "none";
     archivoFacturaSeleccionado = null;
+    if($("estadoLegalizacion")) $("estadoLegalizacion").value = "PENDIENTE POR LEGALIZAR";
 
     if(gasto){
       $("tituloModalGasto").textContent = "Editar gasto";
@@ -1739,6 +1768,7 @@
       $("metodoPago").value = gasto.metodo_pago || "";
       $("tipoGasto").value = gasto.tipo_gasto || "";
       if($("etiquetaGasto")) $("etiquetaGasto").value = gasto.etiqueta_id || "";
+      if($("estadoLegalizacion")) $("estadoLegalizacion").value = gasto.estado_legalizacion || "PENDIENTE POR LEGALIZAR";
       $("descripcion").value = gasto.descripcion || "";
       if(gasto.factura_drive_url){
         $("facturaActual").innerHTML = `Soporte actual: <a href="${gasto.factura_drive_url}" target="_blank" style="color:#38bdf8">Ver factura en Drive</a>`;
@@ -2439,6 +2469,7 @@
       descripcion: $("descripcion").value.trim(),
       tipo_gasto: $("tipoGasto").value,
       etiqueta_id: $("etiquetaGasto")?.value || null,
+      estado_legalizacion: $("estadoLegalizacion")?.value || "PENDIENTE POR LEGALIZAR",
       ...facturaInfo
     };
 
@@ -2545,7 +2576,7 @@
 
     if(error){
       console.error(error);
-      $("tbodyGastos").innerHTML = `<tr><td colspan="10" class="empty">Error cargando gastos: ${error.message}</td></tr>`;
+      $("tbodyGastos").innerHTML = `<tr><td colspan="11" class="empty">Error cargando gastos: ${error.message}</td></tr>`;
       return;
     }
 
@@ -2888,6 +2919,7 @@
     const q = ($("buscar")?.value || "").trim().toLowerCase();
     const tipoFiltro = $("filtroTipo")?.value || "";
     const metodoFiltro = $("filtroMetodo")?.value || "";
+    const estadoLegalizacionFiltro = $("filtroEstadoLegalizacion")?.value || "";
 
     const totalRangoFechas = (fechaDesde || fechaHasta)
       ? gastosBase
@@ -2904,7 +2936,8 @@
             return fechaEnRango(g.fecha, fechaDesde, fechaHasta)
               && (!q || texto.includes(q))
               && (!tipoFiltro || g.tipo_gasto === tipoFiltro)
-              && (!metodoFiltro || g.metodo_pago === metodoFiltro);
+              && (!metodoFiltro || g.metodo_pago === metodoFiltro)
+              && (!estadoLegalizacionFiltro || estadoLegalizacionLabel(g.estado_legalizacion) === estadoLegalizacionFiltro);
           })
           .reduce((acc, g) => acc + Number(g.valor || 0), 0)
       : 0;
@@ -2973,6 +3006,7 @@
     $("filtroTipo").value = "";
     $("filtroMetodo").value = "";
     $("filtroEtiqueta").value = "";
+    $("filtroEstadoLegalizacion").value = "";
     $("filtroMes").value = "";
     $("filtroFechaDesde").value = "";
     $("filtroFechaHasta").value = "";
@@ -2994,6 +3028,7 @@
     const tipo = $("filtroTipo").value;
     const metodo = $("filtroMetodo").value;
     const etiqueta = $("filtroEtiqueta")?.value || "";
+    const estadoLegalizacion = $("filtroEstadoLegalizacion")?.value || "";
     const mes = $("filtroMes").value;
     const fechaDesde = $("filtroFechaDesde")?.value || "";
     const fechaHasta = $("filtroFechaHasta")?.value || "";
@@ -3006,7 +3041,8 @@
         g.descripcion,
         g.tipo_gasto,
         g.metodo_pago,
-        etiquetaNombre(g.etiqueta_id)
+        etiquetaNombre(g.etiqueta_id),
+        estadoLegalizacionLabel(g.estado_legalizacion)
       ].join(" ").toLowerCase();
 
       const usuarioKey = g.usuario_id || g.usuario_email || g.usuario_nombre;
@@ -3016,10 +3052,11 @@
       const matchTipo = !tipo || g.tipo_gasto === tipo;
       const matchMetodo = !metodo || g.metodo_pago === metodo;
       const matchEtiqueta = !etiqueta || (etiqueta === "__SIN_ETIQUETA__" ? !g.etiqueta_id : String(g.etiqueta_id || "") === String(etiqueta));
+      const matchEstadoLegalizacion = !estadoLegalizacion || estadoLegalizacionLabel(g.estado_legalizacion) === estadoLegalizacion;
       const matchMes = !mes || String(g.fecha || "").startsWith(mes);
       const matchRangoFechas = fechaEnRango(g.fecha, fechaDesde, fechaHasta);
 
-      return gastoVisibleParaUsuario(g) && matchQ && matchUsuario && matchTipo && matchMetodo && matchEtiqueta && matchMes && matchRangoFechas;
+      return gastoVisibleParaUsuario(g) && matchQ && matchUsuario && matchTipo && matchMetodo && matchEtiqueta && matchEstadoLegalizacion && matchMes && matchRangoFechas;
     });
 
     movimientosFiltrados = movimientosCaja.filter(m => {
@@ -3136,11 +3173,21 @@
     return `<span class="badge ${clase}">${metodo || "N/A"}</span>`;
   }
 
+  function estadoLegalizacionLabel(estado){
+    return estado === "LEGALIZADO" ? "LEGALIZADO" : "PENDIENTE POR LEGALIZAR";
+  }
+
+  function badgeEstadoLegalizacion(estado){
+    const label = estadoLegalizacionLabel(estado);
+    const clase = label === "LEGALIZADO" ? "legalizado" : "pendiente-legalizar";
+    return `<span class="badge ${clase}">${label}</span>`;
+  }
+
   function renderTabla(){
     const tbody = $("tbodyGastos");
 
     if(!gastosFiltrados.length){
-      tbody.innerHTML = `<tr><td colspan="10" class="empty">No hay registros para los filtros seleccionados.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="11" class="empty">No hay registros para los filtros seleccionados.</td></tr>`;
       return;
     }
 
@@ -3159,6 +3206,7 @@
         <td>${badgeMetodo(g.metodo_pago)}</td>
         <td>${escHTML(g.tipo_gasto || "")}</td>
         <td>${badgeEtiqueta(g.etiqueta_id)}</td>
+        <td>${badgeEstadoLegalizacion(g.estado_legalizacion)}</td>
         <td>${escHTML(g.descripcion || "")}</td>
         <td>
           ${g.factura_drive_url ? `<a href="${g.factura_drive_url}" target="_blank" class="btn ghost" style="padding:8px 10px"><i data-lucide="external-link"></i> Ver</a>` : `<span class="small">Sin soporte</span>`}
@@ -3312,6 +3360,7 @@
       "Método de pago": g.metodo_pago,
       "Tipo gasto": g.tipo_gasto,
       "Etiqueta": etiquetaNombre(g.etiqueta_id),
+      "Estado legalización": estadoLegalizacionLabel(g.estado_legalizacion),
       "Descripción": g.descripcion,
       "URL Factura Drive": g.factura_drive_url
     }));
@@ -3350,6 +3399,255 @@
     XLSX.utils.book_append_sheet(wb, wsEtiquetas, "Etiquetas");
 
     XLSX.writeFile(wb, `gastos_movimientos_${new Date().toISOString().slice(0,10)}.xlsx`);
+  }
+
+
+  function getDriveFileId(url){
+    const text = String(url || "");
+    if(!text) return "";
+
+    let match = text.match(/\/file\/d\/([^/]+)/);
+    if(match) return match[1];
+
+    match = text.match(/[?&]id=([^&]+)/);
+    if(match) return decodeURIComponent(match[1]);
+
+    match = text.match(/\/open\?id=([^&]+)/);
+    if(match) return decodeURIComponent(match[1]);
+
+    return "";
+  }
+
+  function getDownloadableSupportUrl(url){
+    const id = getDriveFileId(url);
+    if(id) return `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`;
+    return url;
+  }
+
+  function limpiarNombreSoporte(nombre){
+    const base = String(nombre || "soporte").trim() || "soporte";
+    return base
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9._-]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .slice(0, 90) || "soporte";
+  }
+
+  function extensionDesdeContentType(contentType, url){
+    const type = String(contentType || "").toLowerCase();
+    if(type.includes("pdf")) return ".pdf";
+    if(type.includes("png")) return ".png";
+    if(type.includes("jpeg") || type.includes("jpg")) return ".jpg";
+    if(type.includes("webp")) return ".webp";
+    if(type.includes("gif")) return ".gif";
+    const path = String(url || "").split("?")[0];
+    const m = path.match(/\.(pdf|png|jpe?g|webp|gif)$/i);
+    return m ? "." + m[1].toLowerCase().replace("jpeg","jpg") : ".bin";
+  }
+
+  function setDownloadStatus(texto){
+    const el = $("downloadStatus");
+    if(el) el.textContent = texto || "";
+  }
+
+  function crearHtmlIndiceSoportes(soportes, errores){
+    const filas = soportes.map((g, i) => {
+      const error = errores.find(e => e.id === g.id);
+      const estado = error ? "No descargado automáticamente" : "Descargado";
+      const color = error ? "#b91c1c" : "#15803d";
+      return `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${esc(g.fecha || "")}</td>
+          <td>${esc(g.numero_factura || "Sin factura")}</td>
+          <td>${esc(g.usuario_nombre || g.usuario_email || "")}</td>
+          <td>${esc(formatCOP(g.valor || 0))}</td>
+          <td>${esc(etiquetaNombre(g.etiqueta_id) || "Sin etiqueta")}</td>
+          <td style="color:${color};font-weight:700">${estado}</td>
+          <td><a href="${esc(g.factura_drive_url || "")}" target="_blank">Abrir soporte</a></td>
+        </tr>`;
+    }).join("");
+
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Índice de soportes</title>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;margin:24px;color:#111}
+  h1{font-size:22px;margin:0 0 8px}
+  p{color:#444;line-height:1.4}
+  table{border-collapse:collapse;width:100%;margin-top:18px;font-size:13px}
+  th,td{border:1px solid #ddd;padding:8px;text-align:left;vertical-align:top}
+  th{background:#f3f4f6}
+  a{color:#0b63ce;font-weight:700}
+</style>
+</head>
+<body>
+  <h1>Índice de soportes de gastos</h1>
+  <p>Este archivo lista los soportes correspondientes a los registros filtrados al momento de generar el ZIP.</p>
+  <p><b>Nota:</b> si un soporte no pudo descargarse automáticamente, normalmente es por permisos del enlace de Google Drive o por bloqueo CORS del navegador. En ese caso usa el enlace de la columna “Abrir soporte”.</p>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Fecha</th><th>Factura</th><th>Usuario</th><th>Valor</th><th>Etiqueta</th><th>Estado ZIP</th><th>Link</th></tr>
+    </thead>
+    <tbody>${filas}</tbody>
+  </table>
+</body>
+</html>`;
+  }
+
+  function crearAccesoDirectoUrl(url){
+    return `[InternetShortcut]\nURL=${url}\n`;
+  }
+
+  function obtenerWebhookZipSoportes(){
+    let url = (N8N_WEBHOOK_ZIP_SOPORTES_URL || localStorage.getItem("N8N_WEBHOOK_ZIP_SOPORTES_URL") || "").trim();
+
+    if(!url){
+      url = prompt(
+        "Pega aquí la URL del webhook de n8n que genera el ZIP con los soportes físicos.\n\n" +
+        "Ejemplo: https://tu-n8n/webhook/gastos-soportes-zip"
+      ) || "";
+      url = url.trim();
+      if(url){
+        localStorage.setItem("N8N_WEBHOOK_ZIP_SOPORTES_URL", url);
+      }
+    }
+
+    return url;
+  }
+
+  function nombreArchivoDesdeContentDisposition(headerValue, fallback){
+    const header = String(headerValue || "");
+    const utf = header.match(/filename\*=UTF-8''([^;]+)/i);
+    if(utf){
+      try{return decodeURIComponent(utf[1].replace(/['"]/g, ""));}catch(e){}
+    }
+
+    const normal = header.match(/filename="?([^";]+)"?/i);
+    if(normal) return normal[1];
+
+    return fallback;
+  }
+
+  async function descargarSoportesFiltrados(){
+    const soportes = gastosFiltrados
+      .filter(g => g.factura_drive_url)
+      .map((g, index) => ({
+        id: g.id,
+        soporteIndex: index + 1,
+        fecha: g.fecha || "",
+        numero_factura: g.numero_factura || "Sin factura",
+        valor: Number(g.valor || 0),
+        usuario_nombre: g.usuario_nombre || "",
+        usuario_email: g.usuario_email || "",
+        metodo_pago: g.metodo_pago || "",
+        tipo_gasto: g.tipo_gasto || "",
+        descripcion: g.descripcion || "",
+        estado_legalizacion: g.estado_legalizacion || "",
+        etiqueta_id: g.etiqueta_id || null,
+        etiqueta_nombre: etiquetaNombre(g.etiqueta_id) || "Sin etiqueta",
+        factura_drive_url: g.factura_drive_url || "",
+        factura_file_id: g.factura_file_id || getDriveFileId(g.factura_drive_url || ""),
+        factura_nombre: g.factura_nombre || ""
+      }));
+
+    if(!soportes.length){
+      toast("Los registros filtrados no tienen soportes para descargar.");
+      return;
+    }
+
+    const webhookUrl = obtenerWebhookZipSoportes();
+    if(!webhookUrl){
+      toast("No se configuró la URL del webhook de n8n para descargar soportes físicos.");
+      return;
+    }
+
+    const ok = confirm(
+      `Se enviarán ${soportes.length} soporte(s) filtrado(s) a n8n para descargar los archivos físicos y generar un ZIP.\n\n` +
+      "Este proceso puede tardar según la cantidad de soportes. ¿Deseas continuar?"
+    );
+    if(!ok) return;
+
+    const btn = $("btnDescargarSoportes");
+    if(btn) btn.disabled = true;
+    setDownloadStatus(`Solicitando ZIP físico a n8n: 0/${soportes.length}...`);
+
+    const desde = $("filtroFechaDesde")?.value || "inicio";
+    const hasta = $("filtroFechaHasta")?.value || "fin";
+    const nombreZip = `soportes_gastos_${desde}_${hasta}_${new Date().toISOString().slice(0,10)}.zip`;
+
+    try{
+      const payload = {
+        modulo: "gastos",
+        accion: "descargar_soportes_filtrados",
+        generado_en: new Date().toISOString(),
+        usuario_solicita: usuarioActual?.email || "",
+        filtro_fecha_desde: desde,
+        filtro_fecha_hasta: hasta,
+        total_soportes: soportes.length,
+        nombre_zip: nombreZip,
+        soportes
+      };
+
+      const response = await fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if(!response.ok){
+        const text = await response.text().catch(() => "");
+        throw new Error(`n8n respondió HTTP ${response.status}. ${text.slice(0, 350)}`);
+      }
+
+      const contentType = response.headers.get("content-type") || "";
+      if(contentType.includes("application/json")){
+        const json = await response.json();
+        if(json?.url){
+          const a = document.createElement("a");
+          a.href = json.url;
+          a.target = "_blank";
+          a.rel = "noopener";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setDownloadStatus(`ZIP solicitado a n8n para ${soportes.length} soporte(s).`);
+          toast("n8n generó un link de descarga para los soportes físicos.");
+          return;
+        }
+        throw new Error(json?.error || "n8n respondió JSON, pero no devolvió archivo ZIP ni URL de descarga.");
+      }
+
+      const blobZip = await response.blob();
+      if(!blobZip || blobZip.size === 0){
+        throw new Error("n8n devolvió un archivo vacío.");
+      }
+
+      const downloadName = nombreArchivoDesdeContentDisposition(response.headers.get("content-disposition"), nombreZip);
+      const url = URL.createObjectURL(blobZip);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = downloadName || nombreZip;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      setDownloadStatus(`ZIP físico generado con ${soportes.length} soporte(s) filtrado(s).`);
+      toast("ZIP físico descargado correctamente.");
+      setTimeout(() => setDownloadStatus(""), 9000);
+    }catch(err){
+      console.error(err);
+      setDownloadStatus("Error descargando soportes físicos desde n8n.");
+      toast(
+        "No se pudo generar el ZIP físico. Revisa que el webhook de n8n esté activo, tenga CORS habilitado y acceso a Google Drive. " +
+        (err.message || err)
+      );
+    }finally{
+      if(btn) btn.disabled = false;
+    }
   }
 
   function toggleSidebar(){
@@ -3392,6 +3690,9 @@
 </script>
 </body>
 </html>
+
+
+
 
 
 
