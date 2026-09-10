@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Y50 50x30 v46 - nuevos parámetros por defecto</title>
+<style>
+:root{--o:#ff6500;--bg:#f4f6f8;--b:#dfe3e8;--g:#168a45;--blue:#2563eb}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:#17202a}
+.wrap{max-width:1050px;margin:14px auto;padding:0 12px}.head{background:linear-gradient(135deg,#ff6500,#ff8741);color:#fff;padding:20px;border-radius:17px}
+.card{background:#fff;border:1px solid var(--b);border-radius:16px;padding:17px;margin-top:14px}h1{margin:0 0 6px;font-size:24px}h3{margin:0 0 12px}
+.status{font-weight:700;margin-bottom:12px}.ok{color:var(--g)}.bad{color:#c62828}
+button{border:0;border-radius:10px;padding:11px 14px;font-weight:700;font-size:14px;cursor:pointer;margin:4px}button:disabled{opacity:.45}
+.primary{background:var(--o);color:#fff}.print{background:#17202a;color:#fff;font-size:17px}.blue{background:var(--blue);color:#fff}.secondary{background:#edf0f3}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}input,select,textarea{width:100%;padding:9px;border:1px solid #d0d5dd;border-radius:9px;font-size:14px}
+.good{background:#ecfdf3;border:1px solid #abefc6;color:#067647;border-radius:11px;padding:11px 12px;font-size:13px;line-height:1.5}
+.info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;border-radius:11px;padding:11px 12px;font-size:13px;line-height:1.5}
+.battery{display:flex;align-items:center;gap:12px;background:#f8fafc;border:1px solid #e5e7eb;padding:12px;border-radius:12px;margin-top:12px}
+.bicon{width:52px;height:25px;border:3px solid #17202a;border-radius:5px;padding:2px;position:relative}.bicon:after{content:"";position:absolute;right:-7px;top:5px;width:5px;height:9px;background:#17202a}
+.bfill{height:100%;width:0;background:#16a34a}.bvalue{font-size:23px;font-weight:800}.small{font-size:12px;color:#667085}
+.preview{background:#e9edf1;padding:14px;border-radius:12px;text-align:center;overflow:auto}
+canvas{background:#fff;border:1px solid #888;max-width:100%;height:auto;image-rendering:pixelated;touch-action:none;cursor:move}
+.log{background:#111827;color:#d1fae5;padding:12px;border-radius:11px;white-space:pre-wrap;min-height:260px;max-height:480px;overflow:auto;font:12px Consolas,monospace}
+.objrow{display:grid;grid-template-columns:150px 1fr 80px 80px 80px;gap:7px;align-items:end;margin-bottom:8px;padding:8px;background:#f8fafc;border-radius:10px}
+.objrow strong{align-self:center}.check{display:flex;align-items:center;gap:8px}.check input{width:auto}
+
+
+
+.canvasOnlyCard{padding:14px}
+.canvasHeader{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.canvasHeader h3{margin:0}
+.openSettings{background:#2563eb;color:#fff;white-space:nowrap}
+
+.floatingSettings{
+ position:fixed;
+ right:22px;
+ top:80px;
+ width:min(820px,calc(100vw - 44px));
+ max-height:82vh;
+ background:#fff;
+ border:1px solid #cbd5e1;
+ border-radius:16px;
+ box-shadow:0 18px 55px rgba(15,23,42,.25);
+ z-index:9999;
+ display:none;
+ overflow:hidden;
+}
+.floatingSettings.show{display:block}
+.modalHeader{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:10px;
+ padding:12px 14px;
+ background:#f8fafc;
+ border-bottom:1px solid #e2e8f0;
+ cursor:move;
+ user-select:none;
+ touch-action:none;
+}
+.modalHeader strong{font-size:16px}
+.modalActions{display:flex;gap:6px;align-items:center}
+.modalActions button{padding:7px 10px;margin:0;font-size:12px}
+.modalBody{
+ padding:12px;
+ overflow:auto;
+ max-height:calc(82vh - 55px);
+}
+.modalHint{font-size:12px;color:#667085;margin-bottom:10px}
+
+#objectControls .objrow{
+ display:grid !important;
+ grid-template-columns:120px repeat(3,minmax(72px,1fr)) minmax(84px,1fr) minmax(115px,1.25fr) minmax(82px,1fr) !important;
+ gap:8px !important;
+ align-items:end;
+ padding:9px !important;
+ margin-bottom:8px !important;
+ border-radius:9px !important;
+}
+#objectControls .objrow strong{font-size:13px;align-self:center}
+#objectControls .objrow label{font-size:11px;margin-bottom:3px}
+#objectControls .objrow input,
+#objectControls .objrow select{
+ width:100%;
+ min-width:0;
+ padding:7px 8px;
+ height:34px;
+ font-size:12px;
+ border-radius:7px;
+}
+#objectControls .objrow > div{min-width:0}
+#preset{font-size:12px;padding:8px 10px}
+
+.modalSectionTitle{
+ font-size:12px;
+ font-weight:700;
+ color:#475569;
+ margin:3px 0 9px;
+}
+
+
+.templateManager{
+ background:#eef4ff;
+ border:1px solid #c7d7fe;
+ border-radius:10px;
+ padding:10px;
+ margin-bottom:12px;
+}
+.templateManager h4{margin:0 0 8px;font-size:14px}
+.templateGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.templateBtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.templateBtns button{width:auto!important;margin:0!important;padding:7px 10px!important;font-size:11px!important}
+.templateInfo{font-size:11px;color:#475569;margin-top:7px}
+
+
+#objectControls .objrow.focusedRow{
+ outline:2px solid #2563eb;
+ background:#eff6ff;
+ box-shadow:0 0 0 3px rgba(37,99,235,.08);
+}
+
+@media(max-width:780px){
+ .grid2,.grid3{grid-template-columns:1fr}
+ .canvasHeader{align-items:flex-start;flex-direction:column}
+ .floatingSettings{left:10px!important;right:10px!important;top:65px!important;width:auto!important;max-height:86vh}
+ .modalBody{max-height:calc(86vh - 55px)}
+ #objectControls .objrow{grid-template-columns:1fr 1fr !important}
+ #objectControls .objrow strong{grid-column:1/-1}
+ button{width:100%;margin:4px 0}
+ .modalActions button{width:auto}
+}
+ .workspaceTop{align-items:flex-start;flex-direction:column}
+ #objectControls .objrow{grid-template-columns:1fr 1fr !important}
+ #objectControls .objrow strong{grid-column:1/-1}
+ button{width:100%;margin:4px 0}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="head"><h1>MINI Y50 · Plantilla Cliente / ODF v46</h1><div>Etiqueta 50×30 mm · QR + línea central + textos configurables + copias</div></div>
+
+<div class="card">
+ <div id="status" class="status">● Desconectada</div>
+ <button id="connect" class="primary">Conectar Y50 BLE</button>
+ <button id="print" class="print" disabled>Imprimir etiqueta</button>
+ <button id="battery" class="secondary" disabled>Leer batería</button>
+ <button id="clear" class="secondary">Limpiar registro</button>
+ <div class="battery">
+  <div class="bicon"><div id="bfill" class="bfill"></div></div>
+  <div><div id="bvalue" class="bvalue">Batería: —</div><div id="bsub" class="small">Protocolo propietario 10 FF 50 F1</div></div>
+ </div>
+</div>
+
+<div class="card">
+<h3>Datos de la etiqueta</h3>
+<div id="clientLoadInfo" class="info" style="margin-bottom:12px">Abre este módulo desde NODO para recibir automáticamente los datos de la etiqueta del cliente.</div>
+<div class="grid3">
+ <div><label>ID cliente</label><input id="f_id" value=""></div>
+ <div><label>Nombre cliente</label><input id="f_name" value=""></div>
+ <div><label>Operador</label><input id="f_operator" value=""></div>
+ <div><label>TO principal</label><input id="f_to1" value=""></div>
+ <div><label>TO secundario</label><input id="f_to2" value=""></div>
+ <div><label>FR / Rack salida</label><input id="f_fr" value=""></div>
+ <div><label>Contenido QR</label><input id="f_qr" value=""></div>
+ <div><label>Elemento central</label><input id="f_center" value="Línea vertical de referencia" disabled></div>
+ <div><label>Fecha impresión</label><input id="f_date" value=""></div>
+</div>
+<div class="grid3" style="margin-top:12px">
+ <div><label>Copias</label><input id="copies" type="number" min="1" max="20" value="1"></div>
+ <div><label>Densidad</label><select id="density"><option value="0">Clara</option><option value="1" selected>Normal</option><option value="2">Oscura</option></select></div>
+ <div><label>Velocidad BLE</label><select id="profile"><option value="144,8" selected>144 bytes + 8 ms</option><option value="144,5">144 bytes + 5 ms</option><option value="96,8">96 bytes + 8 ms</option></select></div>
+</div>
+<div class="check" style="margin-top:12px"><input id="cut" type="checkbox" checked><label for="cut" style="margin:0">Llevar cada etiqueta al punto de corte</label></div>
+</div>
+
+
+
+<div class="card canvasOnlyCard">
+ <div class="canvasHeader">
+  <div>
+   <h3>Diseño de etiqueta 50×30 mm</h3>
+   <div class="small">El lienzo se actualiza inmediatamente mientras modificas los ajustes.</div>
+  </div>
+  <button id="openSettings" class="openSettings">⚙ Abrir ajustes</button>
+ </div>
+
+ <div class="preview">
+  <canvas id="cv" width="384" height="240"></canvas>
+ </div>
+</div>
+
+<div id="settingsModal" class="floatingSettings">
+ <div id="modalHeader" class="modalHeader">
+  <strong>⚙ Parámetros de ajuste</strong>
+  <div class="modalActions">
+   <button id="resetModalPos" class="secondary" title="Volver a la posición inicial">Reubicar</button>
+   <button id="closeSettings" class="secondary">✕ Cerrar</button>
+  </div>
+ </div>
+
+ <div class="modalBody">
+  <div class="modalHint">
+   Modifica los parámetros y observa simultáneamente el resultado en el lienzo. 
+   Puedes mover esta ventana arrastrándola desde el encabezado.
+  </div>
+
+  <div class="templateManager">
+   <h4>Plantillas de diseño · Supabase</h4>
+
+   
+   <div class="templateGrid">
+    <div>
+     <label>Nombre de plantilla</label>
+     <input id="templateName" type="text" placeholder="Ej. ODF Villavicencio">
+    </div>
+    <div>
+     <label>Plantilla guardada</label>
+     <select id="templateSelect"><option value="">Selecciona...</option></select>
+    </div>
+   </div>
+   <div class="templateBtns">
+    <button id="saveTemplate" class="blue">💾 Guardar plantilla</button>
+    <button id="loadTemplate" class="secondary">Cargar</button>
+    <button id="deleteTemplate" class="secondary">Eliminar</button>
+   </div>
+   <div class="templateInfo">Las plantillas se guardan directamente en Supabase. No necesitas configurar URL ni clave.</div>
+  </div>
+
+  <div id="objectControls"></div>
+  <button id="preset" class="blue">Restaurar diseño de referencia</button>
+ </div>
+</div>
+
+
+
+
+
+<div class="card">
+<h3>Registro</h3>
+<div id="log" class="log">Listo.</div>
+</div>
+</div>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+let device,server,writer,notifyChar,batteryWaiting=false,batteryTimer;
+const SERVICE='0000ff00-0000-1000-8000-00805f9b34fb';
+const WRITE='0000ff02-0000-1000-8000-00805f9b34fb';
+const NOTIFY='0000ff01-0000-1000-8000-00805f9b34fb';
+const $=id=>document.getElementById(id),sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+const objects={
+ date:{label:'Fecha',type:'text',x:14,y:120,angle:-90,size:15,weight:700,letterGap:0,field:'f_date',autoCenter:true},
+ qr:{label:'QR',type:'qr',x:22,y:47,angle:0,size:150,field:'f_qr'},
+ line:{label:'Línea central',type:'line',x:198,y:216,angle:-90,size:200,thickness:8},
+ id:{label:'ID cliente',type:'text',x:244,y:119,angle:-90,size:18,weight:700,letterGap:0,field:'f_id',autoCenter:true},
+ name:{label:'Nombre cliente',type:'text',x:271,y:120,angle:-90,size:18,weight:700,letterGap:0,field:'f_name',autoCenter:true,autoWrap:true,maxWidth:200,lineGap:-4},
+ operator:{label:'Operador',type:'text',x:302,y:123,angle:-90,size:15,weight:700,letterGap:0,field:'f_operator',autoCenter:true,autoWrap:true,maxWidth:200,lineGap:-4},
+ to1:{label:'TO principal',type:'text',x:326,y:122,angle:-90,size:14,weight:700,letterGap:0,field:'f_to1',autoCenter:true},
+ to2:{label:'TO secundario',type:'text',x:346,y:121,angle:-90,size:14,weight:700,letterGap:0,field:'f_to2',autoCenter:true},
+ fr:{label:'FR / Rack',type:'text',x:363,y:122,angle:-90,size:14,weight:700,letterGap:0,field:'f_fr',autoCenter:true}
+};
+
+let selected=null,drag=false,dx=0,dy=0;
+
+function log(s){const l=$('log');if(l.textContent==='Listo.')l.textContent='';l.textContent+=`[${new Date().toLocaleTimeString()}] ${s}\n`;l.scrollTop=l.scrollHeight}
+function hex(a){return [...a].map(x=>x.toString(16).padStart(2,'0')).join(' ')}
+function enable(v){['print','battery'].forEach(x=>$(x).disabled=!v)}
+
+function setToday(){
+ const d=new Date();
+ const pad=n=>String(n).padStart(2,'0');
+ $('f_date').value=`${d.getFullYear()}/${pad(d.getMonth()+1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+setToday();
+
+function buildControls(){
+ const c=$('objectControls');
+ c.innerHTML='';
+
+ Object.entries(objects).forEach(([key,o])=>{
+  const row=document.createElement('div');
+  row.className='objrow';
+  row.dataset.objectKey=key;
+
+  if(o.type==='text'){
+   row.style.gridTemplateColumns='150px 1fr 80px 80px 80px 120px 95px';
+   row.innerHTML=`
+    <strong>${o.label}</strong>
+    <div><label>X</label><input type="number" data-k="${key}" data-p="x" min="0" max="383" value="${o.x}"></div>
+    <div><label>Y</label><input type="number" data-k="${key}" data-p="y" min="0" max="239" value="${o.y}"></div>
+    <div><label>Ángulo</label><input type="number" data-k="${key}" data-p="angle" min="-180" max="180" value="${o.angle}"></div>
+    <div><label>Tamaño</label><input type="number" data-k="${key}" data-p="size" min="8" max="40" value="${o.size}"></div>
+    <div>
+     <label>Grosor</label>
+     <select data-k="${key}" data-p="weight">
+      <option value="400" ${o.weight===400?'selected':''}>Normal</option>
+      <option value="600" ${o.weight===600?'selected':''}>Seminegrita</option>
+      <option value="700" ${o.weight===700?'selected':''}>Negrita</option>
+     </select>
+    </div>
+    <div><label>Esp. letras</label><input type="number" data-k="${key}" data-p="letterGap" min="0" max="6" value="${o.letterGap||0}"></div>
+    <div><label>Centrar</label><input type="checkbox" data-k="${key}" data-p="autoCenter" ${o.autoCenter?'checked':''} style="width:auto;height:auto"></div>
+    ${o.autoWrap!==undefined?`
+    <div><label>Salto auto.</label><input type="checkbox" data-k="${key}" data-p="autoWrap" ${o.autoWrap?'checked':''} style="width:auto;height:auto"></div>
+    <div><label>Ancho máx.</label><input type="number" data-k="${key}" data-p="maxWidth" min="60" max="240" value="${o.maxWidth||150}"></div>
+    <div><label>Interlínea</label><input type="number" data-k="${key}" data-p="lineGap" min="-10" max="12" value="${o.lineGap ?? 0}"></div>`:''}`;
+  }else if(o.type==='qr'){
+   row.style.gridTemplateColumns='150px 1fr 80px 80px 80px';
+   row.innerHTML=`
+    <strong>${o.label}</strong>
+    <div><label>X</label><input type="number" data-k="${key}" data-p="x" min="0" max="383" value="${o.x}"></div>
+    <div><label>Y</label><input type="number" data-k="${key}" data-p="y" min="0" max="239" value="${o.y}"></div>
+    <div><label>Ángulo</label><input type="number" data-k="${key}" data-p="angle" min="-180" max="180" value="${o.angle}"></div>
+    <div><label>Escala</label><input type="number" data-k="${key}" data-p="size" min="48" max="180" value="${o.size}"></div>`;
+  }else{
+   row.style.gridTemplateColumns='150px 1fr 80px 80px 80px';
+   row.innerHTML=`
+    <strong>${o.label}</strong>
+    <div><label>X</label><input type="number" data-k="${key}" data-p="x" min="0" max="383" value="${o.x}"></div>
+    <div><label>Y</label><input type="number" data-k="${key}" data-p="y" min="0" max="239" value="${o.y}"></div>
+    <div><label>Ángulo</label><input type="number" data-k="${key}" data-p="angle" min="-180" max="180" value="${o.angle}"></div>
+    <div><label>Longitud</label><input type="number" data-k="${key}" data-p="size" min="10" max="240" value="${o.size}"></div>
+    <div><label>Grosor</label><input type="number" data-k="${key}" data-p="thickness" min="1" max="15" value="${o.thickness}"></div>`;
+  }
+
+  c.appendChild(row);
+ });
+
+ c.querySelectorAll('input,select').forEach(inp=>{
+  inp.addEventListener('focus',e=>{
+    const k=e.target.dataset.k;
+    if(k && objects[k]){
+      selected=objects[k];
+      draw();
+    }
+  });
+
+  inp.oninput=e=>{
+   const k=e.target.dataset.k,p=e.target.dataset.p;
+   if(!k||!p)return;
+   if(e.target.type==='checkbox') objects[k][p]=e.target.checked;
+   else objects[k][p]=+e.target.value||0;
+   draw();
+  };
+ });
+}
+buildControls();
+
+function syncControls(){
+ document.querySelectorAll('#objectControls input,#objectControls select').forEach(inp=>{
+  const v=objects[inp.dataset.k][inp.dataset.p];
+  if(inp.type==='checkbox') inp.checked=!!v;
+  else inp.value=Math.round(v);
+ });
+}
+
+function measureLineWidth(ctx,text,letterGap){
+ let total=0;
+ for(let i=0;i<text.length;i++){
+   total+=ctx.measureText(text[i]).width;
+   if(i<text.length-1) total+=(letterGap||0);
+ }
+ return total;
+}
+
+function wrapTextAuto(ctx,text,maxWidth,letterGap){
+ if(!text) return [''];
+
+ // Respect manual line breaks first
+ const manualLines=text.split(/\r?\n/);
+ const finalLines=[];
+
+ for(const manual of manualLines){
+   if(!manual){
+     finalLines.push('');
+     continue;
+   }
+
+   if(measureLineWidth(ctx,manual,letterGap)<=maxWidth){
+     finalLines.push(manual);
+     continue;
+   }
+
+   const words=manual.trim().split(/\s+/);
+
+   // If there are spaces, balance words into at most 2 lines.
+   if(words.length>1){
+     let best=null;
+     for(let cut=1;cut<words.length;cut++){
+       const a=words.slice(0,cut).join(' ');
+       const b=words.slice(cut).join(' ');
+       const wa=measureLineWidth(ctx,a,letterGap);
+       const wb=measureLineWidth(ctx,b,letterGap);
+       if(wa<=maxWidth && wb<=maxWidth){
+         const score=Math.abs(wa-wb);
+         if(!best || score<best.score) best={a,b,score};
+       }
+     }
+     if(best){
+       finalLines.push(best.a,best.b);
+       continue;
+     }
+   }
+
+   // Fallback for a single very long word: split by characters.
+   let line='',rest='';
+   for(let i=0;i<manual.length;i++){
+     const test=line+manual[i];
+     if(!line || measureLineWidth(ctx,test,letterGap)<=maxWidth){
+       line=test;
+     }else{
+       rest=manual.slice(i);
+       break;
+     }
+   }
+   finalLines.push(line);
+   if(rest) finalLines.push(rest);
+ }
+
+ return finalLines.slice(0,2);
+}
+
+function drawSpacedLine(ctx,text,startX,y,letterGap){
+ let cx=startX;
+ for(let i=0;i<text.length;i++){
+   ctx.fillText(text[i],cx,y);
+   cx+=ctx.measureText(text[i]).width;
+   if(i<text.length-1) cx+=(letterGap||0);
+ }
+}
+
+function drawText(ctx,o,guide){
+ const text=$(o.field).value||'';
+
+ ctx.save();
+ ctx.translate(o.x,o.y);
+ ctx.rotate(o.angle*Math.PI/180);
+ ctx.fillStyle='#000';
+ ctx.textBaseline='top';
+ ctx.font=`${o.weight||400} ${o.size}px Arial,Helvetica,sans-serif`;
+
+ const lines=o.autoWrap
+   ? wrapTextAuto(ctx,text,o.maxWidth||150,o.letterGap||0)
+   : text.split(/\r?\n/);
+
+ const lineGap=(o.lineGap ?? 0);
+ const lineWidths=lines.map(line=>measureLineWidth(ctx,line,o.letterGap||0));
+ const blockW=Math.max(1,...lineWidths);
+ const blockH=Math.max(1,lines.length*o.size + Math.max(0,lines.length-1)*lineGap);
+
+ // For centered fields, X/Y is the CENTER of the whole multi-line block.
+ const blockStartX=o.autoCenter ? -blockW/2 : 0;
+ const blockStartY=o.autoCenter ? -blockH/2 : 0;
+
+ lines.forEach((line,i)=>{
+   const lw=lineWidths[i];
+   // Each line is centered within the widest line.
+   const lineX=blockStartX + (blockW-lw)/2;
+   const lineY=blockStartY + i*(o.size+lineGap);
+   drawSpacedLine(ctx,line,lineX,lineY,o.letterGap||0);
+ });
+
+ if(guide){
+   ctx.strokeStyle=selected===o?'#ef4444':'#2563eb';
+   ctx.setLineDash([3,2]);
+   ctx.strokeRect(blockStartX-2,blockStartY-2,blockW+4,blockH+4);
+   ctx.setLineDash([]);
+
+   if(o.autoCenter){
+     ctx.fillStyle='#16a34a';
+     ctx.beginPath();
+     ctx.arc(0,0,2.5,0,Math.PI*2);
+     ctx.fill();
+   }
+ }
+
+ o._box={
+   w:blockW,
+   h:blockH,
+   startX:blockStartX,
+   startY:blockStartY,
+   lines:lines.length
+ };
+
+ ctx.restore();
+}
+
+function makeQR(text,requested){
+ if(typeof qrcode!=='function'||!text)return null;
+ try{
+  const qr=qrcode(0,'M');qr.addData(text,'Byte');qr.make();
+  const n=qr.getModuleCount(),quiet=4,total=n+quiet*2,scale=Math.max(1,Math.floor(requested/total)),actual=total*scale;
+  return {qr,n,quiet,scale,actual};
+ }catch(e){return null}
+}
+function drawQR(ctx,o,guide){
+ const q=makeQR($(o.field).value,o.size);
+ if(!q){ctx.save();ctx.fillStyle='#aaa';ctx.fillRect(o.x,o.y,o.size,o.size);ctx.restore();o._box={w:o.size,h:o.size};return}
+ ctx.save();ctx.fillStyle='#fff';ctx.fillRect(o.x,o.y,q.actual,q.actual);ctx.fillStyle='#000';
+ for(let r=0;r<q.n;r++)for(let c=0;c<q.n;c++)if(q.qr.isDark(r,c))ctx.fillRect(o.x+(c+q.quiet)*q.scale,o.y+(r+q.quiet)*q.scale,q.scale,q.scale);
+ if(guide){ctx.strokeStyle=selected===o?'#ef4444':'#f97316';ctx.setLineDash([3,2]);ctx.strokeRect(o.x-2,o.y-2,q.actual+4,q.actual+4);ctx.setLineDash([])}
+ ctx.restore();o._box={w:q.actual,h:q.actual};
+}
+
+function drawLine(ctx,o,guide){
+ ctx.save();
+ ctx.translate(o.x,o.y);
+ ctx.rotate(o.angle*Math.PI/180);
+
+ ctx.fillStyle='#000';
+ ctx.fillRect(0,-(o.thickness||4)/2,o.size,o.thickness||4);
+
+ if(guide){
+  ctx.strokeStyle=selected===o?'#ef4444':'#8b5cf6';
+  ctx.setLineDash([3,2]);
+  ctx.strokeRect(-2,-(o.thickness||4)/2-2,o.size+4,(o.thickness||4)+4);
+  ctx.setLineDash([]);
+ }
+
+ o._box={w:o.size,h:o.thickness||4};
+ ctx.restore();
+}
+
+function draw(){
+ const c=$('cv'),ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,384,240);
+ Object.values(objects).forEach(o=>{
+  const guide=!window.__printing;
+  if(o.type==='text')drawText(ctx,o,guide);
+  else if(o.type==='qr')drawQR(ctx,o,guide);
+  else if(o.type==='line')drawLine(ctx,o,guide);
+ });
+ syncControls();
+}
+
+Object.keys(objects).forEach(k=>{
+ const o=objects[k];
+ if(o.field){
+   const el=$(o.field);
+   if(el) el.addEventListener('input',draw);
+ }
+});
+
+// Al seleccionar un campo de datos, abrir y ubicar su configuración correspondiente.
+Object.entries(objects).forEach(([key,o])=>{
+ if(!o.field) return;
+ const el=$(o.field);
+ if(!el) return;
+
+ el.addEventListener('focus',()=>{
+   selected=o;
+   draw();
+   focusSettingsForObject(key,true);
+ });
+
+ el.addEventListener('click',()=>{
+   selected=o;
+   draw();
+   focusSettingsForObject(key,true);
+ });
+});
+
+
+function point(e){
+ const r=$('cv').getBoundingClientRect();
+ return {x:(e.clientX-r.left)*384/r.width,y:(e.clientY-r.top)*240/r.height};
+}
+function hitRotated(o,x,y){
+ if(!o._box)return false;
+ const a=-o.angle*Math.PI/180,ddx=x-o.x,ddy=y-o.y;
+ const lx=ddx*Math.cos(a)-ddy*Math.sin(a),ly=ddx*Math.sin(a)+ddy*Math.cos(a);
+ const sx=(o._box.startX!==undefined?o._box.startX:0); const sy=(o._box.startY!==undefined?o._box.startY:0); return lx>=sx-6&&lx<=sx+o._box.w+6&&ly>=sy-6&&ly<=sy+o._box.h+6;
+}
+$('cv').addEventListener('pointerdown',e=>{
+ const p=point(e),keys=Object.keys(objects).reverse();
+ for(const k of keys){
+  const o=objects[k];
+  let ok=o.type==='qr'
+   ? p.x>=o.x-6&&p.x<=o.x+(o._box?.w||o.size)+6&&p.y>=o.y-6&&p.y<=o.y+(o._box?.h||o.size)+6
+   : hitRotated(o,p.x,p.y);
+  if(ok){
+    selected=o;
+    drag=true;
+    dx=p.x-o.x;
+    dy=p.y-o.y;
+    draw();
+    focusSettingsForObject(k,true);
+    e.preventDefault();
+    return;
+  }
+ }
+ selected=null;draw();
+});
+$('cv').addEventListener('pointermove',e=>{
+ if(!drag||!selected)return;const p=point(e);
+ selected.x=Math.max(0,Math.min(383,p.x-dx));selected.y=Math.max(0,Math.min(239,p.y-dy));draw();e.preventDefault();
+});
+['pointerup','pointercancel','pointerleave'].forEach(ev=>$('cv').addEventListener(ev,()=>drag=false));
+
+function preset(){
+ const vals={
+  date:{x:14,y:120,angle:-90,size:15,weight:700,letterGap:0,autoCenter:true},
+  qr:{x:22,y:47,angle:0,size:150},
+  line:{x:198,y:216,angle:-90,size:200,thickness:8},
+  id:{x:244,y:119,angle:-90,size:18,weight:700,letterGap:0,autoCenter:true},
+  name:{x:271,y:120,angle:-90,size:18,weight:700,letterGap:0,autoCenter:true,autoWrap:true,maxWidth:200,lineGap:-4},
+  operator:{x:302,y:123,angle:-90,size:15,weight:700,letterGap:0,autoCenter:true,autoWrap:true,maxWidth:200,lineGap:-4},
+  to1:{x:326,y:122,angle:-90,size:14,weight:700,letterGap:0,autoCenter:true},
+  to2:{x:346,y:121,angle:-90,size:14,weight:700,letterGap:0,autoCenter:true},
+  fr:{x:363,y:122,angle:-90,size:14,weight:700,letterGap:0,autoCenter:true}
+ };
+
+ for(const [k,v] of Object.entries(vals)){
+  Object.assign(objects[k],v);
+ }
+
+ selected=null;
+ buildControls();
+ draw();
+}
+$('preset').onclick=preset;
+
+function focusSettingsForObject(key,openModal=true){
+ if(!key || !objects[key]) return;
+
+ if(openModal && typeof openSettingsModal==='function'){
+   openSettingsModal();
+ }
+
+ // Wait one frame so the modal is visible before scrolling.
+ requestAnimationFrame(()=>{
+   const pane=document.querySelector('.modalBody');
+   const row=document.querySelector(`#objectControls .objrow[data-object-key="${key}"]`);
+
+   document.querySelectorAll('#objectControls .objrow.focusedRow')
+     .forEach(el=>el.classList.remove('focusedRow'));
+
+   if(!row) return;
+
+   row.classList.add('focusedRow');
+
+   // Scroll only the modal body, not the whole page.
+   if(pane){
+     const paneRect=pane.getBoundingClientRect();
+     const rowRect=row.getBoundingClientRect();
+     const target=pane.scrollTop + (rowRect.top-paneRect.top) - 18;
+
+     pane.scrollTo({
+       top:Math.max(0,target),
+       behavior:'smooth'
+     });
+   }else{
+     row.scrollIntoView({behavior:'smooth',block:'center'});
+   }
+
+   // Remove visual highlight after a moment, while leaving controls in place.
+   clearTimeout(window.__focusRowTimer);
+   window.__focusRowTimer=setTimeout(()=>{
+     row.classList.remove('focusedRow');
+   },2200);
+ });
+}
+
+function keyFromFieldId(fieldId){
+ for(const [key,o] of Object.entries(objects)){
+   if(o.field===fieldId) return key;
+ }
+ return null;
+}
+
+
+const SUPABASE_URL='https://lvwmpwnzavqdspdfvceb.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2d21wd256YXZxZHNwZGZ2Y2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxOTg3MzYsImV4cCI6MjA5MTc3NDczNn0.u6g4OCm4kl-LEmyIf9VWwf43cdqYbik7Y60rdKQ8npI';
+let templateCache=[];
+
+function requireSupabaseConfig(){
+ return {
+  url:SUPABASE_URL,
+  anonKey:SUPABASE_ANON_KEY
+ };
+}
+
+async function supabaseFetch(path,options={}){
+ const cfg=requireSupabaseConfig();
+
+ const headers={
+  'apikey':cfg.anonKey,
+  'Authorization':'Bearer '+cfg.anonKey,
+  'Content-Type':'application/json',
+  ...(options.headers||{})
+ };
+
+ const res=await fetch(cfg.url+'/rest/v1/'+path,{
+  ...options,
+  headers
+ });
+
+ const text=await res.text();
+ let data=null;
+
+ if(text){
+  try{data=JSON.parse(text)}
+  catch(e){data=text}
+ }
+
+ if(!res.ok){
+  const detail=(data&&typeof data==='object')
+   ? (data.message||data.details||JSON.stringify(data))
+   : (data||res.statusText);
+  throw new Error(`Supabase ${res.status}: ${detail}`);
+ }
+
+ return data;
+}
+
+
+
+
+function uniqueStrings(values){
+ return [...new Set((values||[]).filter(v=>v!==null&&v!==undefined&&String(v).trim()!=='').map(v=>String(v)))];
+}
+
+function printPortLabel(port){
+ const type=String(port?.tipo_puerto||'normal').toLowerCase();
+ if(type==='wan') return `WAN${port?.numero_puerto ?? ''}`;
+ if(type==='admin') return `ADM${port?.numero_puerto ?? ''}`;
+ return String(port?.numero_puerto ?? '');
+}
+
+function compactLocationText(port,equipmentMap,rackMap){
+ const eq=equipmentMap.get(String(port?.equipment_id||''));
+ const rack=eq ? rackMap.get(String(eq.rack_id||'')) : null;
+ const pieces=[rack?.nombre,eq?.demonico||eq?.nombre,printPortLabel(port)]
+   .filter(v=>v!==null&&v!==undefined&&String(v).trim()!=='')
+   .map(v=>String(v).trim());
+ return pieces.join(' ');
+}
+
+function setClientLoadInfo(message,isError=false){
+ const el=$('clientLoadInfo');
+ if(!el)return;
+ el.textContent=message;
+ el.className=isError?'bad info':'info';
+}
+
+function triggerLabelRefresh(){
+ ['f_id','f_name','f_operator','f_to1','f_to2','f_fr','f_qr','f_date'].forEach(id=>{
+   const el=$(id);
+   if(el) el.dispatchEvent(new Event('input',{bubbles:true}));
+ });
+ draw();
+}
+
+async function loadClientFromSupabaseById(rawId){
+ const serviceId=String(rawId||'').trim();
+ if(!serviceId)return false;
+
+ setClientLoadInfo(`Buscando cliente ${serviceId} en Supabase...`);
+ log(`CLIENTE: buscando ${serviceId}`);
+
+ try{
+  let rows=await supabaseFetch(
+   'clients?select=id,nombre_cliente,identificador_servicio,operador&identificador_servicio=eq.'+encodeURIComponent(serviceId),
+   {method:'GET'}
+  );
+
+  if(!Array.isArray(rows)||!rows.length){
+   rows=await supabaseFetch(
+    'clients?select=id,nombre_cliente,identificador_servicio,operador&id=eq.'+encodeURIComponent(serviceId),
+    {method:'GET'}
+   );
+  }
+
+  const client=Array.isArray(rows)?rows[0]:null;
+  if(!client)throw new Error(`No se encontró un cliente con el ID ${serviceId}.`);
+
+  const assignments=await supabaseFetch(
+   'port_assignments?select=port_id&client_id=eq.'+encodeURIComponent(client.id),
+   {method:'GET'}
+  );
+  const assignedIds=new Set((assignments||[]).map(a=>String(a.port_id)).filter(Boolean));
+
+  // Ampliar la ruta por las conexiones para obtener todos los puntos relacionados,
+  // incluso si alguno no tiene una asignación duplicada del cliente.
+  const allLinks=await supabaseFetch('port_links?select=port_id_origen,port_id_destino,tipo_enlace',{method:'GET'});
+  let changed=true;
+  while(changed){
+   changed=false;
+   (allLinks||[]).forEach(link=>{
+    const a=String(link.port_id_origen||''),b=String(link.port_id_destino||'');
+    if(assignedIds.has(a)||assignedIds.has(b)){
+     const before=assignedIds.size;
+     if(a)assignedIds.add(a);
+     if(b)assignedIds.add(b);
+     if(assignedIds.size!==before)changed=true;
+    }
+   });
+  }
+
+  let relatedPorts=[];
+  if(assignedIds.size){
+   const ids=[...assignedIds];
+   const filter='id=in.('+ids.map(v=>encodeURIComponent(v)).join(',')+')';
+   relatedPorts=await supabaseFetch(
+    'ports?select=id,equipment_id,numero_puerto,tipo_puerto,estado&'+filter,
+    {method:'GET'}
+   );
+  }
+
+  const equipmentIds=uniqueStrings((relatedPorts||[]).map(p=>p.equipment_id));
+  let equipment=[];
+  if(equipmentIds.length){
+   equipment=await supabaseFetch(
+    'equipment?select=id,rack_id,nombre,demonico,tipo& id=in.('+equipmentIds.map(v=>encodeURIComponent(v)).join(',')+')'.replace(' ','') ,
+    {method:'GET'}
+   );
+  }
+
+  const rackIds=uniqueStrings((equipment||[]).map(e=>e.rack_id));
+  let racks=[];
+  if(rackIds.length){
+   racks=await supabaseFetch(
+    'racks?select=id,nombre&id=in.('+rackIds.map(v=>encodeURIComponent(v)).join(',')+')',
+    {method:'GET'}
+   );
+  }
+
+  const eqMap=new Map((equipment||[]).map(e=>[String(e.id),e]));
+  const rackMap=new Map((racks||[]).map(r=>[String(r.id),r]));
+
+  const sortedPorts=[...(relatedPorts||[])].sort((a,b)=>{
+   const ea=eqMap.get(String(a.equipment_id||''));
+   const eb=eqMap.get(String(b.equipment_id||''));
+   const ta=String(ea?.tipo||'').toLowerCase();
+   const tb=String(eb?.tipo||'').toLowerCase();
+   const order=t=>t==='switch'?1:t==='router'?2:t==='odf'?3:4;
+   return order(ta)-order(tb) ||
+          String(rackMap.get(String(ea?.rack_id||''))?.nombre||'').localeCompare(String(rackMap.get(String(eb?.rack_id||''))?.nombre||'')) ||
+          String(ea?.nombre||'').localeCompare(String(eb?.nombre||'')) ||
+          Number(a.numero_puerto||0)-Number(b.numero_puerto||0);
+  });
+
+  const nonOdf=sortedPorts.filter(p=>String(eqMap.get(String(p.equipment_id||''))?.tipo||'').toLowerCase()!=='odf');
+  const odf=sortedPorts.filter(p=>String(eqMap.get(String(p.equipment_id||''))?.tipo||'').toLowerCase()==='odf');
+
+  // Criterio automático editable:
+  // TO principal = primer punto no ODF; TO secundario = segundo punto no ODF;
+  // FR / Rack salida = primer punto ODF. Si una categoría no existe, se usan
+  // los siguientes puntos disponibles de la ruta para no dejar información útil por fuera.
+  const principal=nonOdf[0] || sortedPorts[0] || null;
+  const secondary=nonOdf[1] || sortedPorts.find(p=>p!==principal) || null;
+  const frPort=odf[0] || sortedPorts.find(p=>p!==principal&&p!==secondary) || null;
+
+  $('f_id').value=client.identificador_servicio||client.id||serviceId;
+  $('f_name').value=client.nombre_cliente||'';
+  $('f_operator').value=client.operador||'';
+  $('f_to1').value=principal?compactLocationText(principal,eqMap,rackMap):'';
+  $('f_to2').value=secondary?compactLocationText(secondary,eqMap,rackMap):'';
+  $('f_fr').value=frPort?compactLocationText(frPort,eqMap,rackMap):'';
+  $('f_qr').value=client.identificador_servicio||client.id||serviceId;
+  $('f_center').value='Línea vertical de referencia';
+  setToday();
+  triggerLabelRefresh();
+
+  setClientLoadInfo(`Cliente cargado: ${client.nombre_cliente||'Sin nombre'} · ${client.identificador_servicio||client.id||serviceId}. Puedes ajustar cualquier campo antes de imprimir.`);
+  log(`CLIENTE CARGADO: ${client.identificador_servicio||client.id||serviceId} · ${client.nombre_cliente||''}`);
+  log(`TO principal: ${$('f_to1').value||'-'}`);
+  log(`TO secundario: ${$('f_to2').value||'-'}`);
+  log(`FR / Rack salida: ${$('f_fr').value||'-'}`);
+  return true;
+ }catch(e){
+  console.error(e);
+  setClientLoadInfo('No fue posible cargar el cliente: '+e.message,true);
+  log('ERROR CLIENTE: '+e.message);
+  return false;
+ }
+}
+
+async function loadClientFromQueryString(){
+ const params=new URLSearchParams(window.location.search);
+ const fromNodo=(params.get('origen')||'').toLowerCase()==='nodo';
+ const values={
+  f_id:params.get('id_cliente')||'',
+  f_name:params.get('nombre_cliente')||'',
+  f_operator:params.get('operador')||'',
+  f_to1:params.get('to_principal')||'',
+  f_to2:params.get('to_secundario')||'',
+  f_fr:params.get('fr_rack_salida')||'',
+  f_qr:params.get('contenido_qr')||params.get('id_cliente')||''
+ };
+ Object.entries(values).forEach(([id,value])=>{ const el=$(id); if(el) el.value=value; });
+ setToday();
+ triggerLabelRefresh();
+
+ if(fromNodo && values.f_id){
+   setClientLoadInfo(`Datos recibidos desde NODO para el cliente ${values.f_id}.`);
+   log(`DATOS RECIBIDOS DESDE NODO: ${values.f_id}`);
+   log(`Nombre: ${values.f_name||'-'}`);
+   log(`Operador: ${values.f_operator||'-'}`);
+   log(`TO principal: ${values.f_to1||'-'}`);
+   log(`TO secundario: ${values.f_to2||'-'}`);
+   log(`FR / Rack salida: ${values.f_fr||'-'}`);
+   return true;
+ }
+ if(values.f_id){
+   setClientLoadInfo(`Se recibió el ID ${values.f_id}, pero no llegaron datos completos desde NODO.`,true);
+   return false;
+ }
+ setClientLoadInfo('Sin cliente cargado. Abre este archivo desde el botón “Imprimir etiquetas” de NODO.');
+ return false;
+}
+
+async function refreshTemplateSelect(selectedName=''){
+ const select=$('templateSelect');
+ if(!select)return;
+
+ try{
+  const rows=await supabaseFetch(
+   'plantillas_etiquetas?select=id,nombre,configuracion,updated_at&order=nombre.asc',
+   {method:'GET'}
+  );
+
+  templateCache=Array.isArray(rows)?rows:[];
+  select.innerHTML='<option value="">Selecciona...</option>';
+
+  templateCache.forEach(row=>{
+   const opt=document.createElement('option');
+   opt.value=row.nombre;
+   opt.textContent=row.nombre;
+   select.appendChild(opt);
+  });
+
+  if(selectedName && templateCache.some(x=>x.nombre===selectedName)){
+   select.value=selectedName;
+  }
+
+  log(`SUPABASE: ${templateCache.length} plantilla(s) disponible(s).`);
+
+ }catch(e){
+  templateCache=[];
+  select.innerHTML='<option value="">Configura Supabase...</option>';
+  log('SUPABASE: '+e.message);
+  log('ERROR cargando plantillas: '+e.message);
+ }
+}
+
+function exportLayoutState(){
+ const state={};
+
+ Object.entries(objects).forEach(([k,o])=>{
+  state[k]={
+   x:o.x,
+   y:o.y,
+   angle:o.angle,
+   size:o.size,
+   weight:o.weight,
+   letterGap:o.letterGap,
+   autoCenter:o.autoCenter,
+   autoWrap:o.autoWrap,
+   maxWidth:o.maxWidth,
+   lineGap:o.lineGap,
+   thickness:o.thickness
+  };
+ });
+
+ return state;
+}
+
+function applyLayoutState(state){
+ if(!state)return;
+
+ Object.entries(state).forEach(([k,v])=>{
+  if(!objects[k])return;
+
+  Object.entries(v||{}).forEach(([p,val])=>{
+   if(val!==undefined && val!==null){
+    objects[k][p]=val;
+   }
+  });
+ });
+
+ selected=null;
+ buildControls();
+ draw();
+}
+
+async function saveCurrentTemplate(){
+ const name=($('templateName').value||'').trim();
+
+ if(!name){
+  alert('Escribe un nombre para la plantilla.');
+  $('templateName').focus();
+  return;
+ }
+
+ try{
+  const existing=templateCache.find(x=>x.nombre===name);
+
+  if(existing && !confirm(`La plantilla "${name}" ya existe. ¿Deseas reemplazarla?`)){
+   return;
+  }
+
+  const body={
+   nombre:name,
+   configuracion:exportLayoutState(),
+   updated_at:new Date().toISOString()
+  };
+
+  await supabaseFetch(
+   'plantillas_etiquetas?on_conflict=nombre',
+   {
+    method:'POST',
+    headers:{
+     'Prefer':'resolution=merge-duplicates,return=representation'
+    },
+    body:JSON.stringify(body)
+   }
+  );
+
+  await refreshTemplateSelect(name);
+  $('templateName').value=name;
+  log(`PLANTILLA GUARDADA EN SUPABASE: ${name}`);
+
+ }catch(e){
+  alert('No se pudo guardar la plantilla.\n\n'+e.message);
+  log('ERROR guardando plantilla: '+e.message);
+ }
+}
+
+async function loadSelectedTemplate(){
+ const name=$('templateSelect').value;
+
+ if(!name){
+  alert('Selecciona una plantilla guardada.');
+  return;
+ }
+
+ try{
+  let row=templateCache.find(x=>x.nombre===name);
+
+  if(!row){
+   const rows=await supabaseFetch(
+    'plantillas_etiquetas?select=id,nombre,configuracion&nombre=eq.'+encodeURIComponent(name),
+    {method:'GET'}
+   );
+   row=Array.isArray(rows)?rows[0]:null;
+  }
+
+  if(!row){
+   throw new Error('La plantilla no existe en Supabase.');
+  }
+
+  applyLayoutState(row.configuracion);
+  $('templateName').value=row.nombre;
+  log(`PLANTILLA CARGADA DESDE SUPABASE: ${row.nombre}`);
+
+ }catch(e){
+  alert('No se pudo cargar la plantilla.\n\n'+e.message);
+  log('ERROR cargando plantilla: '+e.message);
+ }
+}
+
+async function deleteSelectedTemplate(){
+ const name=$('templateSelect').value;
+
+ if(!name){
+  alert('Selecciona una plantilla para eliminar.');
+  return;
+ }
+
+ if(!confirm(`¿Eliminar la plantilla "${name}" de Supabase?`)){
+  return;
+ }
+
+ try{
+  await supabaseFetch(
+   'plantillas_etiquetas?nombre=eq.'+encodeURIComponent(name),
+   {
+    method:'DELETE',
+    headers:{'Prefer':'return=minimal'}
+   }
+  );
+
+  $('templateName').value='';
+  await refreshTemplateSelect();
+  log(`PLANTILLA ELIMINADA DE SUPABASE: ${name}`);
+
+ }catch(e){
+  alert('No se pudo eliminar la plantilla.\n\n'+e.message);
+  log('ERROR eliminando plantilla: '+e.message);
+ }
+}
+
+$('saveTemplate').onclick=saveCurrentTemplate;
+$('loadTemplate').onclick=loadSelectedTemplate;
+$('deleteTemplate').onclick=deleteSelectedTemplate;
+
+$('templateSelect').onchange=e=>{
+ if(e.target.value){
+  $('templateName').value=e.target.value;
+ }
+};
+
+
+
+const settingsModal=$('settingsModal');
+const modalHeader=$('modalHeader');
+
+function openSettingsModal(){
+ settingsModal.classList.add('show');
+}
+function closeSettingsModal(){
+ settingsModal.classList.remove('show');
+}
+function resetModalPosition(){
+ settingsModal.style.left='';
+ settingsModal.style.top='80px';
+ settingsModal.style.right='22px';
+}
+
+$('openSettings').onclick=openSettingsModal;
+$('closeSettings').onclick=closeSettingsModal;
+$('resetModalPos').onclick=resetModalPosition;
+
+let modalDragging=false,modalDX=0,modalDY=0;
+
+modalHeader.addEventListener('pointerdown',e=>{
+ if(e.target.closest('button'))return;
+ const r=settingsModal.getBoundingClientRect();
+ modalDragging=true;
+ modalDX=e.clientX-r.left;
+ modalDY=e.clientY-r.top;
+ modalHeader.setPointerCapture?.(e.pointerId);
+ e.preventDefault();
+});
+
+modalHeader.addEventListener('pointermove',e=>{
+ if(!modalDragging)return;
+
+ const w=settingsModal.offsetWidth;
+ const h=settingsModal.offsetHeight;
+
+ let left=e.clientX-modalDX;
+ let top=e.clientY-modalDY;
+
+ left=Math.max(0,Math.min(window.innerWidth-w,left));
+ top=Math.max(0,Math.min(window.innerHeight-Math.min(h,80),top));
+
+ settingsModal.style.left=left+'px';
+ settingsModal.style.top=top+'px';
+ settingsModal.style.right='auto';
+ e.preventDefault();
+});
+
+function stopModalDrag(){modalDragging=false}
+modalHeader.addEventListener('pointerup',stopModalDrag);
+modalHeader.addEventListener('pointercancel',stopModalDrag);
+
+// Abrir ajustes con doble clic sobre el lienzo, además del botón.
+$('cv').addEventListener('dblclick',()=>{
+  openSettingsModal();
+  if(selected){
+    const key=Object.keys(objects).find(k=>objects[k]===selected);
+    if(key) focusSettingsForObject(key,false);
+  }
+});
+
+
+
+
+function setBattery(n){if(!Number.isFinite(n)||n<0||n>100)return;$('bvalue').textContent=`Batería: ${n}%`;$('bfill').style.width=n+'%';$('bfill').style.background=n<=20?'#dc2626':n<=50?'#f59e0b':'#16a34a'}
+function onNotify(e){
+ const a=new Uint8Array(e.target.value.buffer);log('RX: '+hex(a));
+ if(batteryWaiting&&a.length===2&&a[0]===0&&a[1]<=100){batteryWaiting=false;clearTimeout(batteryTimer);setBattery(a[1]);log(`BATERÍA: ${a[1]}%`)}
+}
+async function connect(){
+ try{
+  device=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[SERVICE,'49535343-fe7d-4ae5-8fa9-9fafd205e455']});
+  device.addEventListener('gattserverdisconnected',()=>{$('status').textContent='● Desconectada';$('status').className='status bad';enable(false);log('Y50 desconectada.')});
+  server=await device.gatt.connect();const svc=await server.getPrimaryService(SERVICE);writer=await svc.getCharacteristic(WRITE);notifyChar=await svc.getCharacteristic(NOTIFY);
+  await notifyChar.startNotifications();notifyChar.addEventListener('characteristicvaluechanged',onNotify);
+  $('status').textContent='● Conectada: '+(device.name||'Y50');$('status').className='status ok';enable(true);log('Conectada BLE FF00 / FF02.');await sleep(200);await readBattery();
+ }catch(e){log('ERROR CONEXIÓN: '+e.name+' - '+e.message)}
+}
+async function tx(a){if(writer.properties.writeWithoutResponse)await writer.writeValueWithoutResponse(a);else await writer.writeValue(a)}
+async function readBattery(){
+ batteryWaiting=true;clearTimeout(batteryTimer);const a=new Uint8Array([0x10,0xff,0x50,0xf1]);log('TX batería: '+hex(a));await tx(a);
+ batteryTimer=setTimeout(()=>{batteryWaiting=false},1800);
+}
+async function raw1(){
+ for(const a of [[0x1f,0xc0,1,0],[0x1f,0x11,0x51,0,1],[0x1f,0xc0,1,1]]){await tx(new Uint8Array(a));await sleep(a.length===5?250:100)}
+}
+async function positionEnd(){
+ await tx(new Uint8Array([0x1d,0x0c]));await sleep(700);await tx(new Uint8Array([0x1f,0x11,0x50]));await sleep(350);
+}
+function raster(){
+ window.__printing=true;draw();window.__printing=false;
+ const ctx=$('cv').getContext('2d'),img=ctx.getImageData(0,0,384,240),wb=48,h=240,data=new Uint8Array(wb*h);
+ for(let y=0;y<h;y++)for(let x=0;x<384;x++){const i=(y*384+x)*4;if(img.data[i]<145)data[y*wb+(x>>3)]|=0x80>>(x&7)}
+ const head=new Uint8Array([0x1d,0x76,0x30,0,wb,0,h&255,(h>>8)&255]),p=new Uint8Array(head.length+data.length);p.set(head);p.set(data,head.length);
+ draw();return p;
+}
+async function stream(a){
+ const [chunk,pause]=$('profile').value.split(',').map(Number);let n=0,t=performance.now();
+ for(let i=0;i<a.length;i+=chunk){await tx(a.slice(i,Math.min(i+chunk,a.length)));n++;await sleep(pause)}
+ return {n,ms:Math.round(performance.now()-t)};
+}
+async function printLabel(){
+ try{
+  enable(false);setToday();draw();
+  const copies=Math.max(1,Math.min(20,+$('copies').value||1)),r=raster();log(`=== IMPRESIÓN V46 · ${copies} COPIA(S) ===`);
+  for(let i=1;i<=copies;i++){
+   log(`COPIA ${i}/${copies}`);await raw1();await sleep(700);
+   await tx(new Uint8Array([0x10,0xff,0x10,0,+$('density').value]));await sleep(120);
+   const z=await stream(r);log(`Raster ${r.length} bytes · ${z.n} bloques · ${z.ms} ms`);
+   await sleep(300);
+   if($('cut').checked||i<copies)await positionEnd();
+   if(i<copies)await sleep(500);
+  }
+  log('FIN IMPRESIÓN.');
+ }catch(e){log('ERROR IMPRESIÓN: '+e.name+' - '+e.message)}finally{enable(true)}
+}
+
+$('connect').onclick=connect;
+$('battery').onclick=readBattery;
+$('print').onclick=printLabel;
+$('clear').onclick=()=>$('log').textContent='Listo.';
+
+// Primero dibuja siempre los valores por defecto.
+// Los datos del cliente se reciben desde NODO mediante parámetros de la URL.
+draw();
+refreshTemplateSelect().catch(e=>log('SUPABASE: '+e.message));
+loadClientFromQueryString().catch(e=>log('ERROR CLIENTE: '+e.message));
+</script>
+</body>
+</html>
