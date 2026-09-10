@@ -578,6 +578,27 @@
     .qr-layout{display:grid;grid-template-columns:minmax(300px,.9fr) minmax(360px,1.1fr);gap:16px}
     .qr-reader-card,.qr-result-card{border:1px solid #2d3c50;border-radius:16px;background:rgba(10,18,31,.78);padding:14px}
     #qrReader{width:100%;min-height:290px;border-radius:14px;overflow:hidden;background:#050d18;border:1px solid #2a3d56}
+    #qrReader{position:relative;touch-action:manipulation}
+    #qrReader video{cursor:crosshair}
+    .qr-focus-ring{
+      position:absolute;
+      width:58px;height:58px;
+      border:2px solid #7ddfff;
+      border-radius:50%;
+      transform:translate(-50%,-50%) scale(1.25);
+      opacity:0;
+      pointer-events:none;
+      z-index:50;
+      box-shadow:0 0 0 2px rgba(0,0,0,.35),0 0 18px rgba(38,198,255,.65);
+    }
+    .qr-focus-ring.show{
+      animation:qrFocusPulse .65s ease-out forwards;
+    }
+    @keyframes qrFocusPulse{
+      0%{opacity:1;transform:translate(-50%,-50%) scale(1.35)}
+      55%{opacity:1;transform:translate(-50%,-50%) scale(.92)}
+      100%{opacity:0;transform:translate(-50%,-50%) scale(1)}
+    }
     .qr-toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
     .qr-toolbar button{width:auto;min-width:120px}
     .qr-manual{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:10px}
@@ -701,6 +722,7 @@
       </select>
       <button class="secondary mobile-priority" onclick="searchClients()">Buscar cliente</button>
       <button class="secondary mobile-priority qr-main-btn" onclick="openQrScannerModal()">📷 Escáner QR</button>
+      <button class="secondary mobile-priority" onclick="openPrintLabels()">🖨 Imprimir etiquetas</button>
       <button class="secondary" onclick="openRackModal()">Agregar rack</button>
       <button class="secondary" onclick="openEquipmentModal()">Agregar equipo</button>
       <button class="secondary" onclick="openCableModal()">Cables</button>
@@ -983,7 +1005,7 @@
   <div id="qrScannerModal" class="modal-backdrop">
     <div class="modal qr-scanner-modal">
       <h3>Escáner QR · Asistente técnico</h3>
-      <div class="modal-subtitle">Escanea un QR que contenga únicamente el ID del cliente / servicio. El sistema localizará sus puertos, iluminará la ruta y leerá la información en voz alta.</div>
+      <div class="modal-subtitle">Escanea un QR que contenga únicamente el ID del cliente / servicio o digita el ID manualmente. Toca la imagen para intentar enfocar. Al detectar un código sonará una confirmación, la cámara se cerrará de inmediato y se bloquearán nuevas lecturas durante 20 segundos. Puedes detener la voz del asistente en cualquier momento.</div>
 
       <div class="qr-layout">
         <div class="qr-reader-card">
@@ -992,14 +1014,18 @@
             <button id="qrStartBtn" onclick="startQrCamera()">Iniciar cámara</button>
             <button class="secondary" onclick="stopQrCamera()">Detener cámara</button>
             <button class="secondary" onclick="repeatQrVoice()">🔊 Repetir voz</button>
+            <button class="secondary" onclick="stopQrVoice()">⏹ Detener voz</button>
           </div>
           <div class="field" style="margin-top:10px">
             <label>También puedes escanear una imagen con QR</label>
             <input id="qrImageInput" type="file" accept="image/*" onchange="scanQrImage(this)">
           </div>
-          <div class="qr-manual">
-            <input id="qrManualId" placeholder="ID del cliente / servicio" onkeydown="if(event.key==='Enter'){lookupQrClient(this.value)}">
-            <button class="secondary" onclick="lookupQrClient(document.getElementById('qrManualId').value)">Buscar</button>
+          <div class="field" style="margin-top:10px;margin-bottom:0">
+            <label>Buscar cliente manualmente por ID</label>
+            <div class="qr-manual">
+              <input id="qrManualId" placeholder="Ej. CI1022956631" onkeydown="if(event.key==='Enter'){lookupQrClient(this.value)}">
+              <button class="secondary" onclick="lookupQrClient(document.getElementById('qrManualId').value)">Buscar ID</button>
+            </div>
           </div>
           <div id="qrScannerStatus" class="qr-status">Listo. Presiona “Iniciar cámara” y apunta al código QR.</div>
         </div>
@@ -1011,6 +1037,7 @@
               <div>
                 <div id="qrClientName" class="qr-client-name">-</div>
                 <div id="qrClientId" class="qr-client-id">-</div>
+                <div id="qrClientOperator" class="qr-client-id">Operador: -</div>
               </div>
               <div class="qr-badge">CLIENTE LOCALIZADO</div>
             </div>
@@ -1196,6 +1223,7 @@
         <div class="form-grid">
           <div class="field"><label>Nombre del cliente</label><input id="pmClientName" placeholder="Ej. MOVISTAR"></div>
           <div class="field"><label>ID del servicio / cliente</label><input id="pmServiceId" placeholder="Ej. CI123456"></div>
+          <div class="field"><label>OPERADOR</label><input id="pmOperator" placeholder="Ej. COLUMBUS COLOMBIA"></div>
           <div class="field">
             <label>Estado del puerto</label>
             <select id="pmStatus">
@@ -1259,6 +1287,10 @@
     let qrDirectPortIds = new Set();
     let qrHighlightedPortIds = new Set();
     let qrLastBeepAt = 0;
+    let qrScanLockUntil = 0;
+    let qrProcessingScan = false;
+    let qrTapFocusWired = false;
+    const QR_SCAN_COOLDOWN_MS = 20000;
 
     let dragConnection = {
       sourcePortId: null,
@@ -3303,7 +3335,7 @@
             if (type !== 'normal') portEl.classList.add('special-port-label');
 
             portEl.dataset.tip = client
-              ? `${getPortDisplayLabel(port)} · ${client.nombre_cliente}${client.identificador_servicio ? ' · ' + client.identificador_servicio : ''}${cable ? ' · Cable: ' + cable.nombre : ''}`
+              ? `${getPortDisplayLabel(port)} · ${client.nombre_cliente}${client.identificador_servicio ? ' · ' + client.identificador_servicio : ''}${client.operador ? ' · Operador: ' + client.operador : ''}${cable ? ' · Cable: ' + cable.nombre : ''}`
               : `${getPortDisplayLabel(port)} · ${port.estado} · ${getLinkSummary(port.id)}${cable ? ' · Cable: ' + cable.nombre : ''}`;
             portEl.dataset.portId = port.id;
             portEl.dataset.equipmentId = eq.id;
@@ -3450,7 +3482,7 @@
           item.textContent = getPortDisplayLabel(port);
           const cable = getCableById(port.cable_id);
           item.title = client
-            ? `${getPortDisplayLabel(port)} · ${client.nombre_cliente}${client.identificador_servicio ? ' · ' + client.identificador_servicio : ''}${cable ? ' · Cable: ' + cable.nombre : ''}`
+            ? `${getPortDisplayLabel(port)} · ${client.nombre_cliente}${client.identificador_servicio ? ' · ' + client.identificador_servicio : ''}${client.operador ? ' · Operador: ' + client.operador : ''}${cable ? ' · Cable: ' + cable.nombre : ''}`
             : `${getPortDisplayLabel(port)} · ${getLinkSummary(port.id)}${cable ? ' · Cable: ' + cable.nombre : ''}`;
 
           item.addEventListener('click', () => {
@@ -3564,6 +3596,7 @@
 
       document.getElementById('pmClientName').value = currentClient?.nombre_cliente || '';
       document.getElementById('pmServiceId').value = currentClient?.identificador_servicio || '';
+      document.getElementById('pmOperator').value = currentClient?.operador || '';
       document.getElementById('pmStatus').value = port.estado || 'libre';
 
       fillRackSelect('pmOriginRack', true);
@@ -3602,6 +3635,7 @@
         if (sourceClient) {
           document.getElementById('pmClientName').value = sourceClient.nombre_cliente || '';
           document.getElementById('pmServiceId').value = sourceClient.identificador_servicio || '';
+          document.getElementById('pmOperator').value = sourceClient.operador || '';
         }
         document.getElementById('pmStatus').value = 'ocupado';
       }
@@ -3629,6 +3663,7 @@
 
         document.getElementById('pmClientName').value = '';
         document.getElementById('pmServiceId').value = '';
+        document.getElementById('pmOperator').value = '';
         document.getElementById('pmStatus').value = 'libre';
 
         document.getElementById('pmOriginRack').value = 'na';
@@ -3655,6 +3690,7 @@
       const clickedPortId = currentPortContext.clickedPort.id;
       const clientName = document.getElementById('pmClientName').value.trim();
       const serviceId = document.getElementById('pmServiceId').value.trim();
+      const operatorName = document.getElementById('pmOperator').value.trim();
       const status = document.getElementById('pmStatus').value;
 
       const originSectionPortId = document.getElementById('pmOriginPort').value;
@@ -3693,13 +3729,15 @@
             currentClientId = existingClient.id;
             const updClient = await supabase.from('clients').update({
               nombre_cliente: clientName,
-              identificador_servicio: serviceId || null
+              identificador_servicio: serviceId || null,
+              operador: operatorName || null
             }).eq('id', currentClientId);
             if (updClient.error) throw updClient.error;
           } else {
             const insClient = await supabase.from('clients').insert({
               nombre_cliente: clientName,
-              identificador_servicio: serviceId || null
+              identificador_servicio: serviceId || null,
+              operador: operatorName || null
             }).select().single();
             if (insClient.error) throw insClient.error;
             currentClientId = insClient.data.id;
@@ -4563,6 +4601,7 @@
           'Tipo fibra cable': getCableById(port.cable_id)?.tipo_fibra || '',
           'Cliente': client?.nombre_cliente || '',
           'ID servicio / cliente': client?.identificador_servicio || '',
+          'Operador': client?.operador || '',
           'Rack origen': connection.origin.rack,
           'Equipo origen': connection.origin.equipment,
           'Puerto origen': connection.origin.port,
@@ -4814,24 +4853,49 @@
 
     function playQrDetectedBeep() {
       const now = Date.now();
-      if (now - qrLastBeepAt < 1200) return;
+      if (now - qrLastBeepAt < 900) return;
       qrLastBeepAt = now;
+
+      try {
+        if (navigator.vibrate) navigator.vibrate([90, 45, 140]);
+      } catch (_) {}
+
       try {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtx) return;
+
         const ctx = new AudioCtx();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(1050, ctx.currentTime);
-        gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.18, ctx.currentTime + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.13);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.14);
-        osc.onended = () => { try { ctx.close(); } catch (_) {} };
+        const master = ctx.createGain();
+        master.gain.setValueAtTime(0.0001, ctx.currentTime);
+        master.gain.exponentialRampToValueAtTime(0.75, ctx.currentTime + 0.015);
+        master.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.42);
+        master.connect(ctx.destination);
+
+        const tones = [
+          { freq: 880, start: 0.00, end: 0.16 },
+          { freq: 1320, start: 0.12, end: 0.31 }
+        ];
+
+        tones.forEach(tone => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(tone.freq, ctx.currentTime + tone.start);
+
+          gain.gain.setValueAtTime(0.0001, ctx.currentTime + tone.start);
+          gain.gain.exponentialRampToValueAtTime(0.55, ctx.currentTime + tone.start + 0.012);
+          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + tone.end);
+
+          osc.connect(gain);
+          gain.connect(master);
+          osc.start(ctx.currentTime + tone.start);
+          osc.stop(ctx.currentTime + tone.end + 0.02);
+        });
+
+        setTimeout(() => {
+          try { ctx.close(); } catch (_) {}
+        }, 700);
       } catch (error) {
         console.warn('No fue posible reproducir el sonido de lectura QR:', error);
       }
@@ -4883,21 +4947,9 @@
       const utter = new SpeechSynthesisUtterance(qrLastVoiceText);
       utter.lang = 'es-CO';
       utter.rate = 0.96;
-      utter.pitch = 0.90;
-
-      // Prioriza una voz masculina en español de Colombia cuando el dispositivo la tenga disponible.
-      // La Web Speech API no expone el género de forma estándar, por eso se identifican primero
-      // nombres masculinos frecuentes de voces del sistema y luego se usa la mejor voz es-CO disponible.
+      utter.pitch = 1;
       const voices = window.speechSynthesis.getVoices?.() || [];
-      const maleName = /(gonzalo|carlos|juan|jorge|diego|miguel|pablo|andres|andr[eé]s|alejandro|fernando|ricardo|male|hombre)/i;
-      const esCO = voices.filter(v => /^es(?:-|_)?CO$/i.test(v.lang || '') || /^es(?:-|_)?CO/i.test(v.lang || ''));
-      const spanish = voices.filter(v => /^es|^es[-_]/i.test(v.lang || ''));
-      const preferred =
-        esCO.find(v => maleName.test(v.name || '')) ||
-        esCO.find(v => /microsoft gonzalo/i.test(v.name || '')) ||
-        esCO[0] ||
-        spanish.find(v => maleName.test(v.name || '')) ||
-        spanish[0];
+      const preferred = voices.find(v => /^es(-|_)?CO/i.test(v.lang)) || voices.find(v => /^es/i.test(v.lang));
       if (preferred) utter.voice = preferred;
       window.speechSynthesis.speak(utter);
     }
@@ -4905,6 +4957,22 @@
     window.repeatQrVoice = function() {
       if (!qrLastVoiceText) return toast('Primero escanea o busca un cliente');
       speakQrText(qrLastVoiceText);
+    };
+
+    window.stopQrVoice = function() {
+      if (!('speechSynthesis' in window)) {
+        return toast('Este navegador no soporta control de voz');
+      }
+      if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
+        return toast('El asistente no está hablando');
+      }
+      window.speechSynthesis.cancel();
+      setQrStatus(
+        qrLastClient
+          ? `Lectura de voz detenida. Cliente ${qrLastClient.nombre_cliente || ''} permanece cargado.`
+          : 'Lectura de voz detenida.'
+      );
+      toast('Voz del asistente detenida');
     };
 
     async function renderQrClientResult(client) {
@@ -4975,6 +5043,7 @@
     }
 
     window.lookupQrClient = async function(rawId) {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
       const id = normalizeQrClientId(rawId);
       if (!id) return setQrStatus('El QR no contiene un ID válido.', true);
       document.getElementById('qrManualId').value = id;
@@ -4998,48 +5067,204 @@
       }
 
       await renderQrClientResult(client);
-      // Evita lecturas repetidas del mismo QR mientras permanece frente a la cámara.
-      if (qrCameraRunning) await stopQrCamera();
     };
+
+
+    function getQrVideoTrack() {
+      const video = document.querySelector('#qrReader video');
+      const stream = video?.srcObject;
+      if (!stream || typeof stream.getVideoTracks !== 'function') return null;
+      return stream.getVideoTracks()[0] || null;
+    }
+
+    function showQrFocusRing(clientX, clientY) {
+      const reader = document.getElementById('qrReader');
+      if (!reader) return;
+
+      let ring = reader.querySelector('.qr-focus-ring');
+      if (!ring) {
+        ring = document.createElement('div');
+        ring.className = 'qr-focus-ring';
+        reader.appendChild(ring);
+      }
+
+      const rect = reader.getBoundingClientRect();
+      ring.style.left = `${clientX - rect.left}px`;
+      ring.style.top = `${clientY - rect.top}px`;
+      ring.classList.remove('show');
+      void ring.offsetWidth;
+      ring.classList.add('show');
+    }
+
+    async function tryQrTapFocus(event) {
+      if (!qrCameraRunning) return;
+
+      const reader = document.getElementById('qrReader');
+      const video = reader?.querySelector('video');
+      const track = getQrVideoTrack();
+
+      if (!reader || !video || !track) return;
+
+      showQrFocusRing(event.clientX, event.clientY);
+
+      try {
+        const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+        const rect = video.getBoundingClientRect();
+
+        const relX = Math.max(0, Math.min(1, (event.clientX - rect.left) / Math.max(1, rect.width)));
+        const relY = Math.max(0, Math.min(1, (event.clientY - rect.top) / Math.max(1, rect.height)));
+
+        const advanced = {};
+
+        // Navegadores/cámaras compatibles pueden aceptar enfoque manual en el punto tocado.
+        if (Array.isArray(capabilities.focusMode) && capabilities.focusMode.includes('manual')) {
+          advanced.focusMode = 'manual';
+        } else if (Array.isArray(capabilities.focusMode) && capabilities.focusMode.includes('continuous')) {
+          advanced.focusMode = 'continuous';
+        }
+
+        if ('pointsOfInterest' in capabilities) {
+          advanced.pointsOfInterest = [{ x: relX, y: relY }];
+        }
+
+        if (Object.keys(advanced).length) {
+          await track.applyConstraints({ advanced: [advanced] });
+          setQrStatus('Enfoque solicitado en el punto tocado. Mantén el QR estable.');
+        } else {
+          // Si no hay enfoque puntual, al menos intentamos reforzar autofocus continuo.
+          if (Array.isArray(capabilities.focusMode) && capabilities.focusMode.includes('continuous')) {
+            await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+          }
+          setQrStatus('La cámara no expone enfoque manual. Mantén el QR estable y a unos centímetros.');
+        }
+      } catch (error) {
+        console.warn('Enfoque táctil no disponible:', error);
+        setQrStatus('El enfoque táctil no está disponible en esta cámara/navegador; el autofocus seguirá activo.');
+      }
+    }
+
+    function wireQrTapFocus() {
+      const reader = document.getElementById('qrReader');
+      if (!reader || qrTapFocusWired) return;
+
+      reader.addEventListener('pointerup', event => {
+        if (!qrCameraRunning) return;
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        tryQrTapFocus(event);
+      });
+
+      qrTapFocusWired = true;
+    }
+
+    async function handleQrCameraDetection(decodedText) {
+      const now = Date.now();
+
+      // Bloqueo inmediato para evitar callbacks duplicados del mismo QR.
+      if (qrProcessingScan || now < qrScanLockUntil) return;
+
+      qrProcessingScan = true;
+      qrScanLockUntil = now + QR_SCAN_COOLDOWN_MS;
+
+      playQrDetectedBeep();
+      setQrStatus('QR detectado. Cámara cerrada para evitar lecturas duplicadas.');
+
+      // Apagar la cámara antes de consultar Supabase o iniciar la voz.
+      await stopQrCamera(true);
+
+      try {
+        await lookupQrClient(decodedText);
+      } finally {
+        qrProcessingScan = false;
+      }
+    }
 
     window.startQrCamera = async function() {
       if (!window.Html5Qrcode) return setQrStatus('No se pudo cargar el lector QR. Verifica conexión a Internet.', true);
       if (qrCameraRunning) return;
+
+      const remaining = qrScanLockUntil - Date.now();
+      if (remaining > 0) {
+        return setQrStatus(`Espera ${Math.ceil(remaining / 1000)} s antes de iniciar una nueva lectura.`);
+      }
+
       try {
         qrScannerInstance = qrScannerInstance || new Html5Qrcode('qrReader');
-        const config = { fps: 10, qrbox: { width: 240, height: 240 }, aspectRatio: 1.0 };
+
+        const config = {
+          fps: 10,
+          qrbox: { width: 240, height: 240 },
+          aspectRatio: 1.0
+        };
+
         await qrScannerInstance.start(
           { facingMode: 'environment' },
           config,
           decodedText => {
-            playQrDetectedBeep();
-            lookupQrClient(decodedText);
+            handleQrCameraDetection(decodedText);
           },
           () => {}
         );
+
         qrCameraRunning = true;
-        setQrStatus('Cámara activa. Apunta al QR del cliente.');
+        wireQrTapFocus();
+
+        // Solicitar autofocus continuo cuando la cámara lo soporte.
+        try {
+          const track = getQrVideoTrack();
+          const caps = track?.getCapabilities?.() || {};
+          if (track && Array.isArray(caps.focusMode) && caps.focusMode.includes('continuous')) {
+            await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] });
+          }
+        } catch (focusError) {
+          console.warn('No fue posible activar autofocus continuo:', focusError);
+        }
+
+        setQrStatus('Cámara activa. Toca la imagen para intentar enfocar y apunta al QR.');
       } catch (error) {
         console.error(error);
         setQrStatus('No fue posible abrir la cámara. Usa HTTPS/localhost, concede permiso de cámara o utiliza “Escanear imagen”.', true);
       }
     };
 
-    window.stopQrCamera = async function() {
+    window.stopQrCamera = async function(fromDetection = false) {
       if (!qrScannerInstance || !qrCameraRunning) return;
-      try { await qrScannerInstance.stop(); } catch (error) { console.warn(error); }
+
+      try {
+        await qrScannerInstance.stop();
+      } catch (error) {
+        console.warn(error);
+      }
+
       qrCameraRunning = false;
-      setQrStatus(qrLastClient ? 'Escaneo completado. La información permanece resaltada.' : 'Cámara detenida.');
+
+      if (!fromDetection) {
+        setQrStatus(
+          qrLastClient
+            ? 'Escaneo completado. La información permanece resaltada.'
+            : 'Cámara detenida.'
+        );
+      }
     };
 
     window.scanQrImage = async function(input) {
       const file = input?.files?.[0];
       if (!file) return;
       if (!window.Html5Qrcode) return setQrStatus('No se pudo cargar el lector QR.', true);
+
+      const remaining = qrScanLockUntil - Date.now();
+      if (remaining > 0) {
+        input.value = '';
+        return setQrStatus(`Espera ${Math.ceil(remaining / 1000)} s antes de procesar otro código.`);
+      }
+
       try {
         if (qrCameraRunning) await stopQrCamera();
         qrScannerInstance = qrScannerInstance || new Html5Qrcode('qrReader');
+
         const decodedText = await qrScannerInstance.scanFile(file, true);
+
+        qrScanLockUntil = Date.now() + QR_SCAN_COOLDOWN_MS;
+        playQrDetectedBeep();
         await lookupQrClient(decodedText);
       } catch (error) {
         console.error(error);
@@ -5087,6 +5312,189 @@
       if (content) content.classList.add('hidden');
       if ('speechSynthesis' in window) window.speechSynthesis.cancel();
       if (showToast) toast('Resaltado QR limpiado');
+    };
+
+    function getLabelClientPortIds(clientId) {
+      const directIds = new Set(
+        assignments
+          .filter(a => String(a.client_id) === String(clientId))
+          .map(a => String(a.port_id))
+          .filter(Boolean)
+      );
+      const allIds = new Set(directIds);
+      let changed = true;
+      while (changed) {
+        changed = false;
+        links.forEach(link => {
+          const a = String(link.port_id_origen || '');
+          const b = String(link.port_id_destino || '');
+          if (allIds.has(a) || allIds.has(b)) {
+            const before = allIds.size;
+            if (a) allIds.add(a);
+            if (b) allIds.add(b);
+            if (allIds.size !== before) changed = true;
+          }
+        });
+      }
+      return { directIds, allIds };
+    }
+
+    function labelLocationParts(port) {
+      const eq = getEquipmentById(port?.equipment_id);
+      const rack = eq ? getRackById(eq.rack_id) : null;
+      return { port, eq, rack };
+    }
+
+    function cleanLabelPart(value) {
+      return String(value || '').trim().replace(/\s+/g, ' ');
+    }
+
+    // TO principal: TO: + RACK + EQUIPO + #PUERTO
+    // Ejemplo: TO: 1BF27 ME3600 #12
+    function labelMainToText(port) {
+      const { eq, rack } = labelLocationParts(port);
+      if (!port || !eq) return '';
+
+      const rackName = cleanLabelPart(rack?.nombre);
+      const equipmentName = cleanLabelPart(eq.demonico || eq.nombre);
+      const portLabel = cleanLabelPart(getPortDisplayLabel(port)).replace(/^#/, '');
+
+      const body = [rackName, equipmentName, portLabel ? `#${portLabel}` : '']
+        .filter(Boolean)
+        .join(' ');
+
+      return body ? `TO: ${body}` : '';
+    }
+
+    // TO secundario: información del ODF ESPEJO.
+    // Formato solicitado: TO: + RACK + L8- + PUERTO
+    // Ejemplo: TO:1BF25 L8-121
+    function labelMirrorToText(port) {
+      const { rack } = labelLocationParts(port);
+      if (!port) return '';
+
+      const rackName = cleanLabelPart(rack?.nombre);
+      const portLabel = cleanLabelPart(getPortDisplayLabel(port)).replace(/^#/, '');
+      if (!rackName || !portLabel) return '';
+
+      return `TO:${rackName} L8-${portLabel}`;
+    }
+
+    // FR / Rack salida: información del ODF VV1 / VV5.
+    // Formato solicitado: FR: + RACK + ODF + PUERTO
+    // Ejemplo: FR:1BF25 VVC5 63
+    function labelFrRackText(port) {
+      const { eq, rack } = labelLocationParts(port);
+      if (!port || !eq) return '';
+
+      const rackName = cleanLabelPart(rack?.nombre);
+      const odfName = cleanLabelPart(eq.demonico || eq.nombre);
+      const portLabel = cleanLabelPart(getPortDisplayLabel(port)).replace(/^#/, '');
+      const body = [rackName, odfName, portLabel].filter(Boolean).join(' ');
+
+      return body ? `FR:${body}` : '';
+    }
+
+    function normalizeLabelSearchText(value) {
+      return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, ' ')
+        .trim();
+    }
+
+    function isMirrorOdfPort(port) {
+      const { eq, rack } = labelLocationParts(port);
+      if (!isOdfEquipment(eq)) return false;
+      const text = normalizeLabelSearchText(`${rack?.nombre || ''} ${eq?.nombre || ''} ${eq?.demonico || ''}`);
+      return text.includes('ESPEJO');
+    }
+
+    function isVv1OrVv5OdfPort(port) {
+      const { eq, rack } = labelLocationParts(port);
+      if (!isOdfEquipment(eq)) return false;
+      const compact = normalizeLabelSearchText(`${rack?.nombre || ''} ${eq?.nombre || ''} ${eq?.demonico || ''}`).replace(/\s+/g, '');
+      return compact.includes('VV1') || compact.includes('VV5') || compact.includes('VVC1') || compact.includes('VVC5');
+    }
+
+    function buildPrintLabelPayload(client) {
+      const serviceId = String(client?.identificador_servicio || '').trim();
+      const { directIds, allIds } = getLabelClientPortIds(client.id);
+      const relatedPorts = ports.filter(p => allIds.has(String(p.id)));
+      const directPorts = ports.filter(p => directIds.has(String(p.id)));
+
+      const sortPorts = list => [...list].sort((a, b) => {
+        const ea = getEquipmentById(a.equipment_id);
+        const eb = getEquipmentById(b.equipment_id);
+        const priority = eq => {
+          const type = String(eq?.tipo || '').toLowerCase();
+          if (type === 'switch') return 1;
+          if (type === 'router') return 2;
+          if (isOdfEquipment(eq)) return 3;
+          return 9;
+        };
+        return priority(ea) - priority(eb) || Number(a.numero_puerto || 0) - Number(b.numero_puerto || 0);
+      });
+
+      let toPrincipalPort = sortPorts(directPorts).find(p => !isOdfEquipment(getEquipmentById(p.equipment_id)));
+      if (!toPrincipalPort) {
+        toPrincipalPort = sortPorts(relatedPorts).find(p => !isOdfEquipment(getEquipmentById(p.equipment_id)));
+      }
+
+      const mirrorPort = sortPorts(relatedPorts).find(isMirrorOdfPort) || null;
+      const salidaPort = sortPorts(relatedPorts).find(isVv1OrVv5OdfPort) || null;
+
+      return {
+        id_cliente: serviceId,
+        nombre_cliente: String(client?.nombre_cliente || '').trim(),
+        operador: String(client?.operador || '').trim(),
+        to_principal: toPrincipalPort ? labelMainToText(toPrincipalPort) : '',
+        to_secundario: mirrorPort ? labelMirrorToText(mirrorPort) : '',
+        fr_rack_salida: salidaPort ? labelFrRackText(salidaPort) : '',
+        contenido_qr: serviceId
+      };
+    }
+
+    window.openPrintLabels = async function() {
+      if (!supabase) return toast('Sin conexión a Supabase');
+      const typed = String(document.getElementById('searchClient')?.value || '').trim();
+      let client = qrLastClient;
+
+      try {
+        await fetchAll(true);
+        renderFilters();
+
+        if (typed) {
+          const normalized = typed.toLowerCase();
+          const exact = clients.find(c => String(c.identificador_servicio || '').trim().toLowerCase() === normalized);
+          if (exact) client = exact;
+        }
+
+        if (!client) {
+          toast('Busca primero el cliente por ID o escanéalo con QR');
+          return;
+        }
+
+        const payload = buildPrintLabelPayload(client);
+        if (!payload.id_cliente) {
+          toast('El cliente no tiene ID de servicio');
+          return;
+        }
+
+        const params = new URLSearchParams(payload);
+        params.set('origen', 'nodo');
+        const target = `IMPRESIONES.html?${params.toString()}`;
+        const popup = window.open(target, '_blank');
+        if (!popup) {
+          toast('El navegador bloqueó la nueva pestaña. Habilita ventanas emergentes.');
+          return;
+        }
+        toast(`Abriendo etiquetas de ${payload.id_cliente}`);
+      } catch (error) {
+        console.error(error);
+        toast(error.message || 'No fue posible abrir el módulo de impresión');
+      }
     };
 
     window.searchClients = async function() {
@@ -5228,5 +5636,6 @@
 
 </body>
 </html>
+
 
 
