@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Y50 50x30 v46 - nuevos parámetros por defecto</title>
+<title>Y50 50x30 v48 - búsqueda de cliente integrada</title>
 <style>
 :root{--o:#ff6500;--bg:#f4f6f8;--b:#dfe3e8;--g:#168a45;--blue:#2563eb}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:#17202a}
@@ -16,6 +16,11 @@ button{border:0;border-radius:10px;padding:11px 14px;font-weight:700;font-size:1
 label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}input,select,textarea{width:100%;padding:9px;border:1px solid #d0d5dd;border-radius:9px;font-size:14px}
 .good{background:#ecfdf3;border:1px solid #abefc6;color:#067647;border-radius:11px;padding:11px 12px;font-size:13px;line-height:1.5}
 .info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;border-radius:11px;padding:11px 12px;font-size:13px;line-height:1.5}
+
+.clientSearchBox{background:#f8fafc;border:1px solid #dbe3ec;border-radius:12px;padding:12px;margin-bottom:12px}
+.clientSearchRow{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:end}
+.clientSearchRow button{width:auto;min-width:145px;margin:0}
+@media(max-width:780px){.clientSearchRow{grid-template-columns:1fr}.clientSearchRow button{width:100%}}
 .battery{display:flex;align-items:center;gap:12px;background:#f8fafc;border:1px solid #e5e7eb;padding:12px;border-radius:12px;margin-top:12px}
 .bicon{width:52px;height:25px;border:3px solid #17202a;border-radius:5px;padding:2px;position:relative}.bicon:after{content:"";position:absolute;right:-7px;top:5px;width:5px;height:9px;background:#17202a}
 .bfill{height:100%;width:0;background:#16a34a}.bvalue{font-size:23px;font-weight:800}.small{font-size:12px;color:#667085}
@@ -139,7 +144,7 @@ canvas{background:#fff;border:1px solid #888;max-width:100%;height:auto;image-re
 </head>
 <body>
 <div class="wrap">
-<div class="head"><h1>MINI Y50 · Plantilla Cliente / ODF v46</h1><div>Etiqueta 50×30 mm · QR + línea central + textos configurables + copias</div></div>
+<div class="head"><h1>MINI Y50 · Plantilla Cliente / ODF v49</h1><div>Etiqueta 50×30 mm · QR + línea central + textos configurables + copias</div></div>
 
 <div class="card">
  <div id="status" class="status">● Desconectada</div>
@@ -155,7 +160,16 @@ canvas{background:#fff;border:1px solid #888;max-width:100%;height:auto;image-re
 
 <div class="card">
 <h3>Datos de la etiqueta</h3>
-<div id="clientLoadInfo" class="info" style="margin-bottom:12px">Abre este módulo desde NODO para recibir automáticamente los datos de la etiqueta del cliente.</div>
+<div class="clientSearchBox">
+  <div class="clientSearchRow">
+    <div>
+      <label>Buscar otro cliente por ID</label>
+      <input id="clientSearchId" placeholder="Ej. CI1026382" autocomplete="off">
+    </div>
+    <button id="clientSearchBtn" class="blue" type="button">🔎 Buscar cliente</button>
+  </div>
+</div>
+<div id="clientLoadInfo" class="info" style="margin-bottom:12px">Puedes recibir el cliente desde NODO o buscar otro directamente por ID en este módulo.</div>
 <div class="grid3">
  <div><label>ID cliente</label><input id="f_id" value=""></div>
  <div><label>Nombre cliente</label><input id="f_name" value=""></div>
@@ -754,119 +768,189 @@ function triggerLabelRefresh(){
  draw();
 }
 
+let labelSupabaseClient=null;
+
+async function getLabelSupabaseClient(){
+ if(labelSupabaseClient) return labelSupabaseClient;
+ const mod=await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm');
+ labelSupabaseClient=mod.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+ return labelSupabaseClient;
+}
+
 async function loadClientFromSupabaseById(rawId){
  const serviceId=String(rawId||'').trim();
- if(!serviceId)return false;
+ if(!serviceId){
+  setClientLoadInfo('Digita el ID del cliente que deseas buscar.',true);
+  return false;
+ }
 
- setClientLoadInfo(`Buscando cliente ${serviceId} en Supabase...`);
+ setClientLoadInfo(`Buscando cliente ${serviceId}...`);
  log(`CLIENTE: buscando ${serviceId}`);
 
  try{
-  let rows=await supabaseFetch(
-   'clients?select=id,nombre_cliente,identificador_servicio,operador&identificador_servicio=eq.'+encodeURIComponent(serviceId),
-   {method:'GET'}
-  );
+  // V51: replica literalmente la estrategia del buscador QR de NODO:
+  // cargar el inventario con supabase-js y buscar el ID en memoria.
+  const sb=await getLabelSupabaseClient();
+  const [racksRes,eqRes,portsRes,clientsRes,assignmentsRes,linksRes]=await Promise.all([
+    sb.from('racks').select('*').order('nombre'),
+    sb.from('equipment').select('*').order('posicion_rack').order('nombre'),
+    sb.from('ports').select('*').order('numero_puerto'),
+    sb.from('clients').select('*').order('nombre_cliente'),
+    sb.from('port_assignments').select('*'),
+    sb.from('port_links').select('*')
+  ]);
 
-  if(!Array.isArray(rows)||!rows.length){
-   rows=await supabaseFetch(
-    'clients?select=id,nombre_cliente,identificador_servicio,operador&id=eq.'+encodeURIComponent(serviceId),
-    {method:'GET'}
-   );
+  const errors=[racksRes.error,eqRes.error,portsRes.error,clientsRes.error,assignmentsRes.error,linksRes.error].filter(Boolean);
+  if(errors.length){
+    throw new Error(errors.map(e=>e.message||String(e)).join(' | '));
   }
 
-  const client=Array.isArray(rows)?rows[0]:null;
-  if(!client)throw new Error(`No se encontró un cliente con el ID ${serviceId}.`);
+  const racksAll=racksRes.data||[];
+  const equipmentAll=eqRes.data||[];
+  const portsAll=portsRes.data||[];
+  const clientsAll=clientsRes.data||[];
+  const assignmentsAll=assignmentsRes.data||[];
+  const linksAll=linksRes.data||[];
 
-  const assignments=await supabaseFetch(
-   'port_assignments?select=port_id&client_id=eq.'+encodeURIComponent(client.id),
-   {method:'GET'}
+  const normalized=serviceId.toLowerCase();
+  let client=clientsAll.find(c=>String(c.identificador_servicio||'').trim().toLowerCase()===normalized);
+  if(!client) client=clientsAll.find(c=>String(c.id||'').trim().toLowerCase()===normalized);
+
+  if(!client){
+    throw new Error(`No se encontró un cliente con el ID ${serviceId}. Se cargaron ${clientsAll.length} clientes desde Supabase.`);
+  }
+
+  const directIds=new Set(
+    assignmentsAll
+      .filter(a=>String(a.client_id)===String(client.id))
+      .map(a=>String(a.port_id))
+      .filter(Boolean)
   );
-  const assignedIds=new Set((assignments||[]).map(a=>String(a.port_id)).filter(Boolean));
 
-  // Ampliar la ruta por las conexiones para obtener todos los puntos relacionados,
-  // incluso si alguno no tiene una asignación duplicada del cliente.
-  const allLinks=await supabaseFetch('port_links?select=port_id_origen,port_id_destino,tipo_enlace',{method:'GET'});
+  if(!directIds.size){
+    throw new Error(`El cliente ${client.identificador_servicio||serviceId} existe, pero no tiene puertos asociados.`);
+  }
+
+  // Expandir por todas las conexiones alcanzables, igual que NODO.
+  const allIds=new Set(directIds);
   let changed=true;
   while(changed){
-   changed=false;
-   (allLinks||[]).forEach(link=>{
-    const a=String(link.port_id_origen||''),b=String(link.port_id_destino||'');
-    if(assignedIds.has(a)||assignedIds.has(b)){
-     const before=assignedIds.size;
-     if(a)assignedIds.add(a);
-     if(b)assignedIds.add(b);
-     if(assignedIds.size!==before)changed=true;
-    }
-   });
+    changed=false;
+    linksAll.forEach(link=>{
+      const a=String(link.port_id_origen||'');
+      const b=String(link.port_id_destino||'');
+      if(allIds.has(a)||allIds.has(b)){
+        const before=allIds.size;
+        if(a) allIds.add(a);
+        if(b) allIds.add(b);
+        if(allIds.size!==before) changed=true;
+      }
+    });
   }
 
-  let relatedPorts=[];
-  if(assignedIds.size){
-   const ids=[...assignedIds];
-   const filter='id=in.('+ids.map(v=>encodeURIComponent(v)).join(',')+')';
-   relatedPorts=await supabaseFetch(
-    'ports?select=id,equipment_id,numero_puerto,tipo_puerto,estado&'+filter,
-    {method:'GET'}
-   );
-  }
+  const relatedPorts=portsAll.filter(p=>allIds.has(String(p.id)));
+  const eqMap=new Map(equipmentAll.map(e=>[String(e.id),e]));
+  const rackMap=new Map(racksAll.map(r=>[String(r.id),r]));
 
-  const equipmentIds=uniqueStrings((relatedPorts||[]).map(p=>p.equipment_id));
-  let equipment=[];
-  if(equipmentIds.length){
-   equipment=await supabaseFetch(
-    'equipment?select=id,rack_id,nombre,demonico,tipo& id=in.('+equipmentIds.map(v=>encodeURIComponent(v)).join(',')+')'.replace(' ','') ,
-    {method:'GET'}
-   );
-  }
+  const cleanPart=v=>String(v||'').trim().replace(/\s+/g,' ');
+  const normalize=v=>String(v||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
 
-  const rackIds=uniqueStrings((equipment||[]).map(e=>e.rack_id));
-  let racks=[];
-  if(rackIds.length){
-   racks=await supabaseFetch(
-    'racks?select=id,nombre&id=in.('+rackIds.map(v=>encodeURIComponent(v)).join(',')+')',
-    {method:'GET'}
-   );
-  }
+  const locationParts=port=>{
+    const eq=eqMap.get(String(port?.equipment_id||''));
+    const rack=eq?rackMap.get(String(eq.rack_id||'')):null;
+    return {eq,rack};
+  };
 
-  const eqMap=new Map((equipment||[]).map(e=>[String(e.id),e]));
-  const rackMap=new Map((racks||[]).map(r=>[String(r.id),r]));
+  const isOdf=eq=>{
+    const tipo=String(eq?.tipo||'').toLowerCase();
+    const nombre=String(eq?.nombre||'').toLowerCase();
+    const demonico=String(eq?.demonico||'').toLowerCase();
+    return tipo==='odf'||nombre.includes('odf')||demonico.includes('odf');
+  };
 
-  const sortedPorts=[...(relatedPorts||[])].sort((a,b)=>{
-   const ea=eqMap.get(String(a.equipment_id||''));
-   const eb=eqMap.get(String(b.equipment_id||''));
-   const ta=String(ea?.tipo||'').toLowerCase();
-   const tb=String(eb?.tipo||'').toLowerCase();
-   const order=t=>t==='switch'?1:t==='router'?2:t==='odf'?3:4;
-   return order(ta)-order(tb) ||
-          String(rackMap.get(String(ea?.rack_id||''))?.nombre||'').localeCompare(String(rackMap.get(String(eb?.rack_id||''))?.nombre||'')) ||
-          String(ea?.nombre||'').localeCompare(String(eb?.nombre||'')) ||
-          Number(a.numero_puerto||0)-Number(b.numero_puerto||0);
+  const isMirrorPort=port=>{
+    const {eq,rack}=locationParts(port);
+    if(!isOdf(eq)) return false;
+    return normalize(`${rack?.nombre||''} ${eq?.nombre||''} ${eq?.demonico||''}`).includes('ESPEJO');
+  };
+
+  const isSalidaPort=port=>{
+    const {eq,rack}=locationParts(port);
+    if(!isOdf(eq)) return false;
+    const compact=normalize(`${rack?.nombre||''} ${eq?.nombre||''} ${eq?.demonico||''}`).replace(/\s+/g,'');
+    return compact.includes('VV1')||compact.includes('VV5')||compact.includes('VVC1')||compact.includes('VVC5');
+  };
+
+  const sortedPorts=[...relatedPorts].sort((a,b)=>{
+    const ea=eqMap.get(String(a.equipment_id||''));
+    const eb=eqMap.get(String(b.equipment_id||''));
+    const priority=eq=>{
+      const t=String(eq?.tipo||'').toLowerCase();
+      if(t==='switch') return 1;
+      if(t==='router') return 2;
+      if(isOdf(eq)) return 3;
+      return 9;
+    };
+    return priority(ea)-priority(eb)||Number(a.numero_puerto||0)-Number(b.numero_puerto||0);
   });
 
-  const nonOdf=sortedPorts.filter(p=>String(eqMap.get(String(p.equipment_id||''))?.tipo||'').toLowerCase()!=='odf');
-  const odf=sortedPorts.filter(p=>String(eqMap.get(String(p.equipment_id||''))?.tipo||'').toLowerCase()==='odf');
+  const directPorts=sortedPorts.filter(p=>directIds.has(String(p.id)));
+  let principal=directPorts.find(p=>!isOdf(eqMap.get(String(p.equipment_id||''))));
+  if(!principal) principal=sortedPorts.find(p=>!isOdf(eqMap.get(String(p.equipment_id||''))))||null;
+  const mirror=sortedPorts.find(isMirrorPort)||null;
+  const salida=sortedPorts.find(isSalidaPort)||null;
 
-  // Criterio automático editable:
-  // TO principal = primer punto no ODF; TO secundario = segundo punto no ODF;
-  // FR / Rack salida = primer punto ODF. Si una categoría no existe, se usan
-  // los siguientes puntos disponibles de la ruta para no dejar información útil por fuera.
-  const principal=nonOdf[0] || sortedPorts[0] || null;
-  const secondary=nonOdf[1] || sortedPorts.find(p=>p!==principal) || null;
-  const frPort=odf[0] || sortedPorts.find(p=>p!==principal&&p!==secondary) || null;
+  const mainText=port=>{
+    if(!port) return '';
+    const {eq,rack}=locationParts(port);
+    if(!eq) return '';
+    const rackName=cleanPart(rack?.nombre);
+    const eqName=cleanPart(eq.demonico||eq.nombre);
+    const p=cleanPart(printPortLabel(port)).replace(/^#/,'');
+    const body=[rackName,eqName,p?`#${p}`:''].filter(Boolean).join(' ');
+    return body?`TO: ${body}`:'';
+  };
 
-  $('f_id').value=client.identificador_servicio||client.id||serviceId;
+  const mirrorText=port=>{
+    if(!port) return '';
+    const {rack}=locationParts(port);
+    const rackName=cleanPart(rack?.nombre);
+    const p=cleanPart(printPortLabel(port)).replace(/^#/,'');
+    return rackName&&p?`TO:${rackName} L8-${p}`:'';
+  };
+
+  const frText=port=>{
+    if(!port) return '';
+    const {eq,rack}=locationParts(port);
+    if(!eq) return '';
+    const rackName=cleanPart(rack?.nombre);
+    const odfName=cleanPart(eq.demonico||eq.nombre);
+    const p=cleanPart(printPortLabel(port)).replace(/^#/,'');
+    const body=[rackName,odfName,p].filter(Boolean).join(' ');
+    return body?`FR:${body}`:'';
+  };
+
+  const finalId=String(client.identificador_servicio||serviceId).trim();
+  $('f_id').value=finalId;
   $('f_name').value=client.nombre_cliente||'';
   $('f_operator').value=client.operador||'';
-  $('f_to1').value=principal?compactLocationText(principal,eqMap,rackMap):'';
-  $('f_to2').value=secondary?compactLocationText(secondary,eqMap,rackMap):'';
-  $('f_fr').value=frPort?compactLocationText(frPort,eqMap,rackMap):'';
-  $('f_qr').value=client.identificador_servicio||client.id||serviceId;
+  $('f_to1').value=mainText(principal);
+  $('f_to2').value=mirrorText(mirror);
+  $('f_fr').value=frText(salida);
+  $('f_qr').value=finalId;
   $('f_center').value='Línea vertical de referencia';
   setToday();
   triggerLabelRefresh();
 
-  setClientLoadInfo(`Cliente cargado: ${client.nombre_cliente||'Sin nombre'} · ${client.identificador_servicio||client.id||serviceId}. Puedes ajustar cualquier campo antes de imprimir.`);
-  log(`CLIENTE CARGADO: ${client.identificador_servicio||client.id||serviceId} · ${client.nombre_cliente||''}`);
+  const search=$('clientSearchId');
+  if(search) search.value=finalId;
+
+  setClientLoadInfo(`Cliente cargado: ${$('f_name').value||'Sin nombre'} · ${finalId}.`);
+  log(`CLIENTE CARGADO: ${finalId} · ${$('f_name').value||''}`);
+  log(`Clientes cargados desde Supabase: ${clientsAll.length}`);
+  log(`Puertos directos: ${directIds.size} · Ruta total: ${allIds.size}`);
   log(`TO principal: ${$('f_to1').value||'-'}`);
   log(`TO secundario: ${$('f_to2').value||'-'}`);
   log(`FR / Rack salida: ${$('f_fr').value||'-'}`);
@@ -892,6 +976,7 @@ async function loadClientFromQueryString(){
   f_qr:params.get('contenido_qr')||params.get('id_cliente')||''
  };
  Object.entries(values).forEach(([id,value])=>{ const el=$(id); if(el) el.value=value; });
+ if($('clientSearchId')) $('clientSearchId').value=values.f_id;
  setToday();
  triggerLabelRefresh();
 
@@ -909,7 +994,7 @@ async function loadClientFromQueryString(){
    setClientLoadInfo(`Se recibió el ID ${values.f_id}, pero no llegaron datos completos desde NODO.`,true);
    return false;
  }
- setClientLoadInfo('Sin cliente cargado. Abre este archivo desde el botón “Imprimir etiquetas” de NODO.');
+ setClientLoadInfo('Sin cliente cargado. Puedes buscarlo por ID arriba o abrir este archivo desde NODO.');
  return false;
 }
 
@@ -1224,6 +1309,11 @@ async function printLabel(){
  }catch(e){log('ERROR IMPRESIÓN: '+e.name+' - '+e.message)}finally{enable(true)}
 }
 
+$('clientSearchBtn').onclick=()=>loadClientFromSupabaseById($('clientSearchId').value);
+$('clientSearchId').addEventListener('keydown',e=>{
+ if(e.key==='Enter'){e.preventDefault();loadClientFromSupabaseById(e.currentTarget.value);}
+});
+
 $('connect').onclick=connect;
 $('battery').onclick=readBattery;
 $('print').onclick=printLabel;
@@ -1237,3 +1327,4 @@ loadClientFromQueryString().catch(e=>log('ERROR CLIENTE: '+e.message));
 </script>
 </body>
 </html>
+
