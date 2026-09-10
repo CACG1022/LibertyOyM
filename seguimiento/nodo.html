@@ -573,6 +573,25 @@
     }
 
 
+
+    /* ===== Reporte de caída masiva ===== */
+    .massive-modal{width:min(1100px,100%);max-height:92vh;overflow:auto}
+    .massive-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0 16px}
+    .massive-kpi{padding:12px;border:1px solid #2d3c50;border-radius:14px;background:#0a1626}
+    .massive-kpi span{display:block;color:var(--muted);font-size:10px;margin-bottom:4px}
+    .massive-kpi strong{font-size:22px}
+    .massive-client-card{border:1px solid #2d3c50;border-radius:15px;background:rgba(10,18,31,.78);margin-bottom:12px;overflow:hidden}
+    .massive-client-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:12px 14px;background:#0d1b2d;border-bottom:1px solid #2d3c50}
+    .massive-client-name{font-size:15px;font-weight:800;color:#eef7ff}
+    .massive-client-meta{font-size:10px;color:#9fb4ce;margin-top:3px;line-height:1.45}
+    .massive-client-count{min-width:82px;text-align:center;padding:5px 8px;border-radius:999px;border:1px solid #35506e;background:#102033;font-size:10px;font-weight:700}
+    .massive-table-wrap{overflow:auto}
+    .massive-table{width:100%;border-collapse:collapse;min-width:720px;font-size:11px}
+    .massive-table th{background:#0f2034;color:#dcecff;text-align:left;padding:8px;position:sticky;top:0}
+    .massive-table td{padding:8px;border-top:1px solid rgba(49,68,93,.45)}
+    .massive-not-found{margin-top:12px;padding:10px 12px;border-radius:12px;border:1px solid rgba(239,68,68,.45);background:rgba(239,68,68,.08);color:#fecaca;font-size:11px;line-height:1.45}
+    @media(max-width:700px){.massive-summary{grid-template-columns:1fr 1fr}.massive-client-head{display:block}.massive-client-count{display:inline-block;margin-top:8px}}
+
     /* ===== Módulo QR / Asistente técnico ===== */
     .qr-scanner-modal{width:min(980px,100%);max-height:94vh;overflow:auto}
     .qr-layout{display:grid;grid-template-columns:minmax(300px,.9fr) minmax(360px,1.1fr);gap:16px}
@@ -713,7 +732,10 @@
     <div class="topbar">
       <div class="brand">Inventario Visual Fibra</div>
       <button id="mobileMenuBtn" class="secondary mobile-menu-toggle" type="button" onclick="toggleMobileMenu()">☰ Más opciones</button>
-      <input id="searchClient" placeholder="Buscar cliente por nombre o ID de servicio" onkeydown="if(event.key==='Enter'){searchClients()}">
+      <input id="searchClient"
+             placeholder="Buscar nombre o varios IDs: CI1001, CI1002, CI1003"
+             title="Puedes buscar un nombre, un solo ID o varios IDs separados por coma, punto y coma o salto de línea"
+             onkeydown="if(event.key==='Enter'){searchClients()}">
       <select id="cableFilter" onchange="changeCableFilter()"><option value="">Todos los cables</option></select>
       <select id="rackFilter" onchange="loadDashboard()"><option value="">Todos los racks</option></select>
       <select id="viewMode" onchange="changeViewMode()">
@@ -1074,6 +1096,22 @@
         <button class="secondary" onclick="clearQrClientHighlight()">Limpiar resaltado</button>
         <button onclick="showQrPortsOnWorkspace()">✨ Ver puertos en el plano</button>
         <button class="secondary" onclick="closeQrScannerModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="massiveOutageModal" class="modal-backdrop">
+    <div class="modal massive-modal">
+      <h3>Reporte de caída masiva</h3>
+      <div class="modal-subtitle">Puertos asociados a los clientes incluidos en la búsqueda múltiple.</div>
+
+      <div id="massiveSummary" class="massive-summary"></div>
+      <div id="massiveClientsContainer"></div>
+      <div id="massiveNotFound" class="massive-not-found hidden"></div>
+
+      <div class="actions">
+        <button class="secondary" onclick="closeMassiveOutageModal()">Cerrar</button>
       </div>
     </div>
   </div>
@@ -1614,7 +1652,7 @@
     };
     window.closeDeleteEquipmentModal = () => document.getElementById('deleteEquipmentModal').classList.remove('show');
 
-    ['cableModal','cableTrayModal','rackModal','equipmentModal','deleteEquipmentModal','equipmentViewModal'].forEach(id => {
+    ['cableModal','cableTrayModal','rackModal','equipmentModal','deleteEquipmentModal','equipmentViewModal','massiveOutageModal'].forEach(id => {
       document.addEventListener('click', (e) => {
         if (e.target && e.target.id === id) document.getElementById(id).classList.remove('show');
       });
@@ -5497,35 +5535,263 @@
       }
     };
 
+
+    function getClientDirectLocationsByClientId(clientId) {
+      return assignments
+        .filter(a => String(a.client_id) === String(clientId))
+        .map(a => {
+          const port = getPortById(a.port_id);
+          const eq = getEquipmentById(port?.equipment_id);
+          const rack = getRackById(eq?.rack_id);
+          return port ? { port, eq, rack } : null;
+        })
+        .filter(Boolean)
+        .sort((a,b) =>
+          String(a.rack?.nombre || '').localeCompare(String(b.rack?.nombre || '')) ||
+          String(a.eq?.nombre || '').localeCompare(String(b.eq?.nombre || '')) ||
+          Number(a.port?.numero_puerto || 0) - Number(b.port?.numero_puerto || 0)
+        );
+    }
+
+    function findClientBySearchResultRow(row) {
+      const serviceId = String(row?.identificador_servicio || '').trim().toLowerCase();
+      if (serviceId) {
+        const byService = clients.find(c => String(c.identificador_servicio || '').trim().toLowerCase() === serviceId);
+        if (byService) return byService;
+      }
+      const name = String(row?.nombre_cliente || '').trim().toLowerCase();
+      if (name) return clients.find(c => String(c.nombre_cliente || '').trim().toLowerCase() === name) || null;
+      return null;
+    }
+
+    function openMassiveOutageReport(combinedData, requestedTerms, missingTerms = []) {
+      const container = document.getElementById('massiveClientsContainer');
+      const summary = document.getElementById('massiveSummary');
+      const missingBox = document.getElementById('massiveNotFound');
+      if (!container || !summary || !missingBox) return;
+
+      const clientMap = new Map();
+
+      (combinedData || []).forEach(row => {
+        const client = findClientBySearchResultRow(row);
+        if (!client) return;
+        if (!clientMap.has(String(client.id))) clientMap.set(String(client.id), client);
+      });
+
+      const reportClients = [...clientMap.values()].map(client => ({
+        client,
+        locations: getClientDirectLocationsByClientId(client.id)
+      })).sort((a,b) =>
+        String(a.client.identificador_servicio || '').localeCompare(String(b.client.identificador_servicio || ''))
+      );
+
+      const totalPorts = reportClients.reduce((sum, item) => sum + item.locations.length, 0);
+      const totalEquipment = new Set(reportClients.flatMap(item => item.locations.map(loc => loc.eq?.id).filter(Boolean))).size;
+      const totalRacks = new Set(reportClients.flatMap(item => item.locations.map(loc => loc.rack?.id).filter(Boolean))).size;
+
+      summary.innerHTML = [
+        ['Clientes solicitados', requestedTerms.length],
+        ['Clientes encontrados', reportClients.length],
+        ['Puertos afectados', totalPorts],
+        ['Equipos / Racks', `${totalEquipment} / ${totalRacks}`]
+      ].map(k => `<div class="massive-kpi"><span>${k[0]}</span><strong>${k[1]}</strong></div>`).join('');
+
+      container.innerHTML = reportClients.length ? reportClients.map(item => {
+        const c = item.client;
+        const locs = item.locations;
+        return `
+          <div class="massive-client-card">
+            <div class="massive-client-head">
+              <div>
+                <div class="massive-client-name">${escapeHtmlQr(c.nombre_cliente || 'Cliente sin nombre')}</div>
+                <div class="massive-client-meta">
+                  ID: <strong>${escapeHtmlQr(c.identificador_servicio || c.id || '-')}</strong>
+                  ${c.operador ? ` · Operador: <strong>${escapeHtmlQr(c.operador)}</strong>` : ''}
+                </div>
+              </div>
+              <div class="massive-client-count">${locs.length} puerto${locs.length === 1 ? '' : 's'}</div>
+            </div>
+            <div class="massive-table-wrap">
+              <table class="massive-table">
+                <thead>
+                  <tr><th>Rack</th><th>Equipo</th><th>Tipo</th><th>Puerto</th><th>Estado</th><th>Cable</th></tr>
+                </thead>
+                <tbody>
+                  ${locs.length ? locs.map(loc => {
+                    const cable = getCableById(loc.port.cable_id);
+                    return `<tr>
+                      <td>${escapeHtmlQr(loc.rack?.nombre || '-')}</td>
+                      <td>${escapeHtmlQr(loc.eq?.nombre || '-')}</td>
+                      <td>${escapeHtmlQr(String(loc.eq?.tipo || '-').toUpperCase())}</td>
+                      <td><strong>${escapeHtmlQr(getPortDisplayLabel(loc.port))}</strong></td>
+                      <td>${escapeHtmlQr(loc.port.estado || '-')}</td>
+                      <td>${escapeHtmlQr(cable?.nombre || '-')}</td>
+                    </tr>`;
+                  }).join('') : '<tr><td colspan="6" class="qr-empty">Sin puertos asociados.</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+          </div>`;
+      }).join('') : '<div class="qr-empty">No se encontraron clientes con puertos asociados.</div>';
+
+      if (missingTerms.length) {
+        missingBox.classList.remove('hidden');
+        missingBox.innerHTML = `<strong>IDs no encontrados (${missingTerms.length}):</strong><br>${missingTerms.map(escapeHtmlQr).join(', ')}`;
+      } else {
+        missingBox.classList.add('hidden');
+        missingBox.innerHTML = '';
+      }
+
+      document.getElementById('massiveOutageModal').classList.add('show');
+    }
+
+    window.closeMassiveOutageModal = function() {
+      document.getElementById('massiveOutageModal')?.classList.remove('show');
+    };
+
+    function parseClientSearchTerms(rawText) {
+      const text = String(rawText || '').trim();
+      if (!text) return [];
+
+      // Solo tratamos como búsqueda múltiple cuando hay separadores explícitos.
+      // Así una búsqueda por nombre como "HOSPITAL REGIONAL" sigue funcionando completa.
+      if (!/[;,\n\r|]/.test(text)) return [text];
+
+      return [...new Set(
+        text
+          .split(/[;,\n\r|]+/)
+          .map(value => value.trim())
+          .filter(Boolean)
+      )];
+    }
+
+    function dedupeClientPortSearchResults(rows) {
+      const seen = new Set();
+      return (rows || []).filter(row => {
+        const key = [
+          String(row?.port_id || ''),
+          String(row?.identificador_servicio || ''),
+          String(row?.nombre_cliente || '')
+        ].join('|');
+
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    }
+
     window.searchClients = async function() {
       if (!supabase) return toast('Sin conexión a Supabase');
-      const text = document.getElementById('searchClient').value.trim();
 
-      if (!text) {
+      const rawText = document.getElementById('searchClient').value.trim();
+
+      if (!rawText) {
         clearClientFilter();
         renderWorkspace();
         toast('Filtro limpiado');
         return;
       }
 
-      const { data, error } = await supabase.rpc('search_client_ports', { search_text: text });
-      if (error) {
-        console.error(error);
-        toast('Error en la búsqueda');
-        return;
-      }
-      if (!data || !data.length) {
-        clearClientFilter();
+      const terms = parseClientSearchTerms(rawText);
+
+      // Búsqueda normal: conserva el comportamiento anterior para nombre o un solo ID.
+      if (terms.length === 1) {
+        const { data, error } = await supabase.rpc('search_client_ports', {
+          search_text: terms[0]
+        });
+
+        if (error) {
+          console.error(error);
+          toast('Error en la búsqueda');
+          return;
+        }
+
+        if (!data || !data.length) {
+          clearClientFilter();
+          renderWorkspace();
+          toast('No se encontraron resultados');
+          return;
+        }
+
+        buildClientFilterFromResults(data);
         renderWorkspace();
-        toast('No se encontraron resultados');
+
+        const uniqueClients = [...new Set(
+          data.map(x =>
+            `${x.nombre_cliente}${x.identificador_servicio ? ' · ' + x.identificador_servicio : ''}`
+          )
+        )];
+
+        toast(`Filtro aplicado: ${uniqueClients[0]}`);
         return;
       }
 
-      buildClientFilterFromResults(data);
-      renderWorkspace();
+      // Búsqueda múltiple: consulta cada ID/término y une todos los puertos encontrados.
+      try {
+        toast(`Buscando ${terms.length} clientes...`);
 
-      const uniqueClients = [...new Set(data.map(x => `${x.nombre_cliente}${x.identificador_servicio ? ' · ' + x.identificador_servicio : ''}`))];
-      toast(`Filtro aplicado: ${uniqueClients[0]}`);
+        const responses = await Promise.all(
+          terms.map(async term => {
+            const { data, error } = await supabase.rpc('search_client_ports', {
+              search_text: term
+            });
+
+            if (error) {
+              console.error(`Error buscando ${term}:`, error);
+              return { term, data: [], error };
+            }
+
+            return { term, data: data || [], error: null };
+          })
+        );
+
+        const matchedResponses = responses.filter(r => r.data.length > 0);
+        const missingTerms = responses
+          .filter(r => !r.data.length)
+          .map(r => r.term);
+
+        const combinedData = dedupeClientPortSearchResults(
+          matchedResponses.flatMap(r => r.data)
+        );
+
+        if (!combinedData.length) {
+          clearClientFilter();
+          renderWorkspace();
+          toast(`No se encontraron resultados para los ${terms.length} IDs`);
+          return;
+        }
+
+        buildClientFilterFromResults(combinedData);
+        renderWorkspace();
+        openMassiveOutageReport(combinedData, terms, missingTerms);
+
+        const uniqueClientIds = [...new Set(
+          combinedData
+            .map(x => String(x.identificador_servicio || '').trim())
+            .filter(Boolean)
+        )];
+
+        const foundCount = matchedResponses.length;
+
+        if (missingTerms.length) {
+          const missingPreview = missingTerms.slice(0, 3).join(', ');
+          const extra = missingTerms.length > 3
+            ? ` y ${missingTerms.length - 3} más`
+            : '';
+
+          toast(
+            `${foundCount} de ${terms.length} clientes encontrados · ` +
+            `No encontrados: ${missingPreview}${extra}`
+          );
+        } else {
+          toast(
+            `${uniqueClientIds.length || foundCount} clientes mostrados simultáneamente`
+          );
+        }
+      } catch (error) {
+        console.error(error);
+        toast('Error realizando la búsqueda múltiple');
+      }
     };
 
     async function loadDashboard() {
@@ -5636,6 +5902,7 @@
 
 </body>
 </html>
+
 
 
 
