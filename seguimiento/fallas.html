@@ -6,6 +6,7 @@
   <title>Tickets y fallas</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="app.js"></script>
   <style>
     :root{--border:rgba(255,255,255,.10);--text:#eef4ff;--muted:#9ab0d0;--shadow:0 18px 40px rgba(0,0,0,.28)}
@@ -302,6 +303,66 @@ table{min-width:1450px}
   vertical-align:baseline;
 }
 
+
+.btn.excel{
+  background:linear-gradient(135deg,#15803d,#22c55e);
+  border:1px solid rgba(134,239,172,.35);
+}
+.btn.excel:hover{filter:brightness(1.08)}
+
+
+.table-horizontal-scroll{
+  position:fixed;
+  left:240px;
+  right:0;
+  bottom:0;
+  z-index:150;
+  width:auto;
+  overflow-x:auto;
+  overflow-y:hidden;
+  height:22px;
+  margin:0;
+  border-top:1px solid var(--border);
+  background:#08152c;
+  scrollbar-width:auto;
+  scrollbar-color:#5b7fb5 #0c1830;
+  box-shadow:0 -6px 18px rgba(0,0,0,.28);
+}
+body.sidebar-hidden .table-horizontal-scroll{
+  left:0;
+}
+.table-horizontal-scroll-inner{
+  height:1px;
+}
+.table-horizontal-scroll::-webkit-scrollbar,
+.table-wrap::-webkit-scrollbar{
+  height:14px;
+}
+.table-horizontal-scroll::-webkit-scrollbar-track,
+.table-wrap::-webkit-scrollbar-track{
+  background:#0c1830;
+  border-radius:10px;
+}
+.table-horizontal-scroll::-webkit-scrollbar-thumb,
+.table-wrap::-webkit-scrollbar-thumb{
+  background:#5b7fb5;
+  border-radius:10px;
+  border:3px solid #0c1830;
+}
+.table-horizontal-scroll::-webkit-scrollbar-thumb:hover,
+.table-wrap::-webkit-scrollbar-thumb:hover{
+  background:#7fa7df;
+}
+@media (max-width:760px){
+  .table-horizontal-scroll{
+    left:0;
+    height:24px;
+  }
+}
+
+
+
+.main{padding-bottom:40px!important}
 </style>
 </head>
 <body>
@@ -508,11 +569,12 @@ function renderShell(){
           </div>
           <div class="toolbar-right">
             <select id="sortBy" class="control"><option value="fecha_inicio_desc">Más recientes</option><option value="prioridad_desc">Prioridad alta primero</option><option value="prioridad_asc">Prioridad baja primero</option><option value="duracion_desc">Mayor duración</option><option value="ticket_asc">Ticket A-Z</option><option value="estado_asc">Estado</option></select>
+            <button class="btn excel" onclick="exportarTicketsExcel()">📊 Exportar a Excel</button>
             <button class="btn ghost" onclick="loadTickets()">Actualizar</button>
           </div>
         </div>
         <div id="ticketSummary" class="summary"></div>
-        <div class="card"><div class="table-wrap"><table id="ticketsTable"><thead><tr><th>Fecha / Hora</th><th>Ticket</th><th>ID cliente</th><th>Cliente</th><th>Equipo</th><th>Puerto</th><th>Responsable</th><th>Estado</th><th>Prioridad</th><th>Duración</th><th>Tiempo efectivo</th><th>Tiempos operativos</th><th>Tipo de falla</th><th>Subcausa</th><th>Coord falla</th><th>Acciones</th></tr></thead><tbody id="ticketsTableBody"></tbody></table></div><div id="ticketEmpty" class="empty">No hay tickets para mostrar.</div></div>
+        <div class="card"><div class="table-wrap" id="ticketsTableWrap"><table id="ticketsTable"><thead><tr><th>Fecha / Hora</th><th>Ticket</th><th>ID cliente</th><th>Cliente</th><th>Equipo</th><th>Puerto</th><th>Responsable</th><th>Estado</th><th>Prioridad</th><th>Duración</th><th>Tiempo efectivo</th><th>Tiempos operativos</th><th>Tipo de falla</th><th>Subcausa</th><th>Coord falla</th><th>Acciones</th></tr></thead><tbody id="ticketsTableBody"></tbody></table></div><div id="ticketEmpty" class="empty">No hay tickets para mostrar.</div></div>
         <button class="floating-add" title="Nuevo ticket" onclick="openTicketModal()">+</button>
       </main>
     </div>`;
@@ -1540,6 +1602,229 @@ function cargarFiltroMes(){
   if(meses.includes(actual)) select.value=actual;
 }
 
+
+function valorPlanoExcel(valor){
+  if(valor===null || valor===undefined) return '';
+  if(Array.isArray(valor)){
+    return valor.map((item)=>{
+      if(item && typeof item==='object'){
+        return Object.entries(item).map(([k,v])=>`${k}: ${v??''}`).join(' | ');
+      }
+      return String(item);
+    }).join(' ; ');
+  }
+  if(typeof valor==='object'){
+    try{return JSON.stringify(valor);}
+    catch(e){return String(valor);}
+  }
+  return valor;
+}
+
+function fechaHoraExcelBogota(valor){
+  if(!valor) return '';
+  return formatDateTimeValue(valor) || valorPlanoExcel(valor);
+}
+
+function rangosTiempoMuertoExcel(rangos){
+  if(!Array.isArray(rangos) || !rangos.length) return '';
+  return rangos.map((r,i)=>{
+    const inicio=fechaHoraExcelBogota(r?.inicio);
+    const fin=fechaHoraExcelBogota(r?.fin);
+    const motivo=r?.motivo||'';
+    const duracion=r?.total || (r?.minutos!=null ? minutosTexto(r.minutos) : '');
+    return `Rango ${i+1}: ${inicio} -> ${fin} | ${duracion} | ${motivo}`;
+  }).join(' ; ');
+}
+
+/*
+  Campos de Supabase que YA tienen una columna limpia en el Excel.
+  Estos NO se vuelven a exportar como "BD - campo".
+*/
+const CAMPOS_BD_YA_MOSTRADOS_EN_EXCEL = new Set([
+  'id',
+  'ticket',
+  'motivo_ticket',
+  'estado',
+  'prioridad',
+  'responsable',
+  'fecha_inicio',
+  'hora_inicio',
+  'fecha_fin',
+  'hora_fin',
+  'duracion_falla',
+  'duracion_falla_minutos',
+  'tiempo_efectivo',
+  'tiempo_efectivo_minutos',
+  'id_cliente',
+  'nombre_cliente',
+  'direccion_cliente',
+  'coordenada_cliente',
+  'demonico',
+  'equipo_switch',
+  'puerto_switch',
+  'odf_espejo',
+  'odf_salida',
+  'puerto_odf_salida',
+  'fecha_hora_medida_otdr',
+  'fecha_hora_llegada_afectacion',
+  'hubo_tiempo_muerto',
+  'tiempo_muerto_total',
+  'tiempo_muerto_minutos',
+  'motivo_tiempo_muerto',
+  'tiempo_muerto_inicio',
+  'tiempo_muerto_fin',
+  'tiempos_muertos',
+  'reporte_contratista',
+  'fecha_hora_reporte_contratista',
+  'fecha_hora_fin_gestion_contratista',
+  'duracion_gestion_contratista',
+  'duracion_gestion_contratista_minutos',
+  'hubo_tiempo_muerto_contratista',
+  'tiempo_muerto_contratista_total',
+  'tiempo_muerto_contratista_minutos',
+  'tiempos_muertos_contratista',
+  'tiempo_efectivo_contratista',
+  'tiempo_efectivo_contratista_minutos',
+  'tipo_falla',
+  'subcausa_falla',
+  'causa',
+  'solucion',
+  'coord_dano',
+  'observacion',
+  'created_at',
+  'updated_at'
+]);
+
+function construirFilaExcelTicket(r){
+  const tiempoTotalMin=getDuracionTotalMinutosRow(r);
+  const tiempoEfectivoMin=getTiempoEfectivoMinutosRow(r);
+
+  const fila={
+    'ID registro': r.id ?? '',
+    'Ticket': r.ticket ?? '',
+    'Motivo del ticket': r.motivo_ticket ?? '',
+    'Estado': r.estado ?? '',
+    'Prioridad': r.prioridad ?? '',
+    'Responsable': r.responsable ?? '',
+
+    'Fecha inicio': r.fecha_inicio ?? '',
+    'Hora inicio': r.hora_inicio ?? '',
+    'Fecha fin': r.fecha_fin ?? '',
+    'Hora fin': r.hora_fin ?? '',
+
+    'Duración falla': tiempoTotalMin==null ? (r.duracion_falla ?? '') : minutosTexto(tiempoTotalMin),
+    'Duración falla minutos': tiempoTotalMin ?? r.duracion_falla_minutos ?? '',
+    'Tiempo efectivo': tiempoEfectivoMin==null ? (r.tiempo_efectivo ?? '') : minutosTexto(tiempoEfectivoMin),
+    'Tiempo efectivo minutos': tiempoEfectivoMin ?? r.tiempo_efectivo_minutos ?? '',
+
+    'ID cliente': r.id_cliente ?? '',
+    'Nombre cliente': r.nombre_cliente ?? '',
+    'Dirección cliente': r.direccion_cliente ?? '',
+    'Coordenada cliente': r.coordenada_cliente ?? '',
+
+    'Demónico': r.demonico ?? '',
+    'Equipo / Switch': r.equipo_switch ?? '',
+    'Puerto switch': r.puerto_switch ?? '',
+    'ODF espejo': r.odf_espejo ?? '',
+    'ODF salida': r.odf_salida ?? '',
+    'Puerto ODF salida': r.puerto_odf_salida ?? '',
+
+    'Fecha y hora medida OTDR': fechaHoraExcelBogota(r.fecha_hora_medida_otdr),
+    'Fecha y hora llegada punto afectación': fechaHoraExcelBogota(r.fecha_hora_llegada_afectacion),
+
+    'Hubo tiempo muerto': r.hubo_tiempo_muerto ?? 'NO',
+    'Tiempo muerto total': r.tiempo_muerto_total ?? '',
+    'Tiempo muerto minutos': r.tiempo_muerto_minutos ?? '',
+    'Motivo tiempo muerto': r.motivo_tiempo_muerto ?? '',
+    'Inicio tiempo muerto': fechaHoraExcelBogota(r.tiempo_muerto_inicio),
+    'Fin tiempo muerto': fechaHoraExcelBogota(r.tiempo_muerto_fin),
+    'Rangos tiempos muertos': rangosTiempoMuertoExcel(r.tiempos_muertos),
+
+    'Reporte a contratista': r.reporte_contratista ?? 'NO',
+    'Fecha y hora reporte contratista': fechaHoraExcelBogota(r.fecha_hora_reporte_contratista),
+    'Fecha y hora fin gestión contratista': fechaHoraExcelBogota(r.fecha_hora_fin_gestion_contratista),
+    'Duración gestión contratista': r.duracion_gestion_contratista ?? '',
+    'Duración gestión contratista minutos': r.duracion_gestion_contratista_minutos ?? '',
+    'Hubo tiempo muerto contratista': r.hubo_tiempo_muerto_contratista ?? 'NO',
+    'Tiempo muerto contratista total': r.tiempo_muerto_contratista_total ?? '',
+    'Tiempo muerto contratista minutos': r.tiempo_muerto_contratista_minutos ?? '',
+    'Rangos tiempos muertos contratista': rangosTiempoMuertoExcel(r.tiempos_muertos_contratista),
+    'Tiempo efectivo contratista': r.tiempo_efectivo_contratista ?? '',
+    'Tiempo efectivo contratista minutos': r.tiempo_efectivo_contratista_minutos ?? '',
+
+    'Tipo de falla': getTipoFallaTexto(r.tipo_falla) || r.tipo_falla || '',
+    'Subcausa / subcategoría': r.subcausa_falla ?? '',
+    'Causa': r.causa ?? '',
+    'Solución': r.solucion ?? '',
+    'Coord falla / daño': r.coord_dano ?? '',
+    'Observación': r.observacion ?? '',
+
+    'Creado en': fechaHoraExcelBogota(r.created_at),
+    'Actualizado en': fechaHoraExcelBogota(r.updated_at)
+  };
+
+  // SEGUNDA OPCIÓN:
+  // Solo agregar "BD - ..." para campos NUEVOS que no estén ya representados arriba.
+  Object.keys(r||{}).forEach(key=>{
+    if(CAMPOS_BD_YA_MOSTRADOS_EN_EXCEL.has(key)) return;
+    fila[`BD - ${key}`]=valorPlanoExcel(r[key]);
+  });
+
+  return fila;
+}
+
+window.exportarTicketsExcel=function(){
+  try{
+    if(typeof XLSX==='undefined'){
+      alert('No se pudo cargar la librería de Excel. Verifica la conexión a internet e inténtalo nuevamente.');
+      return;
+    }
+
+    if(!Array.isArray(ticketRows) || !ticketRows.length){
+      alert('No hay registros cargados para exportar.');
+      return;
+    }
+
+    // Exporta TODOS los registros cargados desde Supabase,
+    // aunque el panel tenga filtros activos.
+    const datos=ticketRows.map(construirFilaExcelTicket);
+    const ws=XLSX.utils.json_to_sheet(datos);
+
+    if(datos.length && ws['!ref']){
+      const rango=XLSX.utils.decode_range(ws['!ref']);
+      ws['!autofilter']={
+        ref:XLSX.utils.encode_range({
+          s:{r:0,c:0},
+          e:{r:rango.e.r,c:rango.e.c}
+        })
+      };
+    }
+
+    const headers=Object.keys(datos[0]||{});
+    ws['!cols']=headers.map(header=>{
+      let max=Math.max(12,String(header).length+2);
+      for(const row of datos.slice(0,500)){
+        const len=String(row[header]??'').length;
+        if(len>max) max=len;
+      }
+      return {wch:Math.min(Math.max(max,12),55)};
+    });
+
+    const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Tickets');
+
+    const fecha=new Date().toLocaleDateString('en-CA',{
+      timeZone:'America/Bogota'
+    });
+
+    XLSX.writeFile(wb,`tickets_fallas_${fecha}.xlsx`);
+  }catch(error){
+    console.error('Error exportando tickets a Excel:',error);
+    alert('No fue posible generar el archivo Excel. Revisa la consola para más detalle.');
+  }
+};
+
+
 function getFilteredRows(){
   const txt=normalizarFiltro(document.getElementById('searchTicket')?.value||'');
   const estado=document.getElementById('filterEstado')?.value||'';
@@ -1959,6 +2244,47 @@ function bindTicketRowEvents(){
   });
 }
 
+
+function actualizarBarraHorizontalTabla(){
+  const wrap=document.getElementById('ticketsTableWrap');
+  const table=document.getElementById('ticketsTable');
+  const fixedScroll=document.getElementById('tableHorizontalScroll');
+  const inner=document.getElementById('tableHorizontalScrollInner');
+
+  if(!wrap || !table || !fixedScroll || !inner) return;
+
+  inner.style.width=`${table.scrollWidth}px`;
+
+  const necesitaScroll=table.scrollWidth>wrap.clientWidth+2;
+  fixedScroll.style.display=necesitaScroll?'block':'none';
+
+  if(!fixedScroll.dataset.syncReady){
+    let sync=false;
+
+    fixedScroll.addEventListener('scroll',()=>{
+      if(sync) return;
+      sync=true;
+      wrap.scrollLeft=fixedScroll.scrollLeft;
+      requestAnimationFrame(()=>{sync=false;});
+    });
+
+    wrap.addEventListener('scroll',()=>{
+      if(sync) return;
+      sync=true;
+      fixedScroll.scrollLeft=wrap.scrollLeft;
+      requestAnimationFrame(()=>{sync=false;});
+    });
+
+    fixedScroll.dataset.syncReady='1';
+  }
+
+  fixedScroll.scrollLeft=wrap.scrollLeft;
+}
+
+window.addEventListener('resize',()=>{
+  requestAnimationFrame(actualizarBarraHorizontalTabla);
+});
+
 function renderTickets(){
   const rows=getFilteredRows();
   renderedTicketRows=rows;
@@ -1970,6 +2296,7 @@ function renderTickets(){
   if(!rows.length){
     body.innerHTML='';
     empty.style.display='block';
+    requestAnimationFrame(actualizarBarraHorizontalTabla);
     return;
   }
 
@@ -2025,6 +2352,7 @@ function renderTickets(){
   }).join('');
 
   bindTicketRowEvents();
+  requestAnimationFrame(actualizarBarraHorizontalTabla);
 }
 async function loadTickets(){ try{ const client=await resolveClient(); const {data,error}=await client.from('om_tickets').select('*').order('fecha_inicio',{ascending:false}).order('hora_inicio',{ascending:false}); if(error) throw error; ticketRows=data||[]; cargarFiltroMes(); renderTickets(); }catch(err){ console.error(err); document.getElementById('ticketsTableBody').innerHTML=`<tr><td colspan="16" style="padding:18px;color:#fecaca">Error cargando tickets: ${esc(err.message||err)}</td></tr>`; } }
 
@@ -2580,6 +2908,13 @@ setInterval(()=>{
   });
 })();
 </script>
+
+<div id="tableHorizontalScroll" class="table-horizontal-scroll" aria-label="Desplazamiento horizontal de la tabla">
+  <div id="tableHorizontalScrollInner" class="table-horizontal-scroll-inner"></div>
+</div>
+
 </body>
 </html>
+
+
 
