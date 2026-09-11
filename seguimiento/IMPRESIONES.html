@@ -237,9 +237,11 @@ canvas{background:#fff;border:1px solid #888;max-width:100%;height:auto;image-re
    <div class="templateBtns">
     <button id="saveTemplate" class="blue">💾 Guardar plantilla</button>
     <button id="loadTemplate" class="secondary">Cargar</button>
+    <button id="setDefaultTemplate" class="primary">⭐ Establecer como predeterminada</button>
     <button id="deleteTemplate" class="secondary">Eliminar</button>
    </div>
-   <div class="templateInfo">Las plantillas se guardan directamente en Supabase. No necesitas configurar URL ni clave.</div>
+   <div id="defaultTemplateInfo" class="templateInfo">Plantilla predeterminada global: comprobando...</div>
+   <div class="templateInfo">Las plantillas y la predeterminada se guardan en Supabase. La predeterminada se cargará automáticamente en cualquier dispositivo que abra este HTML.</div>
   </div>
 
   <div id="objectControls"></div>
@@ -689,6 +691,8 @@ function keyFromFieldId(fieldId){
 const SUPABASE_URL='https://lvwmpwnzavqdspdfvceb.supabase.co';
 const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2d21wd256YXZxZHNwZGZ2Y2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxOTg3MzYsImV4cCI6MjA5MTc3NDczNn0.u6g4OCm4kl-LEmyIf9VWwf43cdqYbik7Y60rdKQ8npI';
 let templateCache=[];
+const DEFAULT_TEMPLATE_ROW='__PLANTILLA_PREDETERMINADA__';
+let defaultTemplateName='';
 
 function requireSupabaseConfig(){
  return {
@@ -998,6 +1002,15 @@ async function loadClientFromQueryString(){
  return false;
 }
 
+function setDefaultTemplateInfo(name=''){
+ const el=$('defaultTemplateInfo');
+ if(!el)return;
+ defaultTemplateName=name||'';
+ el.textContent=name
+  ? `Plantilla predeterminada global: ${name}`
+  : 'Plantilla predeterminada global: ninguna configurada';
+}
+
 async function refreshTemplateSelect(selectedName=''){
  const select=$('templateSelect');
  if(!select)return;
@@ -1008,13 +1021,18 @@ async function refreshTemplateSelect(selectedName=''){
    {method:'GET'}
   );
 
-  templateCache=Array.isArray(rows)?rows:[];
+  const allRows=Array.isArray(rows)?rows:[];
+  templateCache=allRows.filter(row=>row.nombre!==DEFAULT_TEMPLATE_ROW);
+  const defaultRow=allRows.find(row=>row.nombre===DEFAULT_TEMPLATE_ROW);
+  const savedDefaultName=defaultRow?.configuracion?.__defaultTemplateName||'';
+  setDefaultTemplateInfo(savedDefaultName);
+
   select.innerHTML='<option value="">Selecciona...</option>';
 
   templateCache.forEach(row=>{
    const opt=document.createElement('option');
    opt.value=row.nombre;
-   opt.textContent=row.nombre;
+   opt.textContent=row.nombre + (row.nombre===savedDefaultName?' ⭐':'');
    select.appendChild(opt);
   });
 
@@ -1027,8 +1045,33 @@ async function refreshTemplateSelect(selectedName=''){
  }catch(e){
   templateCache=[];
   select.innerHTML='<option value="">Configura Supabase...</option>';
+  setDefaultTemplateInfo('');
   log('SUPABASE: '+e.message);
   log('ERROR cargando plantillas: '+e.message);
+ }
+}
+
+async function loadGlobalDefaultTemplate(){
+ try{
+  const rows=await supabaseFetch(
+   'plantillas_etiquetas?select=id,nombre,configuracion,updated_at&nombre=eq.'+encodeURIComponent(DEFAULT_TEMPLATE_ROW),
+   {method:'GET'}
+  );
+  const row=Array.isArray(rows)?rows[0]:null;
+  if(!row?.configuracion){
+   setDefaultTemplateInfo('');
+   log('PLANTILLA PREDETERMINADA: no configurada.');
+   return false;
+  }
+
+  const sourceName=row.configuracion.__defaultTemplateName||'Plantilla global';
+  applyLayoutState(row.configuracion);
+  setDefaultTemplateInfo(sourceName);
+  log(`PLANTILLA PREDETERMINADA CARGADA: ${sourceName}`);
+  return true;
+ }catch(e){
+  log('ERROR cargando plantilla predeterminada: '+e.message);
+  return false;
  }
 }
 
@@ -1148,6 +1191,49 @@ async function loadSelectedTemplate(){
  }
 }
 
+async function setSelectedTemplateAsDefault(){
+ const name=$('templateSelect').value;
+ if(!name){
+  alert('Selecciona primero una plantilla guardada para establecerla como predeterminada.');
+  return;
+ }
+
+ try{
+  let row=templateCache.find(x=>x.nombre===name);
+  if(!row){
+   const rows=await supabaseFetch(
+    'plantillas_etiquetas?select=id,nombre,configuracion&nombre=eq.'+encodeURIComponent(name),
+    {method:'GET'}
+   );
+   row=Array.isArray(rows)?rows[0]:null;
+  }
+  if(!row?.configuracion) throw new Error('No se pudo leer la configuración de la plantilla seleccionada.');
+
+  const config={...row.configuracion,__defaultTemplateName:name};
+  await supabaseFetch(
+   'plantillas_etiquetas?on_conflict=nombre',
+   {
+    method:'POST',
+    headers:{'Prefer':'resolution=merge-duplicates,return=representation'},
+    body:JSON.stringify({
+     nombre:DEFAULT_TEMPLATE_ROW,
+     configuracion:config,
+     updated_at:new Date().toISOString()
+    })
+   }
+  );
+
+  applyLayoutState(config);
+  setDefaultTemplateInfo(name);
+  await refreshTemplateSelect(name);
+  log(`PLANTILLA PREDETERMINADA GLOBAL ESTABLECIDA: ${name}`);
+  alert(`La plantilla "${name}" quedó como predeterminada global.\n\nSe cargará automáticamente al abrir IMPRESIONES desde cualquier dispositivo.`);
+ }catch(e){
+  alert('No se pudo establecer la plantilla predeterminada.\n\n'+e.message);
+  log('ERROR estableciendo plantilla predeterminada: '+e.message);
+ }
+}
+
 async function deleteSelectedTemplate(){
  const name=$('templateSelect').value;
 
@@ -1181,6 +1267,7 @@ async function deleteSelectedTemplate(){
 
 $('saveTemplate').onclick=saveCurrentTemplate;
 $('loadTemplate').onclick=loadSelectedTemplate;
+$('setDefaultTemplate').onclick=setSelectedTemplateAsDefault;
 $('deleteTemplate').onclick=deleteSelectedTemplate;
 
 $('templateSelect').onchange=e=>{
@@ -1322,9 +1409,17 @@ $('clear').onclick=()=>$('log').textContent='Listo.';
 // Primero dibuja siempre los valores por defecto.
 // Los datos del cliente se reciben desde NODO mediante parámetros de la URL.
 draw();
-refreshTemplateSelect().catch(e=>log('SUPABASE: '+e.message));
+(async()=>{
+ try{
+  await refreshTemplateSelect();
+  await loadGlobalDefaultTemplate();
+ }catch(e){
+  log('SUPABASE: '+e.message);
+ }
+})();
 loadClientFromQueryString().catch(e=>log('ERROR CLIENTE: '+e.message));
 </script>
 </body>
 </html>
+
 
