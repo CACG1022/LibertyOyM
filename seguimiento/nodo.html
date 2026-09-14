@@ -1258,6 +1258,9 @@
 
       <div class="section-card" style="margin-bottom:16px;">
         <h4>Datos del cliente</h4>
+        <div style="font-size:10px;color:var(--muted);margin:-5px 0 10px">
+          El mismo ID puede utilizarse en varios puertos (por ejemplo TX/RX). Cada puerto se guarda de forma independiente.
+        </div>
         <div class="form-grid">
           <div class="field"><label>Nombre del cliente</label><input id="pmClientName" placeholder="Ej. MOVISTAR"></div>
           <div class="field"><label>ID del servicio / cliente</label><input id="pmServiceId" placeholder="Ej. CI123456"></div>
@@ -3759,36 +3762,78 @@
         const existingAssignment = assignments.find(a => a.port_id === clickedPortId);
 
         if (clientName) {
-          const existingClient =
-            clients.find(c => serviceId && (c.identificador_servicio || '') === serviceId) ||
-            clients.find(c => c.nombre_cliente.toLowerCase() === clientName.toLowerCase());
+          /*
+           * Un mismo identificador_servicio puede existir en varios puertos
+           * (por ejemplo TX/RX). Cada puerto debe conservar datos independientes.
+           */
+          if (existingAssignment) {
+            const assignedClient = clients.find(c => c.id === existingAssignment.client_id);
 
-          if (existingClient) {
-            currentClientId = existingClient.id;
-            const updClient = await supabase.from('clients').update({
-              nombre_cliente: clientName,
-              identificador_servicio: serviceId || null,
-              operador: operatorName || null
-            }).eq('id', currentClientId);
-            if (updClient.error) throw updClient.error;
+            if (assignedClient) {
+              const sharedAssignments = assignments.filter(
+                a => String(a.client_id) === String(assignedClient.id)
+              );
+
+              if (sharedAssignments.length > 1) {
+                // Separar este puerto del registro compartido antes de editarlo.
+                const insClient = await supabase.from('clients').insert({
+                  nombre_cliente: clientName,
+                  identificador_servicio: serviceId || null,
+                  operador: operatorName || null
+                }).select().single();
+
+                if (insClient.error) throw insClient.error;
+                currentClientId = insClient.data.id;
+
+                const updAssign = await supabase.from('port_assignments')
+                  .update({ client_id: currentClientId })
+                  .eq('id', existingAssignment.id);
+
+                if (updAssign.error) throw updAssign.error;
+              } else {
+                // Este cliente pertenece solo a este puerto: actualizar normalmente.
+                currentClientId = assignedClient.id;
+
+                const updClient = await supabase.from('clients').update({
+                  nombre_cliente: clientName,
+                  identificador_servicio: serviceId || null,
+                  operador: operatorName || null
+                }).eq('id', currentClientId);
+
+                if (updClient.error) throw updClient.error;
+              }
+            } else {
+              // Asignación sin cliente válido: crear uno independiente.
+              const insClient = await supabase.from('clients').insert({
+                nombre_cliente: clientName,
+                identificador_servicio: serviceId || null,
+                operador: operatorName || null
+              }).select().single();
+
+              if (insClient.error) throw insClient.error;
+              currentClientId = insClient.data.id;
+
+              const updAssign = await supabase.from('port_assignments')
+                .update({ client_id: currentClientId })
+                .eq('id', existingAssignment.id);
+
+              if (updAssign.error) throw updAssign.error;
+            }
           } else {
+            // Puerto nuevo: crear SIEMPRE un registro independiente,
+            // aunque ya exista otro cliente con el mismo ID de servicio.
             const insClient = await supabase.from('clients').insert({
               nombre_cliente: clientName,
               identificador_servicio: serviceId || null,
               operador: operatorName || null
             }).select().single();
+
             if (insClient.error) throw insClient.error;
             currentClientId = insClient.data.id;
-          }
 
-          if (existingAssignment) {
-            const updAssign = await supabase.from('port_assignments')
-              .update({ client_id: currentClientId })
-              .eq('id', existingAssignment.id);
-            if (updAssign.error) throw updAssign.error;
-          } else {
             const insAssign = await supabase.from('port_assignments')
               .insert({ port_id: clickedPortId, client_id: currentClientId });
+
             if (insAssign.error) throw insAssign.error;
           }
         } else if (existingAssignment) {
@@ -5902,6 +5947,7 @@
 
 </body>
 </html>
+
 
 
 
