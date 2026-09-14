@@ -52,6 +52,13 @@ canvas{background:#fff;border:1px solid #888;max-width:100%;height:auto;image-re
  overflow:hidden;
 }
 .floatingSettings.show{display:block}
+.floatingSettings.minimized{
+ width:min(360px,calc(100vw - 24px));
+ max-height:none;
+}
+.floatingSettings.minimized .modalBody{display:none}
+.floatingSettings.minimized .modalHeader{border-bottom:0}
+.floatingSettings.minimized #minimizeSettings{background:#dbeafe;color:#1d4ed8}
 .modalHeader{
  display:flex;
  align-items:center;
@@ -125,6 +132,24 @@ canvas{background:#fff;border:1px solid #888;max-width:100%;height:auto;image-re
  box-shadow:0 0 0 3px rgba(37,99,235,.08);
 }
 
+/* ===== Editor avanzado de campos ===== */
+.fieldManager{background:#f8fafc;border:1px solid #dbe3ec;border-radius:12px;padding:12px;margin-bottom:12px}
+.fieldManager h4{margin:0 0 8px;font-size:14px}
+.fieldManagerHelp{font-size:11px;color:#64748b;line-height:1.45;margin-bottom:9px}
+.fieldManagerList{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:10px}
+.fieldManagerItem{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #e2e8f0;background:#fff;border-radius:9px;padding:7px 8px;font-size:12px}
+.fieldManagerItem .left{display:flex;align-items:center;gap:7px;min-width:0}
+.fieldManagerItem input[type=checkbox]{width:auto;height:auto}
+.fieldManagerItem .name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fieldManagerItem button{width:auto!important;margin:0!important;padding:5px 7px!important;font-size:10px!important}
+.addFieldGrid{display:grid;grid-template-columns:1fr 1.4fr auto;gap:7px;align-items:end}
+.addFieldGrid button{width:auto!important;margin:0!important;white-space:nowrap}
+.keyboardHint{margin-top:8px;padding:8px 10px;border-radius:9px;background:#eef6ff;border:1px solid #c7ddff;color:#1e3a8a;font-size:11px;line-height:1.45}
+.selectedObjectBadge{display:inline-flex;align-items:center;gap:6px;margin-top:7px;padding:5px 8px;border-radius:999px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:11px;font-weight:700}
+.customFieldsWrap{margin-top:12px;padding-top:12px;border-top:1px dashed #d6dce5}
+.customFieldsWrap h4{margin:0 0 8px;font-size:13px}
+@media(max-width:780px){.fieldManagerList{grid-template-columns:1fr}.addFieldGrid{grid-template-columns:1fr}}
+
 @media(max-width:780px){
  .grid2,.grid3{grid-template-columns:1fr}
  .canvasHeader{align-items:flex-start;flex-direction:column}
@@ -144,7 +169,7 @@ canvas{background:#fff;border:1px solid #888;max-width:100%;height:auto;image-re
 </head>
 <body>
 <div class="wrap">
-<div class="head"><h1>MINI Y50 · Plantilla Cliente / ODF v49</h1><div>Etiqueta 50×30 mm · QR + línea central + textos configurables + copias</div></div>
+<div class="head"><h1>MINI Y50 · Editor de Plantilla Cliente / ODF v53</h1><div>Etiqueta 50×30 mm · QR + línea central + textos configurables + copias</div></div>
 
 <div class="card">
  <div id="status" class="status">● Desconectada</div>
@@ -181,6 +206,10 @@ canvas{background:#fff;border:1px solid #888;max-width:100%;height:auto;image-re
  <div><label>Elemento central</label><input id="f_center" value="Línea vertical de referencia" disabled></div>
  <div><label>Fecha impresión</label><input id="f_date" value=""></div>
 </div>
+<div id="customFieldsWrap" class="customFieldsWrap" style="display:none">
+ <h4>Campos personalizados</h4>
+ <div id="customDataFields" class="grid3"></div>
+</div>
 <div class="grid3" style="margin-top:12px">
  <div><label>Copias</label><input id="copies" type="number" min="1" max="20" value="1"></div>
  <div><label>Densidad</label><select id="density"><option value="0">Clara</option><option value="1" selected>Normal</option><option value="2">Oscura</option></select></div>
@@ -196,6 +225,8 @@ canvas{background:#fff;border:1px solid #888;max-width:100%;height:auto;image-re
   <div>
    <h3>Diseño de etiqueta 50×30 mm</h3>
    <div class="small">El lienzo se actualiza inmediatamente mientras modificas los ajustes.</div>
+   <div class="keyboardHint">Selecciona un elemento del lienzo y usa <strong>← ↑ → ↓</strong> para moverlo 1 px. Usa <strong>Shift + flecha</strong> para moverlo 5 px.</div>
+   <div id="selectedObjectBadge" class="selectedObjectBadge">Elemento seleccionado: ninguno</div>
   </div>
   <button id="openSettings" class="openSettings">⚙ Abrir ajustes</button>
  </div>
@@ -209,6 +240,7 @@ canvas{background:#fff;border:1px solid #888;max-width:100%;height:auto;image-re
  <div id="modalHeader" class="modalHeader">
   <strong>⚙ Parámetros de ajuste</strong>
   <div class="modalActions">
+   <button id="minimizeSettings" class="secondary" title="Minimizar parámetros">— Minimizar</button>
    <button id="resetModalPos" class="secondary" title="Volver a la posición inicial">Reubicar</button>
    <button id="closeSettings" class="secondary">✕ Cerrar</button>
   </div>
@@ -217,7 +249,7 @@ canvas{background:#fff;border:1px solid #888;max-width:100%;height:auto;image-re
  <div class="modalBody">
   <div class="modalHint">
    Modifica los parámetros y observa simultáneamente el resultado en el lienzo. 
-   Puedes mover esta ventana arrastrándola desde el encabezado.
+   Puedes mover esta ventana arrastrándola desde el encabezado. Usa “Minimizar” para dejar libre el lienzo mientras ajustas con el mouse o las flechas del teclado.
   </div>
 
   <div class="templateManager">
@@ -242,6 +274,17 @@ canvas{background:#fff;border:1px solid #888;max-width:100%;height:auto;image-re
    </div>
    <div id="defaultTemplateInfo" class="templateInfo">Plantilla predeterminada global: comprobando...</div>
    <div class="templateInfo">Las plantillas y la predeterminada se guardan en Supabase. La predeterminada se cargará automáticamente en cualquier dispositivo que abra este HTML.</div>
+  </div>
+
+  <div class="fieldManager">
+   <h4>Campos de la etiqueta</h4>
+   <div class="fieldManagerHelp">Activa o desactiva cualquier campo del diseño. Los campos desactivados no se imprimen. Los campos personalizados también se pueden eliminar definitivamente.</div>
+   <div id="fieldManagerList" class="fieldManagerList"></div>
+   <div class="addFieldGrid">
+    <div><label>Nombre del nuevo campo</label><input id="newFieldName" placeholder="Ej. Código interno"></div>
+    <div><label>Texto / valor inicial</label><input id="newFieldValue" placeholder="Ej. CTO-01"></div>
+    <button id="addCustomField" class="blue" type="button">＋ Agregar campo</button>
+   </div>
   </div>
 
   <div id="objectControls"></div>
@@ -269,15 +312,15 @@ const NOTIFY='0000ff01-0000-1000-8000-00805f9b34fb';
 const $=id=>document.getElementById(id),sleep=ms=>new Promise(r=>setTimeout(r,ms));
 
 const objects={
- date:{label:'Fecha',type:'text',x:14,y:120,angle:-90,size:15,weight:700,letterGap:0,field:'f_date',autoCenter:true},
- qr:{label:'QR',type:'qr',x:22,y:47,angle:0,size:150,field:'f_qr'},
- line:{label:'Línea central',type:'line',x:198,y:216,angle:-90,size:200,thickness:8},
- id:{label:'ID cliente',type:'text',x:244,y:119,angle:-90,size:18,weight:700,letterGap:0,field:'f_id',autoCenter:true},
- name:{label:'Nombre cliente',type:'text',x:271,y:120,angle:-90,size:18,weight:700,letterGap:0,field:'f_name',autoCenter:true,autoWrap:true,maxWidth:200,lineGap:-4},
- operator:{label:'Operador',type:'text',x:302,y:123,angle:-90,size:15,weight:700,letterGap:0,field:'f_operator',autoCenter:true,autoWrap:true,maxWidth:200,lineGap:-4},
- to1:{label:'TO principal',type:'text',x:326,y:122,angle:-90,size:14,weight:700,letterGap:0,field:'f_to1',autoCenter:true},
- to2:{label:'TO secundario',type:'text',x:346,y:121,angle:-90,size:14,weight:700,letterGap:0,field:'f_to2',autoCenter:true},
- fr:{label:'FR / Rack',type:'text',x:363,y:122,angle:-90,size:14,weight:700,letterGap:0,field:'f_fr',autoCenter:true}
+ date:{label:'Fecha',type:'text',active:true,x:14,y:120,angle:-90,size:15,weight:700,letterGap:0,field:'f_date',autoCenter:true},
+ qr:{label:'QR',type:'qr',active:true,x:22,y:47,angle:0,size:150,field:'f_qr'},
+ line:{label:'Línea central',type:'line',active:true,x:198,y:216,angle:-90,size:200,thickness:8},
+ id:{label:'ID cliente',type:'text',active:true,x:244,y:119,angle:-90,size:18,weight:700,letterGap:0,field:'f_id',autoCenter:true},
+ name:{label:'Nombre cliente',type:'text',active:true,x:271,y:120,angle:-90,size:18,weight:700,letterGap:0,field:'f_name',autoCenter:true,autoWrap:true,maxWidth:200,lineGap:-4},
+ operator:{label:'Operador',type:'text',active:true,x:302,y:123,angle:-90,size:15,weight:700,letterGap:0,field:'f_operator',autoCenter:true,autoWrap:true,maxWidth:200,lineGap:-4},
+ to1:{label:'TO principal',type:'text',active:true,x:326,y:122,angle:-90,size:14,weight:700,letterGap:0,field:'f_to1',autoCenter:true},
+ to2:{label:'TO secundario',type:'text',active:true,x:346,y:121,angle:-90,size:14,weight:700,letterGap:0,field:'f_to2',autoCenter:true},
+ fr:{label:'FR / Rack',type:'text',active:true,x:363,y:122,angle:-90,size:14,weight:700,letterGap:0,field:'f_fr',autoCenter:true}
 };
 
 let selected=null,drag=false,dx=0,dy=0;
@@ -293,11 +336,100 @@ function setToday(){
 }
 setToday();
 
+function getObjectKey(obj){
+ return Object.keys(objects).find(k=>objects[k]===obj) || null;
+}
+
+function updateSelectedBadge(){
+ const badge=$('selectedObjectBadge');
+ if(!badge)return;
+ const key=getObjectKey(selected);
+ badge.textContent=selected && key ? `Elemento seleccionado: ${objects[key].label}` : 'Elemento seleccionado: ninguno';
+}
+
+function sanitizeCustomKey(text){
+ return 'custom_'+String(text||'campo').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+   .toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'').slice(0,30)+'_'+Date.now().toString(36);
+}
+
+function ensureCustomInput(key,o,value=''){
+ const wrap=$('customFieldsWrap'), grid=$('customDataFields');
+ if(!wrap||!grid)return;
+ let el=$(o.field);
+ if(!el){
+   const cell=document.createElement('div');
+   cell.dataset.customKey=key;
+   cell.innerHTML=`<label>${o.label}</label><input id="${o.field}" value="">`;
+   grid.appendChild(cell);
+   el=$(o.field);
+ }
+ if(value!==undefined && value!==null) el.value=value;
+ if(!el.dataset.editorWired){
+   el.addEventListener('input',draw);
+   el.addEventListener('focus',()=>{selected=o;draw();focusSettingsForObject(key,true);updateSelectedBadge();});
+   el.dataset.editorWired='1';
+ }
+ wrap.style.display=grid.children.length?'block':'none';
+}
+
+function rebuildCustomDataFields(){
+ const grid=$('customDataFields'),wrap=$('customFieldsWrap');
+ if(!grid||!wrap)return;
+ grid.innerHTML='';
+ Object.entries(objects).forEach(([key,o])=>{
+   if(o.isCustom && o.type==='text') ensureCustomInput(key,o,o.value||'');
+ });
+ wrap.style.display=grid.children.length?'block':'none';
+}
+
+function renderFieldManager(){
+ const list=$('fieldManagerList');
+ if(!list)return;
+ list.innerHTML='';
+ Object.entries(objects).forEach(([key,o])=>{
+   const item=document.createElement('div');
+   item.className='fieldManagerItem';
+   item.innerHTML=`<div class="left"><input type="checkbox" ${o.active!==false?'checked':''} data-field-toggle="${key}"><span class="name">${o.label}</span></div>${o.isCustom?`<button class="secondary" data-field-delete="${key}">Eliminar</button>`:''}`;
+   list.appendChild(item);
+ });
+ list.querySelectorAll('[data-field-toggle]').forEach(ch=>{
+   ch.onchange=()=>{
+     const key=ch.dataset.fieldToggle;
+     objects[key].active=ch.checked;
+     if(!ch.checked && selected===objects[key]) selected=null;
+     buildControls();draw();updateSelectedBadge();
+   };
+ });
+ list.querySelectorAll('[data-field-delete]').forEach(btn=>{
+   btn.onclick=()=>{
+     const key=btn.dataset.fieldDelete,o=objects[key];
+     if(!o)return;
+     if(!confirm(`¿Eliminar el campo personalizado "${o.label}"?`))return;
+     if(selected===o)selected=null;
+     delete objects[key];
+     rebuildCustomDataFields();renderFieldManager();buildControls();draw();updateSelectedBadge();
+   };
+ });
+}
+
+function addCustomField(){
+ const name=($('newFieldName')?.value||'').trim();
+ const value=($('newFieldValue')?.value||'').trim();
+ if(!name){alert('Escribe el nombre del nuevo campo.');return;}
+ const key=sanitizeCustomKey(name);
+ const field='f_'+key;
+ objects[key]={label:name,type:'text',active:true,isCustom:true,x:220,y:120,angle:-90,size:14,weight:700,letterGap:0,field,autoCenter:true,autoWrap:false,maxWidth:180,lineGap:0,value};
+ ensureCustomInput(key,objects[key],value);
+ $('newFieldName').value='';$('newFieldValue').value='';
+ renderFieldManager();buildControls();selected=objects[key];draw();updateSelectedBadge();focusSettingsForObject(key,true);
+}
+
 function buildControls(){
  const c=$('objectControls');
  c.innerHTML='';
 
  Object.entries(objects).forEach(([key,o])=>{
+  if(o.active===false) return;
   const row=document.createElement('div');
   row.className='objrow';
   row.dataset.objectKey=key;
@@ -544,12 +676,14 @@ function drawLine(ctx,o,guide){
 function draw(){
  const c=$('cv'),ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,384,240);
  Object.values(objects).forEach(o=>{
+  if(o.active===false) return;
   const guide=!window.__printing;
   if(o.type==='text')drawText(ctx,o,guide);
   else if(o.type==='qr')drawQR(ctx,o,guide);
   else if(o.type==='line')drawLine(ctx,o,guide);
  });
  syncControls();
+ updateSelectedBadge();
 }
 
 Object.keys(objects).forEach(k=>{
@@ -594,6 +728,7 @@ $('cv').addEventListener('pointerdown',e=>{
  const p=point(e),keys=Object.keys(objects).reverse();
  for(const k of keys){
   const o=objects[k];
+  if(o.active===false) continue;
   let ok=o.type==='qr'
    ? p.x>=o.x-6&&p.x<=o.x+(o._box?.w||o.size)+6&&p.y>=o.y-6&&p.y<=o.y+(o._box?.h||o.size)+6
    : hitRotated(o,p.x,p.y);
@@ -616,17 +751,35 @@ $('cv').addEventListener('pointermove',e=>{
 });
 ['pointerup','pointercancel','pointerleave'].forEach(ev=>$('cv').addEventListener(ev,()=>drag=false));
 
+
+// Movimiento fino con teclado.
+document.addEventListener('keydown',e=>{
+ if(!selected || selected.active===false) return;
+ const tag=(e.target?.tagName||'').toLowerCase();
+ if(['input','select','textarea','button'].includes(tag) || e.target?.isContentEditable) return;
+ if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) return;
+ const step=e.shiftKey?5:(e.altKey?0.5:1);
+ if(e.key==='ArrowLeft') selected.x-=step;
+ if(e.key==='ArrowRight') selected.x+=step;
+ if(e.key==='ArrowUp') selected.y-=step;
+ if(e.key==='ArrowDown') selected.y+=step;
+ selected.x=Math.max(0,Math.min(383,selected.x));
+ selected.y=Math.max(0,Math.min(239,selected.y));
+ e.preventDefault();
+ draw();
+});
+
 function preset(){
  const vals={
-  date:{x:14,y:120,angle:-90,size:15,weight:700,letterGap:0,autoCenter:true},
-  qr:{x:22,y:47,angle:0,size:150},
-  line:{x:198,y:216,angle:-90,size:200,thickness:8},
-  id:{x:244,y:119,angle:-90,size:18,weight:700,letterGap:0,autoCenter:true},
-  name:{x:271,y:120,angle:-90,size:18,weight:700,letterGap:0,autoCenter:true,autoWrap:true,maxWidth:200,lineGap:-4},
-  operator:{x:302,y:123,angle:-90,size:15,weight:700,letterGap:0,autoCenter:true,autoWrap:true,maxWidth:200,lineGap:-4},
-  to1:{x:326,y:122,angle:-90,size:14,weight:700,letterGap:0,autoCenter:true},
-  to2:{x:346,y:121,angle:-90,size:14,weight:700,letterGap:0,autoCenter:true},
-  fr:{x:363,y:122,angle:-90,size:14,weight:700,letterGap:0,autoCenter:true}
+  date:{active:true,x:14,y:120,angle:-90,size:15,weight:700,letterGap:0,autoCenter:true},
+  qr:{active:true,x:22,y:47,angle:0,size:150},
+  line:{active:true,x:198,y:216,angle:-90,size:200,thickness:8},
+  id:{active:true,x:244,y:119,angle:-90,size:18,weight:700,letterGap:0,autoCenter:true},
+  name:{active:true,x:271,y:120,angle:-90,size:18,weight:700,letterGap:0,autoCenter:true,autoWrap:true,maxWidth:200,lineGap:-4},
+  operator:{active:true,x:302,y:123,angle:-90,size:15,weight:700,letterGap:0,autoCenter:true,autoWrap:true,maxWidth:200,lineGap:-4},
+  to1:{active:true,x:326,y:122,angle:-90,size:14,weight:700,letterGap:0,autoCenter:true},
+  to2:{active:true,x:346,y:121,angle:-90,size:14,weight:700,letterGap:0,autoCenter:true},
+  fr:{active:true,x:363,y:122,angle:-90,size:14,weight:700,letterGap:0,autoCenter:true}
  };
 
  for(const [k,v] of Object.entries(vals)){
@@ -1080,17 +1233,11 @@ function exportLayoutState(){
 
  Object.entries(objects).forEach(([k,o])=>{
   state[k]={
-   x:o.x,
-   y:o.y,
-   angle:o.angle,
-   size:o.size,
-   weight:o.weight,
-   letterGap:o.letterGap,
-   autoCenter:o.autoCenter,
-   autoWrap:o.autoWrap,
-   maxWidth:o.maxWidth,
-   lineGap:o.lineGap,
-   thickness:o.thickness
+   x:o.x, y:o.y, angle:o.angle, size:o.size, weight:o.weight,
+   letterGap:o.letterGap, autoCenter:o.autoCenter, autoWrap:o.autoWrap,
+   maxWidth:o.maxWidth, lineGap:o.lineGap, thickness:o.thickness,
+   active:o.active!==false, label:o.label, type:o.type, field:o.field,
+   isCustom:!!o.isCustom, value:o.isCustom && o.field && $(o.field) ? $(o.field).value : o.value
   };
  });
 
@@ -1100,17 +1247,29 @@ function exportLayoutState(){
 function applyLayoutState(state){
  if(!state)return;
 
- Object.entries(state).forEach(([k,v])=>{
-  if(!objects[k])return;
+ // Eliminar personalizados actuales antes de restaurar los de la plantilla.
+ Object.keys(objects).forEach(k=>{ if(objects[k]?.isCustom) delete objects[k]; });
 
-  Object.entries(v||{}).forEach(([p,val])=>{
-   if(val!==undefined && val!==null){
-    objects[k][p]=val;
-   }
+ Object.entries(state).forEach(([k,v])=>{
+  if(k.startsWith('__') || !v || typeof v!=='object') return;
+  if(!objects[k] && v.isCustom){
+    objects[k]={
+      label:v.label||'Campo personalizado', type:'text', active:v.active!==false, isCustom:true,
+      x:v.x??220,y:v.y??120,angle:v.angle??-90,size:v.size??14,weight:v.weight??700,
+      letterGap:v.letterGap??0,field:v.field||('f_'+k),autoCenter:v.autoCenter!==false,
+      autoWrap:!!v.autoWrap,maxWidth:v.maxWidth??180,lineGap:v.lineGap??0,value:v.value||''
+    };
+  }
+  if(!objects[k])return;
+  Object.entries(v).forEach(([p,val])=>{
+   if(val!==undefined && val!==null && !['value'].includes(p)) objects[k][p]=val;
   });
+  if(objects[k].isCustom) objects[k].value=v.value||'';
  });
 
+ rebuildCustomDataFields();
  selected=null;
+ renderFieldManager();
  buildControls();
  draw();
 }
@@ -1281,11 +1440,26 @@ $('templateSelect').onchange=e=>{
 const settingsModal=$('settingsModal');
 const modalHeader=$('modalHeader');
 
+let settingsMinimized=false;
+
+function updateSettingsMinimizedState(){
+ settingsModal.classList.toggle('minimized',settingsMinimized);
+ const btn=$('minimizeSettings');
+ if(btn){
+  btn.textContent=settingsMinimized?'▢ Restaurar':'— Minimizar';
+  btn.title=settingsMinimized?'Restaurar parámetros':'Minimizar parámetros';
+ }
+}
 function openSettingsModal(){
  settingsModal.classList.add('show');
+ updateSettingsMinimizedState();
 }
 function closeSettingsModal(){
  settingsModal.classList.remove('show');
+}
+function toggleSettingsMinimized(){
+ settingsMinimized=!settingsMinimized;
+ updateSettingsMinimizedState();
 }
 function resetModalPosition(){
  settingsModal.style.left='';
@@ -1293,7 +1467,11 @@ function resetModalPosition(){
  settingsModal.style.right='22px';
 }
 
-$('openSettings').onclick=openSettingsModal;
+$('openSettings').onclick=()=>{
+ settingsMinimized=false;
+ openSettingsModal();
+};
+$('minimizeSettings').onclick=toggleSettingsMinimized;
 $('closeSettings').onclick=closeSettingsModal;
 $('resetModalPos').onclick=resetModalPosition;
 
@@ -1333,6 +1511,7 @@ modalHeader.addEventListener('pointercancel',stopModalDrag);
 
 // Abrir ajustes con doble clic sobre el lienzo, además del botón.
 $('cv').addEventListener('dblclick',()=>{
+  settingsMinimized=false;
   openSettingsModal();
   if(selected){
     const key=Object.keys(objects).find(k=>objects[k]===selected);
@@ -1406,6 +1585,11 @@ $('battery').onclick=readBattery;
 $('print').onclick=printLabel;
 $('clear').onclick=()=>$('log').textContent='Listo.';
 
+// Editor avanzado de campos.
+$('addCustomField').onclick=addCustomField;
+renderFieldManager();
+rebuildCustomDataFields();
+
 // Primero dibuja siempre los valores por defecto.
 // Los datos del cliente se reciben desde NODO mediante parámetros de la URL.
 draw();
@@ -1421,5 +1605,6 @@ loadClientFromQueryString().catch(e=>log('ERROR CLIENTE: '+e.message));
 </script>
 </body>
 </html>
+
 
 
