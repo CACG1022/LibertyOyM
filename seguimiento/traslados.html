@@ -6,6 +6,7 @@
   <title>Traslados FO</title>
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="app.js"></script>
   <style>
     :root{--border:rgba(255,255,255,.10);--text:#eef4ff;--muted:#9ab0d0;--shadow:0 18px 40px rgba(0,0,0,.28)}
@@ -31,9 +32,9 @@
     .multi-select-menu{position:absolute;top:calc(100% + 8px);left:0;right:0;background:#0c1830;border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow);padding:10px;display:none;z-index:45;max-height:260px;overflow:auto}
     .multi-select-menu.show{display:block}
     .multi-select-menu label{display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:13px;color:#dbeafe}
-    .filter-actions{display:grid;grid-template-columns:minmax(160px,200px) minmax(160px,200px) minmax(170px,220px) minmax(170px,220px) minmax(120px,160px);gap:12px;align-items:center}
+    .filter-actions{display:grid;grid-template-columns:minmax(140px,180px) minmax(140px,180px) minmax(140px,180px) minmax(165px,205px) minmax(165px,205px) minmax(100px,130px) minmax(100px,130px);gap:12px;align-items:center}
     .delivery-filter-panel{margin-top:12px;padding:12px;border:1px solid rgba(96,165,250,.20);border-radius:16px;background:rgba(255,255,255,.025)}.delivery-filter-title{font-size:12px;font-weight:800;color:#b9d6ff;margin-bottom:8px}.delivery-filter-grid{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:10px;align-items:center}.delivery-filter-grid .control{padding:10px 12px}.filter-help{font-size:11px;color:var(--muted);margin-top:7px}@media (max-width:1200px){.delivery-filter-grid{grid-template-columns:1fr 1fr}}@media (max-width:700px){.delivery-filter-grid{grid-template-columns:1fr}}
-    @media (max-width:1200px){.toolbar-left{grid-template-columns:1fr}.filter-actions{grid-template-columns:1fr}.top-layout{grid-template-columns:1fr}}.import-btn{white-space:nowrap}.preview-table{width:100%;border-collapse:separate;border-spacing:0}.preview-table th,.preview-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px;text-align:left}.preview-table th{color:#9fd0ff;background:#0a1730;position:sticky;top:0}.preview-wrap{max-height:380px;overflow:auto;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02)}.summary-row{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:12px;margin:10px 0 16px}.summary-mini{padding:12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.03)}.summary-mini .n{font-size:24px;font-weight:800}.summary-mini .l{font-size:12px;color:#9ab0d0}.top-layout{display:grid;grid-template-columns:minmax(620px,1fr) minmax(560px,720px);gap:16px;align-items:start;margin-bottom:18px}.weekly-kpis{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px}.weekly-card{border:1px solid rgba(96,165,250,.25);border-radius:16px;padding:12px;background:linear-gradient(180deg,rgba(37,99,235,.12),rgba(15,23,42,.55));box-shadow:var(--shadow);min-height:82px;cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease}.weekly-card:hover{transform:translateY(-2px);border-color:rgba(96,165,250,.55)}.weekly-card.active{border-color:rgba(34,197,94,.65);background:linear-gradient(180deg,rgba(34,197,94,.12),rgba(15,23,42,.55))}.weekly-card .label{font-size:11px;color:#b9d6ff;line-height:1.25}.weekly-card .value{font-size:24px;font-weight:900;margin-top:8px;color:#fff}.weekly-card .unit{font-size:11px;color:#9ab0d0;margin-top:2px}@media (max-width:1450px){.top-layout{grid-template-columns:1fr}.weekly-kpis{grid-template-columns:repeat(4,1fr)}}@media (max-width:900px){.weekly-kpis{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:1200px){.toolbar-left{grid-template-columns:1fr}.filter-actions{grid-template-columns:1fr}.top-layout{grid-template-columns:1fr}}.import-btn{white-space:nowrap}.preview-table{width:100%;border-collapse:separate;border-spacing:0}.preview-table th,.preview-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-size:13px;text-align:left}.preview-table th{color:#9fd0ff;background:#0a1730;position:sticky;top:0}.preview-wrap{max-height:380px;overflow:auto;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02)}.summary-row{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:12px;margin:10px 0 16px}.summary-mini{padding:12px;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.03)}.summary-mini .n{font-size:24px;font-weight:800}.summary-mini .l{font-size:12px;color:#9ab0d0}.top-layout{display:grid;grid-template-columns:minmax(620px,1fr) minmax(560px,720px);gap:16px;align-items:start;margin-bottom:18px}.weekly-kpis{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:10px}.weekly-card{border:1px solid rgba(96,165,250,.25);border-radius:16px;padding:12px;background:linear-gradient(180deg,rgba(37,99,235,.12),rgba(15,23,42,.55));box-shadow:var(--shadow);min-height:82px;cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease}.weekly-card:hover{transform:translateY(-2px);border-color:rgba(96,165,250,.55)}.weekly-card.active{border-color:rgba(34,197,94,.65);background:linear-gradient(180deg,rgba(34,197,94,.12),rgba(15,23,42,.55))}.weekly-card .label{font-size:11px;color:#b9d6ff;line-height:1.25}.weekly-card .value{font-size:24px;font-weight:900;margin-top:8px;color:#fff}.weekly-card .unit{font-size:11px;color:#9ab0d0;margin-top:2px}.stat.docs-pending{border-color:rgba(245,158,11,.55);background:linear-gradient(180deg,rgba(245,158,11,.13),rgba(255,255,255,.02))}.stat.docs-pending.active{border-color:rgba(245,158,11,.95);background:linear-gradient(180deg,rgba(245,158,11,.22),rgba(255,255,255,.03))}.docs-export-btn{margin-top:9px;width:100%;padding:7px 8px;border-radius:9px;border:1px solid rgba(245,158,11,.55);background:rgba(245,158,11,.15);color:#fff;font-size:10px;font-weight:800;cursor:pointer}.docs-export-btn:hover{background:rgba(245,158,11,.27)}.docs-ranking-table{width:100%;border-collapse:separate;border-spacing:0}.docs-ranking-table th,.docs-ranking-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.08);font-size:12px;text-align:left;vertical-align:middle}.docs-ranking-table th{position:sticky;top:0;background:#0a1730;color:#9fd0ff;z-index:1}.docs-rank-pos{font-size:18px;font-weight:900;color:#fbbf24;text-align:center}.docs-rank-time{font-size:17px;font-weight:900;color:#fff;white-space:nowrap}.docs-rank-sub{font-size:10px;color:#9ab0d0;margin-top:2px}.docs-ranking-wrap{max-height:58vh;overflow:auto;border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.02)}@media (max-width:1450px){.top-layout{grid-template-columns:1fr}.weekly-kpis{grid-template-columns:repeat(4,1fr)}}@media (max-width:900px){.weekly-kpis{grid-template-columns:repeat(2,1fr)}}
     .summary{display:grid;grid-template-columns:repeat(6,minmax(150px,1fr));gap:12px;margin-bottom:18px}
     .stat{border:1px solid var(--border);border-radius:18px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.02));padding:16px;box-shadow:var(--shadow);min-height:110px;cursor:pointer;transition:transform .15s ease,border-color .15s ease,background .15s ease}
     .stat .label{font-size:12px;color:var(--muted);margin-bottom:8px}.stat .value{font-size:30px;font-weight:800}.stat .sub{font-size:12px;color:#b9d6ff;margin-top:6px}.stat:hover{transform:translateY(-2px);border-color:rgba(96,165,250,.4)}.stat.active{border-color:rgba(34,197,94,.55);background:linear-gradient(180deg,rgba(34,197,94,.10),rgba(255,255,255,.02))}
@@ -47,6 +48,27 @@
     tbody tr.row-entregada{background:rgba(34,197,94,.14)}
     tbody tr.row-entregada:hover{background:rgba(34,197,94,.22)}
     tbody tr.row-entregada td{border-bottom-color:rgba(34,197,94,.25)}
+
+    /* Colores de fila por Estado general */
+    tbody tr.row-cancelada{
+      background:rgba(239,68,68,.18);
+    }
+    tbody tr.row-cancelada:hover{
+      background:rgba(239,68,68,.28);
+    }
+    tbody tr.row-cancelada td{
+      border-bottom-color:rgba(239,68,68,.32);
+    }
+
+    tbody tr.row-gestion-emsa{
+      background:rgba(245,158,11,.17);
+    }
+    tbody tr.row-gestion-emsa:hover{
+      background:rgba(245,158,11,.27);
+    }
+    tbody tr.row-gestion-emsa td{
+      border-bottom-color:rgba(245,158,11,.32);
+    }
     .title{font-weight:700;margin-bottom:4px}.desc{font-size:12px;color:var(--muted);white-space:pre-wrap}
     .badge{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--border)}
     .estado-INGRESADA{background:rgba(59,130,246,.16);color:#bfdbfe}
@@ -72,7 +94,7 @@
     .field input,.field select,.field textarea{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:#0c1830;color:#fff}.field textarea{min-height:90px;resize:vertical}
     .span-2{grid-column:span 2}.span-4{grid-column:1/-1}.muted-note{font-size:12px;color:var(--muted)}
     .modal-kpis{display:grid;grid-template-columns:repeat(3,minmax(160px,1fr));gap:12px;margin:16px 0 14px}
-    .modal-kpi{border:1px solid rgba(147,197,253,.22);border-radius:16px;padding:14px;background:linear-gradient(180deg,rgba(37,99,235,.12),rgba(255,255,255,.025));box-shadow:0 12px 28px rgba(0,0,0,.18)}
+    .modal-kpi{border:1px solid rgba(147,197,253,.22);border-radius:16px;padding:14px;background:linear-gradient(180deg,rgba(37,99,235,.12),rgba(255,255,255,.025));box-shadow:0 12px 28px rgba(0,0,0,.18);cursor:pointer;transition:transform .15s ease,border-color .15s ease}.modal-kpi:hover{transform:translateY(-2px);border-color:rgba(96,165,250,.60)}
     .modal-kpi .k-label{font-size:12px;color:#bfdbfe;margin-bottom:8px}
     .modal-kpi .k-value{font-size:26px;font-weight:900;color:#fff;line-height:1}
     .modal-kpi .k-sub{font-size:11px;color:#9ab0d0;margin-top:8px}
@@ -96,6 +118,32 @@
     .audit-value{max-width:320px;white-space:pre-wrap;word-break:break-word;color:#dbeafe}
     .audit-old{color:#fecaca}.audit-new{color:#bbf7d0}.audit-meta{font-size:12px;color:var(--muted);margin-bottom:12px}.audit-empty{padding:22px;text-align:center;color:var(--muted)}
 
+
+    input[name="Linea_base"], .linea-base-text { color:#F59C27 !important; font-weight:800; }
+    input[name="Linea_base"]::placeholder { color:rgba(245,156,39,.65); }
+
+    /* Organización del formulario de instalación */
+    .install-form-sections{display:grid;gap:14px;margin-bottom:4px}
+    .install-form-section{border:1px solid rgba(96,165,250,.20);border-radius:18px;padding:14px 16px 8px;background:linear-gradient(180deg,rgba(37,99,235,.055),rgba(255,255,255,.018))}
+    .install-form-section.permissions{border-color:rgba(245,158,11,.24);background:linear-gradient(180deg,rgba(245,158,11,.055),rgba(255,255,255,.018))}
+    .install-form-section.closing{border-color:rgba(34,197,94,.22);background:linear-gradient(180deg,rgba(34,197,94,.045),rgba(255,255,255,.018))}
+    .install-form-section.documentation{border-color:rgba(168,85,247,.28);background:linear-gradient(180deg,rgba(168,85,247,.06),rgba(255,255,255,.018))}
+    .install-form-section.documentation .install-form-section-title .num{background:rgba(168,85,247,.14);border-color:rgba(168,85,247,.30);color:#ddd6fe}
+    .documentation-kpi{cursor:pointer;border:1px solid rgba(168,85,247,.34);border-radius:16px;padding:14px;background:linear-gradient(180deg,rgba(168,85,247,.12),rgba(255,255,255,.025));box-shadow:0 12px 28px rgba(0,0,0,.18)}
+    .documentation-kpi:hover{border-color:rgba(192,132,252,.65);transform:translateY(-1px)}
+    .documentation-kpi .k-label{font-size:12px;color:#ddd6fe;margin-bottom:8px}.documentation-kpi .k-value{font-size:26px;font-weight:900;color:#fff;line-height:1}.documentation-kpi .k-sub{font-size:11px;color:#9ab0d0;margin-top:8px}
+    .install-form-section-title{display:flex;align-items:center;gap:9px;margin:0 0 12px;font-size:13px;font-weight:900;color:#dbeafe;letter-spacing:.15px}
+    .install-form-section-title .num{display:inline-flex;width:24px;height:24px;align-items:center;justify-content:center;border-radius:8px;background:rgba(59,130,246,.18);border:1px solid rgba(96,165,250,.28);font-size:11px;color:#bfdbfe}
+    .install-form-section.permissions .install-form-section-title .num{background:rgba(245,158,11,.14);border-color:rgba(245,158,11,.28);color:#fde68a}
+    .install-form-section.closing .install-form-section-title .num{background:rgba(34,197,94,.13);border-color:rgba(34,197,94,.28);color:#bbf7d0}
+    .install-section-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px 12px}
+    .install-section-grid .field{margin-bottom:6px}
+    .install-section-grid .field label{font-size:12px}
+    .install-section-grid .field.span-2{grid-column:span 2}
+    .install-date-label{color:#bfdbfe !important;font-weight:800}
+    @media (max-width:1100px){.install-section-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:700px){.install-section-grid{grid-template-columns:1fr}.install-section-grid .field.span-2{grid-column:span 1}}
+
     .migrar-btn{padding:7px 10px;border-radius:9px;border:1px solid rgba(34,197,94,.35);background:linear-gradient(135deg,rgba(34,197,94,.20),rgba(37,99,235,.18));color:#fff;font-weight:800;cursor:pointer;white-space:nowrap}
     .migrar-tools{display:grid;grid-template-columns:1fr 180px 180px;gap:10px;align-items:center;margin-bottom:12px}
     .migrar-table-wrap{max-height:55vh;overflow:auto;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02)}
@@ -103,6 +151,7 @@
     .migrar-table th,.migrar-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.07);font-size:12px;text-align:left;vertical-align:top}
     .migrar-table th{position:sticky;top:0;background:#0a1730;color:#9fd0ff;z-index:1}
     @media (max-width:900px){.migrar-tools{grid-template-columns:1fr}}
+
 
     @media (max-width:1400px){.summary{grid-template-columns:repeat(3,minmax(150px,1fr))}}
     @media (max-width:1100px){.grid,.detail-grid{grid-template-columns:repeat(2,1fr)}}
@@ -117,7 +166,7 @@
     <div class="modal-header">
       <div>
         <h3 id="formModalTitle" style="margin:0 0 6px 0;">Nuevo traslado</h3>
-        <div class="muted-note">Control integral de permisos, material, enrutamiento, aprovisionamiento y agendamiento del traslado.</div>
+        <div class="muted-note">Control integral de permisos, material, enrutamiento, aprovisionamiento y agendamiento.</div>
       </div>
       <div style="display:flex;align-items:center;gap:10px">
         <button class="small-btn" type="button" onclick="copiarInfoInstalacion()">Copiar info</button>
@@ -127,65 +176,120 @@
     </div>
     <form id="instalacionForm" action="javascript:void(0);" method="post">
       <input type="hidden" name="id">
-      <div class="grid">
-        <div class="field"><label>Fecha ingreso</label><input type="date" name="fecha_ingreso" required onchange="calcularTiemposMuertosInstalacion()"></div>
-        <div class="field"><label>ID Cambio</label><input name="id_cambio" required></div>
-        <div class="field"><label>ID Tarea</label><input name="id_tarea" required></div>
-        <div class="field"><label>ID Cliente</label><input name="id_cliente" required></div>
-        <div class="field"><label>Operador</label><input name="operador"></div>
-        <div class="field span-2"><label>Cliente</label><input name="cliente" required></div>
-        <div class="field"><label>Contratista</label><input name="contratista"></div>
-        <div class="field span-2"><label>Dirección</label><input name="direccion"></div>
-        <div class="field"><label>Responsable</label><input name="responsable"></div>
-        <div class="field"><label>Estado general</label>
-          <select name="estado_general">
-            <option>INGRESADA</option><option>EN_VALIDACION</option><option>PENDIENTE_PERMISOS</option><option>PERMISOS_APROBADOS</option>
-            <option>PENDIENTE_ENRUTAMIENTO</option><option>EN_GESTION EMSA</option><option>LISTA_PARA_AGENDAR</option><option>SOLIC AGENDA CONTRATISTA</option><option>AGENDADA</option><option>EN_EJECUCION</option>
-            <option>ENTREGADA</option><option>CANCELADA</option>
-          </select>
-        </div>
-        <div class="field"><label>Capacidad en (Megas)</label><input name="capacidad"></div>
-        <div class="field"><label>Estado planta externa</label>
-          <select name="estado_planta_externa"><option>PENDIENTE</option><option>VIABLE</option><option>EN_GESTION</option><option>COMPLETA</option><option>NO_VIABLE</option><option>N/A</option></select>
-        </div>
-        <div class="field"><label>Estado planta interna</label>
-          <select name="estado_planta_interna"><option>PENDIENTE</option><option>VIABLE</option><option>EN_GESTION</option><option>COMPLETA</option><option>NO_VIABLE</option><option>N/A</option></select>
-        </div>
-        <div class="field"><label>Fecha solicitud permisos</label><input type="date" name="fecha_solicitud_permisos" onchange="calcularTiemposMuertosInstalacion()"></div>
-        <div class="field"><label>Fecha respuesta permisos</label><input type="date" name="fecha_respuesta_permisos" onchange="calcularTiemposMuertosInstalacion()"></div>
-        <div class="field"><label>Fecha aprobación permisos</label><input type="date" name="fecha_aprobacion_permisos" onchange="calcularTiemposMuertosInstalacion()"></div>
-        <div class="field"><label>Tiempo muerto permisos</label><input name="tiempo_muerto_permisos" readonly></div>
-        <div class="field"><label>Estado permisos</label>
-          <select name="estado_permisos"><option>PENDIENTE</option><option>SOLICITADOS</option><option>EN_GESTION</option><option>APROBADOS</option><option>RECHAZADOS</option><option>NO_REQUIERE</option></select>
-        </div>
-        <div class="field"><label>Fecha agendamiento PE</label><input type="date" name="fecha_agendamiento_pe"></div>
-        <div class="field"><label>Fecha agendamiento PI</label><input type="date" name="fecha_agendamiento_pi"></div>
-        <div class="field"><label>Hora agendamiento</label><input type="time" name="hora_agendamiento"></div>
-        <div class="field"><label>Fecha de entrega</label><input type="date" name="fecha_entrega" onchange="calcularTiemposMuertosInstalacion()"></div>
-        <div class="field"><label>Tiempo total traslado</label><input name="tiempo_total_instalacion" readonly></div>
-        <div class="field"><label>Tiempo efectivo traslado</label><input name="tiempo_efectivo_instalacion" readonly></div>
+      <div class="install-form-sections">
+        <section class="install-form-section">
+          <div class="install-form-section-title"><span class="num">1</span> Identificación del servicio</div>
+          <div class="install-section-grid">
+            <div class="field"><label class="install-date-label">Fecha ingreso</label><input type="date" name="fecha_ingreso" required onchange="calcularTiemposMuertosInstalacion()"></div>
+            <div class="field"><label>ID Cambio</label><input name="id_cambio" required></div>
+            <div class="field"><label>ID Tarea</label><input name="id_tarea" required></div>
+            <div class="field"><label>ID Cliente</label><input name="id_cliente" required></div>
+            <div class="field"><label>Operador</label><input name="operador"></div>
+            <div class="field span-2"><label>Cliente</label><input name="cliente" required></div>
+            <div class="field"><label>Capacidad en (Megas)</label><input name="capacidad"></div>
+            <div class="field span-2"><label>Dirección</label><input name="direccion"></div>
+            <div class="field span-2"><label>Linea Base</label><input name="Linea_base" class="linea-base-text" placeholder="Ej. COR-ESTANDAR-ETH-100BT-30-MBPS"></div>
+          </div>
+        </section>
 
-        <div class="field span-4">
-          <div class="modal-kpis" id="instalacionDurationKpis">
-            <div class="modal-kpi">
+        <section class="install-form-section">
+          <div class="install-form-section-title"><span class="num">2</span> Responsables y estado del traslado</div>
+          <div class="install-section-grid">
+            <div class="field"><label>Contratista</label><input name="contratista"></div>
+            <div class="field"><label>Responsable</label><input name="responsable"></div>
+            <div class="field"><label>Estado general</label>
+              <select name="estado_general">
+                <option>INGRESADA</option><option>EN_VALIDACION</option><option>PENDIENTE_PERMISOS</option><option>PERMISOS_APROBADOS</option>
+                <option>PENDIENTE_ENRUTAMIENTO</option><option>EN_GESTION EMSA</option><option>LISTA_PARA_AGENDAR</option><option>SOLIC AGENDA CONTRATISTA</option><option>AGENDADA</option><option>EN_EJECUCION</option>
+                <option>ENTREGADA</option><option>CANCELADA</option>
+              </select>
+            </div>
+            <div class="field"><label>Estado permisos</label>
+              <select name="estado_permisos"><option>PENDIENTE</option><option>SOLICITADOS</option><option>EN_GESTION</option><option>APROBADOS</option><option>RECHAZADOS</option><option>NO_REQUIERE</option></select>
+            </div>
+            <div class="field"><label>Estado planta externa</label>
+              <select name="estado_planta_externa"><option>PENDIENTE</option><option>VIABLE</option><option>EN_GESTION</option><option>COMPLETA</option><option>NO_VIABLE</option><option>N/A</option></select>
+            </div>
+            <div class="field"><label>Estado planta interna</label>
+              <select name="estado_planta_interna"><option>PENDIENTE</option><option>VIABLE</option><option>EN_GESTION</option><option>COMPLETA</option><option>NO_VIABLE</option><option>N/A</option></select>
+            </div>
+          </div>
+        </section>
+
+        <section class="install-form-section permissions">
+          <div class="install-form-section-title"><span class="num">3</span> Fechas de permisos</div>
+          <div class="install-section-grid">
+            <div class="field"><label class="install-date-label">Fecha solicitud permisos</label><input type="date" name="fecha_solicitud_permisos" onchange="calcularTiemposMuertosInstalacion()"></div>
+            <div class="field"><label class="install-date-label">Fecha respuesta permisos</label><input type="date" name="fecha_respuesta_permisos" onchange="calcularTiemposMuertosInstalacion()"></div>
+            <div class="field"><label class="install-date-label">Fecha aprobación permisos</label><input type="date" name="fecha_aprobacion_permisos" onchange="calcularTiemposMuertosInstalacion()"></div>
+            <div class="field"><label>Tiempo muerto permisos</label><input name="tiempo_muerto_permisos" readonly></div>
+          </div>
+        </section>
+
+        <section class="install-form-section closing">
+          <div class="install-form-section-title"><span class="num">4</span> Agendamiento, entrega y cierre</div>
+          <div class="install-section-grid">
+            <div class="field"><label class="install-date-label">Fecha agendamiento PE</label><input type="date" name="fecha_agendamiento_pe"></div>
+            <div class="field"><label class="install-date-label">Fecha agendamiento PI</label><input type="date" name="fecha_agendamiento_pi"></div>
+            <div class="field"><label>Hora agendamiento</label><input type="time" name="hora_agendamiento"></div>
+            <div class="field"><label class="install-date-label">Fecha de entrega</label><input type="date" name="fecha_entrega" onchange="calcularTiemposMuertosInstalacion(); calcularTiempoDocumentacion()"></div>
+            <div class="field"><label>Longitud enlace / OTDR (m)</label><input type="number" name="longitud_enlace_otdr" min="0" step="0.01" inputmode="decimal" placeholder="Ej. 3250"></div>
+            <div class="field span-2"><label>Tiempo total traslado</label><input name="tiempo_total_instalacion" readonly></div>
+            <div class="field span-2"><label>Tiempo efectivo traslado</label><input name="tiempo_efectivo_instalacion" readonly></div>
+          </div>
+        </section>
+
+        <section class="install-form-section documentation">
+          <div class="install-form-section-title"><span class="num">5</span> DOCUMENTACIÓN</div>
+          <div class="install-section-grid">
+            <div class="field span-2">
+              <label class="install-date-label">Fecha entrega de documentación</label>
+              <input type="date" name="fecha_entrega_documentacion" onchange="calcularTiempoDocumentacion()">
+            </div>
+            <div class="field span-2">
+              <div class="documentation-kpi" onclick="mostrarDetalleTiempoDocumentacion()" title="Clic para ver el detalle del cálculo">
+                <div class="k-label">Tiempo entrega de documentación</div>
+                <div class="k-value" id="kpiTiempoDocumentacionInst">0 días</div>
+                <div class="k-sub">Fecha entrega → fecha documentación o hoy, excluyendo sábados y domingos</div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="modal-kpis" id="instalacionDurationKpis">
+            <div class="modal-kpi" onclick="mostrarDetalleKpiTiempo('duracion_total')" title="Clic para ver el detalle del cálculo">
               <div class="k-label">Duración total traslado</div>
               <div class="k-value" id="kpiDuracionTotalInst">0 días</div>
               <div class="k-sub">Fecha entrega o fecha actual - Fecha ingreso</div>
             </div>
-            <div class="modal-kpi dead">
-              <div class="k-label">Tiempo muerto</div>
-              <div class="k-value" id="kpiTiempoMuertoInst">0 días</div>
-              <div class="k-sub">Permisos + radicación EMSA + Telefónica</div>
+            <div class="modal-kpi dead" onclick="mostrarDetalleKpiTiempo('permisos')" title="Clic para ver el detalle del cálculo">
+              <div class="k-label">Tiempo muerto por permisos</div>
+              <div class="k-value" id="kpiTiempoMuertoPermisosInst">0 días</div>
+              <div class="k-sub">Fecha solicitud permisos - fecha aprobación/respuesta</div>
             </div>
-            <div class="modal-kpi effective">
+            <div class="modal-kpi dead" onclick="mostrarDetalleKpiTiempo('radicacion')" title="Clic para ver el detalle del cálculo">
+              <div class="k-label">Tiempo muerto por Radicación EMSA y Telefónica</div>
+              <div class="k-value" id="kpiTiempoMuertoRadicacionInst">0 días</div>
+              <div class="k-sub">Radicación más antigua - respuesta más reciente, días calendario</div>
+            </div>
+            <div class="modal-kpi dead" onclick="mostrarDetalleKpiTiempo('no_habiles')" title="Clic para ver el detalle del cálculo">
+              <div class="k-label">Tiempo muerto por Días no Hábiles</div>
+              <div class="k-value" id="kpiTiempoMuertoNoHabilesInst">0 días</div>
+              <div class="k-sub">Sábados y domingos en los rangos definidos, sin duplicar fechas</div>
+            </div>
+            <div class="modal-kpi dead" onclick="mostrarDetalleKpiTiempo('festivos')" title="Clic para ver el detalle del cálculo">
+              <div class="k-label">Tiempo muerto por Festivos</div>
+              <div class="k-value" id="kpiTiempoMuertoFestivosInst">0 días</div>
+              <div class="k-sub">Festivos Colombia 2026 en los rangos definidos, sin duplicar fechas</div>
+            </div>
+            <div class="modal-kpi effective" onclick="mostrarDetalleKpiTiempo('efectiva')" title="Clic para ver el detalle del cálculo">
               <div class="k-label">Duración efectiva</div>
               <div class="k-value" id="kpiDuracionEfectivaInst">0 días</div>
-              <div class="k-sub">Duración total - tiempos muertos</div>
+              <div class="k-sub">Duración total - unión real de tiempos muertos</div>
             </div>
-          </div>
-        </div>
-        <div class="field span-4"><label>Observaciones</label><textarea name="observaciones"></textarea></div>
       </div>
+      <div class="field"><label>Observaciones</label><textarea name="observaciones"></textarea></div>
 
       <div class="check-row">
         <label class="check-item"><input type="checkbox" name="alistamiento_material"> Alistamiento de material</label>
@@ -338,6 +442,19 @@
   </div>
 </div>
 
+<div id="kpiTimeDetailModal" class="modal-backdrop">
+  <div class="modal" style="width:min(980px,100%)">
+    <div class="modal-header">
+      <div>
+        <h3 id="kpiTimeDetailTitle" style="margin:0 0 6px 0;">Detalle del cálculo</h3>
+        <div class="muted-note">Fechas y días utilizados para obtener el indicador.</div>
+      </div>
+      <button class="close-btn" type="button" onclick="cerrarDetalleKpiTiempo()">✕</button>
+    </div>
+    <div id="kpiTimeDetailContent"></div>
+  </div>
+</div>
+
 <div id="detailModal" class="modal-backdrop">
   <div class="modal large">
     <div class="modal-header">
@@ -368,7 +485,6 @@
     </div>
   </div>
 </div>
-
 
 
 <div id="migrarInstModal" class="modal-backdrop">
@@ -410,6 +526,7 @@
     </div>
   </div>
 </div>
+
 
 <script>
 function safeRenderError(message){
@@ -501,8 +618,11 @@ function renderShell(){
                   <option value="estado_asc">Estado</option>
                 </select>
                 <button class="btn ghost import-btn" type="button" onclick="openImportPicker()">Cargar plantilla</button>
+                <button class="btn ghost" type="button" onclick="descargarReporteColumbus()">Reporte Columbus</button>
+                <button class="btn ghost" type="button" onclick="descargarReporteDashboard()">Reporte para dashboard</button>
                 <button class="btn ghost" type="button" onclick="openMigrarInstalacionesModal()">Traer de instalaciones</button>
                 <button class="btn ghost" type="button" onclick="openCorreoTemplateConfig()">Config. plantilla correo</button>
+                <button class="btn ghost" type="button" onclick="descargarReporteWIP()">WIP</button>
                 <button class="btn ghost" onclick="loadTraslados()">Actualizar</button>
                 <input id="plantillaInput" type="file" accept=".txt,.csv,.tsv,text/plain" style="display:none">
               </div>
@@ -575,13 +695,13 @@ let clientRef = null;
 let instalacionesRows = [];
 let activeKpi = null;
 let activeWeeklyKpi = null;
-let importRowsPending = [];
+let importRowsPending = { insert: [], updateLineaBase: [] };
 let columnFilters = {fecha_ingreso:'', id_cambio:'', id_tarea:'', id_cliente:'', cliente:'', operador:'', estado_general:'', estado_permisos:'', fecha_agendamiento:'', fecha_entrega:'', duracion_total:'', tiempo_muerto:'', duracion_efectiva:'', acciones:''};
 let sortField = 'fecha_ingreso';
 let sortDir = 'desc';
+
 let instalacionesParaMigrar = [];
 let migrarRowsVisibles = [];
-
 
 function closeMigrarInstalacionesModal(){
   document.getElementById('migrarInstModal')?.classList.remove('show');
@@ -653,15 +773,40 @@ async function transferirInstalacionesSeleccionadas(mover=false){
   if(!ok) return;
   try{
     if(msg){ msg.style.color = '#cbd5e1'; msg.textContent = `${mover ? 'Moviendo' : 'Copiando'} registros...`; }
-    const seleccionados = instalacionesParaMigrar.filter(r => ids.includes(String(r.id))).map(limpiarPayloadTrasladoDesdeInstalacion);
+    const seleccionadosBase = instalacionesParaMigrar.filter(r => ids.includes(String(r.id))).map(limpiarPayloadTrasladoDesdeInstalacion);
     const client = await resolveClient();
+
+    // Evita duplicar un mismo cambio si ya fue llevado previamente a Traslados.
+    const cambios = seleccionadosBase.map(r => String(r.id_cambio || '').trim()).filter(Boolean);
+    let existentes = new Set();
+    if(cambios.length){
+      const { data: existentesData, error: existentesError } = await client.from('traslados').select('id_cambio').in('id_cambio', cambios);
+      if(existentesError) throw existentesError;
+      existentes = new Set((existentesData || []).map(x => String(x.id_cambio || '').trim()));
+    }
+    const seleccionados = seleccionadosBase.filter(r => !r.id_cambio || !existentes.has(String(r.id_cambio).trim()));
+    const omitidos = seleccionadosBase.length - seleccionados.length;
+    if(!seleccionados.length){
+      if(msg){ msg.style.color = '#fde68a'; msg.textContent = `No se copiaron registros: los ${omitidos} seleccionado(s) ya existen en Traslados.`; }
+      return;
+    }
+
     const { error: insertError } = await client.from('traslados').insert(seleccionados);
     if(insertError) throw insertError;
     if(mover){
-      const { error: deleteError } = await client.from('instalaciones').delete().in('id', ids);
-      if(deleteError) throw deleteError;
+      const insertadosCambios = new Set(seleccionados.map(r => String(r.id_cambio || '').trim()));
+      const idsAEliminar = instalacionesParaMigrar
+        .filter(r => ids.includes(String(r.id)) && (!r.id_cambio || insertadosCambios.has(String(r.id_cambio).trim())))
+        .map(r => String(r.id));
+      if(idsAEliminar.length){
+        const { error: deleteError } = await client.from('instalaciones').delete().in('id', idsAEliminar);
+        if(deleteError) throw deleteError;
+      }
     }
-    if(msg){ msg.style.color = '#86efac'; msg.textContent = `${ids.length} registro(s) ${mover ? 'movido(s)' : 'copiado(s)'} correctamente.`; }
+    if(msg){
+      msg.style.color = '#86efac';
+      msg.textContent = `${seleccionados.length} registro(s) ${mover ? 'movido(s)' : 'copiado(s)'} correctamente.${omitidos ? ` ${omitidos} omitido(s) porque ya existían en Traslados.` : ''}`;
+    }
     await cargarInstalacionesParaMigrar();
     await loadTraslados();
   }catch(err){
@@ -679,7 +824,7 @@ function openImportPicker(){
 }
 function closeImportModal(){
   document.getElementById('importModal')?.classList.remove('show');
-  importRowsPending = [];
+  importRowsPending = { insert: [], updateLineaBase: [] };
 }
 function normalizeHeader(s){
   return String(s || '').replace(/^"+|"+$/g,'').trim();
@@ -754,6 +899,7 @@ function mapTemplateRow(row){
     cliente: cleanCell(row['Ubicacion A']) || null,
     direccion: cleanCell(row['Direccion A']) || null,
     operador: cleanCell(row['Operador']) || null,
+    Linea_base: cleanCell(row['Linea Base']) || null,
     fecha_ingreso: parseTemplateDate(row['Fecha Real Solic']),
     estado_general: 'INGRESADA'
   };
@@ -767,6 +913,7 @@ function renderImportPreview(rows, meta){
     <div class="summary-mini"><div class="n">${meta.filtered}</div><div class="l">Cumplen filtro</div></div>
     <div class="summary-mini"><div class="n">${meta.existing}</div><div class="l">Ya existentes</div></div>
     <div class="summary-mini"><div class="n">${meta.newRows}</div><div class="l">Nuevos a importar</div></div>
+    <div class="summary-mini"><div class="n">${meta.updateRows || 0}</div><div class="l">Actualizar Linea Base</div></div>
   `;
   body.innerHTML = rows.map(r => `
     <tr>
@@ -781,7 +928,7 @@ function renderImportPreview(rows, meta){
     </tr>
   `).join('');
   msg.style.color = '#cbd5e1';
-  msg.textContent = rows.length ? 'Revisa los registros nuevos. Si aceptas, se agregarán a la tabla traslados.' : 'No se encontraron registros nuevos para importar.';
+  msg.textContent = rows.length ? 'Revisa los registros. Si aceptas, se agregarán los nuevos y se actualizará Linea Base en los existentes.' : 'No se encontraron registros nuevos ni actualizaciones de Linea Base.';
   const btn = document.getElementById('confirmImportBtn');
   if(btn) btn.disabled = !rows.length;
   document.getElementById('importModal')?.classList.add('show');
@@ -806,36 +953,52 @@ async function processTemplateFile(file){
   const uniqueRows = Array.from(uniqueMap.values());
 
   const client = await resolveClient();
-  const { data: existingData, error } = await client.from('traslados').select('id_cambio');
+  const { data: existingData, error } = await client.from('traslados').select('id_cambio,Linea_base');
   if(error) throw error;
   const existing = new Set((existingData || []).map(x => String(x.id_cambio || '').trim()).filter(Boolean));
 
   const newRows = uniqueRows.filter(r => !existing.has(String(r.id_cambio || '').trim()));
-  importRowsPending = newRows;
+  const existingRowsToUpdate = uniqueRows
+    .filter(r => existing.has(String(r.id_cambio || '').trim()) && String(r.Linea_base || '').trim())
+    .map(r => ({ id_cambio: r.id_cambio, Linea_base: r.Linea_base }));
 
-  renderImportPreview(newRows, {
+  importRowsPending = { insert: newRows, updateLineaBase: existingRowsToUpdate };
+
+  renderImportPreview([...newRows, ...existingRowsToUpdate.map(r => ({...r, id_tarea:'', id_cliente:'', cliente:'Registro existente', direccion:'Actualizar Linea Base', operador:'', fecha_ingreso:null, estado_general:'ACTUALIZAR LINEA BASE'}))], {
     total: rawRows.length,
     filtered: filteredTemplate.length,
     existing: uniqueRows.length - newRows.length,
-    newRows: newRows.length
+    newRows: newRows.length,
+    updateRows: existingRowsToUpdate.length
   });
 }
 async function confirmImportRows(){
-  if(!importRowsPending.length) return;
+  const inserts = Array.isArray(importRowsPending) ? importRowsPending : (importRowsPending.insert || []);
+  const updates = Array.isArray(importRowsPending) ? [] : (importRowsPending.updateLineaBase || []);
+  if(!inserts.length && !updates.length) return;
   const client = await resolveClient();
   const btn = document.getElementById('confirmImportBtn');
   const msg = document.getElementById('importMsg');
   try{
     if(btn) btn.disabled = true;
-    if(msg){ msg.style.color = '#cbd5e1'; msg.textContent = 'Importando registros...'; }
-    const { error } = await client.from('traslados').insert(importRowsPending);
-    if(error) throw error;
+    if(msg){ msg.style.color = '#cbd5e1'; msg.textContent = 'Procesando registros...'; }
+    if(inserts.length){
+      const { error } = await client.from('traslados').insert(inserts);
+      if(error) throw error;
+    }
+    for(const item of updates){
+      const { error } = await client
+        .from('traslados')
+        .update({ Linea_base: item.Linea_base })
+        .eq('id_cambio', item.id_cambio);
+      if(error) throw error;
+    }
     closeImportModal();
     await loadTraslados();
-    alert(`Se importaron ${importRowsPending.length} registros correctamente.`);
+    alert(`Proceso finalizado. Nuevos importados: ${inserts.length}. Linea Base actualizadas: ${updates.length}.`);
   }catch(err){
     console.error(err);
-    if(msg){ msg.style.color = '#fecaca'; msg.textContent = 'Error importando registros: ' + (err.message || err); }
+    if(msg){ msg.style.color = '#fecaca'; msg.textContent = 'Error procesando registros: ' + (err.message || err); }
   }finally{
     if(btn) btn.disabled = false;
   }
@@ -994,8 +1157,11 @@ function applyKpiFilter(rows){
       return rows.filter(r => r.estado_general !== 'ENTREGADA' && r.estado_general !== 'CANCELADA');
     case 'PERMISOS_APROBADOS':
       return rows.filter(r => r.estado_permisos === 'APROBADOS');
-    case 'LISTAS_AGENDAR':
-      return rows.filter(r => calcularListaParaAgendar(r));
+    case 'PENDIENTE_DOCUMENTACION':
+      return rows.filter(r =>
+        normalizarTextoReporte(r.estado_general).toUpperCase() === 'ENTREGADA' &&
+        !String(r.fecha_entrega_documentacion || '').trim()
+      );
     case 'AGENDADAS':
       return rows.filter(r => r.estado_general === 'AGENDADA');
     case 'ENTREGADAS_EJECUCION':
@@ -1005,15 +1171,36 @@ function applyKpiFilter(rows){
       return rows;
   }
 }
+let docsKpiClickTimer = null;
 function bindKpiClicks(){
   document.querySelectorAll('#summary .stat[data-kpi]').forEach(card => {
-    card.onclick = () => {
-      const k = card.getAttribute('data-kpi');
-      activeKpi = activeKpi === k ? null : k;
-      activeWeeklyKpi = null;
-      renderWeeklyKpis(instalacionesRows);
-      renderTable();
-    };
+    const k = card.getAttribute('data-kpi');
+    if(k === 'PENDIENTE_DOCUMENTACION'){
+      card.onclick = (ev) => {
+        if(ev.target && ev.target.closest && ev.target.closest('.docs-export-btn')) return;
+        clearTimeout(docsKpiClickTimer);
+        docsKpiClickTimer = setTimeout(() => {
+          activeKpi = activeKpi === k ? null : k;
+          activeWeeklyKpi = null;
+          renderWeeklyKpis(instalacionesRows);
+          renderTable();
+        }, 230);
+      };
+      card.ondblclick = (ev) => {
+        if(ev.target && ev.target.closest && ev.target.closest('.docs-export-btn')) return;
+        ev.preventDefault();
+        ev.stopPropagation();
+        clearTimeout(docsKpiClickTimer);
+        mostrarRankingPendientesDocumentacion();
+      };
+    }else{
+      card.onclick = () => {
+        activeKpi = activeKpi === k ? null : k;
+        activeWeeklyKpi = null;
+        renderWeeklyKpis(instalacionesRows);
+        renderTable();
+      };
+    }
   });
 }
 
@@ -1083,6 +1270,38 @@ function diasCalendarioEntre(fechaInicio, fechaFin){
   return diff < 0 ? 0 : diff;
 }
 
+function diasUnionIntervalos(fechaInicioTotal, fechaFinTotal, intervalos){
+  if(!fechaInicioTotal || !fechaFinTotal) return 0;
+  const limiteInicio = new Date(fechaInicioTotal + 'T00:00:00');
+  const limiteFin = new Date(fechaFinTotal + 'T00:00:00');
+  if(isNaN(limiteInicio) || isNaN(limiteFin) || limiteFin < limiteInicio) return 0;
+
+  const rangos = (intervalos || []).map(r => {
+    if(!r?.inicio || !r?.fin) return null;
+    let inicio = new Date(r.inicio + 'T00:00:00');
+    let fin = new Date(r.fin + 'T00:00:00');
+    if(isNaN(inicio) || isNaN(fin) || fin < inicio) return null;
+    if(inicio < limiteInicio) inicio = new Date(limiteInicio);
+    if(fin > limiteFin) fin = new Date(limiteFin);
+    if(fin < limiteInicio || inicio > limiteFin || fin < inicio) return null;
+    return { inicio, fin };
+  }).filter(Boolean).sort((a,b) => a.inicio - b.inicio);
+
+  if(!rangos.length) return 0;
+  const unidos = [{...rangos[0]}];
+  for(let i = 1; i < rangos.length; i++){
+    const actual = rangos[i];
+    const ultimo = unidos[unidos.length - 1];
+    if(actual.inicio <= ultimo.fin){
+      if(actual.fin > ultimo.fin) ultimo.fin = actual.fin;
+    }else{
+      unidos.push({...actual});
+    }
+  }
+
+  return unidos.reduce((total, r) => total + Math.max(0, Math.floor((r.fin - r.inicio) / 86400000)), 0);
+}
+
 function toggleRadicacionEmsaSection(fromHeader=false){
   const form = document.getElementById('instalacionForm');
   const section = document.getElementById('radicacionEmsaSection');
@@ -1147,60 +1366,233 @@ function actualizarIndicadoresRadicacionTelefonica(){
   if(form.elements['dias_transcurridos_radicacion_telefonica']) form.elements['dias_transcurridos_radicacion_telefonica'].value = fecha ? diasDesdeFechaInstalacion(fecha) : '';
   if(form.elements['dias_habiles_radicacion_telefonica']) form.elements['dias_habiles_radicacion_telefonica'].value = fecha ? diasHabilesEntreFechasInstalacion(fecha) : '';
 }
+const FESTIVOS_COLOMBIA_2026 = new Set([
+  '2026-01-01','2026-01-12','2026-03-23','2026-04-02','2026-04-03',
+  '2026-05-01','2026-05-18','2026-06-08','2026-06-15','2026-06-29',
+  '2026-07-13','2026-07-20','2026-08-07','2026-08-17','2026-10-12',
+  '2026-11-02','2026-11-16','2026-12-08','2026-12-25'
+]);
+const FESTIVOS_COLOMBIA_2026_NOMBRES = {
+  '2026-01-01':'Año Nuevo','2026-01-12':'Reyes Magos','2026-03-23':'Día de San José',
+  '2026-04-02':'Jueves Santo','2026-04-03':'Viernes Santo','2026-05-01':'Día del trabajo',
+  '2026-05-18':'Ascensión de Jesús','2026-06-08':'Corpus Christi','2026-06-15':'Sagrado Corazón de Jesús',
+  '2026-06-29':'San Pedro y San Pablo','2026-07-13':'Día de la Virgen de Chiquinquirá',
+  '2026-07-20':'Día de la independencia','2026-08-07':'Batalla de Boyacá','2026-08-17':'Asunción de la Virgen',
+  '2026-10-12':'Día de la raza','2026-11-02':'Todos los Santos','2026-11-16':'Independencia de Cartagena',
+  '2026-12-08':'Inmaculada Concepción','2026-12-25':'Navidad'
+};
+function fmtFechaDetalle(v){ return v ? fmtDate(v) : 'Sin fecha'; }
+function nombreDiaDetalle(v){
+  if(!v) return '';
+  const d=new Date(v+'T00:00:00');
+  return isNaN(d)?'':d.toLocaleDateString('es-CO',{weekday:'long'});
+}
+function getCurrentFormRowTiempo(){
+  const f=document.getElementById('instalacionForm'); if(!f) return {}; const e=f.elements;
+  return {
+    fecha_ingreso:e['fecha_ingreso']?.value||'', fecha_entrega:e['fecha_entrega']?.value||'',
+    fecha_solicitud_permisos:e['fecha_solicitud_permisos']?.value||'', fecha_respuesta_permisos:e['fecha_respuesta_permisos']?.value||'', fecha_aprobacion_permisos:e['fecha_aprobacion_permisos']?.value||'',
+    checklist_radicacion_emsa:!!e['checklist_radicacion_emsa']?.checked, fecha_radicacion_emsa:e['fecha_radicacion_emsa']?.value||'', fecha_respuesta_emsa:e['fecha_respuesta_emsa']?.value||'',
+    checklist_radicacion_telefonica:!!e['checklist_radicacion_telefonica']?.checked, fecha_radicacion_telefonica:e['fecha_radicacion_telefonica']?.value||'', fecha_respuesta_telefonica:e['fecha_respuesta_telefonica']?.value||''
+  };
+}
+function diasRangoDetalle(inicio,fin,filtro,limiteInicio='',limiteFin=''){
+  const out=[]; if(!inicio||!fin) return out; let a=new Date(inicio+'T00:00:00'),b=new Date(fin+'T00:00:00');
+  if(isNaN(a)||isNaN(b)||b<=a) return out;
+  if(limiteInicio){const li=new Date(limiteInicio+'T00:00:00'); if(!isNaN(li)&&a<li)a=li;}
+  if(limiteFin){const lf=new Date(limiteFin+'T00:00:00'); if(!isNaN(lf)&&b>lf)b=lf;}
+  if(b<=a)return out; const d=new Date(a); d.setDate(d.getDate()+1);
+  while(d<=b){ const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; if(!filtro||filtro(d,key))out.push(key); d.setDate(d.getDate()+1);}
+  return out;
+}
+function detalleMetricasTiempos(row){
+  const fechaIngreso=row?.fecha_ingreso||''; const fechaEntrega=fechaFinCalculoInstalacion(row?.fecha_entrega||'');
+  const fechaSolicitud=row?.fecha_solicitud_permisos||''; const fechaRespuestaPerm=row?.fecha_respuesta_permisos||''; const fechaAprobacion=row?.fecha_aprobacion_permisos||''; const finPermisos=fechaAprobacion||fechaRespuestaPerm;
+  const radE=row?.checklist_radicacion_emsa?(row?.fecha_radicacion_emsa||''):''; const rtaE=row?.checklist_radicacion_emsa?(row?.fecha_respuesta_emsa||''):'';
+  const radT=row?.checklist_radicacion_telefonica?(row?.fecha_radicacion_telefonica||''):''; const rtaT=row?.checklist_radicacion_telefonica?(row?.fecha_respuesta_telefonica||''):'';
+  const rad=fechaMinimaValida(radE,radT); const rtaRad=fechaMaximaValida(rtaE,rtaT); const m=obtenerMetricasTiemposInstalacion(row);
+  const rangosNoHab=[
+    {nombre:'Entre fecha de ingreso y fecha de radicación',inicio:fechaIngreso,fin:rad},
+    {nombre:'Entre fecha de ingreso y fecha de solicitud de permisos',inicio:fechaIngreso,fin:fechaSolicitud},
+    {nombre:'Entre fecha de aprobación/respuesta de permisos y fecha de entrega',inicio:finPermisos,fin:fechaEntrega}
+  ];
+  const noHabMap=new Map();
+  rangosNoHab.forEach(r=>diasRangoDetalle(r.inicio,r.fin,(d,k)=>(d.getDay()===0||d.getDay()===6)&&!FESTIVOS_COLOMBIA_2026.has(k),fechaIngreso,fechaEntrega).forEach(k=>{if(!noHabMap.has(k))noHabMap.set(k,[]);noHabMap.get(k).push(r.nombre);}));
+  const rangosFest=[
+    {nombre:'Entre fecha de ingreso y fecha de radicación',inicio:fechaIngreso,fin:rad},
+    {nombre:'Entre respuesta de radicación y fecha de solicitud de permisos',inicio:rtaRad,fin:fechaSolicitud},
+    {nombre:'Entre fecha de ingreso y fecha de solicitud de permisos',inicio:fechaIngreso,fin:fechaSolicitud},
+    {nombre:'Entre fecha de aprobación de permisos y fecha de entrega',inicio:fechaAprobacion,fin:fechaEntrega}
+  ];
+  const festMap=new Map();
+  rangosFest.forEach(r=>diasRangoDetalle(r.inicio,r.fin,(d,k)=>FESTIVOS_COLOMBIA_2026.has(k),fechaIngreso,fechaEntrega).forEach(k=>{if(!festMap.has(k))festMap.set(k,[]);festMap.get(k).push(r.nombre);}));
+  const muertos=new Map();
+  const addMu=(tipo,ini,fin)=>diasRangoDetalle(ini,fin,null,fechaIngreso,fechaEntrega).forEach(k=>{if(!muertos.has(k))muertos.set(k,new Set()); muertos.get(k).add(tipo);});
+  addMu('Permisos',fechaSolicitud,finPermisos); addMu('Radicación',rad,rtaRad); noHabMap.forEach((_,k)=>{if(!muertos.has(k))muertos.set(k,new Set());muertos.get(k).add('No hábil');}); festMap.forEach((_,k)=>{if(!muertos.has(k))muertos.set(k,new Set());muertos.get(k).add('Festivo');});
+  return {m,fechaIngreso,fechaEntrega,fechaSolicitud,fechaRespuestaPerm,fechaAprobacion,finPermisos,radE,rtaE,radT,rtaT,rad,rtaRad,rangosNoHab,noHabMap,rangosFest,festMap,muertos};
+}
+function cardDetalle(label,valor){return `<div class="detail-card"><div class="detail-title">${esc(label)}</div><div class="detail-value">${esc(valor)}</div></div>`;}
+function tablaDiasDetalle(items,tipo){
+  if(!items.length) return '<div class="audit-empty">No se contabilizaron días.</div>';
+  return `<div class="audit-table-wrap" style="max-height:360px"><table class="audit-table"><thead><tr><th>Fecha</th><th>Día</th><th>${tipo==='festivo'?'Festivo':'Motivo / rango'}</th></tr></thead><tbody>${items.map(([k,v])=>`<tr><td>${esc(fmtFechaDetalle(k))}</td><td>${esc(nombreDiaDetalle(k))}</td><td>${esc(tipo==='festivo' ? ((FESTIVOS_COLOMBIA_2026_NOMBRES[k]||'Festivo') + ' · ' + v.join(' | ')) : v.join(' | '))}</td></tr>`).join('')}</tbody></table></div>`;
+}
+function mostrarDetalleKpiTiempo(tipo){
+  const d=detalleMetricasTiempos(getCurrentFormRowTiempo()); const title=document.getElementById('kpiTimeDetailTitle'); const content=document.getElementById('kpiTimeDetailContent'); if(!content)return;
+  let html='';
+  if(tipo==='duracion_total'){ title.textContent='Detalle · Duración total traslado'; html=`<div class="detail-grid">${cardDetalle('Fecha de ingreso',fmtFechaDetalle(d.fechaIngreso))}${cardDetalle('Fecha final usada',fmtFechaDetalle(d.fechaEntrega))}${cardDetalle('Cálculo',`${fmtFechaDetalle(d.fechaEntrega)} - ${fmtFechaDetalle(d.fechaIngreso)} = ${d.m.duracionTotal} días`)}</div>`; }
+  else if(tipo==='permisos'){ title.textContent='Detalle · Tiempo muerto por permisos'; html=`<div class="detail-grid">${cardDetalle('Fecha solicitud permisos',fmtFechaDetalle(d.fechaSolicitud))}${cardDetalle('Fecha respuesta permisos',fmtFechaDetalle(d.fechaRespuestaPerm))}${cardDetalle('Fecha aprobación permisos',fmtFechaDetalle(d.fechaAprobacion))}${cardDetalle('Fecha final usada',fmtFechaDetalle(d.finPermisos))}${cardDetalle('Cálculo',`${fmtFechaDetalle(d.finPermisos)} - ${fmtFechaDetalle(d.fechaSolicitud)} = ${d.m.tiempoPermisos} días`)}</div>`; }
+  else if(tipo==='radicacion'){ title.textContent='Detalle · Tiempo muerto por Radicación EMSA y Telefónica'; html=`<div class="detail-grid">${cardDetalle('Radicación EMSA',fmtFechaDetalle(d.radE))}${cardDetalle('Respuesta EMSA',fmtFechaDetalle(d.rtaE))}${cardDetalle('Radicación Telefónica',fmtFechaDetalle(d.radT))}${cardDetalle('Respuesta Telefónica',fmtFechaDetalle(d.rtaT))}${cardDetalle('Radicación más antigua usada',fmtFechaDetalle(d.rad))}${cardDetalle('Respuesta más reciente usada',fmtFechaDetalle(d.rtaRad))}${cardDetalle('Cálculo',`${fmtFechaDetalle(d.rtaRad)} - ${fmtFechaDetalle(d.rad)} = ${d.m.tiempoRadicacion} días calendario`)}</div>`; }
+  else if(tipo==='no_habiles'){ title.textContent='Detalle · Tiempo muerto por Días no Hábiles'; html=`<div class="detail-grid">${d.rangosNoHab.map(r=>cardDetalle(r.nombre,`${fmtFechaDetalle(r.inicio)} → ${fmtFechaDetalle(r.fin)}`)).join('')}</div><h4 style="margin:18px 0 10px">Sábados y domingos contabilizados (${d.noHabMap.size})</h4>${tablaDiasDetalle([...d.noHabMap.entries()].sort(),'no_habil')}`; }
+  else if(tipo==='festivos'){ title.textContent='Detalle · Tiempo muerto por Festivos'; html=`<div class="detail-grid">${d.rangosFest.map(r=>cardDetalle(r.nombre,`${fmtFechaDetalle(r.inicio)} → ${fmtFechaDetalle(r.fin)}`)).join('')}</div><h4 style="margin:18px 0 10px">Festivos contabilizados (${d.festMap.size})</h4>${tablaDiasDetalle([...d.festMap.entries()].sort(),'festivo')}`; }
+  else { title.textContent='Detalle · Duración efectiva'; const muertos=[...d.muertos.entries()].sort(); html=`<div class="detail-grid">${cardDetalle('Duración total',`${d.m.duracionTotal} días`)}${cardDetalle('Tiempo muerto único',`${d.m.tiempoMuertoUnion} días`)}${cardDetalle('Duración efectiva',`${d.m.duracionTotal} - ${d.m.tiempoMuertoUnion} = ${d.m.duracionEfectiva} días`)}</div><h4 style="margin:18px 0 10px">Días realmente descontados, sin duplicar (${muertos.length})</h4>${muertos.length?`<div class="audit-table-wrap" style="max-height:360px"><table class="audit-table"><thead><tr><th>Fecha</th><th>Día</th><th>Motivos</th></tr></thead><tbody>${muertos.map(([k,v])=>`<tr><td>${esc(fmtFechaDetalle(k))}</td><td>${esc(nombreDiaDetalle(k))}</td><td>${esc([...v].join(' + '))}</td></tr>`).join('')}</tbody></table></div>`:'<div class="audit-empty">No hay días para descontar.</div>'}`; }
+  content.innerHTML=html; document.getElementById('kpiTimeDetailModal')?.classList.add('show');
+}
+function cerrarDetalleKpiTiempo(){document.getElementById('kpiTimeDetailModal')?.classList.remove('show');}
+document.getElementById('kpiTimeDetailModal')?.addEventListener('click',e=>{if(e.target?.id==='kpiTimeDetailModal'){/* no cerrar por click fuera */}});
+
+function fechaMinimaValida(...fechas){ return fechas.filter(Boolean).sort()[0] || ''; }
+function fechaMaximaValida(...fechas){ const v=fechas.filter(Boolean).sort(); return v.length ? v[v.length-1] : ''; }
+function agregarDiasRangoASet(set, inicio, fin, filtroDia, limiteInicio='', limiteFin=''){
+  if(!inicio || !fin) return;
+  let a=new Date(inicio+'T00:00:00'), b=new Date(fin+'T00:00:00');
+  if(isNaN(a)||isNaN(b)||b<=a) return;
+  if(limiteInicio){ const li=new Date(limiteInicio+'T00:00:00'); if(!isNaN(li)&&a<li) a=li; }
+  if(limiteFin){ const lf=new Date(limiteFin+'T00:00:00'); if(!isNaN(lf)&&b>lf) b=lf; }
+  if(b<=a) return;
+  const d=new Date(a); d.setDate(d.getDate()+1);
+  while(d<=b){
+    const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if(!filtroDia || filtroDia(d,key)) set.add(key);
+    d.setDate(d.getDate()+1);
+  }
+}
+function obtenerMetricasTiemposInstalacion(row){
+  const fechaIngreso=row?.fecha_ingreso||'';
+  const fechaEntrega=fechaFinCalculoInstalacion(row?.fecha_entrega||'');
+  const fechaSolicitudPermisos=row?.fecha_solicitud_permisos||'';
+  const fechaRespuestaPermisos=row?.fecha_respuesta_permisos||'';
+  const fechaAprobacionPermisos=row?.fecha_aprobacion_permisos||'';
+  const finPermisos=fechaAprobacionPermisos||fechaRespuestaPermisos;
+  const fechaRadicacionEmsa=row?.checklist_radicacion_emsa?(row?.fecha_radicacion_emsa||''):'';
+  const fechaRespuestaEmsa=row?.checklist_radicacion_emsa?(row?.fecha_respuesta_emsa||''):'';
+  const fechaRadicacionTelefonica=row?.checklist_radicacion_telefonica?(row?.fecha_radicacion_telefonica||''):'';
+  const fechaRespuestaTelefonica=row?.checklist_radicacion_telefonica?(row?.fecha_respuesta_telefonica||''):'';
+  const fechaRadicacion=fechaMinimaValida(fechaRadicacionEmsa,fechaRadicacionTelefonica);
+  const fechaRespuestaRadicacion=fechaMaximaValida(fechaRespuestaEmsa,fechaRespuestaTelefonica);
+  const t=diasCalendarioEntre(fechaIngreso,fechaEntrega);
+  const duracionTotal=t===''?0:Number(t);
+  const p=diasCalendarioEntre(fechaSolicitudPermisos,finPermisos);
+  const tiempoPermisos=p===''?0:Number(p);
+  const r=diasCalendarioEntre(fechaRadicacion,fechaRespuestaRadicacion);
+  const tiempoRadicacion=r===''?0:Number(r);
+  const noHabilesSet=new Set();
+  [[fechaIngreso,fechaRadicacion],[fechaIngreso,fechaSolicitudPermisos],[finPermisos,fechaEntrega]].forEach(([ini,fin])=>
+    agregarDiasRangoASet(noHabilesSet,ini,fin,(d,key)=>(d.getDay()===0||d.getDay()===6)&&!FESTIVOS_COLOMBIA_2026.has(key),fechaIngreso,fechaEntrega));
+  const festivosSet=new Set();
+  [[fechaIngreso,fechaRadicacion],[fechaRespuestaRadicacion,fechaSolicitudPermisos],[fechaIngreso,fechaSolicitudPermisos],[fechaAprobacionPermisos,fechaEntrega]].forEach(([ini,fin])=>
+    agregarDiasRangoASet(festivosSet,ini,fin,(d,key)=>FESTIVOS_COLOMBIA_2026.has(key),fechaIngreso,fechaEntrega));
+  const muertosSet=new Set();
+  agregarDiasRangoASet(muertosSet,fechaSolicitudPermisos,finPermisos,null,fechaIngreso,fechaEntrega);
+  agregarDiasRangoASet(muertosSet,fechaRadicacion,fechaRespuestaRadicacion,null,fechaIngreso,fechaEntrega);
+  noHabilesSet.forEach(x=>muertosSet.add(x)); festivosSet.forEach(x=>muertosSet.add(x));
+  const tiempoNoHabiles=noHabilesSet.size, tiempoFestivos=festivosSet.size;
+  const tiempoMuertoUnion=Math.min(duracionTotal,muertosSet.size);
+  const duracionEfectiva=Math.max(0,duracionTotal-tiempoMuertoUnion);
+  return {duracionTotal,tiempoPermisos,tiempoRadicacion,tiempoNoHabiles,tiempoFestivos,tiempoMuertoUnion,duracionEfectiva,fechaRadicacion,fechaRespuestaRadicacion};
+}
 function calcularTiemposMuertosInstalacion(){
-  const form = document.getElementById('instalacionForm');
-  if(!form) return;
-  const el = form.elements;
+  const form=document.getElementById('instalacionForm'); if(!form) return; const el=form.elements;
+  const row={fecha_ingreso:el['fecha_ingreso']?.value||'',fecha_entrega:el['fecha_entrega']?.value||'',fecha_solicitud_permisos:el['fecha_solicitud_permisos']?.value||'',fecha_respuesta_permisos:el['fecha_respuesta_permisos']?.value||'',fecha_aprobacion_permisos:el['fecha_aprobacion_permisos']?.value||'',checklist_radicacion_emsa:!!el['checklist_radicacion_emsa']?.checked,fecha_radicacion_emsa:el['fecha_radicacion_emsa']?.value||'',fecha_respuesta_emsa:el['fecha_respuesta_emsa']?.value||'',checklist_radicacion_telefonica:!!el['checklist_radicacion_telefonica']?.checked,fecha_radicacion_telefonica:el['fecha_radicacion_telefonica']?.value||'',fecha_respuesta_telefonica:el['fecha_respuesta_telefonica']?.value||''};
+  const m=obtenerMetricasTiemposInstalacion(row);
+  const me=diasCalendarioEntre(row.fecha_radicacion_emsa,row.fecha_respuesta_emsa);
+  const mt=diasCalendarioEntre(row.fecha_radicacion_telefonica,row.fecha_respuesta_telefonica);
+  if(el['tiempo_muerto_permisos']) el['tiempo_muerto_permisos'].value=`${m.tiempoPermisos} días`;
+  actualizarIndicadoresRadicacionEmsa(); if(el['tiempo_muerto_radicacion_emsa']) el['tiempo_muerto_radicacion_emsa'].value=me===''?'':`${me} días`;
+  actualizarIndicadoresRadicacionTelefonica(); if(el['tiempo_muerto_radicacion_telefonica']) el['tiempo_muerto_radicacion_telefonica'].value=mt===''?'':`${mt} días`;
+  if(el['tiempo_total_instalacion']) el['tiempo_total_instalacion'].value=`${m.duracionTotal} días`;
+  if(el['tiempo_efectivo_instalacion']) el['tiempo_efectivo_instalacion'].value=`${m.duracionEfectiva} días`;
+  const refs={kpiDuracionTotalInst:m.duracionTotal,kpiTiempoMuertoPermisosInst:m.tiempoPermisos,kpiTiempoMuertoRadicacionInst:m.tiempoRadicacion,kpiTiempoMuertoNoHabilesInst:m.tiempoNoHabiles,kpiTiempoMuertoFestivosInst:m.tiempoFestivos,kpiDuracionEfectivaInst:m.duracionEfectiva};
+  Object.entries(refs).forEach(([id,val])=>{const node=document.getElementById(id);if(node)node.textContent=`${val} días`;});
+}
+function obtenerDetalleTiempoDocumentacion(fechaEntrega, fechaDocumentacion){
+  const dias=[];
+  if(!fechaEntrega) return { total:0, dias, fechaFin:'', enCurso:!fechaDocumentacion };
 
-  const fechaSolicitudPermisos = el['fecha_solicitud_permisos']?.value || '';
-  const fechaRespuestaPermisos = el['fecha_respuesta_permisos']?.value || '';
-  const fechaAprobacionPermisos = el['fecha_aprobacion_permisos']?.value || '';
-  const finPermisos = fechaAprobacionPermisos || fechaRespuestaPermisos;
-
-  const radicacionActiva = !!el['checklist_radicacion_emsa']?.checked;
-  const fechaRadicacionEmsa = radicacionActiva ? (el['fecha_radicacion_emsa']?.value || '') : '';
-  const fechaRespuestaEmsa = radicacionActiva ? (el['fecha_respuesta_emsa']?.value || '') : '';
-
-  const telefonicaActiva = !!el['checklist_radicacion_telefonica']?.checked;
-  const fechaRadicacionTelefonica = telefonicaActiva ? (el['fecha_radicacion_telefonica']?.value || '') : '';
-  const fechaRespuestaTelefonica = telefonicaActiva ? (el['fecha_respuesta_telefonica']?.value || '') : '';
-
-  const muertoPermisos = diasCalendarioEntre(fechaSolicitudPermisos, finPermisos);
-  const muertoRadicacion = diasCalendarioEntre(fechaRadicacionEmsa, fechaRespuestaEmsa);
-  const muertoRadicacionTelefonica = diasCalendarioEntre(fechaRadicacionTelefonica, fechaRespuestaTelefonica);
-  const totalInstalacion = diasCalendarioEntre(el['fecha_ingreso']?.value, fechaFinCalculoInstalacion(el['fecha_entrega']?.value));
-
-  let efectivo = '';
-  if(totalInstalacion !== ''){
-    const mp = muertoPermisos === '' ? 0 : Number(muertoPermisos);
-    const mr = muertoRadicacion === '' ? 0 : Number(muertoRadicacion);
-    const mt = muertoRadicacionTelefonica === '' ? 0 : Number(muertoRadicacionTelefonica);
-    efectivo = Math.max(0, Number(totalInstalacion) - mp - mr - mt);
+  // Si todavía no se ha diligenciado la fecha de entrega de documentación,
+  // el KPI continúa corriendo automáticamente hasta la fecha actual.
+  const fechaFin = fechaDocumentacion || fechaHoyISOInstalacion();
+  const inicio=new Date(fechaEntrega+'T00:00:00');
+  const fin=new Date(fechaFin+'T00:00:00');
+  if(isNaN(inicio)||isNaN(fin)||fin<=inicio){
+    return { total:0, dias, fechaFin, enCurso:!fechaDocumentacion };
   }
 
-  if(el['tiempo_muerto_permisos']) el['tiempo_muerto_permisos'].value = muertoPermisos === '' ? '' : `${muertoPermisos} días`;
-  actualizarIndicadoresRadicacionEmsa();
-  if(el['tiempo_muerto_radicacion_emsa']) el['tiempo_muerto_radicacion_emsa'].value = muertoRadicacion === '' ? '' : `${muertoRadicacion} días`;
-  actualizarIndicadoresRadicacionTelefonica();
-  if(el['tiempo_muerto_radicacion_telefonica']) el['tiempo_muerto_radicacion_telefonica'].value = muertoRadicacionTelefonica === '' ? '' : `${muertoRadicacionTelefonica} días`;
-  if(el['tiempo_total_instalacion']) el['tiempo_total_instalacion'].value = totalInstalacion === '' ? '' : `${totalInstalacion} días`;
-  if(el['tiempo_efectivo_instalacion']) el['tiempo_efectivo_instalacion'].value = efectivo === '' ? '' : `${efectivo} días`;
-
-  const totalKpi = document.getElementById('kpiDuracionTotalInst');
-  const muertoKpi = document.getElementById('kpiTiempoMuertoInst');
-  const efectivaKpi = document.getElementById('kpiDuracionEfectivaInst');
-  const tiempoMuertoTotal = (muertoPermisos === '' ? 0 : Number(muertoPermisos)) + (muertoRadicacion === '' ? 0 : Number(muertoRadicacion)) + (muertoRadicacionTelefonica === '' ? 0 : Number(muertoRadicacionTelefonica));
-
-  if(totalKpi) totalKpi.textContent = totalInstalacion === '' ? '0 días' : `${totalInstalacion} días`;
-  if(muertoKpi) muertoKpi.textContent = `${tiempoMuertoTotal} días`;
-  if(efectivaKpi) efectivaKpi.textContent = efectivo === '' ? '0 días' : `${efectivo} días`;
+  const d=new Date(inicio);
+  d.setDate(d.getDate()+1);
+  while(d<=fin){
+    const dow=d.getDay();
+    // Se excluyen sábados y domingos del tiempo transcurrido de documentación.
+    if(dow!==0 && dow!==6){
+      const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      dias.push(key);
+    }
+    d.setDate(d.getDate()+1);
+  }
+  return { total:dias.length, dias, fechaFin, enCurso:!fechaDocumentacion };
 }
+function calcularTiempoDocumentacion(){
+  const form=document.getElementById('instalacionForm');
+  if(!form) return;
+  const fechaEntrega=form.elements['fecha_entrega']?.value||'';
+  const fechaDoc=form.elements['fecha_entrega_documentacion']?.value||'';
+  const detalle=obtenerDetalleTiempoDocumentacion(fechaEntrega,fechaDoc);
+  const kpi=document.getElementById('kpiTiempoDocumentacionInst');
+  const sub=kpi?.parentElement?.querySelector('.k-sub');
+  if(kpi) kpi.textContent=`${detalle.total} días`;
+  if(sub){
+    sub.textContent = fechaDoc
+      ? 'Fecha entrega → fecha entrega documentación, excluyendo sábados y domingos'
+      : 'En curso: Fecha entrega → hoy, excluyendo sábados y domingos';
+  }
+}
+function mostrarDetalleTiempoDocumentacion(){
+  const form=document.getElementById('instalacionForm');
+  if(!form) return;
+  const fechaEntrega=form.elements['fecha_entrega']?.value||'';
+  const fechaDoc=form.elements['fecha_entrega_documentacion']?.value||'';
+  const detalle=obtenerDetalleTiempoDocumentacion(fechaEntrega,fechaDoc);
+  const title=document.getElementById('kpiTimeDetailTitle');
+  const content=document.getElementById('kpiTimeDetailContent');
+  if(!content) return;
+  if(title) title.textContent='Detalle · Tiempo entrega de documentación';
+  const filas=detalle.dias.map(f=>`<tr><td>${esc(fmtFechaDetalle(f))}</td><td>${esc(nombreDiaDetalle(f))}</td><td>Día hábil contabilizado</td></tr>`).join('');
+  const estadoDoc = fechaDoc
+    ? fmtFechaDetalle(fechaDoc)
+    : `Pendiente · cálculo actualizado hasta ${fmtFechaDetalle(detalle.fechaFin)}`;
+  content.innerHTML=`
+    <div class="detail-grid">
+      ${cardDetalle('Fecha de entrega del traslado',fmtFechaDetalle(fechaEntrega))}
+      ${cardDetalle('Fecha entrega de documentación',estadoDoc)}
+      ${cardDetalle(detalle.enCurso ? 'Tiempo transcurrido al día de hoy' : 'Tiempo definitivo',`${detalle.total} días hábiles`)}
+    </div>
+    <div class="muted-note" style="margin-top:12px">${detalle.enCurso
+      ? 'Como aún no se ha registrado la fecha de entrega de documentación, el sistema calcula automáticamente desde la fecha de entrega del traslado hasta hoy. El contador se detiene cuando diligencies la fecha de entrega de documentación. Se excluyen sábados y domingos.'
+      : 'El cálculo cuenta los días posteriores a la fecha de entrega hasta la fecha de entrega de documentación y excluye sábados y domingos.'}</div>
+    <h4 style="margin:18px 0 10px">Días contabilizados (${detalle.total})</h4>
+    ${filas?`<div class="audit-table-wrap" style="max-height:360px"><table class="audit-table"><thead><tr><th>Fecha</th><th>Día</th><th>Detalle</th></tr></thead><tbody>${filas}</tbody></table></div>`:'<div class="audit-empty">No hay días hábiles para contabilizar o falta la fecha de entrega del traslado.</div>'}`;
+  document.getElementById('kpiTimeDetailModal')?.classList.add('show');
+}
+
 function actualizarRequeridoFechaEntrega(){
   const form = document.getElementById('instalacionForm');
   if(!form) return;
   const estado = form.elements['estado_general']?.value || '';
+  const esEntregada = estado === 'ENTREGADA';
   const fechaEntregaInput = form.elements['fecha_entrega'];
-  if(fechaEntregaInput) fechaEntregaInput.required = estado === 'ENTREGADA';
+  const longitudOtdrInput = form.elements['longitud_enlace_otdr'];
+
+  if(fechaEntregaInput) fechaEntregaInput.required = esEntregada;
+  if(longitudOtdrInput) longitudOtdrInput.required = esEntregada;
 }
 
 
@@ -1221,35 +1613,12 @@ function parseDiasTexto(v){
   const n = parseInt(String(v).replace(/[^\d-]/g,''), 10);
   return Number.isFinite(n) ? Math.max(0, n) : 0;
 }
-function calcularTiempoMuertoPermisosRow(row){
-  const finPermisos = row?.fecha_aprobacion_permisos || row?.fecha_respuesta_permisos || '';
-  const dias = diasCalendarioEntre(row?.fecha_solicitud_permisos, finPermisos);
-  return dias === '' ? parseDiasTexto(row?.tiempo_muerto_permisos) : Number(dias);
-}
-function calcularTiempoMuertoRadicacionRow(row){
-  if(!row?.checklist_radicacion_emsa) return 0;
-  const dias = diasCalendarioEntre(row?.fecha_radicacion_emsa, row?.fecha_respuesta_emsa);
-  return dias === '' ? parseDiasTexto(row?.tiempo_muerto_radicacion_emsa) : Number(dias);
-}
-function calcularTiempoMuertoRadicacionTelefonicaRow(row){
-  if(!row?.checklist_radicacion_telefonica) return 0;
-  const dias = diasCalendarioEntre(row?.fecha_radicacion_telefonica, row?.fecha_respuesta_telefonica);
-  return dias === '' ? parseDiasTexto(row?.tiempo_muerto_radicacion_telefonica) : Number(dias);
-}
-function calcularDuracionTotalInstRow(row){
-  const total = diasCalendarioEntre(row?.fecha_ingreso, fechaFinCalculoInstalacion(row?.fecha_entrega));
-  return total === '' ? '0 días' : `${total} días`;
-}
-function calcularTiempoMuertoInstRow(row){
-  const total = calcularTiempoMuertoPermisosRow(row) + calcularTiempoMuertoRadicacionRow(row) + calcularTiempoMuertoRadicacionTelefonicaRow(row);
-  return `${total} días`;
-}
-function calcularDuracionEfectivaInstRow(row){
-  const total = diasCalendarioEntre(row?.fecha_ingreso, fechaFinCalculoInstalacion(row?.fecha_entrega));
-  if(total === '') return '0 días';
-  const muerto = parseDiasTexto(calcularTiempoMuertoInstRow(row));
-  return `${Math.max(0, Number(total) - muerto)} días`;
-}
+function calcularTiempoMuertoPermisosRow(row){ return obtenerMetricasTiemposInstalacion(row).tiempoPermisos; }
+function calcularTiempoMuertoRadicacionRow(row){ return obtenerMetricasTiemposInstalacion(row).tiempoRadicacion; }
+function calcularTiempoMuertoRadicacionTelefonicaRow(row){ return 0; }
+function calcularDuracionTotalInstRow(row){ return `${obtenerMetricasTiemposInstalacion(row).duracionTotal} días`; }
+function calcularTiempoMuertoInstRow(row){ return `${obtenerMetricasTiemposInstalacion(row).tiempoMuertoUnion} días`; }
+function calcularDuracionEfectivaInstRow(row){ return `${obtenerMetricasTiemposInstalacion(row).duracionEfectiva} días`; }
 
 
 function renderSummary(rows){
@@ -1257,7 +1626,7 @@ function renderSummary(rows){
   const agendadas = rows.filter(r => r.estado_general === 'AGENDADA').length;
   const entregadas = rows.filter(r => r.estado_general === 'ENTREGADA').length;
   const permisos = rows.filter(r => r.estado_permisos === 'APROBADOS').length;
-  const listas = rows.filter(r => calcularListaParaAgendar(r)).length;
+  const pendientesDoc = rows.filter(r => normalizarTextoReporte(r.estado_general).toUpperCase() === 'ENTREGADA' && !String(r.fecha_entrega_documentacion || '').trim()).length;
   const pendientes = rows.filter(r => r.estado_general !== 'ENTREGADA' && r.estado_general !== 'CANCELADA').length;
   const ejecucion = rows.filter(r => r.estado_general === 'EN_EJECUCION').length;
 
@@ -1265,7 +1634,12 @@ function renderSummary(rows){
     <div class="stat ${activeKpi==='TOTAL'?'active':''}" data-kpi="TOTAL"><div class="label">Total solicitudes</div><div class="value">${total}</div><div class="sub">Base visible</div></div>
     <div class="stat ${activeKpi==='PENDIENTES'?'active':''}" data-kpi="PENDIENTES"><div class="label">Pendientes</div><div class="value">${pendientes}</div><div class="sub">Aún activas</div></div>
     <div class="stat ${activeKpi==='PERMISOS_APROBADOS'?'active':''}" data-kpi="PERMISOS_APROBADOS"><div class="label">Permisos aprobados</div><div class="value">${permisos}</div><div class="sub">Listas para avanzar</div></div>
-    <div class="stat ${activeKpi==='LISTAS_AGENDAR'?'active':''}" data-kpi="LISTAS_AGENDAR"><div class="label">Listas para agendar</div><div class="value">${listas}</div><div class="sub">Checklist completo</div></div>
+    <div class="stat docs-pending ${activeKpi==='PENDIENTE_DOCUMENTACION'?'active':''}" data-kpi="PENDIENTE_DOCUMENTACION">
+      <div class="label">Pendientes de documentación</div>
+      <div class="value">${pendientesDoc}</div>
+      <div class="sub">ENTREGADAS sin fecha · doble clic para ranking</div>
+      <button type="button" class="docs-export-btn" onclick="event.stopPropagation(); descargarPendientesDocumentacionExcel()">Exportar Excel</button>
+    </div>
     <div class="stat ${activeKpi==='AGENDADAS'?'active':''}" data-kpi="AGENDADAS"><div class="label">Agendadas</div><div class="value">${agendadas}</div><div class="sub">Con contratista</div></div>
     <div class="stat ${activeKpi==='ENTREGADAS_EJECUCION'?'active':''}" data-kpi="ENTREGADAS_EJECUCION"><div class="label">Entregadas / Ejecución</div><div class="value">${entregadas} / ${ejecucion}</div><div class="sub">Cierre y avance</div></div>
   `;
@@ -1281,6 +1655,7 @@ function getColumnValue(r, field){
     case 'id_cliente': return r.id_cliente || '';
     case 'cliente': return `${r.cliente || ''}${r.direccion ? ' - ' + r.direccion : ''}`.trim();
     case 'operador': return r.operador || '';
+    case 'Linea_base': return r.Linea_base || '';
     case 'estado_general': return r.estado_general || '';
     case 'estado_permisos': return r.estado_permisos || '';
     case 'fecha_agendamiento': return `${fmtDate(r.fecha_agendamiento_pe)} ${fmtTime(r.hora_agendamiento)}`.trim();
@@ -1361,7 +1736,7 @@ function getFilteredRows(){
   const semanaEntrega = document.getElementById('filterSemanaEntrega')?.value || '';
   let rows = instalacionesRows.filter(r => {
     const hayTexto = !txt || [
-      r.cliente, r.id_cliente, r.id_cambio, r.id_tarea, r.operador, r.direccion,
+      r.cliente, r.id_cliente, r.id_cambio, r.id_tarea, r.operador, r.Linea_base, r.direccion,
       r.estado_general, r.estado_permisos, r.fecha_solicitud_permisos, r.fecha_respuesta_permisos, r.fecha_aprobacion_permisos
     ].map(x => String(x || '').toLowerCase()).some(v => v.includes(txt));
     const hayEstado = !estados.length || estados.includes(r.estado_general);
@@ -1405,7 +1780,15 @@ function renderTable(){
   empty.style.display = 'none';
 
   body.innerHTML = rows.map(r => `
-    <tr class="${r.estado_general === 'ENTREGADA' ? 'row-entregada' : ''}" onclick="showDetail('${r.id}')">
+    <tr class="${
+      normalizarTextoReporte(r.estado_general).toUpperCase() === 'CANCELADA'
+        ? 'row-cancelada'
+        : normalizarTextoReporte(r.estado_general).toUpperCase() === 'EN_GESTION EMSA'
+          ? 'row-gestion-emsa'
+          : normalizarTextoReporte(r.estado_general).toUpperCase() === 'ENTREGADA'
+            ? 'row-entregada'
+            : ''
+    }" onclick="showDetail('${r.id}')">
       <td>${esc(fmtDate(r.fecha_ingreso))}</td>
       <td><div class="title">${esc(r.id_cambio)}</div></td>
       <td>${esc(r.id_tarea)}</td>
@@ -1422,7 +1805,7 @@ function renderTable(){
       <td onclick="event.stopPropagation()">
         <button class="small-btn" onclick="editRow('${r.id}')">Editar</button>
         <button class="sol-btn" onclick="solicitarContratistaInstalacion('${r.id}')">Sol Contratista</button>
-        <button class="audit-btn" onclick="verAuditoria('traslados', '${r.id}', '${esc(r.cliente || r.id_cambio || r.id)}')">Historial</button>
+        <button class="audit-btn" onclick="verAuditoria('instalaciones', '${r.id}', '${esc(r.cliente || r.id_cambio || r.id)}')">Historial</button>
       </td>
     </tr>
   `).join('');
@@ -1439,7 +1822,7 @@ async function loadTraslados(){
     renderTable();
   }catch(err){
     console.error(err);
-    document.getElementById('tableBody').innerHTML = `<tr><td colspan="14" style="padding:18px;color:#fecaca">Error cargando traslados: ${esc(err.message || err)}</td></tr>`;
+    document.getElementById('tableBody').innerHTML = `<tr><td colspan="15" style="padding:18px;color:#fecaca">Error cargando instalaciones: ${esc(err.message || err)}</td></tr>`;
   }
 }
 
@@ -1455,7 +1838,8 @@ async function copiarInfoInstalacion(){
     `Dirección: ${(el['direccion']?.value || '').trim()}`,
     `ID Cliente: ${(el['id_cliente']?.value || '').trim()}`,
     `ID Cambio: ${(el['id_cambio']?.value || '').trim()}`,
-    `ID Tarea: ${(el['id_tarea']?.value || '').trim()}`
+    `ID Tarea: ${(el['id_tarea']?.value || '').trim()}`,
+    `Linea Base: ${(el['Linea_base']?.value || '').trim()}`
   ].join('\n');
 
   try{
@@ -1491,14 +1875,14 @@ async function copiarInfoInstalacion(){
 
 
 const INSTALL_TEMPLATE_PASSWORD = '1022956631';
-const INSTALL_TEMPLATE_NAME = 'traslados_sol_contratista';
+const INSTALL_TEMPLATE_NAME = 'instalaciones_sol_contratista';
 const INSTALL_DEFAULT_TEMPLATE = {
   nombre: INSTALL_TEMPLATE_NAME,
   modulo: 'traslados',
   descripcion: 'Solicitud de agendamiento de traslado al contratista desde módulo traslados.',
   para: '',
   cc: '',
-  asunto_template: 'Solicitud Fecha Agendamiento Traslado {{cliente}} - {{id_cliente}} - {{id_cambio}} - {{id_tarea}}',
+  asunto_template: 'Solicitud Fecha Agendamiento Instalación {{cliente}} - {{id_cliente}} - {{id_cambio}} - {{id_tarea}}',
   cuerpo_template: `Buenos días,
 
 Cordial saludo.
@@ -1526,7 +1910,7 @@ let installTemplatePreviewRow = null;
 function normalizeTemplatePayload(data){
   return { ...INSTALL_DEFAULT_TEMPLATE, ...(data || {}), para: data?.para || '', cc: data?.cc || '', asunto_template: data?.asunto_template || INSTALL_DEFAULT_TEMPLATE.asunto_template, cuerpo_template: data?.cuerpo_template || INSTALL_DEFAULT_TEMPLATE.cuerpo_template };
 }
-async function loadCorreoTemplateTraslados(){
+async function loadCorreoTemplateInstalaciones(){
   try{
     const client = await resolveClient();
     const { data, error } = await client.from('Plantillas').select('*').eq('nombre', INSTALL_TEMPLATE_NAME).maybeSingle();
@@ -1537,7 +1921,7 @@ async function loadCorreoTemplateTraslados(){
 }
 function getInstallTemplateVars(row){
   return {
-    cliente: row?.cliente || '', id_cliente: row?.id_cliente || '', id_cambio: row?.id_cambio || '', id_tarea: row?.id_tarea || '', direccion: row?.direccion || '', operador: row?.operador || '', estado_general: row?.estado_general || '', estado_permisos: row?.estado_permisos || '', fecha_ingreso: fmtDate(row?.fecha_ingreso), fecha_agendamiento_pe: fmtDate(row?.fecha_agendamiento_pe), fecha_agendamiento_pi: fmtDate(row?.fecha_agendamiento_pi), hora_agendamiento: fmtTime(row?.hora_agendamiento), fecha_entrega: fmtDate(row?.fecha_entrega), responsable: row?.responsable || '', contratista: row?.contratista || '', capacidad: row?.capacidad || ''
+    cliente: row?.cliente || '', id_cliente: row?.id_cliente || '', id_cambio: row?.id_cambio || '', id_tarea: row?.id_tarea || '', direccion: row?.direccion || '', operador: row?.operador || '', estado_general: row?.estado_general || '', estado_permisos: row?.estado_permisos || '', fecha_ingreso: fmtDate(row?.fecha_ingreso), fecha_agendamiento_pe: fmtDate(row?.fecha_agendamiento_pe), fecha_agendamiento_pi: fmtDate(row?.fecha_agendamiento_pi), hora_agendamiento: fmtTime(row?.hora_agendamiento), fecha_entrega: fmtDate(row?.fecha_entrega), responsable: row?.responsable || '', contratista: row?.contratista || '', capacidad: row?.capacidad || '', Linea_base: row?.Linea_base || ''
   };
 }
 function replaceTemplateVars(template, row){
@@ -1572,7 +1956,7 @@ async function openCorreoTemplateConfig(){
   if(pwd !== INSTALL_TEMPLATE_PASSWORD){ if(pwd !== null) alert('Contraseña incorrecta.'); return; }
   installTemplateUnlocked = true;
   installTemplatePreviewRow = instalacionesRows[0] || null;
-  await loadCorreoTemplateTraslados();
+  await loadCorreoTemplateInstalaciones();
   document.getElementById('installTemplateTo').value = installCorreoTemplate.para || '';
   document.getElementById('installTemplateCc').value = installCorreoTemplate.cc || '';
   document.getElementById('installTemplateSubject').value = installCorreoTemplate.asunto_template || INSTALL_DEFAULT_TEMPLATE.asunto_template;
@@ -1893,6 +2277,475 @@ function descargarOficioRadicacionTelefonica(){
   URL.revokeObjectURL(url);
 }
 
+
+function normalizarTextoReporte(v){
+  return String(v ?? '').trim().replace(/\s+/g, ' ');
+}
+function obtenerMesNombreReporte(fecha){
+  if(!fecha) return '';
+  const d = new Date(String(fecha) + 'T00:00:00');
+  if(isNaN(d)) return '';
+  return d.toLocaleDateString('es-CO', { month:'long' }).toLowerCase();
+}
+function fechaCortaReporte(fecha){
+  if(!fecha) return '';
+  const d = new Date(String(fecha) + 'T00:00:00');
+  if(isNaN(d)) return '';
+  return `${d.getMonth()+1}/${d.getDate()}/${d.getFullYear()}`;
+}
+function valorExcelReporte(v){
+  return String(v ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/\r?\n/g, ' ')
+    .trim();
+}
+function descargarArchivoExcelHtml(nombre, tablaHtml){
+  const contenido = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    table{border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;font-size:11pt;}
+    th{background:#d9eaf7;font-weight:bold;}
+    th,td{border:1px solid #999;padding:4px 8px;mso-number-format:\@;}
+  </style>
+</head>
+<body>${tablaHtml}</body>
+</html>`;
+  const blob = new Blob(['\ufeff', contenido], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nombre;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function descargarReporteColumbus(){
+  const rows = (instalacionesRows || []).filter(r =>
+  normalizarTextoReporte(r.operador).toUpperCase() === 'COLUMBUS COLOMBIA' &&
+  normalizarTextoReporte(r.estado_general).toUpperCase() === 'ENTREGADA'
+);
+  if(!rows.length){
+    alert('No hay registros con Operador = COLUMBUS COLOMBIA para exportar.');
+    return;
+  }
+  const headers = ['Ciudad A','Parent Change','Operador','Nombre Serv Cliente','Fin','Linea Base','REGION','MES'];
+  const filasHtml = rows.map(r => {
+    const ciudad = 'VILLAVICENCIO';
+    const fechaFin = r.fecha_entrega || r.fecha_agendamiento_pe || r.fecha_ingreso || '';
+    const valores = [
+      ciudad,
+      r.id_cambio || '',
+      r.operador || '',
+      r.cliente || '',
+      fechaCortaReporte(fechaFin),
+      r.Linea_base || r.linea_base || '',
+      ciudad,
+      obtenerMesNombreReporte(fechaFin)
+    ];
+    return '<tr>' + valores.map(v => `<td>${valorExcelReporte(v)}</td>`).join('') + '</tr>';
+  }).join('');
+
+  const tablaHtml = `
+    <table>
+      <thead><tr>${headers.map(h => `<th>${valorExcelReporte(h)}</th>`).join('')}</tr></thead>
+      <tbody>${filasHtml}</tbody>
+    </table>`;
+
+  descargarArchivoExcelHtml('reporte_columbus_colombia_instalaciones.xls', tablaHtml);
+}
+
+
+function excelSerialDesdeFechaReporte(fecha){
+  if(!fecha) return '';
+  const d = new Date(String(fecha) + 'T00:00:00');
+  if(isNaN(d)) return '';
+  const epoch = Date.UTC(1899, 11, 30);
+  return Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - epoch) / 86400000);
+}
+function normalizarEstadoDashboard(v){
+  return normalizarTextoReporte(v).toUpperCase();
+}
+function obtenerValorFechaDashboard(row, campos){
+  for(const c of campos){
+    const v = row?.[c];
+    if(v) return v;
+  }
+  return '';
+}
+function obtenerFechaExtremaDashboard(valores, tipo='min'){
+  const fechasValidas = (valores || [])
+    .filter(Boolean)
+    .map(v => ({ valor: v, fecha: new Date(String(v) + 'T00:00:00') }))
+    .filter(x => !isNaN(x.fecha));
+  if(!fechasValidas.length) return '';
+  fechasValidas.sort((a,b) => a.fecha - b.fecha);
+  return tipo === 'max' ? fechasValidas[fechasValidas.length - 1].valor : fechasValidas[0].valor;
+}
+function descargarReporteDashboard(){
+  if(typeof XLSX === 'undefined'){
+    alert('No se pudo cargar la librería XLSX. Verifica la conexión a internet e intenta nuevamente.');
+    return;
+  }
+
+  const rows = (instalacionesRows || []).filter(r => normalizarEstadoDashboard(r.estado_general) === 'ENTREGADA');
+  if(!rows.length){
+    alert('No hay instalaciones con Estado general = ENTREGADA para generar el reporte.');
+    return;
+  }
+
+  const headers = [
+    'ciudad',
+    'id_cliente',
+    'cambio',
+    'cliente',
+    'direccion',
+    'fecha_ingreso',
+    'fecha de radicacion electrificadora',
+    'fecha de respuesta electrificadora',
+    'Fecha solicitud Permisos instalacion',
+    'Fecha aprobacion Permisos instalacion',
+    'fecha_entrega',
+    'estado_general',
+    'tiempo_total_instalacion',
+    'tiempo_efectivo_instalacion',
+    'tiempo_muerto_permisos',
+    'tiempo_muerto_radicacion',
+    'Total_dias_no_habiles',
+    'NO HABIL ENTRE FECHA DE INGRESO Y FECHA DE RADICACION',
+    'NO HABIL ENTRE FECHA DE INGRESO Y FECHA DE SOLICITUD DE PERMISOS',
+    'NO HABIL ENTRE FECHA DE PERMISOS Y FECHA DE ENTREGA',
+    'observaciones'
+  ];
+
+  const data = [headers];
+  rows.forEach(r => {
+    const fechaIngreso = obtenerValorFechaDashboard(r, ['fecha_ingreso']);
+    // Para el dashboard se toma la radicación más antigua entre EMSA y Telefónica.
+    const fechaRadicacion = obtenerFechaExtremaDashboard([
+      r.fecha_radicacion_emsa,
+      r.fecha_radicacion_telefonica
+    ], 'min');
+    // Para el dashboard se toma la respuesta más reciente entre EMSA y Telefónica.
+    const fechaRespuestaRadicacion = obtenerFechaExtremaDashboard([
+      r.fecha_respuesta_emsa,
+      r.fecha_respuesta_telefonica
+    ], 'max');
+    const fechaSolicitudPermisos = obtenerValorFechaDashboard(r, ['fecha_solicitud_permisos']);
+    const fechaAprobacionPermisos = obtenerValorFechaDashboard(r, ['fecha_aprobacion_permisos']);
+    const fechaEntrega = obtenerValorFechaDashboard(r, ['fecha_entrega']);
+
+    data.push([
+      'VILLAVICENCIO',
+      r.id_cliente || '',
+      r.id_cambio || '',
+      r.cliente || '',
+      r.direccion || '',
+      excelSerialDesdeFechaReporte(fechaIngreso),
+      fechaRadicacion ? excelSerialDesdeFechaReporte(fechaRadicacion) : 'N/A',
+      fechaRespuestaRadicacion ? excelSerialDesdeFechaReporte(fechaRespuestaRadicacion) : 'N/A',
+      excelSerialDesdeFechaReporte(fechaSolicitudPermisos),
+      excelSerialDesdeFechaReporte(fechaAprobacionPermisos),
+      excelSerialDesdeFechaReporte(fechaEntrega),
+      r.estado_general || '',
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      r.observaciones || ''
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const lastRow = rows.length + 1;
+  const range = XLSX.utils.decode_range(ws['!ref']);
+
+  // Formatos y anchos similares a la plantilla MTTI.
+  ws['!cols'] = [
+    {wch:14},{wch:16},{wch:14},{wch:32},{wch:42},{wch:15},{wch:28},{wch:30},{wch:32},{wch:34},{wch:15},{wch:18},{wch:22},{wch:24},{wch:22},{wch:24},{wch:22},{wch:36},{wch:48},{wch:44},{wch:34}
+  ];
+  for(let c = range.s.c; c <= range.e.c; c++){
+    const cell = XLSX.utils.encode_cell({r:0, c});
+    if(ws[cell]) ws[cell].s = { font: { bold: true }, fill: { fgColor: { rgb: 'D9EAF7' } } };
+  }
+
+  for(let r = 2; r <= lastRow; r++){
+    // Formulas equivalentes a las de la plantilla MTTI.
+    ws[`M${r}`] = { t:'n', f:`IF(OR(F${r}="",K${r}=""),"",K${r}-F${r})` };
+    ws[`N${r}`] = { t:'n', f:`IF(M${r}="",0,MAX(0,M${r}-MAX(O${r},P${r})))-Q${r}` };
+    ws[`O${r}`] = { t:'n', f:`IF(OR(NOT(ISNUMBER(I${r})),NOT(ISNUMBER(J${r}))),0,J${r}-I${r})` };
+    ws[`P${r}`] = { t:'n', f:`IF(OR(NOT(ISNUMBER(G${r})),NOT(ISNUMBER(H${r}))),0,H${r}-G${r})` };
+    ws[`Q${r}`] = { t:'n', f:`R${r}+S${r}+T${r}` };
+    ws[`R${r}`] = { t:'n', f:`IF(G${r}="N/A",0,(G${r}-F${r}+1)-NETWORKDAYS(F${r},G${r}))` };
+    ws[`S${r}`] = { t:'n', f:`IF(G${r}="N/A",(I${r}-F${r}+1)-NETWORKDAYS(F${r},I${r}),(I${r}-H${r}+1)-NETWORKDAYS(H${r},I${r}))` };
+    ws[`T${r}`] = { t:'n', f:`(K${r}-J${r}+1)-NETWORKDAYS(J${r},K${r})` };
+
+    ['F','G','H','I','J','K'].forEach(col => {
+      const cell = ws[`${col}${r}`];
+      if(cell && cell.t === 'n') cell.z = 'dd/mm/yyyy';
+    });
+    ['M','N','O','P','Q','R','S','T'].forEach(col => {
+      const cell = ws[`${col}${r}`];
+      if(cell) cell.z = '0';
+    });
+  }
+
+  ws['!autofilter'] = { ref: `A1:U${lastRow}` };
+  ws['!freeze'] = { xSplit: 0, ySplit: 1 };
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Plantilla_MTTI_Ibague');
+
+  // Hoja de cálculo auxiliar equivalente a la plantilla, para conservar la referencia del modelo.
+  const calcData = [
+    [],
+    ['', 'DIAS NO HABILES', 0, '', '', '', 10, '', '', '', 2],
+    [],
+    ['', 'GESTION '],
+    [],
+    ['', '', '', 'TIEMPO MUERTO PERMISOS INFRAESTUCTURA', '', '', '', 'TIEMPO MUERTO PERMISOS', '', '', 'TIEMPO EFECTIVO'],
+    [],
+    ['', 'FECHA DE INGRESO', 'DIAS', 'FECHA RADICACION\nELECTRIFICADORA', 'DIAS', 'FECHA APROBACION RADICACION', 'DIAS', 'FECHA DE SOLICITUD\nPERMISOS', 'DIAS', 'FECHA DE APROBACION\nPERMISOS', 'DIAS', 'FECHA DE ENTREGA DE LA INSTALACION', '', 'Tiempo Total', 'Tiempo efectivo\nInstalacion'],
+    ['cliente 1', '', 0, 'N/A', 0, 'n/a', 31, '', 4, '', 3, '', '', 38, 22],
+    [],[],[],[],[],[],[],[],[],
+    ['', '', '', '', '', '', '', '', '', '', '*', 'TIEMPO DE AGENDAMIENTO DE CUADRILLA', '', '', 'MAX 3 DIAS'],
+    ['', '', '', '', '', '', '', '', '', '', '*', 'DIAS HABILES'],
+    ['', 'MTTI: Tiempo promedio de instalacion'],
+    ['', 'Tiempo efectivo = Fecha entrega instalación - Fecha ingreso - tiempos muertos'],
+    ['', 'Tiempo total = Fecha de entrega del traslado - Fecha de ingreso. INCLUYE tiempos muertos']
+  ];
+  const wsCalc = XLSX.utils.aoa_to_sheet(calcData);
+  wsCalc['!cols'] = Array.from({length:15}, () => ({wch:18}));
+  XLSX.utils.book_append_sheet(wb, wsCalc, 'CALCULO');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([[]]), 'Hoja1');
+
+  if(!wb.Workbook) wb.Workbook = {};
+  wb.Workbook.CalcPr = { fullCalcOnLoad: true, forceFullCalc: true };
+
+  const fecha = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, `reporte_dashboard_mtti_instalaciones_${fecha}.xlsx`);
+}
+
+
+function estadoWipReporte(estado){
+  const e = normalizarTextoReporte(estado).toUpperCase();
+  if(e === 'ENTREGADA') return 'INSTALADO';
+  if(e === 'CANCELADA') return 'CANCELADO';
+  return e.replaceAll('_', ' ');
+}
+function nombreServicioWipReporte(r){
+  const cliente = normalizarTextoReporte(r?.cliente || '');
+  const idCliente = normalizarTextoReporte(r?.id_cliente || '');
+  if(!cliente) return idCliente;
+  if(cliente.toUpperCase().includes(idCliente.toUpperCase()) || !idCliente) return cliente;
+  return `INSTALACION SERVICIO ${idCliente} ${cliente}`.trim();
+}
+function descargarReporteWIP(){
+  if(typeof XLSX === 'undefined'){
+    alert('No se pudo cargar la librería XLSX. Verifica la conexión a internet e intenta nuevamente.');
+    return;
+  }
+
+  // WIP: todos los registros cuyo operador NO sea COLUMBUS.
+  const rows = (instalacionesRows || []).filter(r => {
+    const operador = normalizarTextoReporte(r.operador).toUpperCase();
+    return operador && !operador.includes('COLUMBUS');
+  });
+
+  if(!rows.length){
+    alert('No hay registros con Operador diferente a COLUMBUS para generar el WIP.');
+    return;
+  }
+
+  rows.sort((a,b) => {
+    const da = new Date(String(a.fecha_ingreso || '') + 'T00:00:00');
+    const db = new Date(String(b.fecha_ingreso || '') + 'T00:00:00');
+    return (isNaN(da) ? 0 : da.getTime()) - (isNaN(db) ? 0 : db.getTime());
+  });
+
+  const data = [
+    ['SEGUIMIENTO DE INSTALACIONES VILLAVICENCIO\nWHOLESALE'],
+    [],
+    ['N°','Fecha de Registro','CAMBIO','CATEGORIA CAMBIO','OPERADOR','NOMBRE DEL SERVICIO','DIRECCION','ESTADO','OBSERVACIONES']
+  ];
+
+  rows.forEach((r, i) => {
+    data.push([
+      i + 1,
+      excelSerialDesdeFechaReporte(r.fecha_ingreso),
+      r.id_cambio || '',
+      'APV Nueva Solución',
+      r.operador || '',
+      nombreServicioWipReporte(r),
+      r.direccion || '',
+      estadoWipReporte(r.estado_general),
+      r.observaciones || ''
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  const lastRow = rows.length + 3;
+  ws['!merges'] = [XLSX.utils.decode_range('A1:I2')];
+  ws['!autofilter'] = { ref: `A3:I${lastRow}` };
+  ws['!freeze'] = { xSplit: 0, ySplit: 3 };
+  ws['!cols'] = [
+    {wch:6}, {wch:16}, {wch:14}, {wch:22}, {wch:30},
+    {wch:52}, {wch:48}, {wch:18}, {wch:70}
+  ];
+  ws['!rows'] = [{hpt:34},{hpt:8},{hpt:24}];
+
+  // Fechas reales de Excel.
+  for(let r = 4; r <= lastRow; r++){
+    const c = ws[`B${r}`];
+    if(c && c.t === 'n') c.z = 'm/d/yyyy';
+  }
+
+  // Los estilos son aprovechados por lectores XLSX que soportan estilos de celdas.
+  ws['A1'].s = {
+    font:{bold:true,color:{rgb:'FFFFFF'},sz:16},
+    fill:{fgColor:{rgb:'FF5A00'}},
+    alignment:{horizontal:'center',vertical:'center',wrapText:true}
+  };
+  for(let c=0;c<9;c++){
+    const ref = XLSX.utils.encode_cell({r:2,c});
+    if(ws[ref]) ws[ref].s = {
+      font:{bold:true,color:{rgb:'000000'}},
+      fill:{fgColor:{rgb:'D9D9D9'}},
+      alignment:{horizontal:'center',vertical:'center',wrapText:true},
+      border:{top:{style:'thin'},bottom:{style:'thin'},left:{style:'thin'},right:{style:'thin'}}
+    };
+  }
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'WIP');
+  const hoy = new Date();
+  const fecha = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `WIP_instalaciones_Villavicencio_${fecha}.xlsx`);
+}
+
+
+function diasHabilesPendientesDocumentacion(fechaEntrega){
+  if(!fechaEntrega) return 0;
+  const detalle = obtenerDetalleTiempoDocumentacion(fechaEntrega, '');
+  return Number(detalle?.total || 0);
+}
+function mostrarRankingPendientesDocumentacion(){
+  const rows = (instalacionesRows || []).filter(r =>
+    normalizarTextoReporte(r.estado_general).toUpperCase() === 'ENTREGADA' &&
+    !String(r.fecha_entrega_documentacion || '').trim()
+  ).map(r => ({
+    ...r,
+    tiempo_transcurrido: diasHabilesPendientesDocumentacion(r.fecha_entrega)
+  })).sort((a,b) => {
+    const diff = Number(b.tiempo_transcurrido || 0) - Number(a.tiempo_transcurrido || 0);
+    if(diff !== 0) return diff;
+    return String(a.fecha_entrega || '').localeCompare(String(b.fecha_entrega || ''));
+  });
+
+  const title = document.getElementById('kpiTimeDetailTitle');
+  const content = document.getElementById('kpiTimeDetailContent');
+  const modal = document.getElementById('kpiTimeDetailModal');
+  if(!content || !modal) return;
+  if(title) title.textContent = 'Ranking · Pendientes de documentación';
+
+  if(!rows.length){
+    content.innerHTML = '<div class="audit-empty">No hay instalaciones ENTREGADAS pendientes por entrega de documentación.</div>';
+    modal.classList.add('show');
+    return;
+  }
+
+  const filas = rows.map((r,i) => `
+    <tr>
+      <td class="docs-rank-pos">${i+1}</td>
+      <td>
+        <div style="font-weight:800;color:#fff">${esc(r.cliente || '')}</div>
+        <div class="docs-rank-sub">${esc(r.id_cliente || '')} · ${esc(r.id_cambio || '')}</div>
+      </td>
+      <td>${esc(r.operador || '')}</td>
+      <td>${esc(fmtDate(r.fecha_entrega))}</td>
+      <td><div class="docs-rank-time">${Number(r.tiempo_transcurrido || 0)} días</div><div class="docs-rank-sub">hábiles transcurridos</div></td>
+      <td><button type="button" class="small-btn" onclick="cerrarDetalleKpiTiempo(); editRow('${String(r.id).replace(/'/g,"\'")}')">Editar</button></td>
+    </tr>`).join('');
+
+  content.innerHTML = `
+    <div class="muted-note" style="margin-bottom:12px">Orden descendente: primero aparecen las instalaciones que llevan más tiempo esperando la entrega de documentación. El tiempo se calcula desde la fecha de entrega hasta hoy, excluyendo sábados y domingos.</div>
+    <div class="docs-ranking-wrap">
+      <table class="docs-ranking-table">
+        <thead><tr><th>#</th><th>Cliente</th><th>Operador</th><th>Fecha entrega</th><th>Tiempo transcurrido</th><th>Acción</th></tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:12px">
+      <button type="button" class="btn ghost" onclick="descargarPendientesDocumentacionExcel()">Exportar Excel</button>
+    </div>`;
+  modal.classList.add('show');
+}
+
+function descargarPendientesDocumentacionExcel(){
+  if(typeof XLSX === 'undefined'){
+    alert('No se pudo cargar la librería XLSX. Verifica la conexión a internet e intenta nuevamente.');
+    return;
+  }
+
+  const rows = (instalacionesRows || []).filter(r =>
+    normalizarTextoReporte(r.estado_general).toUpperCase() === 'ENTREGADA' &&
+    !String(r.fecha_entrega_documentacion || '').trim()
+  );
+
+  if(!rows.length){
+    alert('No hay instalaciones ENTREGADAS pendientes por entrega de documentación.');
+    return;
+  }
+
+  rows.sort((a,b) => String(a.fecha_entrega || '').localeCompare(String(b.fecha_entrega || '')));
+  const data = [[
+    'ID Cambio','ID Tarea','ID Cliente','Cliente','Operador','Dirección',
+    'Fecha ingreso','Fecha entrega','Fecha entrega documentación','Tiempo transcurrido',
+    'Responsable','Contratista','Estado general','Observaciones'
+  ]];
+
+  rows.forEach(r => {
+    data.push([
+      r.id_cambio || '', r.id_tarea || '', r.id_cliente || '', r.cliente || '',
+      r.operador || '', r.direccion || '',
+      r.fecha_ingreso ? excelSerialDesdeFechaReporte(r.fecha_ingreso) : '',
+      r.fecha_entrega ? excelSerialDesdeFechaReporte(r.fecha_entrega) : '',
+      '',
+      diasHabilesPendientesDocumentacion(r.fecha_entrega),
+      r.responsable || '', r.contratista || '', r.estado_general || '', r.observaciones || ''
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(data);
+  ws['!cols'] = [
+    {wch:14},{wch:14},{wch:16},{wch:34},{wch:28},{wch:42},
+    {wch:15},{wch:15},{wch:24},{wch:22},{wch:22},{wch:18},{wch:16},{wch:60}
+  ];
+  for(let r=2;r<=rows.length+1;r++){
+    ['G','H'].forEach(col => {
+      const c = ws[`${col}${r}`];
+      if(c && c.t === 'n') c.z = 'dd/mm/yyyy';
+    });
+  }
+  ws['!autofilter'] = {ref:`A1:N${rows.length+1}`};
+  ws['!freeze'] = {xSplit:0,ySplit:1};
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Pendientes documentación');
+  const hoy = new Date();
+  const fecha = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `pendientes_documentacion_instalaciones_${fecha}.xlsx`);
+}
+
 function buildOutlookComposeUrl({to, cc, subject, body}){
   const params = [];
   if(to) params.push('to=' + encodeURIComponent(to));
@@ -1918,7 +2771,7 @@ async function solicitarContratistaInstalacion(id){
 
   if(!confirmar) return;
 
-  await loadCorreoTemplateTraslados();
+  await loadCorreoTemplateInstalaciones();
   const asunto = replaceTemplateVars(installCorreoTemplate.asunto_template, row);
   const cuerpo = replaceTemplateVars(installCorreoTemplate.cuerpo_template, row);
   window.open(buildOutlookComposeUrl({to: installCorreoTemplate.para || "", cc: installCorreoTemplate.cc || "", subject: asunto, body: cuerpo}), "_blank");
@@ -1960,6 +2813,7 @@ window.openFormModal = function(row=null){
   toggleRadicacionEmsaSection();
   toggleRadicacionTelefonicaSection();
   calcularTiemposMuertosInstalacion();
+  calcularTiempoDocumentacion();
   actualizarRequeridoFechaEntrega();
   setMaterialsVisibility();
   modal.classList.add('show');
@@ -1992,6 +2846,7 @@ window.showDetail = function(id){
       <div class="detail-card"><div class="detail-title">FO Externa</div><div class="detail-value">${esc(row.fo_externa || '')}</div></div>
       <div class="detail-card"><div class="detail-title">FO Interna</div><div class="detail-value">${esc(row.fo_interna || '')}</div></div>
       <div class="detail-card"><div class="detail-title">Capacidad</div><div class="detail-value">${esc(row.capacidad || '')}</div></div>
+      <div class="detail-card"><div class="detail-title">Linea Base</div><div class="detail-value linea-base-text">${esc(row.Linea_base || '')}</div></div>
       <div class="detail-card"><div class="detail-title">Tipo fibra</div><div class="detail-value">${esc(row.tipo_fibra || '')}</div></div>
 
       <div class="detail-card"><div class="detail-title">Estado general</div><div class="detail-value">${esc(row.estado_general || '')}</div></div>
@@ -2010,6 +2865,8 @@ window.showDetail = function(id){
       <div class="detail-card"><div class="detail-title">Fecha agendamiento PI</div><div class="detail-value">${esc(fmtDate(row.fecha_agendamiento_pi))}</div></div>
       <div class="detail-card"><div class="detail-title">Hora agendamiento</div><div class="detail-value">${esc(fmtTime(row.hora_agendamiento))}</div></div>
       <div class="detail-card"><div class="detail-title">Fecha entrega</div><div class="detail-value">${esc(fmtDate(row.fecha_entrega))}</div></div>
+      <div class="detail-card"><div class="detail-title">Fecha entrega documentación</div><div class="detail-value">${esc(fmtDate(row.fecha_entrega_documentacion))}</div></div>
+      <div class="detail-card"><div class="detail-title">Tiempo entrega documentación</div><div class="detail-value">${esc(obtenerDetalleTiempoDocumentacion(row.fecha_entrega, row.fecha_entrega_documentacion).total + ' días')}</div></div>
 
       <div class="detail-card"><div class="detail-title">Estado planta externa</div><div class="detail-value">${esc(row.estado_planta_externa || '')}</div></div>
       <div class="detail-card"><div class="detail-title">Estado planta interna</div><div class="detail-value">${esc(row.estado_planta_interna || '')}</div></div>
@@ -2175,6 +3032,18 @@ document.getElementById('instalacionForm').addEventListener('submit', async func
       return;
     }
 
+    const estadoSeleccionado = el['estado_general']?.value || '';
+    const longitudOtdrRaw = (el['longitud_enlace_otdr']?.value || '').trim();
+    const longitudOtdr = Number(longitudOtdrRaw);
+
+    if(estadoSeleccionado === 'ENTREGADA' && (!longitudOtdrRaw || !Number.isFinite(longitudOtdr) || longitudOtdr <= 0)){
+      msg.style.color = '#fecaca';
+      msg.textContent = 'La Longitud enlace / OTDR es obligatoria y debe ser mayor que 0 metros cuando el estado es ENTREGADA.';
+      el['longitud_enlace_otdr']?.focus();
+      setMaterialsVisibility();
+      return;
+    }
+
     calcularTiemposMuertosInstalacion();
     const client = await resolveClient();
 
@@ -2189,6 +3058,7 @@ document.getElementById('instalacionForm').addEventListener('submit', async func
       fo_externa: (el['fo_externa'].value || '').trim() || null,
       fo_interna: (el['fo_interna'].value || '').trim() || null,
       capacidad: (el['capacidad'].value || '').trim() || null,
+      Linea_base: (el['Linea_base']?.value || '').trim() || null,
       tipo_fibra: (el['tipo_fibra'].value || '').trim() || null,
       estado_general: el['estado_general'].value,
       fecha_solicitud_permisos: el['fecha_solicitud_permisos'].value || null,
@@ -2218,6 +3088,8 @@ document.getElementById('instalacionForm').addEventListener('submit', async func
       fecha_agendamiento_pi: el['fecha_agendamiento_pi'].value || null,
       hora_agendamiento: el['hora_agendamiento'].value || null,
       fecha_entrega: el['fecha_entrega'].value || null,
+      longitud_enlace_otdr: (el['longitud_enlace_otdr']?.value || '').trim() !== '' ? Number(el['longitud_enlace_otdr'].value) : null,
+      fecha_entrega_documentacion: el['fecha_entrega_documentacion']?.value || null,
       observaciones: (el['observaciones'].value || '').trim() || null,
       estado_planta_externa: el['estado_planta_externa'].value || null,
       estado_planta_interna: el['estado_planta_interna'].value || null,
@@ -2246,7 +3118,18 @@ document.getElementById('instalacionForm').addEventListener('submit', async func
       responsable: (el['responsable'].value || '').trim() || null
     };
 
-    if(calcularListaParaAgendar(payload) && payload.estado_general !== 'AGENDADA' && payload.estado_general !== 'ENTREGADA'){
+    const estadosQuePuedenPasarAutomaticamente = [
+      'INGRESADA',
+      'EN_VALIDACION',
+      'PENDIENTE_PERMISOS',
+      'PERMISOS_APROBADOS',
+      'PENDIENTE_ENRUTAMIENTO'
+    ];
+
+    if(
+      calcularListaParaAgendar(payload) &&
+      estadosQuePuedenPasarAutomaticamente.includes(payload.estado_general)
+    ){
       payload.estado_general = 'LISTA_PARA_AGENDAR';
     }
 
@@ -2294,12 +3177,12 @@ document.querySelectorAll('#estadoMultiMenu input[type="checkbox"]').forEach(el 
 
 document.addEventListener('change', function(e){
   if(e.target && ['fecha_ingreso','fecha_solicitud_permisos','fecha_respuesta_permisos','fecha_aprobacion_permisos','fecha_radicacion_emsa','fecha_respuesta_emsa','fecha_radicacion_telefonica','fecha_respuesta_telefonica','fecha_entrega'].includes(e.target.name)){ calcularTiemposMuertosInstalacion(); }
+  if(e.target && ['fecha_entrega','fecha_entrega_documentacion'].includes(e.target.name)){ calcularTiempoDocumentacion(); }
   if(e.target && e.target.name === 'estado_general'){ actualizarRequeridoFechaEntrega(); setMaterialsVisibility(); calcularTiemposMuertosInstalacion(); }
   if(e.target && e.target.name === 'checklist_radicacion_emsa'){ toggleRadicacionEmsaSection(); calcularTiemposMuertosInstalacion(); }
   if(e.target && e.target.name === 'checklist_radicacion_telefonica'){ toggleRadicacionTelefonicaSection(); calcularTiemposMuertosInstalacion(); }
 });
 
-document.getElementById('migrarSearch')?.addEventListener('input', renderMigrarInstalaciones);
 document.getElementById('plantillaInput')?.addEventListener('change', async function(e){
   const file = e.target.files?.[0];
   if(!file) return;
@@ -2314,8 +3197,15 @@ document.getElementById('importModal')?.addEventListener('click', function(e){
   if(e.target && e.target.id === 'importModal'){ /* no cerrar al hacer click afuera */ }
 });
 
+// Mantiene actualizado el KPI de documentación si el formulario queda abierto
+// y todavía no se ha registrado la fecha de entrega de documentación.
+setInterval(() => {
+  const modal=document.getElementById('formModal');
+  if(modal?.classList.contains('show')) calcularTiempoDocumentacion();
+}, 60000);
+
 updateEstadoMultiLabel();
-loadCorreoTemplateTraslados();
+loadCorreoTemplateInstalaciones();
 loadTraslados();
 </script>
 
@@ -2369,7 +3259,7 @@ loadTraslados();
     <div class="modal-header">
       <div>
         <h3 style="margin:0 0 6px 0;">Vista previa de importación</h3>
-        <div class="muted-note">Se tomarán filas del año actual con Finalidad = Instalación o Instalación por Cobertura, Categoría = Obras Civiles Ext. A y cuyo Cambio principal no exista aún en traslados.</div>
+        <div class="muted-note">Se tomarán filas del año actual con Finalidad = Instalación o Instalación por Cobertura, Categoría = Obras Civiles Ext. A y cuyo Cambio principal no exista aún en instalaciones.</div>
       </div>
       <button class="close-btn" type="button" onclick="closeImportModal()">✕</button>
     </div>
@@ -2385,6 +3275,7 @@ loadTraslados();
             <th>Cliente</th>
             <th>Dirección</th>
             <th>Operador</th>
+            <th>Linea Base</th>
             <th>Estado</th>
           </tr>
         </thead>
@@ -2394,10 +3285,12 @@ loadTraslados();
     <div id="importMsg" style="margin-top:12px;color:#cbd5e1"></div>
     <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
       <button type="button" class="small-btn" onclick="closeImportModal()">Rechazar</button>
-      <button type="button" class="btn" id="confirmImportBtn" onclick="confirmImportRows()">Aceptar e importar</button>
+      <button type="button" class="btn" id="confirmImportBtn" onclick="confirmImportRows()">Aceptar e importar / actualizar</button>
     </div>
   </div>
 </div>
 
 </body>
 </html>
+
+
