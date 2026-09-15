@@ -1073,7 +1073,7 @@
             <div class="qr-section-title">Puertos del cliente</div>
             <div class="qr-table-wrap">
               <table class="qr-table">
-                <thead><tr><th>Rack</th><th>Equipo</th><th>Tipo</th><th>Puerto</th><th>Estado</th><th>Cable</th></tr></thead>
+                <thead><tr><th>Rack</th><th>Equipo</th><th>Tipo</th><th>Puerto</th><th>Capacidad</th><th>Cable</th></tr></thead>
                 <tbody id="qrPortsBody"></tbody>
               </table>
             </div>
@@ -4889,7 +4889,7 @@
       try {
         const { data, error } = await supabase
           .from('instalaciones')
-          .select('id_cliente,cliente,fecha_entrega,estado_general,id_cambio,id_tarea')
+          .select('id_cliente,cliente,fecha_entrega,capacidad,estado_general,id_cambio,id_tarea')
           .eq('id_cliente', String(serviceId).trim())
           .not('fecha_entrega', 'is', null)
           .order('fecha_entrega', { ascending: false })
@@ -4932,6 +4932,35 @@
       const date = qrInstallationDate(installation);
       if (!date) return 'No se encontró una fecha de instalación válida para este cliente.';
       return `La fecha de instalación fue el ${formatQrDateLong(date)}.`;
+    }
+
+
+    function formatQrCapacity(capacityValue) {
+      const raw = String(capacityValue ?? '').trim();
+      if (!raw) return '-';
+
+      // Si Supabase ya trae unidades, conservarlas.
+      if (/[a-zA-Z]/.test(raw)) return raw;
+
+      // Si solo viene el valor numérico, mostrarlo como Mbps.
+      const normalized = raw.replace(',', '.');
+      const numeric = Number(normalized);
+      if (Number.isFinite(numeric)) {
+        return `${numeric.toLocaleString('es-CO', { maximumFractionDigits: 2 })} Mbps`;
+      }
+
+      return raw;
+    }
+
+    function buildQrCapacityVoiceText(installation, installationLookupError=false) {
+      if (installationLookupError) return 'No fue posible consultar la capacidad contratada en este momento.';
+      if (!installation) return 'No se encontró información de capacidad contratada para este cliente.';
+
+      const raw = String(installation.capacidad ?? '').trim();
+      if (!raw) return 'No se encontró información de capacidad contratada para este cliente.';
+
+      const formatted = formatQrCapacity(raw);
+      return `La capacidad contratada es de ${formatted}.`;
     }
 
     function playQrDetectedBeep() {
@@ -5001,6 +5030,7 @@
       const serviceId = client.identificador_servicio || client.id || 'sin identificador';
       const parts = [`Cliente ${client.nombre_cliente || 'sin nombre'} ${serviceId}.`];
       parts.push(buildQrInstallationVoiceText(installation, installationLookupError));
+      parts.push(buildQrCapacityVoiceText(installation, installationLookupError));
       parts.push(buildQrFailureVoiceText(lastFailure, failureLookupError));
       if (directLocations.length) {
         parts.push(`Se encontraron ${directLocations.length} puertos asociados.`);
@@ -5083,17 +5113,7 @@
       document.getElementById('qrRackCount').textContent = new Set(directLocations.map(x => x.rack?.id).filter(Boolean)).size;
 
       const portsBody = document.getElementById('qrPortsBody');
-      portsBody.innerHTML = directLocations.length ? directLocations.map(loc => {
-        const cable = getCableById(loc.port.cable_id);
-        return `<tr>
-          <td>${escapeHtmlQr(loc.rack?.nombre || '-')}</td>
-          <td>${escapeHtmlQr(loc.eq?.nombre || '-')}</td>
-          <td>${escapeHtmlQr(String(loc.eq?.tipo || '-').toUpperCase())}</td>
-          <td><strong>${escapeHtmlQr(getPortDisplayLabel(loc.port))}</strong></td>
-          <td>${escapeHtmlQr(loc.port.estado || '-')}</td>
-          <td>${escapeHtmlQr(cable?.nombre || '-')}</td>
-        </tr>`;
-      }).join('') : '<tr><td colspan="6" class="qr-empty">Sin puertos asociados.</td></tr>';
+      portsBody.innerHTML = '<tr><td colspan="6" class="qr-empty">Consultando capacidad...</td></tr>';
 
       const linksBody = document.getElementById('qrLinksBody');
       linksBody.innerHTML = clientLinks.length ? clientLinks.map(link => `<tr>
@@ -5103,13 +5123,30 @@
       </tr>`).join('') : '<tr><td colspan="3" class="qr-empty">Sin conexiones relacionadas.</td></tr>';
 
       const serviceId = client.identificador_servicio || client.id || '';
-      setQrStatus(`Cliente localizado: ${client.nombre_cliente || ''}. Consultando fecha de instalación y última falla...`);
+      setQrStatus(`Cliente localizado: ${client.nombre_cliente || ''}. Consultando fecha de instalación, capacidad y última falla...`);
       const [installationResult, failureResult] = await Promise.all([
         getQrInstallation(serviceId),
         getQrLastFailure(serviceId)
       ]);
       const installDate = qrInstallationDate(installationResult.installation);
       document.getElementById('qrInstallDate').textContent = installDate ? formatQrDateShort(installDate) : '-';
+
+      const capacityText = installationResult.error
+        ? 'No disponible'
+        : formatQrCapacity(installationResult.installation?.capacidad);
+
+      portsBody.innerHTML = directLocations.length ? directLocations.map(loc => {
+        const cable = getCableById(loc.port.cable_id);
+        return `<tr>
+          <td>${escapeHtmlQr(loc.rack?.nombre || '-')}</td>
+          <td>${escapeHtmlQr(loc.eq?.nombre || '-')}</td>
+          <td>${escapeHtmlQr(String(loc.eq?.tipo || '-').toUpperCase())}</td>
+          <td><strong>${escapeHtmlQr(getPortDisplayLabel(loc.port))}</strong></td>
+          <td><strong>${escapeHtmlQr(capacityText)}</strong></td>
+          <td>${escapeHtmlQr(cable?.nombre || '-')}</td>
+        </tr>`;
+      }).join('') : '<tr><td colspan="6" class="qr-empty">Sin puertos asociados.</td></tr>';
+
       const voiceText = buildQrVoiceText(
         client,
         directLocations,
@@ -5121,7 +5158,7 @@
       );
       document.getElementById('qrVoiceText').textContent = voiceText;
       qrLastClient = client;
-      setQrStatus(`Cliente localizado: ${client.nombre_cliente || ''}. Puertos iluminados, fecha de instalación y última falla consultadas.`);
+      setQrStatus(`Cliente localizado: ${client.nombre_cliente || ''}. Puertos iluminados, fecha de instalación, capacidad y última falla consultadas.`);
       speakQrText(voiceText);
     }
 
@@ -5947,8 +5984,5 @@
 
 </body>
 </html>
-
-
-
 
 
