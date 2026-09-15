@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html><!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -1068,6 +1068,7 @@
               <div class="qr-mini-kpi"><span>Equipos involucrados</span><strong id="qrEquipmentCount">0</strong></div>
               <div class="qr-mini-kpi"><span>Racks involucrados</span><strong id="qrRackCount">0</strong></div>
               <div class="qr-mini-kpi"><span>Fecha instalación</span><strong id="qrInstallDate" style="font-size:14px">-</strong></div>
+              <div class="qr-mini-kpi"><span>Distancia enlace</span><strong id="qrLinkDistance" style="font-size:14px">-</strong></div>
             </div>
 
             <div class="qr-section-title">Puertos del cliente</div>
@@ -4889,7 +4890,7 @@
       try {
         const { data, error } = await supabase
           .from('instalaciones')
-          .select('id_cliente,cliente,fecha_entrega,capacidad,estado_general,id_cambio,id_tarea')
+          .select('id_cliente,cliente,fecha_entrega,capacidad,longitud_enlace_otdr,estado_general,id_cambio,id_tarea')
           .eq('id_cliente', String(serviceId).trim())
           .not('fecha_entrega', 'is', null)
           .order('fecha_entrega', { ascending: false })
@@ -4899,6 +4900,31 @@
       } catch (error) {
         console.warn('No se pudo consultar la fecha de instalación en instalaciones:', error);
         return { installation: null, error };
+      }
+    }
+
+    async function getQrTransfer(serviceId) {
+      if (!supabase || !serviceId) return { transfer: null, error: null };
+      try {
+        /*
+         * Se consulta traslados solamente como respaldo cuando instalaciones
+         * no tiene longitud_enlace_otdr. Se intenta traer el registro más reciente.
+         */
+        const { data, error } = await supabase
+          .from('traslados')
+          .select('*')
+          .eq('id_cliente', String(serviceId).trim())
+          .order('fecha_entrega', { ascending: false, nullsFirst: false })
+          .limit(1);
+
+        if (error) throw error;
+        return {
+          transfer: Array.isArray(data) && data.length ? data[0] : null,
+          error: null
+        };
+      } catch (error) {
+        console.warn('No se pudo consultar el traslado del cliente:', error);
+        return { transfer: null, error };
       }
     }
 
@@ -4961,6 +4987,41 @@
 
       const formatted = formatQrCapacity(raw);
       return `La capacidad contratada es de ${formatted}.`;
+    }
+
+    function formatQrLinkDistance(value) {
+      const raw = String(value ?? '').trim();
+      if (!raw) return '-';
+
+      // longitud_enlace_otdr se almacena en metros. Si ya trae una unidad,
+      // la conservamos; si es numérico, agregamos "m".
+      if (/[a-zA-Z]/.test(raw)) return raw;
+
+      const normalized = raw.replace(',', '.');
+      const numeric = Number(normalized);
+      if (Number.isFinite(numeric)) {
+        return `${numeric.toLocaleString('es-CO', { maximumFractionDigits: 2 })} m`;
+      }
+      return `${raw} m`;
+    }
+
+    function buildQrLinkDistanceVoiceText(distanceValue, distanceLookupError=false, obtainedFromTransfer=false) {
+      if (distanceLookupError) return 'No fue posible consultar la distancia del enlace en este momento.';
+
+      const raw = String(distanceValue ?? '').trim();
+      if (!raw) return 'No se encontró información de distancia del enlace para este cliente.';
+
+      const normalized = raw.replace(',', '.');
+      const numeric = Number(normalized);
+      const distanceText = Number.isFinite(numeric)
+        ? `${numeric.toLocaleString('es-CO', { maximumFractionDigits: 2 })} metros`
+        : formatQrLinkDistance(raw);
+
+      if (obtainedFromTransfer) {
+        return `A este cliente se le efectuó un traslado. La distancia actual del enlace, registrada en el traslado, es de ${distanceText}.`;
+      }
+
+      return `La distancia del enlace es de ${distanceText}.`;
     }
 
     function playQrDetectedBeep() {
@@ -5047,12 +5108,13 @@
       }).join(' ');
     }
 
-    function buildQrVoiceText(client, directLocations, clientLinks, installation=null, installationLookupError=false, lastFailure=null, failureLookupError=false) {
+    function buildQrVoiceText(client, directLocations, clientLinks, installation=null, installationLookupError=false, lastFailure=null, failureLookupError=false, linkDistance=null, linkDistanceLookupError=false, linkDistanceFromTransfer=false) {
       const serviceId = client.identificador_servicio || client.id || 'sin identificador';
       const spokenClientName = normalizeQrClientNameForVoice(client.nombre_cliente);
       const parts = [`Cliente ${spokenClientName} ${serviceId}.`];
       parts.push(buildQrInstallationVoiceText(installation, installationLookupError));
       parts.push(buildQrCapacityVoiceText(installation, installationLookupError));
+      parts.push(buildQrLinkDistanceVoiceText(linkDistance, linkDistanceLookupError, linkDistanceFromTransfer));
       parts.push(buildQrFailureVoiceText(lastFailure, failureLookupError));
       if (directLocations.length) {
         parts.push(`Se encontraron ${directLocations.length} puertos asociados.`);
@@ -5145,13 +5207,47 @@
       </tr>`).join('') : '<tr><td colspan="3" class="qr-empty">Sin conexiones relacionadas.</td></tr>';
 
       const serviceId = client.identificador_servicio || client.id || '';
-      setQrStatus(`Cliente localizado: ${client.nombre_cliente || ''}. Consultando fecha de instalación, capacidad y última falla...`);
+      setQrStatus(`Cliente localizado: ${client.nombre_cliente || ''}. Consultando instalación, capacidad, distancia del enlace, traslados y última falla...`);
       const [installationResult, failureResult] = await Promise.all([
         getQrInstallation(serviceId),
         getQrLastFailure(serviceId)
       ]);
+
       const installDate = qrInstallationDate(installationResult.installation);
       document.getElementById('qrInstallDate').textContent = installDate ? formatQrDateShort(installDate) : '-';
+
+      let linkDistance = installationResult.installation?.longitud_enlace_otdr ?? null;
+      let linkDistanceFromTransfer = false;
+      let linkDistanceLookupError = !!installationResult.error;
+      let transferResult = { transfer: null, error: null };
+
+      // Si instalaciones no tiene distancia, consultar traslados como respaldo.
+      if (!String(linkDistance ?? '').trim()) {
+        transferResult = await getQrTransfer(serviceId);
+
+        if (!transferResult.error && transferResult.transfer) {
+          const transferDistance = transferResult.transfer.longitud_enlace_otdr;
+          if (String(transferDistance ?? '').trim()) {
+            linkDistance = transferDistance;
+            linkDistanceFromTransfer = true;
+            linkDistanceLookupError = false;
+          }
+        } else if (transferResult.error && installationResult.error) {
+          linkDistanceLookupError = true;
+        }
+      }
+
+      const linkDistanceEl = document.getElementById('qrLinkDistance');
+      if (linkDistanceEl) {
+        if (linkDistanceLookupError && !String(linkDistance ?? '').trim()) {
+          linkDistanceEl.textContent = 'No disponible';
+        } else if (String(linkDistance ?? '').trim()) {
+          linkDistanceEl.textContent =
+            `${formatQrLinkDistance(linkDistance)}${linkDistanceFromTransfer ? ' · Traslado' : ''}`;
+        } else {
+          linkDistanceEl.textContent = '-';
+        }
+      }
 
       const capacityText = installationResult.error
         ? 'No disponible'
@@ -5176,7 +5272,10 @@
         installationResult.installation,
         !!installationResult.error,
         failureResult.ticket,
-        !!failureResult.error
+        !!failureResult.error,
+        linkDistance,
+        linkDistanceLookupError,
+        linkDistanceFromTransfer
       );
       document.getElementById('qrVoiceText').textContent = voiceText;
       qrLastClient = client;
