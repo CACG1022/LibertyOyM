@@ -5026,9 +5026,31 @@
       return `${text}.`;
     }
 
+    function normalizeQrClientNameForVoice(name) {
+      const raw = String(name || '').trim();
+      if (!raw) return 'sin nombre';
+
+      // Solo afecta la pronunciación. No modifica Supabase ni el nombre mostrado.
+      // Palabras comerciales largas en MAYÚSCULAS se pasan al TTS como palabra normal:
+      // MEDIPIEL -> Medipiel. Siglas cortas como IBM, ETB o UNE se conservan.
+      return raw.split(/\s+/).map(token => {
+        const letters = token.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, '');
+        const isLongUppercaseWord =
+          letters.length >= 4 &&
+          letters === letters.toLocaleUpperCase('es-CO') &&
+          /[A-ZÁÉÍÓÚÜÑ]/.test(letters);
+
+        if (!isLongUppercaseWord) return token;
+
+        const lower = token.toLocaleLowerCase('es-CO');
+        return lower.charAt(0).toLocaleUpperCase('es-CO') + lower.slice(1);
+      }).join(' ');
+    }
+
     function buildQrVoiceText(client, directLocations, clientLinks, installation=null, installationLookupError=false, lastFailure=null, failureLookupError=false) {
       const serviceId = client.identificador_servicio || client.id || 'sin identificador';
-      const parts = [`Cliente ${client.nombre_cliente || 'sin nombre'} ${serviceId}.`];
+      const spokenClientName = normalizeQrClientNameForVoice(client.nombre_cliente);
+      const parts = [`Cliente ${spokenClientName} ${serviceId}.`];
       parts.push(buildQrInstallationVoiceText(installation, installationLookupError));
       parts.push(buildQrCapacityVoiceText(installation, installationLookupError));
       parts.push(buildQrFailureVoiceText(lastFailure, failureLookupError));
@@ -5984,5 +6006,6 @@
 
 </body>
 </html>
+
 
 
