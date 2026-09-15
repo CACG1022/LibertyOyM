@@ -224,6 +224,7 @@
             <div class="field"><label class="install-date-label">Fecha agendamiento PI</label><input type="date" name="fecha_agendamiento_pi"></div>
             <div class="field"><label>Hora agendamiento</label><input type="time" name="hora_agendamiento"></div>
             <div class="field"><label class="install-date-label">Fecha de entrega</label><input type="date" name="fecha_entrega" onchange="calcularTiemposMuertosInstalacion(); calcularTiempoDocumentacion()"></div>
+            <div class="field"><label>Longitud enlace / OTDR (m)</label><input type="number" name="longitud_enlace_otdr" min="0" step="0.01" inputmode="decimal" placeholder="Ej. 3250"></div>
             <div class="field span-2"><label>Tiempo total instalación</label><input name="tiempo_total_instalacion" readonly></div>
             <div class="field span-2"><label>Tiempo efectivo instalación</label><input name="tiempo_efectivo_instalacion" readonly></div>
           </div>
@@ -1419,8 +1420,12 @@ function actualizarRequeridoFechaEntrega(){
   const form = document.getElementById('instalacionForm');
   if(!form) return;
   const estado = form.elements['estado_general']?.value || '';
+  const esEntregada = estado === 'ENTREGADA';
   const fechaEntregaInput = form.elements['fecha_entrega'];
-  if(fechaEntregaInput) fechaEntregaInput.required = estado === 'ENTREGADA';
+  const longitudOtdrInput = form.elements['longitud_enlace_otdr'];
+
+  if(fechaEntregaInput) fechaEntregaInput.required = esEntregada;
+  if(longitudOtdrInput) longitudOtdrInput.required = esEntregada;
 }
 
 
@@ -2860,6 +2865,18 @@ document.getElementById('instalacionForm').addEventListener('submit', async func
       return;
     }
 
+    const estadoSeleccionado = el['estado_general']?.value || '';
+    const longitudOtdrRaw = (el['longitud_enlace_otdr']?.value || '').trim();
+    const longitudOtdr = Number(longitudOtdrRaw);
+
+    if(estadoSeleccionado === 'ENTREGADA' && (!longitudOtdrRaw || !Number.isFinite(longitudOtdr) || longitudOtdr <= 0)){
+      msg.style.color = '#fecaca';
+      msg.textContent = 'La Longitud enlace / OTDR es obligatoria y debe ser mayor que 0 metros cuando el estado es ENTREGADA.';
+      el['longitud_enlace_otdr']?.focus();
+      setMaterialsVisibility();
+      return;
+    }
+
     calcularTiemposMuertosInstalacion();
     const client = await resolveClient();
 
@@ -2904,6 +2921,7 @@ document.getElementById('instalacionForm').addEventListener('submit', async func
       fecha_agendamiento_pi: el['fecha_agendamiento_pi'].value || null,
       hora_agendamiento: el['hora_agendamiento'].value || null,
       fecha_entrega: el['fecha_entrega'].value || null,
+      longitud_enlace_otdr: (el['longitud_enlace_otdr']?.value || '').trim() !== '' ? Number(el['longitud_enlace_otdr'].value) : null,
       fecha_entrega_documentacion: el['fecha_entrega_documentacion']?.value || null,
       observaciones: (el['observaciones'].value || '').trim() || null,
       estado_planta_externa: el['estado_planta_externa'].value || null,
@@ -3107,4 +3125,5 @@ loadInstalaciones();
 
 </body>
 </html>
+
 
