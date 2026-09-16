@@ -1139,7 +1139,7 @@
                   %
                 </label>
                 <button type="button" class="primary" onclick="locateQrOtdrFault()">📍 Ubicar falla</button>
-                <button id="qrCopyFaultCoordsBtn" type="button" class="secondary" onclick="copyQrFaultCoordinates()" disabled>📋 Copiar coordenadas</button>
+                <button id="qrCopyFaultCoordsBtn" type="button" class="secondary" onclick="copyQrFaultCoordinates()" disabled>📋 Copiar ubicación para WhatsApp</button>
                 <button type="button" class="secondary" onclick="clearQrOtdrFault()">Limpiar</button>
                 <span id="qrOtdrInfo" class="qr-otdr-info">Ingresa la distancia OTDR desde el nodo. Se aplicará 30% de exceso de fibra por defecto (reservas, catenaria y holguras).</span>
               </div>
@@ -1484,6 +1484,7 @@
 
     let qrOtdrFaultMarker=null;
     let qrOtdrFaultCoordinates=null;
+    let qrOtdrFaultAddress='';
 
     function toggleQrMapFullscreen(force){
       const card=document.querySelector('.qr-map-card');
@@ -1555,16 +1556,75 @@
     function clearQrOtdrFault(){
       if(qrOtdrFaultMarker&&qrRouteMap){qrRouteMap.removeLayer(qrOtdrFaultMarker);qrOtdrFaultMarker=null}
       qrOtdrFaultCoordinates=null;
+      qrOtdrFaultAddress='';
       const copyBtn=document.getElementById('qrCopyFaultCoordsBtn');if(copyBtn)copyBtn.disabled=true;
       const info=document.getElementById('qrOtdrInfo');if(info)info.textContent='Ingresa la distancia OTDR desde el nodo. Se aplicará 30% de exceso de fibra por defecto (reservas, catenaria y holguras).';
     }
+    async function getQrFaultAddress(lat,lng){
+      try{
+        // Geocodificación inversa para obtener una dirección aproximada del punto.
+        const url=`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=18&addressdetails=1&accept-language=es`;
+        const r=await fetch(url,{headers:{'Accept':'application/json'}});
+        if(!r.ok)throw new Error(`HTTP ${r.status}`);
+        const d=await r.json();
+        const a=d?.address||{};
+
+        // Construye una dirección corta y operativa:
+        // vía + número predial (si existe) + barrio/sector.
+        const via=String(
+          a.road || a.pedestrian || a.residential || a.footway ||
+          a.path || a.cycleway || a.highway || ''
+        ).trim();
+
+        const numero=String(a.house_number||'').trim();
+
+        // En Colombia Nominatim puede guardar el barrio/sector en distintos campos.
+        const barrio=String(
+          a.neighbourhood || a.suburb || a.quarter ||
+          a.residential || a.hamlet || ''
+        ).trim();
+
+        const partes=[];
+        let lineaVia=via;
+        if(numero && lineaVia){
+          // Si el número ya viene con # no lo duplica.
+          lineaVia += numero.startsWith('#') ? ` ${numero}` : ` # ${numero}`;
+        }else if(numero){
+          lineaVia=numero.startsWith('#') ? numero : `# ${numero}`;
+        }
+        if(lineaVia)partes.push(lineaVia);
+        if(barrio && barrio.toLowerCase()!==via.toLowerCase())partes.push(`Barrio ${barrio}`);
+
+        // Si no hay componentes estructurados, usa una versión corta del display_name.
+        if(!partes.length){
+          const raw=String(d?.display_name||'').split(',').map(x=>x.trim()).filter(Boolean);
+          return raw.slice(0,2).join(', ');
+        }
+        return partes.join(', ');
+      }catch(e){
+        console.warn('No se pudo obtener dirección de la falla:',e);
+        return '';
+      }
+    }
+
     async function copyQrFaultCoordinates(){
       const info=document.getElementById('qrOtdrInfo');
       if(!qrOtdrFaultCoordinates){
         if(info)info.textContent='Primero ubica la falla OTDR para obtener sus coordenadas.';
         return;
       }
-      const text=`${qrOtdrFaultCoordinates.lat.toFixed(6)}, ${qrOtdrFaultCoordinates.lng.toFixed(6)}`;
+      const coords=`${qrOtdrFaultCoordinates.lat.toFixed(6)}, ${qrOtdrFaultCoordinates.lng.toFixed(6)}`;
+      if(!qrOtdrFaultAddress){
+        if(info)info.textContent='Consultando dirección aproximada del punto de falla...';
+        qrOtdrFaultAddress=await getQrFaultAddress(qrOtdrFaultCoordinates.lat,qrOtdrFaultCoordinates.lng);
+      }
+      // URL directa al punto exacto. Al pegar este texto en WhatsApp,
+      // el enlace queda pulsable y abre Google Maps en las coordenadas de la falla.
+      const mapsUrl=`https://www.google.com/maps/search/?api=1&query=${qrOtdrFaultCoordinates.lat.toFixed(6)},${qrOtdrFaultCoordinates.lng.toFixed(6)}`;
+      const text=qrOtdrFaultAddress
+        ? `📍 Posible falla de fibra\n${qrOtdrFaultAddress}\nCoordenadas: ${coords}\n${mapsUrl}`
+        : `📍 Posible falla de fibra\nCoordenadas: ${coords}\n${mapsUrl}`;
+
       try{
         if(navigator.clipboard && window.isSecureContext){
           await navigator.clipboard.writeText(text);
@@ -1574,9 +1634,11 @@
           document.body.appendChild(ta);ta.focus();ta.select();
           document.execCommand('copy');ta.remove();
         }
-        if(info)info.textContent=`Coordenadas copiadas: ${text}`;
+        if(info)info.textContent=qrOtdrFaultAddress
+          ? `Ubicación copiada para WhatsApp: ${qrOtdrFaultAddress} · ${coords}`
+          : `Ubicación copiada para WhatsApp: ${coords}`;
       }catch(e){
-        if(info)info.textContent=`Coordenadas: ${text} · Selecciónalas y cópialas manualmente.`;
+        if(info)info.textContent=text.replace(/\n/g,' · ');
       }
     }
 
@@ -6459,6 +6521,5 @@
 </script>
 </body>
 </html>
-
 
 
