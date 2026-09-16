@@ -1,4 +1,4 @@
-<!DOCTYPE html><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
@@ -725,7 +725,39 @@
       #qrReader{min-height:210px}
     }
 
-  </style>
+  
+    .qr-map-card{margin-top:14px;border:1px solid var(--border);border-radius:14px;background:rgba(2,8,23,.78);overflow:hidden}
+    .qr-map-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+    .qr-map-title{font-weight:800;color:#eaf4ff;font-size:13px}.qr-map-status{font-size:11px;color:var(--muted)}
+    .qr-map-actions{display:flex;gap:6px;flex-wrap:wrap}.qr-map-actions button,.qr-map-actions label{width:auto!important;padding:7px 9px!important;font-size:10px!important;margin:0!important}
+    #qrClientRouteMap{height:390px;width:100%;background:#020817}.qr-map-wrap{position:relative}
+    .qr-map-empty{position:absolute;z-index:500;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(2,8,23,.9);border:1px solid rgba(148,163,184,.25);border-radius:12px;padding:10px 14px;color:#cbd5e1;font-size:11px;text-align:center;pointer-events:none;max-width:82%}
+    .qr-route-label{background:rgba(8,145,178,.94)!important;color:#fff!important;border:1px solid rgba(34,211,238,.45)!important;border-radius:8px!important;font-weight:700!important}
+    @media(max-width:700px){#qrClientRouteMap{height:320px}}
+
+  
+    .qr-map-fullscreen{
+      position:fixed!important;inset:0!important;z-index:30000!important;
+      width:100vw!important;height:100dvh!important;margin:0!important;border-radius:0!important;
+      background:#020817!important;display:flex!important;flex-direction:column!important;
+    }
+    .qr-map-fullscreen .qr-map-head{flex:0 0 auto;padding:10px 14px}
+    .qr-map-fullscreen .qr-map-wrap{flex:1 1 auto;min-height:0}
+    .qr-map-fullscreen #qrClientRouteMap{height:100%!important;min-height:0!important}
+    .qr-map-tools{display:flex;gap:7px;align-items:center;flex-wrap:wrap;padding:8px 12px;border-top:1px solid var(--border);background:rgba(2,8,23,.96)}
+    .qr-map-tools input{width:115px!important;padding:7px 9px!important;margin:0!important}
+    .qr-map-tools button{width:auto!important;padding:7px 10px!important;margin:0!important;font-size:11px!important}
+    .qr-otdr-info{font-size:11px;color:#bae6fd}
+    .qr-otdr-marker{background:transparent!important;border:0!important}
+    .qr-otdr-marker-dot{width:22px;height:22px;border-radius:50%;background:#ef4444;border:4px solid #fff;box-shadow:0 0 0 4px rgba(239,68,68,.35),0 2px 10px #000}
+    .qr-otdr-label{background:#7f1d1d!important;color:#fff!important;border:1px solid #fecaca!important;border-radius:8px!important;font-weight:800!important}
+    body.qr-map-is-fullscreen{overflow:hidden!important}
+
+</style>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script defer src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 </head>
 <body>
   <div class="app">
@@ -1087,6 +1119,27 @@
               </table>
             </div>
 
+
+            <div class="qr-section-title">Ruta geográfica del cliente</div>
+            <div class="qr-map-card">
+              <div class="qr-map-head">
+                <div><div class="qr-map-title">Mapa satelital · Ruta del cliente</div><div id="qrMapStatus" class="qr-map-status">Cargando KMZ predeterminado desde GitHub...</div></div>
+                <div class="qr-map-actions">
+                  <button type="button" class="secondary" onclick="toggleQrMapFullscreen()">⛶ Ampliar mapa</button>
+                  <button type="button" class="secondary" onclick="reloadQrDefaultKmz()">↻ Recargar KMZ GitHub</button>
+                  <label class="secondary" style="cursor:pointer">Cargar KMZ<input id="qrKmzFileInput" type="file" accept=".kmz,.kml" style="display:none" onchange="loadQrKmzFromInput(event)"></label>
+                </div>
+              </div>
+              <div class="qr-map-wrap"><div id="qrClientRouteMap"></div><div id="qrMapEmpty" class="qr-map-empty">Cargando red de Villavicencio. Al buscar o escanear un cliente, la ruta se filtrará automáticamente.</div></div>
+              <div class="qr-map-tools">
+                <strong style="font-size:11px;color:#eaf4ff">Localizar falla OTDR</strong>
+                <input id="qrOtdrDistanceInput" type="number" min="0" step="0.1" placeholder="Distancia (m)">
+                <button type="button" class="primary" onclick="locateQrOtdrFault()">📍 Ubicar falla</button>
+                <button type="button" class="secondary" onclick="clearQrOtdrFault()">Limpiar</button>
+                <span id="qrOtdrInfo" class="qr-otdr-info">Ingresa la distancia OTDR medida desde el nodo hacia el cliente.</span>
+              </div>
+            </div>
+
             <div class="qr-section-title">Lectura del asistente</div>
             <div id="qrVoiceText" class="qr-voice-text"></div>
           </div>
@@ -1305,6 +1358,250 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
   <script type="module">
+    const QR_DEFAULT_KMZ='https://raw.githubusercontent.com/CACG1022/LibertyOyM/main/RED%20VILLAVICENCIO-V2.kmz';
+    const QR_KMZ_DB='nodo_qr_kmz_cache_v1', QR_KMZ_STORE='files', QR_KMZ_KEY='villavicencio';
+    function qrKmzDb(){
+      return new Promise((resolve,reject)=>{
+        const req=indexedDB.open(QR_KMZ_DB,1);
+        req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(QR_KMZ_STORE))req.result.createObjectStore(QR_KMZ_STORE)};
+        req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+      });
+    }
+    async function qrSaveKmzBlob(blob){
+      try{const db=await qrKmzDb();await new Promise((res,rej)=>{const tx=db.transaction(QR_KMZ_STORE,'readwrite');tx.objectStore(QR_KMZ_STORE).put(blob,QR_KMZ_KEY);tx.oncomplete=res;tx.onerror=()=>rej(tx.error)});db.close()}catch(e){console.warn('No se pudo guardar KMZ',e)}
+    }
+    async function qrLoadSavedKmzBlob(){
+      try{const db=await qrKmzDb();const v=await new Promise((res,rej)=>{const r=db.transaction(QR_KMZ_STORE,'readonly').objectStore(QR_KMZ_STORE).get(QR_KMZ_KEY);r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error)});db.close();return v}catch(e){return null}
+    }
+    let qrRouteMap=null,qrRouteGeoJSON=null,qrRouteLayer=null,qrKmzLoadPromise=null,qrLastMapClientId='';
+
+    function qrMapSetStatus(t,e=false){const x=document.getElementById('qrMapStatus');if(x){x.textContent=t;x.style.color=e?'#fca5a5':'var(--muted)'}}
+    let qrMapResizeObserver=null;
+    function refreshQrMapSize(fitRoute=false){
+      if(!qrRouteMap)return;
+      const refresh=()=>{
+        try{
+          qrRouteMap.invalidateSize({pan:false,animate:false});
+          if(fitRoute && qrRouteLayer){
+            const b=qrRouteLayer.getBounds();
+            if(b && b.isValid()) qrRouteMap.fitBounds(b,{padding:[25,25],maxZoom:18});
+          }
+        }catch(e){}
+      };
+      refresh();
+      [80,180,350,700,1200].forEach(ms=>setTimeout(refresh,ms));
+    }
+    function observeQrMapSize(){
+      const el=document.getElementById('qrClientRouteMap');
+      if(!el || !window.ResizeObserver || qrMapResizeObserver)return;
+      qrMapResizeObserver=new ResizeObserver(()=>refreshQrMapSize(!!qrRouteLayer));
+      qrMapResizeObserver.observe(el);
+      const wrap=el.closest('.qr-map-card'); if(wrap) qrMapResizeObserver.observe(wrap);
+    }
+    function qrMapNormalize(v){return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()}
+    function qrMapSafe(v){if(v==null)return '';if(typeof v==='object'){try{return JSON.stringify(v)}catch(e){return ''}}return String(v)}
+    function initQrRouteMap(){
+      if(qrRouteMap)return true;
+      const el=document.getElementById('qrClientRouteMap');if(!el)return false;
+      if(!window.L){
+        qrMapSetStatus('Cargando motor del mapa...');
+        setTimeout(initQrRouteMap,250);
+        return false;
+      }
+      qrRouteMap=L.map(el,{zoomControl:true}).setView([4.142,-73.6266],12);
+      const google=L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3'],maxZoom:21,attribution:'Google'});
+      const esri=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,attribution:'Esri'});
+      google.addTo(qrRouteMap);L.control.layers({'Google Satélite':google,'Satélite Esri':esri},null,{collapsed:true}).addTo(qrRouteMap);
+      observeQrMapSize();
+      refreshQrMapSize(false);
+      return true;
+    }
+    function qrDirectChildText(n,l){for(const c of Array.from(n.children||[]))if(c.localName===l)return(c.textContent||'').trim();return ''}
+    function qrPlacemarkHierarchy(pm){const a=[];let n=pm.parentElement;while(n){if(n.localName==='Document'||n.localName==='Folder'){const x=qrDirectChildText(n,'name');if(x)a.push(x)}n=n.parentElement}return a}
+    function qrCleanContainerName(v){return qrMapSafe(v).replace(/\.kml$/i,'').replace(/\.kmz$/i,'').trim()}
+    function qrChooseClientContainer(names){const c=names.map(qrCleanContainerName).filter(Boolean);return c.find(n=>/^cliente\s*\d*/i.test(n))||c.find(n=>!/^red\s+/i.test(n))||c[0]||''}
+    async function qrParseKmlText(text){
+      const xml=new DOMParser().parseFromString(text,'text/xml');if(xml.querySelector('parsererror'))throw new Error('KML inválido');
+      const pm=Array.from(xml.getElementsByTagNameNS('*','Placemark'));
+      const h=pm.map(p=>{const a=qrPlacemarkHierarchy(p);return{client:qrChooseClientContainer(a),path:a.slice().reverse().map(qrCleanContainerName).join(' > ')}});
+      const gj=toGeoJSON.kml(xml);
+      (gj.features||[]).forEach((f,i)=>{f.properties=f.properties||{};f.properties._kmz_cliente=qrCleanContainerName(h[i]?.client||'');f.properties._kmz_ruta=h[i]?.path||'';f.properties._qr_search=Object.values(f.properties).map(qrMapSafe).join(' ')});
+      return gj;
+    }
+    async function qrParseKmzBlob(blob){const z=await JSZip.loadAsync(blob);const n=Object.keys(z.files).find(x=>x.toLowerCase().endsWith('.kml'));if(!n)throw new Error('El KMZ no contiene KML');return qrParseKmlText(await z.files[n].async('string'))}
+    function qrPrepareGeoJSON(data){
+      const fs=[];for(const f of(data.features||[])){if(!f.geometry)continue;f.properties=f.properties||{};if(!f.properties._qr_search)f.properties._qr_search=Object.values(f.properties).map(qrMapSafe).join(' ');
+        if(f.geometry.type==='LineString')fs.push(f);else if(f.geometry.type==='MultiLineString')(f.geometry.coordinates||[]).forEach((c,i)=>fs.push({type:'Feature',properties:{...f.properties,_parte:i+1},geometry:{type:'LineString',coordinates:c}}))}
+      return{type:'FeatureCollection',features:fs};
+    }
+    async function loadQrDefaultKmz(force=false){
+      if(qrRouteGeoJSON&&!force)return qrRouteGeoJSON;if(qrKmzLoadPromise&&!force)return qrKmzLoadPromise;
+      if(!window.L || !window.JSZip || !window.toGeoJSON){
+        qrMapSetStatus('Cargando componentes del mapa...');
+        await new Promise(resolve=>setTimeout(resolve,500));
+        if(!window.L || !window.JSZip || !window.toGeoJSON){
+          qrMapSetStatus('No cargaron las librerías del mapa. Revisa conexión a Internet.',true);
+          return null;
+        }
+      }
+      initQrRouteMap();qrMapSetStatus('Cargando RED VILLAVICENCIO-V2.kmz...');
+      qrKmzLoadPromise=(async()=>{try{
+        let blob=null;
+        try{
+          const r=await fetch(QR_DEFAULT_KMZ,{cache:'no-store',mode:'cors'});
+          if(!r.ok) throw new Error(`HTTP ${r.status}`);
+          blob=await r.blob();
+          await qrSaveKmzBlob(blob);
+          qrMapSetStatus('KMZ predeterminado descargado desde GitHub.');
+        }catch(netErr){
+          console.warn('No se pudo descargar KMZ desde GitHub, intentando caché local:',netErr);
+          blob=await qrLoadSavedKmzBlob();
+          if(!blob) throw netErr;
+          qrMapSetStatus('Sin conexión a GitHub. Usando KMZ guardado localmente.');
+        }
+        qrRouteGeoJSON=qrPrepareGeoJSON(await qrParseKmzBlob(blob));
+        qrMapSetStatus(`KMZ Villavicencio listo · ${qrRouteGeoJSON.features.length} tramos`);
+        return qrRouteGeoJSON
+      }
+      catch(e){
+        console.warn(e);
+        qrMapSetStatus('No fue posible cargar RED VILLAVICENCIO-V2.kmz desde GitHub ni desde la caché local.',true);
+        return null
+      }finally{qrKmzLoadPromise=null}})();return qrKmzLoadPromise;
+    }
+    async function reloadQrDefaultKmz(){qrRouteGeoJSON=null;await loadQrDefaultKmz(true);if(qrLastMapClientId)filterQrRouteForClient(qrLastMapClientId)}
+    async function loadQrKmzFromInput(e){const f=e?.target?.files?.[0];if(!f)return;try{initQrRouteMap();qrMapSetStatus(`Cargando ${f.name}...`);const ext=f.name.split('.').pop().toLowerCase();const d=ext==='kml'?await qrParseKmlText(await f.text()):await qrParseKmzBlob(f);
+        if(ext==='kmz') await qrSaveKmzBlob(f);
+        qrRouteGeoJSON=qrPrepareGeoJSON(d);qrMapSetStatus(`KMZ cargado · ${qrRouteGeoJSON.features.length} tramos`);if(qrLastMapClientId)filterQrRouteForClient(qrLastMapClientId)}catch(err){qrMapSetStatus(`Error: ${err.message}`,true)}}
+    window.addEventListener('resize',()=>refreshQrMapSize(!!qrRouteLayer));
+
+    let qrOtdrFaultMarker=null;
+
+    function toggleQrMapFullscreen(force){
+      const card=document.querySelector('.qr-map-card');
+      if(!card)return;
+      const enable=typeof force==='boolean'?force:!card.classList.contains('qr-map-fullscreen');
+      card.classList.toggle('qr-map-fullscreen',enable);
+      document.body.classList.toggle('qr-map-is-fullscreen',enable);
+      const btn=card.querySelector('button[onclick="toggleQrMapFullscreen()"]');
+      if(btn)btn.textContent=enable?'✕ Cerrar pantalla completa':'⛶ Ampliar mapa';
+      setTimeout(()=>refreshQrMapSize(!!qrRouteLayer),60);
+    }
+    document.addEventListener('keydown',e=>{if(e.key==='Escape' && window.toggleQrMapFullscreen) window.toggleQrMapFullscreen(false)});
+
+    function qrHaversineMeters(a,b){
+      const R=6371000,toRad=x=>x*Math.PI/180;
+      const dLat=toRad(b.lat-a.lat),dLon=toRad(b.lng-a.lng);
+      const x=Math.sin(dLat/2)**2+Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.sin(dLon/2)**2;
+      return 2*R*Math.asin(Math.sqrt(x));
+    }
+    function qrRouteLatLngSequences(){
+      const seq=[];
+      if(!qrRouteLayer)return seq;
+      qrRouteLayer.eachLayer(layer=>{
+        if(!(layer instanceof L.Polyline))return;
+        let ll=layer.getLatLngs();
+        if(!Array.isArray(ll))return;
+        while(Array.isArray(ll[0]) && !('lat' in ll[0])) ll=ll.flat();
+        if(ll.length>1)seq.push(ll);
+      });
+      return seq;
+    }
+    function qrBuildContinuousRoute(){
+      const parts=qrRouteLatLngSequences().map(a=>a.slice()).filter(a=>a.length>1);
+      if(!parts.length)return[];
+      // Une tramos por el extremo más cercano, conservando una ruta continua.
+      let route=parts.shift();
+      while(parts.length){
+        const start=route[0],end=route[route.length-1];
+        let best=null;
+        parts.forEach((p,i)=>{
+          const opts=[
+            {i,rev:false,prepend:false,d:qrHaversineMeters(end,p[0])},
+            {i,rev:true,prepend:false,d:qrHaversineMeters(end,p[p.length-1])},
+            {i,rev:false,prepend:true,d:qrHaversineMeters(start,p[p.length-1])},
+            {i,rev:true,prepend:true,d:qrHaversineMeters(start,p[0])}
+          ];
+          opts.forEach(o=>{if(!best||o.d<best.d)best=o});
+        });
+        let p=parts.splice(best.i,1)[0];
+        if(best.rev)p.reverse();
+        route=best.prepend?p.concat(route):route.concat(p);
+      }
+      return route;
+    }
+    function qrPointAtDistance(route,target){
+      if(!route.length)return null;
+      let acc=0;
+      for(let i=1;i<route.length;i++){
+        const a=route[i-1],b=route[i],seg=qrHaversineMeters(a,b);
+        if(acc+seg>=target){
+          const t=seg?Math.max(0,Math.min(1,(target-acc)/seg)):0;
+          return {lat:a.lat+(b.lat-a.lat)*t,lng:a.lng+(b.lng-a.lng)*t,total:acc+seg};
+        }
+        acc+=seg;
+      }
+      const last=route[route.length-1];
+      return {lat:last.lat,lng:last.lng,total:acc,exceeded:true};
+    }
+    function clearQrOtdrFault(){
+      if(qrOtdrFaultMarker&&qrRouteMap){qrRouteMap.removeLayer(qrOtdrFaultMarker);qrOtdrFaultMarker=null}
+      const info=document.getElementById('qrOtdrInfo');if(info)info.textContent='Ingresa la distancia OTDR medida desde el nodo hacia el cliente.';
+    }
+    function locateQrOtdrFault(){
+      const input=document.getElementById('qrOtdrDistanceInput');
+      const info=document.getElementById('qrOtdrInfo');
+      const distance=Number(String(input?.value||'').replace(',','.'));
+      if(!Number.isFinite(distance)||distance<0){if(info)info.textContent='Ingresa una distancia OTDR válida en metros.';return}
+      let route=qrBuildContinuousRoute();
+      if(route.length<2){if(info)info.textContent='Primero debes tener cargada la ruta del cliente.';return}
+      // La medición OTDR operacional se realiza NODO -> CLIENTE.
+      // La geometría filtrada queda ensamblada en sentido cliente -> nodo,
+      // por eso se invierte antes de calcular la posición de la falla.
+      route=route.slice().reverse();
+      const point=qrPointAtDistance(route,distance);
+      if(!point)return;
+      clearQrOtdrFault();
+      const icon=L.divIcon({className:'qr-otdr-marker',html:'<div class="qr-otdr-marker-dot"></div>',iconSize:[22,22],iconAnchor:[11,11]});
+      qrOtdrFaultMarker=L.marker([point.lat,point.lng],{icon,zIndexOffset:2000}).addTo(qrRouteMap);
+      qrOtdrFaultMarker.bindTooltip(`Posible falla OTDR · ${distance.toLocaleString('es-CO')} m desde nodo`,{permanent:true,direction:'top',offset:[0,-12],className:'qr-otdr-label'}).openTooltip();
+      qrRouteMap.setView([point.lat,point.lng],Math.max(qrRouteMap.getZoom(),18));
+      if(info){
+        info.textContent=point.exceeded
+          ? `La distancia ${distance.toLocaleString('es-CO')} m supera la longitud geográfica aproximada de la ruta (${Math.round(point.total).toLocaleString('es-CO')} m). Se marcó el extremo.`
+          : `Falla ubicada aproximadamente a ${distance.toLocaleString('es-CO')} m desde el nodo hacia el cliente.`;
+      }
+    }
+
+    // Exponer controles del mapa al ámbito global para los onclick del HTML.
+    // El aplicativo principal ejecuta parte del código dentro de un ámbito propio,
+    // por lo que estas funciones deben registrarse explícitamente en window.
+    window.toggleQrMapFullscreen = toggleQrMapFullscreen;
+    window.locateQrOtdrFault = locateQrOtdrFault;
+    window.clearQrOtdrFault = clearQrOtdrFault;
+
+    async function filterQrRouteForClient(id){
+      qrLastMapClientId=String(id||'').trim();
+      clearQrOtdrFault();
+      if(!qrLastMapClientId)return;
+      if(!initQrRouteMap()){
+        setTimeout(()=>filterQrRouteForClient(qrLastMapClientId),400);
+        return;
+      }
+      const empty=document.getElementById('qrMapEmpty');if(empty){empty.style.display='block';empty.textContent='Buscando ruta del cliente en el KMZ...'}
+      if(!qrRouteGeoJSON)await loadQrDefaultKmz();if(!qrRouteGeoJSON){if(empty)empty.textContent='Carga el KMZ de Villavicencio para visualizar la ruta.';return}
+      const term=qrMapNormalize(qrLastMapClientId);
+      const matched=qrRouteGeoJSON.features.filter(f=>{const p=f.properties||{};return qrMapNormalize([p._qr_search,p._kmz_cliente,p._kmz_ruta,p.id_cliente,p.ID_CLIENTE,p.ID,p.id,p.name,p.Name].map(qrMapSafe).join(' ')).includes(term)});
+      if(qrRouteLayer){qrRouteMap.removeLayer(qrRouteLayer);qrRouteLayer=null}
+      if(!matched.length){qrMapSetStatus(`Sin ruta KMZ para ${qrLastMapClientId}`,true);if(empty){empty.style.display='block';empty.textContent=`No se encontró ruta para ${qrLastMapClientId}.`};return}
+      qrRouteLayer=L.geoJSON({type:'FeatureCollection',features:matched},{style:{color:'#22d3ee',weight:6,opacity:1},onEachFeature:(f,l)=>l.bindTooltip(`${qrLastMapClientId}`,{sticky:true,className:'qr-route-label'})}).addTo(qrRouteMap);
+      if(empty)empty.style.display='none';
+      refreshQrMapSize(true);
+      qrMapSetStatus(`Ruta localizada · ${matched.length} tramo${matched.length===1?'':'s'} · ${qrLastMapClientId}`);
+    }
+
+
+
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
     let supabase = null;
@@ -5207,6 +5504,7 @@
       </tr>`).join('') : '<tr><td colspan="3" class="qr-empty">Sin conexiones relacionadas.</td></tr>';
 
       const serviceId = client.identificador_servicio || client.id || '';
+      setTimeout(() => filterQrRouteForClient(serviceId), 80);
       setQrStatus(`Cliente localizado: ${client.nombre_cliente || ''}. Consultando instalación, capacidad, distancia del enlace, traslados y última falla...`);
       const [installationResult, failureResult] = await Promise.all([
         getQrInstallation(serviceId),
@@ -5517,6 +5815,13 @@
 
     window.openQrScannerModal = async function() {
       document.getElementById('qrScannerModal').classList.add('show');
+      setTimeout(async () => {
+        initQrRouteMap();
+        observeQrMapSize();
+        refreshQrMapSize(!!qrRouteLayer);
+        await loadQrDefaultKmz();
+        if(qrLastMapClientId) await filterQrRouteForClient(qrLastMapClientId);
+      }, 120);
       setQrStatus('Actualizando inventario...');
       await loadDashboard();
       setQrStatus('Listo. Presiona “Iniciar cámara” y apunta al código QR.');
@@ -6103,6 +6408,10 @@
     window.addEventListener('DOMContentLoaded',applyMobileTopbarState);
   </script>
 
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js">
+</script>
 </body>
 </html>
 
