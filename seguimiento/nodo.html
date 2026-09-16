@@ -1133,10 +1133,14 @@
               <div class="qr-map-wrap"><div id="qrClientRouteMap"></div><div id="qrMapEmpty" class="qr-map-empty">Cargando red de Villavicencio. Al buscar o escanear un cliente, la ruta se filtrará automáticamente.</div></div>
               <div class="qr-map-tools">
                 <strong style="font-size:11px;color:#eaf4ff">Localizar falla OTDR</strong>
-                <input id="qrOtdrDistanceInput" type="number" min="0" step="0.1" placeholder="Distancia (m)">
+                <input id="qrOtdrDistanceInput" type="number" min="0" step="0.1" placeholder="Distancia OTDR (m)">
+                <label style="font-size:10px;color:#cbd5e1;display:flex;align-items:center;gap:5px">Exceso fibra
+                  <input id="qrOtdrCorrectionPct" type="number" min="0" max="80" step="1" value="30" style="width:70px!important" title="Porcentaje estimado adicional por reservas, catenaria y holguras">
+                  %
+                </label>
                 <button type="button" class="primary" onclick="locateQrOtdrFault()">📍 Ubicar falla</button>
                 <button type="button" class="secondary" onclick="clearQrOtdrFault()">Limpiar</button>
-                <span id="qrOtdrInfo" class="qr-otdr-info">Ingresa la distancia OTDR medida desde el nodo hacia el cliente.</span>
+                <span id="qrOtdrInfo" class="qr-otdr-info">Ingresa la distancia OTDR desde el nodo. Se aplicará 30% de exceso de fibra por defecto (reservas, catenaria y holguras).</span>
               </div>
             </div>
 
@@ -1546,30 +1550,40 @@
     }
     function clearQrOtdrFault(){
       if(qrOtdrFaultMarker&&qrRouteMap){qrRouteMap.removeLayer(qrOtdrFaultMarker);qrOtdrFaultMarker=null}
-      const info=document.getElementById('qrOtdrInfo');if(info)info.textContent='Ingresa la distancia OTDR medida desde el nodo hacia el cliente.';
+      const info=document.getElementById('qrOtdrInfo');if(info)info.textContent='Ingresa la distancia OTDR desde el nodo. Se aplicará 30% de exceso de fibra por defecto (reservas, catenaria y holguras).';
     }
     function locateQrOtdrFault(){
       const input=document.getElementById('qrOtdrDistanceInput');
       const info=document.getElementById('qrOtdrInfo');
       const distance=Number(String(input?.value||'').replace(',','.'));
+      const correctionInput=document.getElementById('qrOtdrCorrectionPct');
+      const correctionPct=Number(String(correctionInput?.value||'30').replace(',','.'));
       if(!Number.isFinite(distance)||distance<0){if(info)info.textContent='Ingresa una distancia OTDR válida en metros.';return}
+      if(!Number.isFinite(correctionPct)||correctionPct<0){if(info)info.textContent='Ingresa un porcentaje de exceso de fibra válido.';return}
+
+      // El OTDR mide longitud real de fibra. El KMZ representa distancia geográfica.
+      // Si estimamos que la fibra instalada tiene X% adicional por reservas,
+      // catenaria y holguras: Fibra_real = Distancia_mapa * (1 + X/100).
+      // Por tanto: Distancia_mapa = OTDR / (1 + X/100).
+      const mapDistance=distance/(1+(correctionPct/100));
+
       let route=qrBuildContinuousRoute();
       if(route.length<2){if(info)info.textContent='Primero debes tener cargada la ruta del cliente.';return}
       // La medición OTDR operacional se realiza NODO -> CLIENTE.
       // La geometría filtrada queda ensamblada en sentido cliente -> nodo,
       // por eso se invierte antes de calcular la posición de la falla.
       route=route.slice().reverse();
-      const point=qrPointAtDistance(route,distance);
+      const point=qrPointAtDistance(route,mapDistance);
       if(!point)return;
       clearQrOtdrFault();
       const icon=L.divIcon({className:'qr-otdr-marker',html:'<div class="qr-otdr-marker-dot"></div>',iconSize:[22,22],iconAnchor:[11,11]});
       qrOtdrFaultMarker=L.marker([point.lat,point.lng],{icon,zIndexOffset:2000}).addTo(qrRouteMap);
-      qrOtdrFaultMarker.bindTooltip(`Posible falla OTDR · ${distance.toLocaleString('es-CO')} m desde nodo`,{permanent:true,direction:'top',offset:[0,-12],className:'qr-otdr-label'}).openTooltip();
+      qrOtdrFaultMarker.bindTooltip(`Falla OTDR · ${distance.toLocaleString('es-CO')} m · mapa ≈ ${Math.round(mapDistance).toLocaleString('es-CO')} m`,{permanent:true,direction:'top',offset:[0,-12],className:'qr-otdr-label'}).openTooltip();
       qrRouteMap.setView([point.lat,point.lng],Math.max(qrRouteMap.getZoom(),18));
       if(info){
         info.textContent=point.exceeded
-          ? `La distancia ${distance.toLocaleString('es-CO')} m supera la longitud geográfica aproximada de la ruta (${Math.round(point.total).toLocaleString('es-CO')} m). Se marcó el extremo.`
-          : `Falla ubicada aproximadamente a ${distance.toLocaleString('es-CO')} m desde el nodo hacia el cliente.`;
+          ? `OTDR: ${distance.toLocaleString('es-CO')} m · Corrección: ${correctionPct}% · Equivalente mapa: ${Math.round(mapDistance).toLocaleString('es-CO')} m. Esta distancia supera la ruta geográfica disponible; se marcó el extremo.`
+          : `OTDR: ${distance.toLocaleString('es-CO')} m · Exceso fibra: ${correctionPct}% · Ubicación cartográfica corregida: ≈ ${Math.round(mapDistance).toLocaleString('es-CO')} m desde el nodo.`;
       }
     }
 
