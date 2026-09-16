@@ -1123,10 +1123,10 @@
             <div class="qr-section-title">Ruta geográfica del cliente</div>
             <div class="qr-map-card">
               <div class="qr-map-head">
-                <div><div class="qr-map-title">Mapa satelital · Ruta del cliente</div><div id="qrMapStatus" class="qr-map-status">Cargando KMZ predeterminado desde GitHub...</div></div>
+                <div><div class="qr-map-title">Google Híbrido · Ruta del cliente</div><div id="qrMapStatus" class="qr-map-status">Cargando KMZ predeterminado desde GitHub...</div></div>
                 <div class="qr-map-actions">
                   <button type="button" class="secondary" onclick="toggleQrMapFullscreen()">⛶ Ampliar mapa</button>
-                  <button type="button" class="secondary" onclick="reloadQrDefaultKmz()">↻ Recargar KMZ</button>
+                  <button type="button" class="secondary" onclick="reloadQrDefaultKmz()">↻ Recargar KMZ GitHub</button>
                   <label class="secondary" style="cursor:pointer">Cargar KMZ<input id="qrKmzFileInput" type="file" accept=".kmz,.kml" style="display:none" onchange="loadQrKmzFromInput(event)"></label>
                 </div>
               </div>
@@ -1139,6 +1139,7 @@
                   %
                 </label>
                 <button type="button" class="primary" onclick="locateQrOtdrFault()">📍 Ubicar falla</button>
+                <button id="qrCopyFaultCoordsBtn" type="button" class="secondary" onclick="copyQrFaultCoordinates()" disabled>📋 Copiar coordenadas</button>
                 <button type="button" class="secondary" onclick="clearQrOtdrFault()">Limpiar</button>
                 <span id="qrOtdrInfo" class="qr-otdr-info">Ingresa la distancia OTDR desde el nodo. Se aplicará 30% de exceso de fibra por defecto (reservas, catenaria y holguras).</span>
               </div>
@@ -1413,9 +1414,11 @@
         return false;
       }
       qrRouteMap=L.map(el,{zoomControl:true}).setView([4.142,-73.6266],12);
-      const google=L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3'],maxZoom:21,attribution:'Google'});
+      const googleHybrid=L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3'],maxZoom:21,attribution:'Google'});
+      const googleSatellite=L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3'],maxZoom:21,attribution:'Google'});
       const esri=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,attribution:'Esri'});
-      google.addTo(qrRouteMap);L.control.layers({'Google Satélite':google,'Satélite Esri':esri},null,{collapsed:true}).addTo(qrRouteMap);
+      googleHybrid.addTo(qrRouteMap);
+      L.control.layers({'Google Híbrido':googleHybrid,'Google Satélite':googleSatellite,'Satélite Esri':esri},null,{collapsed:true}).addTo(qrRouteMap);
       observeQrMapSize();
       refreshQrMapSize(false);
       return true;
@@ -1480,6 +1483,7 @@
     window.addEventListener('resize',()=>refreshQrMapSize(!!qrRouteLayer));
 
     let qrOtdrFaultMarker=null;
+    let qrOtdrFaultCoordinates=null;
 
     function toggleQrMapFullscreen(force){
       const card=document.querySelector('.qr-map-card');
@@ -1550,8 +1554,32 @@
     }
     function clearQrOtdrFault(){
       if(qrOtdrFaultMarker&&qrRouteMap){qrRouteMap.removeLayer(qrOtdrFaultMarker);qrOtdrFaultMarker=null}
+      qrOtdrFaultCoordinates=null;
+      const copyBtn=document.getElementById('qrCopyFaultCoordsBtn');if(copyBtn)copyBtn.disabled=true;
       const info=document.getElementById('qrOtdrInfo');if(info)info.textContent='Ingresa la distancia OTDR desde el nodo. Se aplicará 30% de exceso de fibra por defecto (reservas, catenaria y holguras).';
     }
+    async function copyQrFaultCoordinates(){
+      const info=document.getElementById('qrOtdrInfo');
+      if(!qrOtdrFaultCoordinates){
+        if(info)info.textContent='Primero ubica la falla OTDR para obtener sus coordenadas.';
+        return;
+      }
+      const text=`${qrOtdrFaultCoordinates.lat.toFixed(6)}, ${qrOtdrFaultCoordinates.lng.toFixed(6)}`;
+      try{
+        if(navigator.clipboard && window.isSecureContext){
+          await navigator.clipboard.writeText(text);
+        }else{
+          const ta=document.createElement('textarea');
+          ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+          document.body.appendChild(ta);ta.focus();ta.select();
+          document.execCommand('copy');ta.remove();
+        }
+        if(info)info.textContent=`Coordenadas copiadas: ${text}`;
+      }catch(e){
+        if(info)info.textContent=`Coordenadas: ${text} · Selecciónalas y cópialas manualmente.`;
+      }
+    }
+
     function locateQrOtdrFault(){
       const input=document.getElementById('qrOtdrDistanceInput');
       const info=document.getElementById('qrOtdrInfo');
@@ -1578,6 +1606,8 @@
       clearQrOtdrFault();
       const icon=L.divIcon({className:'qr-otdr-marker',html:'<div class="qr-otdr-marker-dot"></div>',iconSize:[22,22],iconAnchor:[11,11]});
       qrOtdrFaultMarker=L.marker([point.lat,point.lng],{icon,zIndexOffset:2000}).addTo(qrRouteMap);
+      qrOtdrFaultCoordinates={lat:point.lat,lng:point.lng};
+      const copyBtn=document.getElementById('qrCopyFaultCoordsBtn');if(copyBtn)copyBtn.disabled=false;
       qrOtdrFaultMarker.bindTooltip(`Falla OTDR · ${distance.toLocaleString('es-CO')} m · mapa ≈ ${Math.round(mapDistance).toLocaleString('es-CO')} m`,{permanent:true,direction:'top',offset:[0,-12],className:'qr-otdr-label'}).openTooltip();
       qrRouteMap.setView([point.lat,point.lng],Math.max(qrRouteMap.getZoom(),18));
       if(info){
@@ -1593,6 +1623,7 @@
     window.toggleQrMapFullscreen = toggleQrMapFullscreen;
     window.locateQrOtdrFault = locateQrOtdrFault;
     window.clearQrOtdrFault = clearQrOtdrFault;
+    window.copyQrFaultCoordinates = copyQrFaultCoordinates;
 
     async function filterQrRouteForClient(id){
       qrLastMapClientId=String(id||'').trim();
