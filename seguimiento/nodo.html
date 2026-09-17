@@ -1126,7 +1126,7 @@
                 <div><div class="qr-map-title">Google Híbrido · Ruta del cliente</div><div id="qrMapStatus" class="qr-map-status">Cargando KMZ predeterminado desde GitHub...</div></div>
                 <div class="qr-map-actions">
                   <button type="button" class="secondary" onclick="toggleQrMapFullscreen()">⛶ Ampliar mapa</button>
-                  <button type="button" class="secondary" onclick="reloadQrDefaultKmz()">↻ Recargar KMZ</button>
+                  <button type="button" class="secondary" onclick="reloadQrDefaultKmz()">↻ Recargar KMZ GitHub</button>
                   <label class="secondary" style="cursor:pointer">Cargar KMZ<input id="qrKmzFileInput" type="file" accept=".kmz,.kml" style="display:none" onchange="loadQrKmzFromInput(event)"></label>
                 </div>
               </div>
@@ -2754,7 +2754,7 @@
       return clients.find(c => c.id === assignment.client_id) || null;
     }
     function isPortInClientFilter(portId) {
-      return !filteredClientPortIds || filteredClientPortIds.has(portId);
+      return !filteredClientPortIds || filteredClientPortIds.has(String(portId));
     }
 
     function isLinkInClientFilter(link) {
@@ -2765,23 +2765,31 @@
     }
 
     function buildClientFilterFromResults(results) {
+      // Siempre normalizamos los IDs como texto. Esto evita que una búsqueda RPC
+      // encuentre el puerto del equipo pero no expanda la ruta hacia ODF por diferencias
+      // de tipo/formato en los UUID devueltos por Supabase.
       const portIds = new Set();
       const linkKeys = new Set();
 
-      results.forEach(r => {
-        if (r.port_id) portIds.add(r.port_id);
+      (results || []).forEach(r => {
+        const id = String(r?.port_id || '').trim();
+        if (id) portIds.add(id);
       });
 
-      // Expand through all connections reachable from matched ports
+      // Recorre TODA la cadena conectada desde cualquier puerto encontrado.
       let changed = true;
       while (changed) {
         changed = false;
-        links.forEach(link => {
-          if (portIds.has(link.port_id_origen) || portIds.has(link.port_id_destino)) {
+        (links || []).forEach(link => {
+          const a = String(link?.port_id_origen || '').trim();
+          const b = String(link?.port_id_destino || '').trim();
+          if (!a || !b) return;
+
+          if (portIds.has(a) || portIds.has(b)) {
             const before = portIds.size;
-            portIds.add(link.port_id_origen);
-            portIds.add(link.port_id_destino);
-            linkKeys.add(`${link.port_id_origen}|${link.port_id_destino}`);
+            portIds.add(a);
+            portIds.add(b);
+            linkKeys.add(`${a}|${b}`);
             if (portIds.size !== before) changed = true;
           }
         });
@@ -5187,14 +5195,69 @@
       return `${rackName} · ${eqName} · puerto ${getPortDisplayLabel(loc.port)}`;
     }
 
-    function getQrClientAssignments(clientId) {
-      const clientAssignments = assignments.filter(a => String(a.client_id) === String(clientId));
-      return clientAssignments.map(a => qrPortLocation(a.port_id)).filter(Boolean);
+    function getQrMatchingClientIds(clientOrId) {
+      const client = (clientOrId && typeof clientOrId === 'object')
+        ? clientOrId
+        : clients.find(c => String(c.id) === String(clientOrId));
+
+      const serviceId = String(client?.identificador_servicio || '').trim().toLowerCase();
+      const ids = new Set();
+
+      // La relación técnica NO debe depender del nombre del cliente.
+      // Si el nombre fue editado o el mismo ID de servicio quedó en varias filas de clients,
+      // agrupamos todas las filas por identificador_servicio.
+      (clients || []).forEach(c => {
+        if (serviceId) {
+          if (String(c?.identificador_servicio || '').trim().toLowerCase() === serviceId) {
+            ids.add(String(c.id));
+          }
+        } else if (String(c?.id) === String(client?.id || clientOrId)) {
+          ids.add(String(c.id));
+        }
+      });
+
+      if (!ids.size && client?.id) ids.add(String(client.id));
+      return ids;
+    }
+
+    function getQrClientAssignments(clientOrId) {
+      const matchingIds = getQrMatchingClientIds(clientOrId);
+      const seenPorts = new Set();
+      return (assignments || [])
+        .filter(a => matchingIds.has(String(a.client_id)))
+        .map(a => qrPortLocation(a.port_id))
+        .filter(loc => {
+          if (!loc?.port?.id) return false;
+          const id = String(loc.port.id);
+          if (seenPorts.has(id)) return false;
+          seenPorts.add(id);
+          return true;
+        });
     }
 
     function getQrClientLinks(directPortIds) {
-      const direct = new Set([...directPortIds].map(String));
-      return links.filter(link => direct.has(String(link.port_id_origen)) || direct.has(String(link.port_id_destino)));
+      // Expande toda la cadena conectada, no únicamente enlaces adyacentes al puerto
+      // que contiene la asignación del cliente.
+      const connected = new Set([...directPortIds].map(x => String(x).trim()).filter(Boolean));
+      let changed = true;
+      while (changed) {
+        changed = false;
+        (links || []).forEach(link => {
+          const a = String(link?.port_id_origen || '').trim();
+          const b = String(link?.port_id_destino || '').trim();
+          if (!a || !b) return;
+          if (connected.has(a) || connected.has(b)) {
+            const before = connected.size;
+            connected.add(a); connected.add(b);
+            if (connected.size !== before) changed = true;
+          }
+        });
+      }
+      return (links || []).filter(link => {
+        const a = String(link?.port_id_origen || '').trim();
+        const b = String(link?.port_id_destino || '').trim();
+        return connected.has(a) && connected.has(b);
+      });
     }
 
     function setQrStatus(message, isError=false) {
@@ -5577,7 +5640,7 @@
     };
 
     async function renderQrClientResult(client) {
-      const directLocations = getQrClientAssignments(client.id);
+      const directLocations = getQrClientAssignments(client);
       qrDirectPortIds = new Set(directLocations.map(loc => String(loc.port.id)));
       const clientLinks = getQrClientLinks(qrDirectPortIds);
       const resultsForFilter = directLocations.map(loc => ({ port_id: loc.port.id }));
@@ -5596,9 +5659,16 @@
       document.getElementById('qrResultContent').classList.remove('hidden');
       document.getElementById('qrClientName').textContent = client.nombre_cliente || 'Cliente sin nombre';
       document.getElementById('qrClientId').textContent = `ID: ${client.identificador_servicio || client.id || '-'}`;
-      document.getElementById('qrPortsCount').textContent = directLocations.length;
-      document.getElementById('qrEquipmentCount').textContent = new Set(directLocations.map(x => x.eq?.id).filter(Boolean)).size;
-      document.getElementById('qrRackCount').textContent = new Set(directLocations.map(x => x.rack?.id).filter(Boolean)).size;
+      const routePortIds = new Set(qrDirectPortIds);
+      clientLinks.forEach(link => {
+        if (link?.port_id_origen) routePortIds.add(String(link.port_id_origen));
+        if (link?.port_id_destino) routePortIds.add(String(link.port_id_destino));
+      });
+      const routeLocations = [...routePortIds].map(qrPortLocation).filter(Boolean);
+
+      document.getElementById('qrPortsCount').textContent = routeLocations.length;
+      document.getElementById('qrEquipmentCount').textContent = new Set(routeLocations.map(x => x.eq?.id).filter(Boolean)).size;
+      document.getElementById('qrRackCount').textContent = new Set(routeLocations.map(x => x.rack?.id).filter(Boolean)).size;
 
       const portsBody = document.getElementById('qrPortsBody');
       portsBody.innerHTML = '<tr><td colspan="6" class="qr-empty">Consultando capacidad...</td></tr>';
@@ -5658,7 +5728,7 @@
         ? 'No disponible'
         : formatQrCapacity(installationResult.installation?.capacidad);
 
-      portsBody.innerHTML = directLocations.length ? directLocations.map(loc => {
+      portsBody.innerHTML = routeLocations.length ? routeLocations.map(loc => {
         const cable = getCableById(loc.port.cable_id);
         return `<tr>
           <td>${escapeHtmlQr(loc.rack?.nombre || '-')}</td>
@@ -5672,7 +5742,7 @@
 
       const voiceText = buildQrVoiceText(
         client,
-        directLocations,
+        routeLocations,
         clientLinks,
         installationResult.installation,
         !!installationResult.error,
@@ -5967,29 +6037,57 @@
       if (showToast) toast('Resaltado QR limpiado');
     };
 
-    function getLabelClientPortIds(clientId) {
+    function getLabelClientPortIds(clientOrId) {
+      const suppliedClient = (clientOrId && typeof clientOrId === 'object')
+        ? clientOrId
+        : clients.find(c => String(c.id) === String(clientOrId));
+
+      const serviceId = String(suppliedClient?.identificador_servicio || '').trim().toLowerCase();
+
+      // Un mismo ID de servicio puede existir en varias filas de clients (V29+).
+      // Para impresión debemos tomar TODAS esas filas, no solamente la primera.
+      const matchingClientIds = new Set(
+        (clients || [])
+          .filter(c => {
+            if (serviceId) {
+              return String(c?.identificador_servicio || '').trim().toLowerCase() === serviceId;
+            }
+            return String(c?.id) === String(suppliedClient?.id || clientOrId);
+          })
+          .map(c => String(c.id))
+      );
+
+      if (!matchingClientIds.size && suppliedClient?.id) {
+        matchingClientIds.add(String(suppliedClient.id));
+      }
+
       const directIds = new Set(
-        assignments
-          .filter(a => String(a.client_id) === String(clientId))
-          .map(a => String(a.port_id))
+        (assignments || [])
+          .filter(a => matchingClientIds.has(String(a.client_id)))
+          .map(a => String(a.port_id || '').trim())
           .filter(Boolean)
       );
+
       const allIds = new Set(directIds);
+
+      // Expande por todos los port_links para recuperar ODF espejo, ODF de salida,
+      // switches/routers y cualquier salto intermedio de la ruta.
       let changed = true;
       while (changed) {
         changed = false;
-        links.forEach(link => {
-          const a = String(link.port_id_origen || '');
-          const b = String(link.port_id_destino || '');
+        (links || []).forEach(link => {
+          const a = String(link?.port_id_origen || '').trim();
+          const b = String(link?.port_id_destino || '').trim();
+          if (!a || !b) return;
           if (allIds.has(a) || allIds.has(b)) {
             const before = allIds.size;
-            if (a) allIds.add(a);
-            if (b) allIds.add(b);
+            allIds.add(a);
+            allIds.add(b);
             if (allIds.size !== before) changed = true;
           }
         });
       }
-      return { directIds, allIds };
+      return { directIds, allIds, matchingClientIds };
     }
 
     function labelLocationParts(port) {
@@ -6073,9 +6171,9 @@
 
     function buildPrintLabelPayload(client) {
       const serviceId = String(client?.identificador_servicio || '').trim();
-      const { directIds, allIds } = getLabelClientPortIds(client.id);
-      const relatedPorts = ports.filter(p => allIds.has(String(p.id)));
-      const directPorts = ports.filter(p => directIds.has(String(p.id)));
+      const { directIds, allIds } = getLabelClientPortIds(client);
+      const relatedPorts = ports.filter(p => allIds.has(String(p.id).trim()));
+      const directPorts = ports.filter(p => directIds.has(String(p.id).trim()));
 
       const sortPorts = list => [...list].sort((a, b) => {
         const ea = getEquipmentById(a.equipment_id);
@@ -6130,6 +6228,10 @@
         }
 
         const payload = buildPrintLabelPayload(client);
+        const printRoute = getLabelClientPortIds(client);
+        if (!printRoute.allIds.size) {
+          toast('No se encontraron puertos asociados ni conexiones para este cliente');
+        }
         if (!payload.id_cliente) {
           toast('El cliente no tiene ID de servicio');
           return;
