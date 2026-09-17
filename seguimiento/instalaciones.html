@@ -149,7 +149,160 @@
     @media (max-width:1400px){.summary{grid-template-columns:repeat(3,minmax(150px,1fr))}}
     @media (max-width:1100px){.grid,.detail-grid{grid-template-columns:repeat(2,1fr)}}
     @media (max-width:900px){.page{grid-template-columns:1fr}.sidebar{position:relative;height:auto}.grid,.summary,.detail-grid{grid-template-columns:1fr}}
-  </style>
+  
+/* ===== Optimización móvil ===== */
+@media (max-width: 700px){
+  body{font-size:13px}
+  .container{padding:10px !important}
+  h1{font-size:22px !important}
+  .subtitle,.muted-note{font-size:10px}
+
+  /* Controles principales */
+  .toolbar,.filters,.top-layout{display:block !important}
+  .toolbar > *,.filters > *{width:100% !important;max-width:none !important;margin-bottom:8px}
+  input,select,textarea,button,.control,.btn,.small-btn{min-height:42px;font-size:13px}
+  .weekly-kpis{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:8px}
+  .weekly-card{min-height:auto;padding:10px}
+  .weekly-card .value{font-size:20px}
+
+  /* KPIs principales: 2 columnas y textos legibles */
+  .summary{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:8px;margin-bottom:12px}
+  .stat{min-width:0;min-height:96px;padding:11px;border-radius:13px}
+  .stat .label{font-size:10px;margin-bottom:5px}
+  .stat .value{font-size:23px}
+  .stat .sub{font-size:9px;line-height:1.25}
+  .docs-export-btn{min-height:34px;font-size:9px}
+
+  /* Tabla principal conserva desplazamiento horizontal */
+  .card,.table-wrap{border-radius:13px}
+  .table-wrap{-webkit-overflow-scrolling:touch}
+  table{min-width:1180px}
+  thead th,tbody td{padding:9px 8px;font-size:11px}
+
+  /* Modales ocupan prácticamente toda la pantalla */
+  .modal-backdrop{padding:6px !important;align-items:flex-start !important}
+  .modal,.modal.large{
+    width:100% !important;
+    max-width:none !important;
+    max-height:calc(100dvh - 12px) !important;
+    margin:0 !important;
+    padding:12px !important;
+    border-radius:15px !important;
+    overflow:auto !important;
+  }
+  .modal-header{position:sticky;top:-12px;z-index:20;background:#08152c;padding:8px 0 10px;margin-bottom:8px}
+  .modal-header h3{font-size:17px}
+  .close-btn{min-width:42px;width:42px;height:42px;flex:0 0 42px}
+
+  /* Formulario Editar solicitud */
+  .form-grid,.grid{grid-template-columns:1fr !important}
+  .field,.span-2,.span-3,.span-4{grid-column:1 / -1 !important}
+
+  /* Reporte de radicaciones: diseño tipo tarjetas */
+  #radicacionesModal .modal{padding:10px !important}
+  #radicacionesModal .rad-kpis{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:7px;
+    margin:8px 0;
+  }
+  #radicacionesModal .rad-kpi{padding:9px;border-radius:11px;min-width:0}
+  #radicacionesModal .rad-kpi .v{font-size:19px}
+  #radicacionesModal .rad-kpi .l{font-size:9px;line-height:1.2}
+
+  #radicacionesModal .rad-toolbar{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:7px;
+    margin:9px 0;
+  }
+  #radicacionesModal .rad-toolbar .control,
+  #radicacionesModal .rad-toolbar button{
+    width:100% !important;
+    min-width:0 !important;
+    margin:0;
+  }
+
+  #radicacionesModal .rad-table-wrap{
+    max-height:none;
+    overflow:visible;
+    border:0;
+    background:transparent;
+  }
+  #radicacionesModal .rad-table{
+    min-width:0 !important;
+    display:block;
+  }
+  #radicacionesModal .rad-table thead{display:none}
+  #radicacionesModal .rad-table tbody{display:block}
+  #radicacionesModal .rad-table tbody tr{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:0;
+    margin:0 0 10px;
+    border:1px solid rgba(96,165,250,.22);
+    border-radius:13px;
+    background:linear-gradient(180deg,rgba(14,165,233,.08),rgba(255,255,255,.025));
+    overflow:hidden;
+    cursor:default;
+  }
+  #radicacionesModal .rad-table tbody td{
+    display:block;
+    padding:8px 9px;
+    border:0;
+    border-bottom:1px solid rgba(255,255,255,.055);
+    font-size:11px;
+    min-width:0;
+    overflow-wrap:anywhere;
+  }
+  #radicacionesModal .rad-table tbody td::before{
+    display:block;
+    margin-bottom:3px;
+    color:#7dd3fc;
+    font-size:8px;
+    line-height:1.1;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+  #radicacionesModal .rad-table tbody td:nth-child(1)::before{content:"Entidad"}
+  #radicacionesModal .rad-table tbody td:nth-child(2)::before{content:"ID Cambio"}
+  #radicacionesModal .rad-table tbody td:nth-child(3)::before{content:"ID Cliente"}
+  #radicacionesModal .rad-table tbody td:nth-child(4)::before{content:"Cliente"}
+  #radicacionesModal .rad-table tbody td:nth-child(5)::before{content:"Operador"}
+  #radicacionesModal .rad-table tbody td:nth-child(6)::before{content:"Fecha radicación"}
+  #radicacionesModal .rad-table tbody td:nth-child(7)::before{content:"N.º radicado"}
+  #radicacionesModal .rad-table tbody td:nth-child(8)::before{content:"Estado"}
+  #radicacionesModal .rad-table tbody td:nth-child(9)::before{content:"Días hábiles"}
+  #radicacionesModal .rad-table tbody td:nth-child(10)::before{content:"Días calendario"}
+  #radicacionesModal .rad-table tbody td:nth-child(11)::before{content:"Responsable"}
+
+  /* Cliente y tiempos ocupan todo el ancho */
+  #radicacionesModal .rad-table tbody td:nth-child(4),
+  #radicacionesModal .rad-table tbody td:nth-child(9),
+  #radicacionesModal .rad-table tbody td:nth-child(10){
+    grid-column:1 / -1;
+  }
+  #radicacionesModal .rad-table tbody td:nth-child(9),
+  #radicacionesModal .rad-table tbody td:nth-child(10){
+    font-size:16px;
+    font-weight:900;
+    background:rgba(255,255,255,.025);
+  }
+  #radicacionesModal .rad-status{font-size:9px;padding:4px 7px}
+
+  /* Ranking documentación */
+  .docs-ranking-wrap{max-height:none}
+  .docs-ranking-table{min-width:760px}
+}
+
+@media (max-width: 390px){
+  .weekly-kpis,.summary,#radicacionesModal .rad-kpis{grid-template-columns:1fr 1fr !important}
+  .stat{padding:9px}
+  .stat .value{font-size:20px}
+  #radicacionesModal .rad-table tbody tr{grid-template-columns:1fr 1fr}
+}
+
+</style>
 </head>
 <body>
 <div id="root"></div>
