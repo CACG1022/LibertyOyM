@@ -903,6 +903,82 @@
 
     @media(max-width:800px){.etiqueta-list-item{grid-template-columns:1fr}.etiquetas-panel{grid-template-columns:1fr}}
 
+
+    .kpi.clickable-kpi{
+      cursor:pointer;
+      transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease;
+    }
+
+    .kpi.clickable-kpi:hover{
+      transform:translateY(-2px);
+      border-color:rgba(56,189,248,.55);
+      box-shadow:0 18px 44px rgba(14,165,233,.18);
+    }
+
+    .kpi-detail-summary{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+      gap:12px;
+      margin-bottom:14px;
+    }
+
+    .kpi-detail-card{
+      border:1px solid var(--border);
+      border-radius:14px;
+      background:rgba(15,23,42,.72);
+      padding:12px;
+    }
+
+    .kpi-detail-card .k-label{
+      color:var(--muted);
+      font-size:12px;
+      margin-bottom:6px;
+    }
+
+    .kpi-detail-card .k-value{
+      font-size:22px;
+      font-weight:900;
+      color:white;
+    }
+
+    .kpi-detail-card.positive .k-value{color:#22c55e}
+    .kpi-detail-card.negative .k-value{color:#ef4444}
+    .kpi-detail-card.neutral .k-value{color:#38bdf8}
+
+    .kpi-detail-table-wrap{
+      max-height:55vh;
+      overflow:auto;
+      border:1px solid var(--border);
+      border-radius:16px;
+      background:rgba(2,6,23,.38);
+    }
+
+    .kpi-detail-table{
+      min-width:980px;
+      width:100%;
+      border-collapse:collapse;
+    }
+
+    .kpi-detail-table th,
+    .kpi-detail-table td{
+      padding:10px 9px;
+      border-bottom:1px solid rgba(51,65,85,.65);
+      font-size:12px;
+      vertical-align:top;
+    }
+
+    .kpi-detail-table th{
+      background:#172033;
+      color:#bfdbfe;
+      position:sticky;
+      top:0;
+      z-index:1;
+    }
+
+    .signo-pos{color:#22c55e;font-weight:900}
+    .signo-neg{color:#ef4444;font-weight:900}
+    .signo-neutral{color:#38bdf8;font-weight:900}
+
   </style>
 
   <!-- OpenCV.js para escáner avanzado con detección de bordes y corrección de perspectiva -->
@@ -951,31 +1027,31 @@
     </section>
 
     <section class="grid-kpi">
-      <div class="kpi green" id="kpiCuentaCard">
+      <div class="kpi green clickable-kpi" id="kpiCuentaCard" onclick="abrirDetalleKPI('saldo_cuenta')" title="Ver detalle del saldo en cuenta">
         <div class="label">Saldo en cuenta</div>
         <div class="value" id="kpiCuenta">$0</div>
       </div>
-      <div class="kpi yellow" id="kpiEfectivoCard">
+      <div class="kpi yellow clickable-kpi" id="kpiEfectivoCard" onclick="abrirDetalleKPI('saldo_efectivo')" title="Ver detalle del saldo en efectivo">
         <div class="label">Saldo en efectivo</div>
         <div class="value" id="kpiEfectivo">$0</div>
       </div>
-      <div class="kpi yellow" id="kpiBolsaDiegoCard">
+      <div class="kpi yellow clickable-kpi" id="kpiBolsaDiegoCard" onclick="abrirDetalleKPI('bolsa_diego')" title="Ver detalle de Bolsa Diego">
         <div class="label">Bolsa Diego</div>
         <div class="value" id="kpiBolsaDiego">$0</div>
       </div>
-      <div class="kpi red">
+      <div class="kpi red clickable-kpi" id="kpiMesCard" onclick="abrirDetalleKPI('gastos_mes')" title="Ver detalle de gastos del mes">
         <div class="label">Gastos del mes</div>
         <div class="value" id="kpiMes">$0</div>
       </div>
-      <div class="kpi red" id="kpiRangoCard">
+      <div class="kpi red clickable-kpi" id="kpiRangoCard" onclick="abrirDetalleKPI('gastos_rango')" title="Ver detalle de gastos por rango de fechas">
         <div class="label" id="kpiRangoLabel">Gastos rango fechas</div>
         <div class="value" id="kpiRangoFechas">$0</div>
       </div>
-      <div class="kpi yellow" id="kpiEtiquetaFiltroCard">
+      <div class="kpi yellow clickable-kpi" id="kpiEtiquetaFiltroCard" onclick="abrirDetalleKPI('gastos_etiqueta')" title="Ver detalle de gastos por etiqueta">
         <div class="label" id="kpiEtiquetaFiltroLabel">Gastos etiqueta seleccionada</div>
         <div class="value" id="kpiEtiquetaFiltro">$0</div>
       </div>
-      <div class="kpi">
+      <div class="kpi clickable-kpi" id="kpiRegistrosCard" onclick="abrirDetalleKPI('registros_visibles')" title="Ver registros visibles">
         <div class="label">Registros visibles</div>
         <div class="value" id="kpiRegistros">0</div>
       </div>
@@ -1075,6 +1151,7 @@
                   <option value="">Todos</option>
                   <option value="RETIRO_CAJERO">Retiro de cajero</option>
                   <option value="ENTREGA_DIEGO">Entrega a Diego</option>
+                  <option value="ENTREGA_TRANSFERENCIA_DIEGO">Entrega transferencia a Diego</option>
                   <option value="INGRESO_CUENTA">Ingreso a cuenta</option>
                   <option value="INGRESO_EFECTIVO">Ingreso a efectivo</option>
                   <option value="AJUSTE_CUENTA">Ajuste cuenta</option>
@@ -1202,11 +1279,12 @@
 <div class="modal" id="modalMovimiento">
   <div class="modal-box" style="width:min(700px,96vw)">
     <div class="modal-head">
-      <h3>Registrar retiro / ajuste de saldos</h3>
+      <h3 id="tituloModalMovimiento">Registrar retiro / ajuste de saldos</h3>
       <button class="icon-btn" onclick="cerrarModalMovimiento()"><i data-lucide="x"></i></button>
     </div>
     <div class="modal-body">
       <form id="formMovimiento">
+        <input type="hidden" id="movimientoId" />
         <div class="form-grid">
           <div class="field">
             <label>Fecha</label>
@@ -1218,6 +1296,7 @@
             <select id="movTipo" required>
               <option value="RETIRO_CAJERO">Retiro de cajero: cuenta → efectivo</option>
               <option value="ENTREGA_DIEGO">Entrega de efectivo a Diego</option>
+              <option value="ENTREGA_TRANSFERENCIA_DIEGO">Entrega transferencia a Diego</option>
               <option value="INGRESO_CUENTA">Ingreso a cuenta</option>
               <option value="INGRESO_EFECTIVO">Ingreso a efectivo</option>
               <option value="AJUSTE_CUENTA">Ajuste cuenta</option>
@@ -1261,13 +1340,14 @@
               <div class="preview" id="previewReciboMovimiento">
                 <img id="previewReciboMovimientoImg" alt="Vista previa recibo retiro" />
               </div>
+              <p class="small" id="movSoporteActual"></p>
             </div>
           </div>
         </div>
 
         <div class="footer-actions">
           <button type="button" class="btn ghost" onclick="cerrarModalMovimiento()">Cancelar</button>
-          <button type="submit" class="btn yellow"><i data-lucide="save"></i> Guardar movimiento</button>
+          <button type="submit" class="btn yellow" id="btnGuardarMovimiento"><i data-lucide="save"></i> Guardar movimiento</button>
         </div>
       </form>
     </div>
@@ -1389,6 +1469,47 @@
   </div>
 </div>
 
+
+
+<!-- Modal detalle KPI -->
+<div class="modal" id="modalKpiDetalle">
+  <div class="modal-box" style="width:min(1200px,96vw)">
+    <div class="modal-head">
+      <div>
+        <h3 id="kpiDetalleTitulo">Detalle KPI</h3>
+        <p class="small" id="kpiDetalleSubtitulo" style="margin:5px 0 0"></p>
+      </div>
+      <button class="icon-btn" onclick="cerrarDetalleKPI()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="kpi-detail-summary" id="kpiDetalleResumen"></div>
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+        <div class="small" id="kpiDetalleInfo"></div>
+        <button class="btn green" type="button" onclick="exportarDetalleKPIExcel()"><i data-lucide="file-spreadsheet"></i> Exportar detalle a Excel</button>
+      </div>
+      <div class="kpi-detail-table-wrap">
+        <table class="kpi-detail-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Fuente</th>
+              <th>Concepto</th>
+              <th>Usuario</th>
+              <th>Método / Movimiento</th>
+              <th>Factura / Soporte</th>
+              <th>Etiqueta</th>
+              <th>Descripción</th>
+              <th>Signo</th>
+              <th>Valor</th>
+            </tr>
+          </thead>
+          <tbody id="kpiDetalleBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1457,6 +1578,7 @@
   let sortMovAsc = false;
   let archivoFacturaSeleccionado = null;
   let archivoReciboMovimientoSeleccionado = null;
+  let soporteMovimientoActual = {};
   let scannerStream = null;
   let scannerDestino = null;
   let scannerBlob = null;
@@ -1816,7 +1938,7 @@
     if(!campo || !input) return;
 
     const esRetiro = tipo === "RETIRO_CAJERO";
-    const esEntregaDiego = tipo === "ENTREGA_DIEGO";
+    const esEntregaDiego = tipo === "ENTREGA_DIEGO" || tipo === "ENTREGA_TRANSFERENCIA_DIEGO";
     const debeMostrarSoporte = esRetiro || esEntregaDiego;
 
     campo.style.display = debeMostrarSoporte ? "block" : "none";
@@ -1830,13 +1952,17 @@
     if(label){
       label.innerHTML = esRetiro
         ? 'Foto del recibo de retiro <span style="color:#f59e0b">*</span>'
-        : 'Foto del soporte de entrega a Diego <span class="small">(opcional)</span>';
+        : tipo === "ENTREGA_TRANSFERENCIA_DIEGO"
+          ? 'Foto del soporte de transferencia a Diego <span class="small">(opcional)</span>'
+          : 'Foto del soporte de entrega a Diego <span class="small">(opcional)</span>';
     }
 
     if(ayuda){
       ayuda.innerHTML = esRetiro
         ? 'Cuando el movimiento sea <b>Retiro de cajero</b>, debes adjuntar la foto o PDF del recibo.'
-        : 'Puedes adjuntar una foto o PDF como soporte de la entrega. No es obligatorio.';
+        : tipo === "ENTREGA_TRANSFERENCIA_DIEGO"
+          ? 'Puedes adjuntar una foto o PDF como soporte de la transferencia. No es obligatorio.'
+          : 'Puedes adjuntar una foto o PDF como soporte de la entrega. No es obligatorio.';
     }
 
     if(campoDiego) campoDiego.style.display = esEntregaDiego ? "block" : "none";
@@ -1853,19 +1979,58 @@
     }
   }
 
-  function abrirModalMovimiento(){
+  function abrirModalMovimiento(movimiento=null){
     if(!puedeVerMovimientosCaja()){
       toast("No tienes permisos para registrar movimientos de caja.");
       return;
     }
 
     $("formMovimiento").reset();
+    if($("movimientoId")) $("movimientoId").value = "";
+    if($("tituloModalMovimiento")) $("tituloModalMovimiento").textContent = "Registrar retiro / ajuste de saldos";
+    if($("btnGuardarMovimiento")) $("btnGuardarMovimiento").innerHTML = '<i data-lucide="save"></i> Guardar movimiento';
     $("movFecha").value = hoyISO();
     $("movUsuarioVisible").value = `${usuarioActual?.user_metadata?.full_name || usuarioActual?.email} (${usuarioActual?.email})`;
     archivoReciboMovimientoSeleccionado = null;
+    soporteMovimientoActual = {};
     if($("movReciboFile")) $("movReciboFile").value = "";
+    if($("movSoporteActual")) $("movSoporteActual").textContent = "";
     mostrarPreviewReciboMovimiento(null);
+
+    if(movimiento){
+      if(!puedeEliminarRegistro(movimiento)){
+        toast("No puedes modificar este movimiento porque fue creado por otro usuario.");
+        return;
+      }
+      if($("tituloModalMovimiento")) $("tituloModalMovimiento").textContent = "Editar movimiento de caja";
+      if($("btnGuardarMovimiento")) $("btnGuardarMovimiento").innerHTML = '<i data-lucide="save"></i> Actualizar movimiento';
+      if($("movimientoId")) $("movimientoId").value = movimiento.id || "";
+      $("movFecha").value = movimiento.fecha || hoyISO();
+      $("movTipo").value = movimiento.tipo_movimiento || "RETIRO_CAJERO";
+      $("movValor").value = formatCOP(movimiento.valor || 0);
+      $("movDescripcion").value = movimiento.descripcion || "";
+      if($("movDiegoEmail")){
+        $("movDiegoEmail").value = movimiento.destinatario_email || USUARIO_DIEGO_EMAIL || "diego.garcia@libertynet.com";
+      }
+      soporteMovimientoActual = {
+        soporte_drive_url: movimiento.soporte_drive_url || movimiento.factura_drive_url || "",
+        soporte_file_id: movimiento.soporte_file_id || movimiento.factura_file_id || "",
+        soporte_nombre: movimiento.soporte_nombre || movimiento.factura_nombre || ""
+      };
+      if($("movSoporteActual")){
+        $("movSoporteActual").innerHTML = soporteMovimientoActual.soporte_drive_url
+          ? `Soporte actual: <a href="${soporteMovimientoActual.soporte_drive_url}" target="_blank" style="color:#38bdf8">${soporteMovimientoActual.soporte_nombre || "Ver soporte"}</a>`
+          : "Este movimiento no tiene soporte cargado.";
+      }
+    }
+
     actualizarCampoReciboRetiro();
+
+    // Al editar un retiro que ya tiene soporte, no obliga a subirlo otra vez. Solo será obligatorio si no existe soporte previo.
+    if(movimiento && $("movTipo").value === "RETIRO_CAJERO" && soporteMovimientoActual.soporte_drive_url && $("movReciboFile")){
+      $("movReciboFile").required = false;
+    }
+
     $("modalMovimiento").classList.add("show");
     lucide.createIcons();
   }
@@ -2509,7 +2674,9 @@
 
     const tipoMovimiento = $("movTipo").value;
 
-    if(tipoMovimiento === "RETIRO_CAJERO" && !archivoReciboMovimientoSeleccionado){
+    const idMovimientoActual = $("movimientoId")?.value || null;
+    const tieneSoportePrevio = !!(idMovimientoActual && soporteMovimientoActual && soporteMovimientoActual.soporte_drive_url);
+    if(tipoMovimiento === "RETIRO_CAJERO" && !archivoReciboMovimientoSeleccionado && !tieneSoportePrevio){
       toast("Debes adjuntar la foto del recibo para registrar un retiro de cajero.");
       return;
     }
@@ -2534,6 +2701,8 @@
 
     const nombreUsuario = usuarioActual.user_metadata?.full_name || usuarioActual.user_metadata?.name || usuarioActual.email;
 
+    const id = $("movimientoId")?.value || null;
+
     const payload = {
       fecha: $("movFecha").value,
       usuario_id: usuarioActual.id,
@@ -2542,12 +2711,30 @@
       tipo_movimiento: tipoMovimiento,
       valor,
       descripcion: $("movDescripcion").value.trim(),
-      destinatario_nombre: tipoMovimiento === "ENTREGA_DIEGO" ? "Diego" : null,
-      destinatario_email: tipoMovimiento === "ENTREGA_DIEGO" ? ($("movDiegoEmail")?.value || USUARIO_DIEGO_EMAIL || "").trim() : null,
+      destinatario_nombre: ["ENTREGA_DIEGO", "ENTREGA_TRANSFERENCIA_DIEGO"].includes(tipoMovimiento) ? "Diego" : null,
+      destinatario_email: ["ENTREGA_DIEGO", "ENTREGA_TRANSFERENCIA_DIEGO"].includes(tipoMovimiento) ? ($("movDiegoEmail")?.value || USUARIO_DIEGO_EMAIL || "").trim() : null,
+      ...(id ? soporteMovimientoActual : {}),
       ...soporteInfo
     };
 
-    const { error } = await supabaseClient.from("gastos_movimientos_caja").insert(payload);
+    if(!["ENTREGA_DIEGO", "ENTREGA_TRANSFERENCIA_DIEGO"].includes(tipoMovimiento)){
+      payload.destinatario_nombre = null;
+      payload.destinatario_email = null;
+    }
+
+    let error;
+    if(id){
+      const movimientoActual = movimientosCaja.find(m => String(m.id) === String(id));
+      if(!puedeEliminarRegistro(movimientoActual)){
+        toast("No puedes modificar este movimiento porque fue creado por otro usuario.");
+        return;
+      }
+      const resp = await supabaseClient.from("gastos_movimientos_caja").update(payload).eq("id", id);
+      error = resp.error;
+    }else{
+      const resp = await supabaseClient.from("gastos_movimientos_caja").insert(payload);
+      error = resp.error;
+    }
 
     if(error){
       console.error(error);
@@ -2556,7 +2743,7 @@
     }
 
     cerrarModalMovimiento();
-    toast("Movimiento registrado correctamente.");
+    toast(id ? "Movimiento actualizado correctamente." : "Movimiento registrado correctamente.");
     await cargarTodo();
   }
 
@@ -2893,18 +3080,26 @@
       .filter(m => m.tipo_movimiento === "AJUSTE_EFECTIVO")
       .reduce((acc, m) => acc + Number(m.valor || 0), 0);
 
-    const entregasDiego = movimientosCaja
+    const entregasDiegoTotal = movimientosCaja
+      .filter(m => ["ENTREGA_DIEGO", "ENTREGA_TRANSFERENCIA_DIEGO"].includes(m.tipo_movimiento))
+      .reduce((acc, m) => acc + Number(m.valor || 0), 0);
+
+    const entregasDiegoEfectivo = movimientosBase
       .filter(m => m.tipo_movimiento === "ENTREGA_DIEGO")
+      .reduce((acc, m) => acc + Number(m.valor || 0), 0);
+
+    const transferenciasDiegoCuenta = movimientosBase
+      .filter(m => m.tipo_movimiento === "ENTREGA_TRANSFERENCIA_DIEGO")
       .reduce((acc, m) => acc + Number(m.valor || 0), 0);
 
     const gastosDiego = gastos
       .filter(g => esUsuarioDiego(g))
       .reduce((acc, g) => acc + Number(g.valor || 0), 0);
 
-    const saldoBolsaDiego = entregasDiego - gastosDiego;
+    const saldoBolsaDiego = entregasDiegoTotal - gastosDiego;
 
-    const saldoCuenta = ingresosCuenta + ajustesCuenta - retirosCajero - gastosCuenta;
-    const saldoEfectivo = ingresosEfectivo + ajustesEfectivo + retirosCajero - gastosEfectivo - entregasDiego;
+    const saldoCuenta = ingresosCuenta + ajustesCuenta - retirosCajero - gastosCuenta - transferenciasDiegoCuenta;
+    const saldoEfectivo = ingresosEfectivo + ajustesEfectivo + retirosCajero - gastosEfectivo - entregasDiegoEfectivo;
 
     $("kpiCuenta").textContent = formatCOP(saldoCuenta);
     $("kpiEfectivo").textContent = formatCOP(saldoEfectivo);
@@ -2983,7 +3178,7 @@
     if(esCamiloAutorizado()) return true;
 
     if(esDiegoAutorizado()){
-      return m.tipo_movimiento === "ENTREGA_DIEGO"
+      return ["ENTREGA_DIEGO", "ENTREGA_TRANSFERENCIA_DIEGO"].includes(m.tipo_movimiento)
         && emailNormalizado(m.destinatario_email) === emailNormalizado(USUARIO_DIEGO_EMAIL);
     }
 
@@ -3231,6 +3426,7 @@
     const labels = {
       RETIRO_CAJERO: "Retiro de cajero",
       ENTREGA_DIEGO: "Entrega de efectivo a Diego",
+      ENTREGA_TRANSFERENCIA_DIEGO: "Entrega transferencia a Diego",
       INGRESO_CUENTA: "Ingreso a cuenta",
       INGRESO_EFECTIVO: "Ingreso a efectivo",
       AJUSTE_CUENTA: "Ajuste cuenta",
@@ -3287,8 +3483,9 @@
           <td>
             <div class="actions">
               ${puedeEliminarRegistro(m)
-                ? `<button class="icon-btn" title="Eliminar movimiento" onclick='eliminarMovimiento("${m.id}")'><i data-lucide="trash-2"></i></button>`
-                : `<span class="small">No puedes eliminar</span>`
+                ? `<button class="icon-btn" title="Editar movimiento" onclick='editarMovimiento("${m.id}")'><i data-lucide="pencil"></i></button>
+                   <button class="icon-btn" title="Eliminar movimiento" onclick='eliminarMovimiento("${m.id}")'><i data-lucide="trash-2"></i></button>`
+                : `<span class="small">No puedes modificar</span>`
               }
             </div>
           </td>
@@ -3297,6 +3494,15 @@
     }).join("");
 
     lucide.createIcons();
+  }
+
+  function editarMovimiento(id){
+    const mov = movimientosCaja.find(m => String(m.id) === String(id));
+    if(!mov){
+      toast("No se encontró el movimiento seleccionado.");
+      return;
+    }
+    abrirModalMovimiento(mov);
   }
 
   async function eliminarMovimiento(id){
@@ -3650,6 +3856,326 @@
     }
   }
 
+
+
+  let kpiDetalleActual = {
+    tipo: "",
+    titulo: "",
+    subtitulo: "",
+    filas: [],
+    resumen: []
+  };
+
+  function usuarioKeyRegistro(r){
+    return r?.usuario_id || r?.usuario_email || r?.usuario_nombre || "";
+  }
+
+  function getBasesKPI(){
+    const usuarioFiltro = $("filtroUsuario")?.value || "";
+    const mesFiltro = $("filtroMes")?.value || mesActual();
+    const gastosVisiblesUsuario = gastos.filter(g => gastoVisibleParaUsuario(g));
+    const movimientosVisiblesUsuario = movimientosCaja.filter(m => movimientoVisibleParaUsuario(m));
+    const gastosBase = usuarioFiltro
+      ? gastosVisiblesUsuario.filter(g => usuarioKeyRegistro(g) === usuarioFiltro)
+      : gastosVisiblesUsuario;
+    const movimientosBase = usuarioFiltro
+      ? movimientosVisiblesUsuario.filter(m => usuarioKeyRegistro(m) === usuarioFiltro)
+      : movimientosVisiblesUsuario;
+    return { usuarioFiltro, mesFiltro, gastosBase, movimientosBase, gastosVisiblesUsuario, movimientosVisiblesUsuario };
+  }
+
+  function filaDetalleGasto(g, concepto, signo=-1){
+    return {
+      fecha: g.fecha || "",
+      fuente: "Gasto",
+      concepto: concepto || g.tipo_gasto || "Gasto",
+      usuario: g.usuario_nombre || g.usuario_email || "",
+      metodo_movimiento: g.metodo_pago || "",
+      factura_soporte: g.numero_factura || g.factura_nombre || (g.factura_drive_url ? "Ver soporte" : ""),
+      etiqueta: etiquetaNombre(g.etiqueta_id),
+      descripcion: g.descripcion || "",
+      signo,
+      valor: Number(g.valor || 0),
+      valor_calculado: Number(g.valor || 0) * Number(signo || 0),
+      url: g.factura_drive_url || ""
+    };
+  }
+
+  function filaDetalleMovimiento(m, concepto, signo=1){
+    return {
+      fecha: m.fecha || "",
+      fuente: "Movimiento caja",
+      concepto: concepto || tipoMovimientoLabel(m.tipo_movimiento),
+      usuario: m.usuario_nombre || m.usuario_email || "",
+      metodo_movimiento: tipoMovimientoLabel(m.tipo_movimiento),
+      factura_soporte: m.soporte_nombre || m.factura_nombre || (m.soporte_drive_url ? "Ver soporte" : ""),
+      etiqueta: "N/A",
+      descripcion: [m.descripcion || "", m.destinatario_nombre ? `Para: ${m.destinatario_nombre}${m.destinatario_email ? " - " + m.destinatario_email : ""}` : ""].filter(Boolean).join(" | "),
+      signo,
+      valor: Number(m.valor || 0),
+      valor_calculado: Number(m.valor || 0) * Number(signo || 0),
+      url: m.soporte_drive_url || m.factura_drive_url || ""
+    };
+  }
+
+  function filtrarGastosParaKpiRango(gastosBase){
+    const fechaDesde = $("filtroFechaDesde")?.value || "";
+    const fechaHasta = $("filtroFechaHasta")?.value || "";
+    const q = ($("buscar")?.value || "").trim().toLowerCase();
+    const tipoFiltro = $("filtroTipo")?.value || "";
+    const metodoFiltro = $("filtroMetodo")?.value || "";
+    const estadoLegalizacionFiltro = $("filtroEstadoLegalizacion")?.value || "";
+
+    return gastosBase.filter(g => {
+      const texto = [
+        g.usuario_email,
+        g.usuario_nombre,
+        g.numero_factura,
+        g.descripcion,
+        g.tipo_gasto,
+        g.metodo_pago
+      ].join(" ").toLowerCase();
+
+      return fechaEnRango(g.fecha, fechaDesde, fechaHasta)
+        && (!q || texto.includes(q))
+        && (!tipoFiltro || g.tipo_gasto === tipoFiltro)
+        && (!metodoFiltro || g.metodo_pago === metodoFiltro)
+        && (!estadoLegalizacionFiltro || estadoLegalizacionLabel(g.estado_legalizacion) === estadoLegalizacionFiltro);
+    });
+  }
+
+  function buildKpiDetalle(tipo){
+    const { mesFiltro, gastosBase, movimientosBase } = getBasesKPI();
+    const gastosCajaGeneral = gastosBase.filter(g => !esUsuarioDiego(g));
+    let titulo = "Detalle KPI";
+    let subtitulo = "";
+    let filas = [];
+    let resumen = [];
+
+    if(tipo === "saldo_cuenta"){
+      const ingresosCuenta = movimientosBase.filter(m => m.tipo_movimiento === "INGRESO_CUENTA");
+      const ajustesCuenta = movimientosBase.filter(m => m.tipo_movimiento === "AJUSTE_CUENTA");
+      const retirosCajero = movimientosBase.filter(m => m.tipo_movimiento === "RETIRO_CAJERO");
+      const transferenciasDiego = movimientosBase.filter(m => m.tipo_movimiento === "ENTREGA_TRANSFERENCIA_DIEGO");
+      const gastosCuenta = gastosCajaGeneral.filter(g => ["Transaccion", "Nequi"].includes(g.metodo_pago));
+      filas = [
+        ...ingresosCuenta.map(m => filaDetalleMovimiento(m, "Ingreso a cuenta", 1)),
+        ...ajustesCuenta.map(m => filaDetalleMovimiento(m, "Ajuste cuenta", 1)),
+        ...retirosCajero.map(m => filaDetalleMovimiento(m, "Retiro de cajero: cuenta → efectivo", -1)),
+        ...transferenciasDiego.map(m => filaDetalleMovimiento(m, "Entrega transferencia a Diego", -1)),
+        ...gastosCuenta.map(g => filaDetalleGasto(g, "Gasto pagado por cuenta / Nequi", -1))
+      ];
+      const totalIngresos = ingresosCuenta.reduce((a,m)=>a+Number(m.valor||0),0);
+      const totalAjustes = ajustesCuenta.reduce((a,m)=>a+Number(m.valor||0),0);
+      const totalRetiros = retirosCajero.reduce((a,m)=>a+Number(m.valor||0),0);
+      const totalTransferenciasDiego = transferenciasDiego.reduce((a,m)=>a+Number(m.valor||0),0);
+      const totalGastos = gastosCuenta.reduce((a,g)=>a+Number(g.valor||0),0);
+      titulo = "Detalle Saldo en cuenta";
+      subtitulo = "Fórmula: ingresos a cuenta + ajustes de cuenta - retiros de cajero - transferencias a Diego - gastos pagados por Transacción/Nequi.";
+      resumen = [
+        {label:"Ingresos cuenta", value:totalIngresos, cls:"positive"},
+        {label:"Ajustes cuenta", value:totalAjustes, cls:"positive"},
+        {label:"Retiros cajero", value:-totalRetiros, cls:"negative"},
+        {label:"Transferencias Diego", value:-totalTransferenciasDiego, cls:"negative"},
+        {label:"Gastos cuenta/Nequi", value:-totalGastos, cls:"negative"},
+        {label:"Saldo calculado", value:totalIngresos+totalAjustes-totalRetiros-totalTransferenciasDiego-totalGastos, cls:"neutral"}
+      ];
+    }
+
+    if(tipo === "saldo_efectivo"){
+      const ingresosEfectivo = movimientosBase.filter(m => m.tipo_movimiento === "INGRESO_EFECTIVO");
+      const ajustesEfectivo = movimientosBase.filter(m => m.tipo_movimiento === "AJUSTE_EFECTIVO");
+      const retirosCajero = movimientosBase.filter(m => m.tipo_movimiento === "RETIRO_CAJERO");
+      const gastosEfectivo = gastosCajaGeneral.filter(g => g.metodo_pago === "Efectivo");
+      const entregasDiego = movimientosBase.filter(m => m.tipo_movimiento === "ENTREGA_DIEGO");
+      filas = [
+        ...ingresosEfectivo.map(m => filaDetalleMovimiento(m, "Ingreso a efectivo", 1)),
+        ...ajustesEfectivo.map(m => filaDetalleMovimiento(m, "Ajuste efectivo", 1)),
+        ...retirosCajero.map(m => filaDetalleMovimiento(m, "Retiro de cajero: cuenta → efectivo", 1)),
+        ...gastosEfectivo.map(g => filaDetalleGasto(g, "Gasto pagado en efectivo", -1)),
+        ...entregasDiego.map(m => filaDetalleMovimiento(m, "Entrega de efectivo a Diego", -1))
+      ];
+      const totalIngresos = ingresosEfectivo.reduce((a,m)=>a+Number(m.valor||0),0);
+      const totalAjustes = ajustesEfectivo.reduce((a,m)=>a+Number(m.valor||0),0);
+      const totalRetiros = retirosCajero.reduce((a,m)=>a+Number(m.valor||0),0);
+      const totalGastos = gastosEfectivo.reduce((a,g)=>a+Number(g.valor||0),0);
+      const totalDiego = entregasDiego.reduce((a,m)=>a+Number(m.valor||0),0);
+      titulo = "Detalle Saldo en efectivo";
+      subtitulo = "Fórmula: ingresos efectivo + ajustes efectivo + retiros de cajero - gastos en efectivo - entregas a Diego.";
+      resumen = [
+        {label:"Ingresos efectivo", value:totalIngresos, cls:"positive"},
+        {label:"Ajustes efectivo", value:totalAjustes, cls:"positive"},
+        {label:"Retiros cajero", value:totalRetiros, cls:"positive"},
+        {label:"Gastos efectivo", value:-totalGastos, cls:"negative"},
+        {label:"Entregas Diego", value:-totalDiego, cls:"negative"},
+        {label:"Saldo calculado", value:totalIngresos+totalAjustes+totalRetiros-totalGastos-totalDiego, cls:"neutral"}
+      ];
+    }
+
+    if(tipo === "bolsa_diego"){
+      const entregasDiego = movimientosCaja.filter(m => ["ENTREGA_DIEGO", "ENTREGA_TRANSFERENCIA_DIEGO"].includes(m.tipo_movimiento));
+      const gastosDiegoRows = gastos.filter(g => esUsuarioDiego(g));
+      filas = [
+        ...entregasDiego.map(m => filaDetalleMovimiento(m, tipoMovimientoLabel(m.tipo_movimiento), 1)),
+        ...gastosDiegoRows.map(g => filaDetalleGasto(g, "Gasto registrado por Diego", -1))
+      ];
+      const totalEntregas = entregasDiego.reduce((a,m)=>a+Number(m.valor||0),0);
+      const totalGastos = gastosDiegoRows.reduce((a,g)=>a+Number(g.valor||0),0);
+      titulo = "Detalle Bolsa Diego";
+      subtitulo = "Fórmula: entregas de efectivo/transferencia a Diego - gastos registrados por Diego.";
+      resumen = [
+        {label:"Entregado a Diego", value:totalEntregas, cls:"positive"},
+        {label:"Gastos Diego", value:-totalGastos, cls:"negative"},
+        {label:"Saldo Bolsa Diego", value:totalEntregas-totalGastos, cls:"neutral"}
+      ];
+    }
+
+    if(tipo === "gastos_mes"){
+      const rows = gastosBase.filter(g => String(g.fecha || "").startsWith(mesFiltro));
+      filas = rows.map(g => filaDetalleGasto(g, "Gasto del mes", -1));
+      const total = rows.reduce((a,g)=>a+Number(g.valor||0),0);
+      titulo = "Detalle Gastos del mes";
+      subtitulo = `Mes evaluado: ${mesFiltro}. Si el filtro de mes está vacío, se usa el mes actual.`;
+      resumen = [
+        {label:"Registros", value:rows.length, cls:"neutral", count:true},
+        {label:"Total gastos", value:total, cls:"negative"}
+      ];
+    }
+
+    if(tipo === "gastos_rango"){
+      const rows = filtrarGastosParaKpiRango(gastosBase);
+      filas = rows.map(g => filaDetalleGasto(g, "Gasto dentro del rango", -1));
+      const total = rows.reduce((a,g)=>a+Number(g.valor||0),0);
+      const desde = $("filtroFechaDesde")?.value || "inicio";
+      const hasta = $("filtroFechaHasta")?.value || "fin";
+      titulo = "Detalle Gastos rango fechas";
+      subtitulo = `Rango evaluado: ${desde} a ${hasta}. Aplica búsqueda, tipo, método y estado de legalización.`;
+      resumen = [
+        {label:"Registros", value:rows.length, cls:"neutral", count:true},
+        {label:"Total rango", value:total, cls:"negative"}
+      ];
+    }
+
+    if(tipo === "gastos_etiqueta"){
+      const etiquetaFiltro = $("filtroEtiqueta")?.value || "";
+      const rows = etiquetaFiltro
+        ? gastosBase.filter(g => etiquetaFiltro === "__SIN_ETIQUETA__" ? !g.etiqueta_id : String(g.etiqueta_id || "") === String(etiquetaFiltro))
+        : [];
+      filas = rows.map(g => filaDetalleGasto(g, etiquetaFiltro === "__SIN_ETIQUETA__" ? "Gasto sin etiqueta" : `Gasto etiqueta ${etiquetaNombre(etiquetaFiltro)}`, -1));
+      const total = rows.reduce((a,g)=>a+Number(g.valor||0),0);
+      titulo = "Detalle Gastos etiqueta seleccionada";
+      subtitulo = etiquetaFiltro ? `Etiqueta evaluada: ${etiquetaFiltro === "__SIN_ETIQUETA__" ? "Sin etiqueta" : etiquetaNombre(etiquetaFiltro)}.` : "Selecciona una etiqueta en el filtro para ver el detalle.";
+      resumen = [
+        {label:"Registros", value:rows.length, cls:"neutral", count:true},
+        {label:"Total etiqueta", value:total, cls:"negative"}
+      ];
+    }
+
+    if(tipo === "registros_visibles"){
+      filas = [
+        ...gastosFiltrados.map(g => filaDetalleGasto(g, "Gasto visible", 0)),
+        ...movimientosFiltrados.map(m => filaDetalleMovimiento(m, "Movimiento visible", 0))
+      ];
+      titulo = "Detalle Registros visibles";
+      subtitulo = "Muestra los gastos y movimientos de caja que cumplen los filtros actuales.";
+      resumen = [
+        {label:"Gastos visibles", value:gastosFiltrados.length, cls:"neutral", count:true},
+        {label:"Movimientos visibles", value:movimientosFiltrados.length, cls:"neutral", count:true},
+        {label:"Total registros", value:gastosFiltrados.length + movimientosFiltrados.length, cls:"neutral", count:true}
+      ];
+    }
+
+    filas.sort((a,b) => String(b.fecha || "").localeCompare(String(a.fecha || "")));
+    return { tipo, titulo, subtitulo, filas, resumen };
+  }
+
+  function formatResumenValue(item){
+    if(item.count) return String(item.value || 0);
+    return formatCOP(item.value || 0);
+  }
+
+  function abrirDetalleKPI(tipo){
+    kpiDetalleActual = buildKpiDetalle(tipo);
+    $("kpiDetalleTitulo").textContent = kpiDetalleActual.titulo;
+    $("kpiDetalleSubtitulo").textContent = kpiDetalleActual.subtitulo || "";
+    $("kpiDetalleResumen").innerHTML = kpiDetalleActual.resumen.map(r => `
+      <div class="kpi-detail-card ${r.cls || "neutral"}">
+        <div class="k-label">${escHTML(r.label)}</div>
+        <div class="k-value">${escHTML(formatResumenValue(r))}</div>
+      </div>
+    `).join("");
+    $("kpiDetalleInfo").textContent = `${kpiDetalleActual.filas.length} registro(s) relacionados con este KPI.`;
+    renderDetalleKPITabla(kpiDetalleActual.filas);
+    $("modalKpiDetalle").classList.add("show");
+    lucide.createIcons();
+  }
+
+  function cerrarDetalleKPI(){
+    $("modalKpiDetalle")?.classList.remove("show");
+  }
+
+  function renderDetalleKPITabla(filas){
+    const tbody = $("kpiDetalleBody");
+    if(!tbody) return;
+    if(!filas.length){
+      tbody.innerHTML = `<tr><td colspan="10" class="empty">No hay datos para mostrar en este KPI.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = filas.map(f => {
+      const cls = f.signo > 0 ? "signo-pos" : f.signo < 0 ? "signo-neg" : "signo-neutral";
+      const signo = f.signo > 0 ? "+" : f.signo < 0 ? "-" : "•";
+      const soporte = f.url ? `<a href="${escHTML(f.url)}" target="_blank" style="color:#38bdf8">${escHTML(f.factura_soporte || "Ver soporte")}</a>` : escHTML(f.factura_soporte || "");
+      return `<tr>
+        <td>${escHTML(f.fecha)}</td>
+        <td>${escHTML(f.fuente)}</td>
+        <td>${escHTML(f.concepto)}</td>
+        <td>${escHTML(f.usuario)}</td>
+        <td>${escHTML(f.metodo_movimiento)}</td>
+        <td>${soporte}</td>
+        <td>${escHTML(f.etiqueta)}</td>
+        <td>${escHTML(f.descripcion)}</td>
+        <td class="${cls}">${signo}</td>
+        <td><b>${escHTML(formatCOP(f.valor_calculado || f.valor || 0))}</b><br><span class="small">Base: ${escHTML(formatCOP(f.valor || 0))}</span></td>
+      </tr>`;
+    }).join("");
+  }
+
+  function exportarDetalleKPIExcel(){
+    if(!kpiDetalleActual || !kpiDetalleActual.filas){
+      toast("No hay detalle KPI para exportar.");
+      return;
+    }
+
+    const dataDetalle = kpiDetalleActual.filas.map(f => ({
+      Fecha: f.fecha,
+      Fuente: f.fuente,
+      Concepto: f.concepto,
+      Usuario: f.usuario,
+      "Método / Movimiento": f.metodo_movimiento,
+      "Factura / Soporte": f.factura_soporte,
+      Etiqueta: f.etiqueta,
+      Descripción: f.descripcion,
+      Signo: f.signo > 0 ? "+" : f.signo < 0 ? "-" : "Visible",
+      Valor: Number(f.valor || 0),
+      "Valor aplicado al KPI": Number(f.valor_calculado || 0),
+      URL: f.url || ""
+    }));
+
+    const dataResumen = kpiDetalleActual.resumen.map(r => ({
+      KPI: kpiDetalleActual.titulo,
+      Concepto: r.label,
+      Valor: Number(r.value || 0),
+      Formato: r.count ? "Cantidad" : "COP",
+      Descripción: kpiDetalleActual.subtitulo || ""
+    }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dataResumen), "Resumen KPI");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dataDetalle), "Detalle KPI");
+    const nombre = limpiarNombreSoporte(`${kpiDetalleActual.titulo || "detalle_kpi"}_${new Date().toISOString().slice(0,10)}`) + ".xlsx";
+    XLSX.writeFile(wb, nombre);
+  }
+
   function toggleSidebar(){
     const app = document.getElementById("appShell") || document.querySelector(".app");
     const tab = document.getElementById("sidebarToggleTab");
@@ -3690,6 +4216,9 @@
 </script>
 </body>
 </html>
+
+
+
 
 
 
