@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SUPERVISIÓN - Instalaciones de Fibra Óptica</title>
+<style>
+  :root{
+    --bg:#0b1220;
+    --panel:#111a2b;
+    --panel2:#162238;
+    --border:#263852;
+    --text:#eef4ff;
+    --muted:#9eb0c8;
+    --accent:#2f80ed;
+    --ok:#27ae60;
+    --warn:#f2c94c;
+    --bad:#eb5757;
+    --info:#56ccf2;
+    --shadow:0 10px 30px rgba(0,0,0,.28);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Inter,Segoe UI,Arial,sans-serif;
+    background:linear-gradient(180deg,#08101c,#0d1626 35%,#0a1220);
+    color:var(--text);
+  }
+  .app{max-width:1500px;margin:auto;padding:18px}
+  .topbar{
+    position:sticky;top:0;z-index:20;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:14px 18px;margin-bottom:18px;
+    background:rgba(10,18,32,.94);backdrop-filter:blur(12px);
+    border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);
+  }
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{
+    width:46px;height:46px;border-radius:12px;
+    display:grid;place-items:center;
+    background:linear-gradient(135deg,#2f80ed,#56ccf2);
+    color:white;font-weight:900;font-size:20px;
+  }
+  h1{font-size:20px;margin:0}
+  .subtitle{color:var(--muted);font-size:12px;margin-top:4px}
+  .actions{display:flex;gap:8px;flex-wrap:wrap}
+  button,.btn{
+    border:none;border-radius:10px;padding:10px 14px;cursor:pointer;
+    color:white;background:#263852;font-weight:700;
+  }
+  button:hover{filter:brightness(1.08)}
+  .primary{background:var(--accent)}
+  .success{background:var(--ok)}
+  .danger{background:#b63c45}
+  .warning{background:#9a7810}
+  .grid{display:grid;gap:14px}
+  .g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .card{
+    background:linear-gradient(180deg,var(--panel),#0f1929);
+    border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:var(--shadow);
+    margin-bottom:16px;
+  }
+  .card h2{font-size:16px;margin:0 0 14px}
+  .section-title{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  label{display:block;color:#dce8f7;font-size:12px;font-weight:700;margin-bottom:6px}
+  input,select,textarea{
+    width:100%;background:#0b1423;border:1px solid #2b3d57;border-radius:9px;
+    color:white;padding:10px 11px;outline:none;
+  }
+  input:focus,select:focus,textarea:focus{border-color:#4d9aff;box-shadow:0 0 0 2px rgba(47,128,237,.16)}
+  textarea{min-height:86px;resize:vertical}
+  .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+  .kpi{padding:16px;border-radius:14px;background:var(--panel2);border:1px solid var(--border)}
+  .kpi .v{font-size:25px;font-weight:900}
+  .kpi .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+  table{width:100%;border-collapse:collapse;min-width:930px}
+  th,td{border-bottom:1px solid #283a53;padding:9px;vertical-align:top}
+  th{font-size:11px;text-align:left;color:#a9bdd7;background:#0d1726;position:sticky;top:0}
+  td{font-size:12px}
+  .table-wrap{overflow:auto;border:1px solid var(--border);border-radius:12px}
+  .item{font-weight:700}
+  .desc{font-size:11px;color:var(--muted);margin-top:3px}
+  .estado{min-width:125px}
+  .obs{min-width:220px}
+  .chip{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800}
+  .chip.ok{background:rgba(39,174,96,.15);color:#68e598}
+  .chip.bad{background:rgba(235,87,87,.15);color:#ff8e8e}
+  .chip.na{background:rgba(158,176,200,.15);color:#c5d3e4}
+  .photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:10px}
+  .photo{
+    position:relative;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#07101c;
+  }
+  .photo img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+  .photo small{display:block;padding:8px;color:#b7c7db}
+  .photo button{
+    position:absolute;right:6px;top:6px;width:28px;height:28px;padding:0;border-radius:50%;background:#b63c45
+  }
+  .finding{
+    border:1px solid var(--border);border-radius:12px;padding:12px;margin:10px 0;background:#0c1625
+  }
+  .finding-head{display:flex;justify-content:space-between;gap:10px;align-items:center}
+  .sev-critica{color:#ff6b6b}.sev-mayor{color:#ffb454}.sev-menor{color:#f7de69}.sev-info{color:#67d5ff}
+  canvas{
+    width:100%;height:160px;background:white;border-radius:10px;touch-action:none
+  }
+  .signature-tools{display:flex;gap:8px;margin-top:8px}
+  .footer-note{color:var(--muted);font-size:11px;text-align:center;margin:24px 0}
+  .hidden{display:none!important}
+  .pill{
+    display:inline-block;padding:5px 8px;border-radius:999px;background:#1d2d45;color:#bed2eb;font-size:11px
+  }
+  @media(max-width:900px){
+    .g4,.g3,.g2,.kpis{grid-template-columns:1fr}
+    .topbar{position:static;align-items:flex-start;flex-direction:column}
+    .actions{width:100%}
+    .actions button{flex:1}
+    .app{padding:10px}
+  }
+
+  /* PDF/report */
+  #report{
+    background:white;color:#1d2733;padding:26px;width:1100px;max-width:100%;
+  }
+  #report h1,#report h2,#report h3{color:#17324d}
+  .report-header{
+    display:flex;justify-content:space-between;border-bottom:3px solid #1d6fc1;padding-bottom:14px;margin-bottom:18px
+  }
+  .report-logo{
+    width:56px;height:56px;border-radius:12px;display:grid;place-items:center;
+    background:#1d6fc1;color:white;font-size:24px;font-weight:900
+  }
+  .report-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+  .report-box{border:1px solid #cad7e4;border-radius:8px;padding:8px}
+  .report-box b{display:block;color:#60768c;font-size:10px;text-transform:uppercase}
+  .report-table{width:100%;border-collapse:collapse;min-width:0}
+  .report-table th,.report-table td{border:1px solid #d4dde7;padding:6px;color:#243545;font-size:10px}
+  .report-table th{background:#edf4fa;position:static}
+  .report-photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .report-photo-grid img{width:100%;aspect-ratio:4/3;object-fit:cover;border:1px solid #d5dfea;border-radius:6px}
+  .report-signatures{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:25px}
+  .report-signatures img{width:100%;max-height:120px;object-fit:contain;border-bottom:1px solid #777}
+  @media print{
+    body *{visibility:hidden}
+    #report,#report *{visibility:visible}
+    #report{position:absolute;left:0;top:0;width:100%}
+  }
+
+  /* Barra lateral centralizada Nodo O&M */
+  .om-page{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh;transition:grid-template-columns .25s ease}
+  .om-page.sidebar-hidden{grid-template-columns:0 minmax(0,1fr)}
+  .om-sidebar{position:sticky;top:0;height:100vh;overflow:hidden;border-right:1px solid rgba(255,255,255,.10);background:#08142a;transition:transform .25s ease,opacity .25s ease;z-index:30}
+  .om-page.sidebar-hidden .om-sidebar{transform:translateX(-100%);opacity:0;pointer-events:none;border-right:0}
+  .sidebar-toggle-tab{position:fixed;left:240px;top:50%;transform:translateY(-50%);width:28px;height:72px;border:1px solid rgba(255,255,255,.10);border-left:0;border-radius:0 14px 14px 0;background:linear-gradient(135deg,#1d4ed8,#0f766e);color:#fff;font-weight:900;cursor:pointer;z-index:80;box-shadow:0 18px 40px rgba(0,0,0,.28);transition:left .25s ease}
+  .om-page.sidebar-hidden .sidebar-toggle-tab{left:0}
+  .om-module-content{min-width:0;overflow:hidden}
+  @media(max-width:900px){
+    .om-page{grid-template-columns:1fr}
+    .om-sidebar{position:fixed;left:0;top:0;width:240px;transform:translateX(-100%);opacity:0;pointer-events:none}
+    .om-page:not(.sidebar-hidden) .om-sidebar{transform:translateX(0);opacity:1;pointer-events:auto}
+    .sidebar-toggle-tab{left:0}
+    .om-page:not(.sidebar-hidden) .sidebar-toggle-tab{left:240px}
+    .om-module-content{width:100%}
+  }
+
+</style>
+</head>
+<body>
+<div class="om-page" id="omPage">
+  <aside class="om-sidebar" aria-label="Barra lateral Nodo O&amp;M">
+    <iframe id="sidebarFrame" src="barra_lateral.html?page=supervision.html" title="Barra lateral Nodo O&amp;M" style="display:block;width:100%;height:100vh;border:0;background:#08142a;"></iframe>
+  </aside>
+  <button id="sidebarToggleTab" class="sidebar-toggle-tab" title="Ocultar / mostrar barra lateral" type="button" onclick="toggleSidebar()">‹</button>
+  <div class="om-module-content">
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">S</div>
+      <div>
+        <h1>SUPERVISIÓN · Instalaciones de Fibra Óptica</h1>
+        <div class="subtitle">Inspección técnica, evidencias, hallazgos y reporte final</div>
+      </div>
+    </div>
+    <div class="actions">
+      <button onclick="nuevo()">Nuevo</button>
+      <button onclick="guardarLocal()">Guardar</button>
+      <button onclick="exportarJSON()">Exportar JSON</button>
+      <button onclick="document.getElementById('importJson').click()">Importar</button>
+      <button class="primary" onclick="prepararReporte()">Vista reporte</button>
+      <button class="success" onclick="generarPDF()">Generar PDF</button>
+    </div>
+    <input id="importJson" type="file" accept=".json" class="hidden">
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><div class="v" id="kpiScore">0%</div><div class="l">Conformidad</div></div>
+    <div class="kpi"><div class="v" id="kpiOk">0</div><div class="l">Ítems conformes</div></div>
+    <div class="kpi"><div class="v" id="kpiNo">0</div><div class="l">No conformidades</div></div>
+    <div class="kpi"><div class="v" id="kpiCritical">0</div><div class="l">Hallazgos críticos/mayores</div></div>
+  </div>
+
+  <div class="card">
+    <h2>1. Información general</h2>
+    <div class="grid g4">
+      <div><label>No. supervisión</label><input id="numero" placeholder="SUP-2026-001"></div>
+      <div><label>Fecha</label><input id="fecha" type="date"></div>
+      <div><label>Hora</label><input id="hora" type="time"></div>
+      <div><label>Ciudad / Municipio</label><input id="ciudad" placeholder="Villavicencio"></div>
+    </div>
+    <div class="grid g4" style="margin-top:10px">
+      <div><label>ID cliente / OT</label><input id="idCliente"></div>
+      <div><label>Cliente</label><input id="cliente"></div>
+      <div><label>Dirección</label><input id="direccion"></div>
+      <div><label>Coordenadas</label><input id="coordenadas" placeholder="4.12345, -73.12345"></div>
+    </div>
+    <div class="grid g4" style="margin-top:10px">
+      <div><label>Contratista</label><input id="contratista"></div>
+      <div><label>Supervisor</label><input id="supervisor"></div>
+      <div><label>Tipo de instalación</label>
+        <select id="tipoInstalacion">
+          <option>FTTH</option><option>Enlace corporativo</option><option>FO dedicada</option>
+          <option>Traslado</option><option>Reparación / Reinstalación</option><option>Otro</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid g4" style="margin-top:10px">
+      <div><label>Tipo de red</label><select id="tipoRed"><option>Aérea</option><option>Canalizada</option><option>Mixta</option><option>Interior</option></select></div>
+      <div><label>Cable / acometida</label><input id="cable" placeholder="Drop 1H / ADSS / figura 8..."></div>
+      <div><label>Longitud aprox. instalada (m)</label><input id="longitud" type="number" step="0.1"></div>
+      <div><label>Estado general</label>
+        <select id="estadoGeneral"><option>PENDIENTE</option><option>APROBADA</option><option>APROBADA CON OBSERVACIONES</option><option>RECHAZADA</option></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">
+      <h2>2. Checklist técnico de supervisión</h2>
+      <span class="pill">C = Conforme · NC = No conforme · NA = No aplica</span>
+    </div>
+    <div class="table-wrap">
+      <table id="checkTable">
+        <thead>
+          <tr>
+            <th style="width:10%">Categoría</th>
+            <th style="width:25%">Ítem de verificación</th>
+            <th style="width:14%">Estado</th>
+            <th>Observación</th>
+            <th style="width:14%">Evidencia</th>
+          </tr>
+        </thead>
+        <tbody id="checkBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3. Mediciones y pruebas</h2>
+    <div class="grid g4">
+      <div><label>Potencia óptica RX (dBm)</label><input id="potenciaRx" type="number" step="0.01"></div>
+      <div><label>Longitud de onda</label><select id="lambda"><option>1310 nm</option><option>1490 nm</option><option>1550 nm</option><option>1577 nm</option><option>Otro</option></select></div>
+      <div><label>Prueba continuidad</label><select id="continuidad"><option>Conforme</option><option>No conforme</option><option>No realizada</option></select></div>
+      <div><label>Prueba OTDR</label><select id="otdr"><option>No aplica</option><option>Conforme</option><option>No conforme</option><option>No realizada</option></select></div>
+    </div>
+    <div class="grid g4" style="margin-top:10px">
+      <div><label>Pérdida total medida (dB)</label><input id="perdida" type="number" step="0.01"></div>
+      <div><label>No. de empalmes</label><input id="empalmes" type="number"></div>
+      <div><label>No. de conectores</label><input id="conectores" type="number"></div>
+      <div><label>Referencia equipo de prueba</label><input id="equipoPrueba" placeholder="Power Meter / OTDR / VFL"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>4. Hallazgos / No conformidades</h2>
+    <div id="findings"></div>
+    <button class="primary" onclick="agregarHallazgo()">+ Agregar hallazgo</button>
+  </div>
+
+  <div class="card">
+    <h2>5. Evidencias fotográficas generales</h2>
+    <div class="grid g3">
+      <div><label>Tipo de evidencia</label>
+        <select id="photoType">
+          <option>Panorámica / fachada</option><option>Ruta de acometida</option><option>Herrajería</option>
+          <option>Reserva</option><option>Caja / CTO / NAP</option><option>Ingreso a predio</option>
+          <option>Equipo / ONT</option><option>Medición</option><option>Observación / Hallazgo</option><option>Otro</option>
+        </select>
+      </div>
+      <div style="grid-column:span 2"><label>Descripción</label><input id="photoDesc" placeholder="Ej. Reserva sobre poste 123, vista general"></div>
+    </div>
+    <div style="margin-top:10px">
+      <input id="photoInput" type="file" accept="image/*" multiple>
+    </div>
+    <div class="photos" id="photos"></div>
+  </div>
+
+  <div class="card">
+    <h2>6. Concepto de supervisión</h2>
+    <div class="grid g2">
+      <div>
+        <label>Concepto técnico</label>
+        <textarea id="concepto" placeholder="Describa el resultado general de la supervisión, cumplimiento técnico, seguridad, calidad y acciones requeridas."></textarea>
+      </div>
+      <div>
+        <label>Compromisos / acciones correctivas</label>
+        <textarea id="compromisos" placeholder="Acción, responsable y fecha objetivo de cierre."></textarea>
+      </div>
+    </div>
+    <div class="grid g3" style="margin-top:10px">
+      <div><label>Responsable cierre</label><input id="responsableCierre"></div>
+      <div><label>Fecha compromiso</label><input id="fechaCompromiso" type="date"></div>
+      <div><label>Requiere reinspección</label><select id="reinspeccion"><option>No</option><option>Sí</option></select></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>7. Firmas</h2>
+    <div class="grid g2">
+      <div>
+        <label>Firma supervisor</label>
+        <canvas id="sigSupervisor"></canvas>
+        <div class="signature-tools"><button onclick="clearSig('sigSupervisor')">Limpiar firma</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hidden" id="reportCard">
+    <div class="section-title">
+      <h2>Vista previa del reporte</h2>
+      <div><button onclick="cerrarReporte()">Cerrar</button><button class="success" onclick="generarPDF()">Generar PDF</button></div>
+    </div>
+    <div style="overflow:auto;background:#dce4ec;padding:16px;border-radius:12px">
+      <div id="report"></div>
+    </div>
+  </div>
+
+  <div class="footer-note">Módulo SUPERVISIÓN · Inspección profesional de instalaciones de fibra óptica</div>
+</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const checklist = [
+  ["Fibra óptica","Tipo de cable corresponde al diseño / orden de trabajo","Verificar referencia, número de hilos, uso interior/exterior y compatibilidad."],
+  ["Fibra óptica","Tendido sin aplastamientos, torsiones ni curvaturas excesivas","Validar radio mínimo de curvatura y ausencia de daños visibles."],
+  ["Fibra óptica","Cable correctamente fijado y protegido","Sin puntos de roce, elementos cortantes o esfuerzos mecánicos."],
+  ["Fibra óptica","Ingreso al predio correctamente sellado","Sellos, pasamuros y protección frente a agua/polvo."],
+  ["Herrajería","Herrajes y accesorios instalados correctamente","Abrazaderas, ganchos, tensores, anclajes y soportes adecuados."],
+  ["Herrajería","Separaciones y alturas adecuadas","Verificar interferencias con energía, tránsito y otras redes."],
+  ["Reservas","Existe reserva técnica suficiente","Reserva organizada para mantenimiento futuro, sin excesos."],
+  ["Reservas","Reserva correctamente organizada y fijada","No debe quedar colgando, estrangulada ni apoyada sobre elementos inapropiados."],
+  ["Reservas","Radio de curvatura adecuado en la reserva","Sin bucles cerrados ni deformaciones."],
+  ["CTO / NAP / Caja","Caja correctamente cerrada, fijada e identificada","Sin ingreso de agua, tapas flojas o sellos faltantes."],
+  ["CTO / NAP / Caja","Puerto utilizado coincide con documentación","Validar puerto, splitter y trazabilidad."],
+  ["Empalmes","Empalmes protegidos y organizados","Mangas/fusion protectors correctamente ubicados en bandeja."],
+  ["Conectores","Conectores limpios y bien acoplados","Sin contaminación, conectores flojos o adaptadores dañados."],
+  ["Identificación","Cable, caja, puerto y equipo debidamente identificados","Etiquetado legible y consistente con la documentación."],
+  ["Seguridad","Trabajo ejecutado sin condiciones inseguras visibles","Uso de EPP y ausencia de riesgos evidentes en la instalación terminada."],
+  ["Aseo","Área intervenida limpia y ordenada","Sin residuos, recortes de fibra o elementos abandonados."],
+  ["Documentación","Registro fotográfico completo y claro","Fotos generales y de detalle suficientes para evidenciar la instalación."],
+  ["Documentación","Datos de instalación coinciden con lo ejecutado","Dirección, puerto, equipo, cable, seriales y demás información real."],
+  ["Documentación","Mediciones ópticas registradas","Potencia / pérdidas dentro del rango definido por la operación."],
+  ["Cliente","Instalación terminada con presentación profesional","Ruta estética, organizada y con mínima afectación visual."],
+];
+
+let photoData = [];
+let findingSeq = 0;
+
+function init(){
+  document.getElementById("fecha").value = new Date().toISOString().slice(0,10);
+  document.getElementById("hora").value = new Date().toTimeString().slice(0,5);
+  const body = document.getElementById("checkBody");
+  checklist.forEach((r,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${r[0]}</td>
+      <td><div class="item">${r[1]}</div><div class="desc">${r[2]}</div></td>
+      <td><select class="estado" data-i="${i}" onchange="calcularKPIs()">
+        <option value="">Seleccionar</option><option value="C">C - Conforme</option>
+        <option value="NC">NC - No conforme</option><option value="NA">NA - No aplica</option>
+      </select></td>
+      <td><textarea class="obs" data-i="${i}" placeholder="Observación técnica"></textarea></td>
+      <td><input class="ev" data-i="${i}" type="file" accept="image/*"></td>`;
+    body.appendChild(tr);
+  });
+  setupSignatures();
+  restoreDraft();
+}
+function calcularKPIs(){
+  const vals=[...document.querySelectorAll(".estado")].map(x=>x.value);
+  const c=vals.filter(x=>x==="C").length;
+  const nc=vals.filter(x=>x==="NC").length;
+  const na=vals.filter(x=>x==="NA").length;
+  const evals=c+nc;
+  const score=evals?Math.round(c/evals*100):0;
+  document.getElementById("kpiScore").textContent=score+"%";
+  document.getElementById("kpiOk").textContent=c;
+  document.getElementById("kpiNo").textContent=nc;
+  const critical=[...document.querySelectorAll(".finding")].filter(f=>{
+    const s=f.querySelector(".f-sev")?.value;
+    return s==="Crítica"||s==="Mayor";
+  }).length;
+  document.getElementById("kpiCritical").textContent=critical;
+}
+function agregarHallazgo(data={}){
+  findingSeq++;
+  const div=document.createElement("div");
+  div.className="finding"; div.dataset.id=findingSeq;
+  div.innerHTML=`
+    <div class="finding-head">
+      <b>Hallazgo #${findingSeq}</b>
+      <button class="danger" onclick="this.closest('.finding').remove();calcularKPIs()">Eliminar</button>
+    </div>
+    <div class="grid g4" style="margin-top:10px">
+      <div><label>Severidad</label><select class="f-sev" onchange="calcularKPIs()">
+        <option>Menor</option><option>Mayor</option><option>Crítica</option><option>Informativa</option>
+      </select></div>
+      <div><label>Categoría</label><select class="f-cat">
+        <option>Fibra óptica</option><option>Herrajería</option><option>Reserva</option><option>Empalmes</option>
+        <option>CTO / NAP / Caja</option><option>Interior cliente</option><option>Documentación</option><option>Seguridad</option><option>Otro</option>
+      </select></div>
+      <div><label>Responsable</label><input class="f-resp"></div>
+      <div><label>Fecha objetivo</label><input class="f-fecha" type="date"></div>
+    </div>
+    <div class="grid g2" style="margin-top:10px">
+      <div><label>Descripción del hallazgo</label><textarea class="f-desc"></textarea></div>
+      <div><label>Acción correctiva requerida</label><textarea class="f-accion"></textarea></div>
+    </div>`;
+  document.getElementById("findings").appendChild(div);
+  if(data.severidad) div.querySelector(".f-sev").value=data.severidad;
+  if(data.categoria) div.querySelector(".f-cat").value=data.categoria;
+  if(data.responsable) div.querySelector(".f-resp").value=data.responsable;
+  if(data.fecha) div.querySelector(".f-fecha").value=data.fecha;
+  if(data.descripcion) div.querySelector(".f-desc").value=data.descripcion;
+  if(data.accion) div.querySelector(".f-accion").value=data.accion;
+  calcularKPIs();
+}
+document.getElementById("photoInput").addEventListener("change", async e=>{
+  for(const file of e.target.files){
+    const data=await fileToDataURL(file);
+    photoData.push({
+      type:document.getElementById("photoType").value,
+      desc:document.getElementById("photoDesc").value || file.name,
+      data
+    });
+  }
+  renderPhotos();
+  e.target.value="";
+});
+function fileToDataURL(file){
+  return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});
+}
+function renderPhotos(){
+  const box=document.getElementById("photos");box.innerHTML="";
+  photoData.forEach((p,i)=>{
+    const d=document.createElement("div");d.className="photo";
+    d.innerHTML=`<button onclick="removePhoto(${i})">×</button><img src="${p.data}"><small><b>${p.type}</b><br>${p.desc}</small>`;
+    box.appendChild(d);
+  });
+}
+function removePhoto(i){photoData.splice(i,1);renderPhotos();}
+function setupSignatures(){
+  ["sigSupervisor"].forEach(id=>{
+    const c=document.getElementById(id),ctx=c.getContext("2d");
+    function size(){
+      const dpr=window.devicePixelRatio||1;
+      const rect=c.getBoundingClientRect();
+      const old=c.toDataURL();
+      c.width=rect.width*dpr;c.height=160*dpr;ctx.scale(dpr,dpr);
+      ctx.lineWidth=2;ctx.lineCap="round";ctx.strokeStyle="#111";
+    }
+    size();
+    let drawing=false;
+    const pos=e=>{
+      const r=c.getBoundingClientRect(), t=e.touches?e.touches[0]:e;
+      return {x:t.clientX-r.left,y:t.clientY-r.top};
+    };
+    const start=e=>{drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);e.preventDefault();}
+    const move=e=>{if(!drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();e.preventDefault();}
+    const end=()=>drawing=false;
+    c.addEventListener("mousedown",start);c.addEventListener("mousemove",move);window.addEventListener("mouseup",end);
+    c.addEventListener("touchstart",start,{passive:false});c.addEventListener("touchmove",move,{passive:false});c.addEventListener("touchend",end);
+  });
+}
+function clearSig(id){const c=document.getElementById(id),ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);}
+function val(id){return document.getElementById(id)?.value||"";}
+function gather(){
+  const fields=["numero","fecha","hora","ciudad","idCliente","cliente","direccion","coordenadas","contratista","supervisor","tipoInstalacion","tipoRed","cable","longitud","estadoGeneral","potenciaRx","lambda","continuidad","otdr","perdida","empalmes","conectores","equipoPrueba","concepto","compromisos","responsableCierre","fechaCompromiso","reinspeccion"];
+  const data={};fields.forEach(id=>data[id]=val(id));
+  data.checklist=[...document.querySelectorAll("#checkBody tr")].map((tr,i)=>({
+    categoria:checklist[i][0],item:checklist[i][1],estado:tr.querySelector(".estado").value,observacion:tr.querySelector(".obs").value
+  }));
+  data.hallazgos=[...document.querySelectorAll(".finding")].map(f=>({
+    severidad:f.querySelector(".f-sev").value,categoria:f.querySelector(".f-cat").value,
+    responsable:f.querySelector(".f-resp").value,fecha:f.querySelector(".f-fecha").value,
+    descripcion:f.querySelector(".f-desc").value,accion:f.querySelector(".f-accion").value
+  }));
+  data.photos=photoData;
+  data.firmaSupervisor=document.getElementById("sigSupervisor").toDataURL("image/png");
+  return data;
+}
+function guardarLocal(){
+  try{localStorage.setItem("supervisionDraft",JSON.stringify(gather()));alert("Supervisión guardada en este navegador.");}
+  catch(e){alert("No se pudo guardar. Si hay muchas fotos, exporte el JSON como respaldo.");}
+}
+function restoreDraft(){
+  const s=localStorage.getItem("supervisionDraft"); if(!s)return;
+  try{
+    const d=JSON.parse(s);
+    if(confirm("Se encontró una supervisión guardada. ¿Desea recuperarla?")) loadData(d);
+  }catch(e){}
+}
+function loadData(d){
+  Object.entries(d).forEach(([k,v])=>{const el=document.getElementById(k);if(el && typeof v!=="object")el.value=v??""});
+  if(d.checklist){
+    [...document.querySelectorAll("#checkBody tr")].forEach((tr,i)=>{
+      const saved=d.checklist.find(row=>row.item===checklist[i][1]);
+      tr.querySelector(".estado").value=saved?.estado||"";
+      tr.querySelector(".obs").value=saved?.observacion||"";
+    });
+  }
+  document.getElementById("findings").innerHTML="";findingSeq=0;(d.hallazgos||[]).forEach(agregarHallazgo);
+  photoData=d.photos||[];renderPhotos();calcularKPIs();
+}
+function exportarJSON(){
+  const blob=new Blob([JSON.stringify(gather(),null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);
+  a.download=(val("numero")||"supervision")+".json";a.click();URL.revokeObjectURL(a.href);
+}
+document.getElementById("importJson").addEventListener("change", async e=>{
+  if(!e.target.files[0])return;
+  try{loadData(JSON.parse(await e.target.files[0].text()));alert("Supervisión importada.");}
+  catch(err){alert("Archivo JSON no válido.");}
+});
+function nuevo(){
+  if(!confirm("¿Crear una supervisión nueva? Se limpiará el formulario actual."))return;
+  localStorage.removeItem("supervisionDraft");location.reload();
+}
+function statusText(s){return s==="C"?"Conforme":s==="NC"?"No conforme":s==="NA"?"No aplica":"Sin evaluar";}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
+function prepararReporte(){
+  calcularKPIs();
+  const d=gather();
+  const score=document.getElementById("kpiScore").textContent;
+  const rows=d.checklist.map(x=>`<tr><td>${esc(x.categoria)}</td><td>${esc(x.item)}</td><td>${statusText(x.estado)}</td><td>${esc(x.observacion)}</td></tr>`).join("");
+  const halls=d.hallazgos.length?d.hallazgos.map((h,i)=>`<tr><td>${i+1}</td><td>${esc(h.severidad)}</td><td>${esc(h.categoria)}</td><td>${esc(h.descripcion)}</td><td>${esc(h.accion)}</td><td>${esc(h.responsable)}</td><td>${esc(h.fecha)}</td></tr>`).join(""):`<tr><td colspan="7">Sin hallazgos registrados.</td></tr>`;
+  const photos=d.photos.length?d.photos.map(p=>`<div><img src="${p.data}"><div style="font-size:9px;margin-top:3px"><b>${esc(p.type)}</b> · ${esc(p.desc)}</div></div>`).join(""):`<div>Sin fotografías adjuntas.</div>`;
+  document.getElementById("report").innerHTML=`
+    <div class="report-header">
+      <div><h1 style="margin:0">INFORME DE SUPERVISIÓN</h1><div>Instalación de fibra óptica</div><div style="font-size:11px;color:#6b7f92;margin-top:4px">${esc(d.numero||"Sin número")}</div></div>
+      <div class="report-logo">S</div>
+    </div>
+    <div class="report-grid">
+      ${box("Fecha",d.fecha+" "+d.hora)}${box("Ciudad",d.ciudad)}${box("ID cliente / OT",d.idCliente)}${box("Cliente",d.cliente)}
+      ${box("Contratista",d.contratista)}${box("Supervisor",d.supervisor)}${box("Estado general",d.estadoGeneral)}
+      ${box("Tipo instalación",d.tipoInstalacion)}${box("Tipo de red",d.tipoRed)}${box("Conformidad",score)}${box("Reinspección",d.reinspeccion)}
+    </div>
+    <h3>Ubicación e información técnica</h3>
+    <div class="report-grid">
+      ${box("Dirección",d.direccion)}${box("Coordenadas",d.coordenadas)}${box("Cable",d.cable)}${box("Longitud",d.longitud?d.longitud+" m":"")}
+      ${box("Potencia RX",d.potenciaRx?d.potenciaRx+" dBm":"")}${box("Longitud de onda",d.lambda)}${box("Pérdida",d.perdida?d.perdida+" dB":"")}${box("OTDR",d.otdr)}
+    </div>
+    <h3>Checklist técnico</h3>
+    <table class="report-table"><thead><tr><th>Categoría</th><th>Ítem</th><th>Estado</th><th>Observación</th></tr></thead><tbody>${rows}</tbody></table>
+    <h3>Hallazgos y acciones correctivas</h3>
+    <table class="report-table"><thead><tr><th>#</th><th>Severidad</th><th>Categoría</th><th>Hallazgo</th><th>Acción</th><th>Responsable</th><th>Fecha</th></tr></thead><tbody>${halls}</tbody></table>
+    <h3>Concepto técnico</h3>
+    <div style="border:1px solid #d4dde7;border-radius:8px;padding:10px;font-size:11px;white-space:pre-wrap">${esc(d.concepto)}</div>
+    <h3>Compromisos / acciones de cierre</h3>
+    <div style="border:1px solid #d4dde7;border-radius:8px;padding:10px;font-size:11px;white-space:pre-wrap">${esc(d.compromisos)}</div>
+    <div class="report-grid" style="margin-top:8px">${box("Responsable cierre",d.responsableCierre)}${box("Fecha compromiso",d.fechaCompromiso)}${box("Empalmes",d.empalmes)}${box("Conectores",d.conectores)}</div>
+    <h3>Evidencias fotográficas</h3>
+    <div class="report-photo-grid">${photos}</div>
+    <div class="report-signatures">
+      <div><img src="${d.firmaSupervisor}"><div style="text-align:center;font-size:10px">Firma supervisor · ${esc(d.supervisor)}</div></div>
+    </div>
+    <div style="margin-top:18px;font-size:9px;color:#738496;text-align:center">Documento generado desde el módulo SUPERVISIÓN</div>`;
+  document.getElementById("reportCard").classList.remove("hidden");
+  document.getElementById("reportCard").scrollIntoView({behavior:"smooth"});
+}
+function box(k,v){return `<div class="report-box"><b>${esc(k)}</b><span>${esc(v||"-")}</span></div>`}
+function cerrarReporte(){document.getElementById("reportCard").classList.add("hidden")}
+async function generarPDF(){
+  prepararReporte();
+  const el=document.getElementById("report");
+  if(!window.html2canvas || !window.jspdf){
+    alert("No se pudieron cargar las librerías PDF. Se abrirá la impresión del navegador; seleccione 'Guardar como PDF'.");
+    window.print();return;
+  }
+  const canvas=await html2canvas(el,{scale:1.6,useCORS:true,backgroundColor:"#ffffff"});
+  const img=canvas.toDataURL("image/jpeg",0.92);
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF("p","mm","a4");
+  const pageW=210,pageH=297,margin=8;
+  const imgW=pageW-margin*2;
+  const imgH=canvas.height*imgW/canvas.width;
+  let heightLeft=imgH, y=margin;
+  pdf.addImage(img,"JPEG",margin,y,imgW,imgH);
+  heightLeft-=pageH-margin*2;
+  while(heightLeft>0){
+    pdf.addPage();
+    y=margin-(imgH-heightLeft);
+    pdf.addImage(img,"JPEG",margin,y,imgW,imgH);
+    heightLeft-=pageH-margin*2;
+  }
+  pdf.save((val("numero")||"informe_supervision")+".pdf");
+}
+document.addEventListener("input",e=>{
+  if(e.target.matches("input,select,textarea")) {
+    clearTimeout(window._autosave);
+    window._autosave=setTimeout(()=>{try{localStorage.setItem("supervisionDraft",JSON.stringify(gather()))}catch(e){}},700);
+  }
+});
+function toggleSidebar(){
+  const page=document.getElementById('omPage');
+  const tab=document.getElementById('sidebarToggleTab');
+  if(!page)return;
+  page.classList.toggle('sidebar-hidden');
+  const hidden=page.classList.contains('sidebar-hidden');
+  localStorage.setItem('om_sidebar_hidden',hidden?'1':'0');
+  if(tab)tab.textContent=hidden?'›':'‹';
+}
+function restoreSidebarState(){
+  const page=document.getElementById('omPage');
+  const tab=document.getElementById('sidebarToggleTab');
+  if(!page)return;
+  let hidden=localStorage.getItem('om_sidebar_hidden')==='1';
+  if(window.matchMedia && window.matchMedia('(max-width:900px)').matches && localStorage.getItem('om_sidebar_hidden')===null) hidden=true;
+  page.classList.toggle('sidebar-hidden',hidden);
+  if(tab)tab.textContent=hidden?'›':'‹';
+}
+
+restoreSidebarState();
+init();
+</script>
+</body>
+</html>
