@@ -23,7 +23,11 @@
   body{
     margin:0;
     font-family:Inter,Segoe UI,Arial,sans-serif;
-    background:linear-gradient(180deg,#08101c,#0d1626 35%,#0a1220);
+    background:
+      radial-gradient(circle at 15% 0%,rgba(37,99,235,.18),transparent 30%),
+      radial-gradient(circle at 95% 35%,rgba(34,211,238,.08),transparent 28%),
+      linear-gradient(180deg,#050d1c,#07152b);
+    background-attachment:fixed;
     color:var(--text);
   }
   .app{max-width:1500px;margin:auto;padding:18px}
@@ -145,6 +149,14 @@
     body *{visibility:hidden}
     #report,#report *{visibility:visible}
     #report{position:absolute;left:0;top:0;width:100%}
+  }
+
+
+  .om-module-content{
+    background:
+      radial-gradient(circle at 15% 0%,rgba(37,99,235,.18),transparent 30%),
+      radial-gradient(circle at 95% 35%,rgba(34,211,238,.08),transparent 28%),
+      linear-gradient(180deg,#050d1c,#07152b);
   }
 
   /* Barra lateral centralizada Nodo O&M */
@@ -638,3 +650,4 @@ init();
 </script>
 </body>
 </html>
+
