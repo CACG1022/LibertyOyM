@@ -753,6 +753,23 @@
     .qr-otdr-label{background:#7f1d1d!important;color:#fff!important;border:1px solid #fecaca!important;border-radius:8px!important;font-weight:800!important}
     body.qr-map-is-fullscreen{overflow:hidden!important}
 
+
+    /* Barra lateral centralizada: el contenido se carga desde barra_lateral.html */
+    .node-shell{height:100vh;display:grid;grid-template-columns:250px minmax(0,1fr);overflow:hidden;position:relative;transition:grid-template-columns .22s ease}
+    .node-shell.sidebar-collapsed{grid-template-columns:0 minmax(0,1fr)}
+    .node-sidebar{height:100vh;min-width:0;overflow:hidden;border-right:1px solid rgba(255,255,255,.10);background:#08142a;transition:opacity .18s ease}
+    .node-shell.sidebar-collapsed .node-sidebar{opacity:0;pointer-events:none;border-right:0}
+    .node-sidebar iframe{display:block;width:100%;height:100vh;border:0;background:#08142a}
+    .node-shell > .app{min-width:0;width:100%}
+    .node-sidebar-toggle{position:absolute;left:250px;top:50%;transform:translate(-50%,-50%);z-index:12000;width:24px;height:74px;padding:0;border:1px solid rgba(255,255,255,.16);border-radius:0 10px 10px 0;background:#16356f;color:#fff;font-size:18px;font-weight:900;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.35);transition:left .22s ease,background .15s ease}
+    .node-sidebar-toggle:hover{background:#24509b}
+    .node-shell.sidebar-collapsed .node-sidebar-toggle{left:0;transform:translate(0,-50%)}
+    @media(max-width:700px){
+      .node-shell{grid-template-columns:210px minmax(0,1fr)}
+      .node-shell.sidebar-collapsed{grid-template-columns:0 minmax(0,1fr)}
+      .node-sidebar-toggle{left:210px}
+      .node-shell.sidebar-collapsed .node-sidebar-toggle{left:0}
+    }
 </style>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -760,7 +777,16 @@
   <script defer src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js"></script>
 </head>
 <body>
-  <div class="app">
+  <div class="node-shell">
+    <aside class="node-sidebar" aria-label="Barra lateral Nodo O&amp;M">
+      <iframe
+        id="sidebarFrame"
+        src="barra_lateral.html?page=nodo.html"
+        title="Barra lateral Nodo O&amp;M"
+      ></iframe>
+    </aside>
+    <button id="nodeSidebarToggle" class="node-sidebar-toggle" type="button" onclick="toggleNodeSidebar()" aria-label="Ocultar barra lateral" title="Ocultar barra lateral">‹</button>
+    <div class="app">
     <div class="topbar">
       <div class="brand">Inventario Visual Fibra</div>
       <button id="mobileMenuBtn" class="secondary mobile-menu-toggle" type="button" onclick="toggleMobileMenu()">☰ Más opciones</button>
@@ -810,6 +836,7 @@
       <div id="workspace" class="workspace">
         <svg id="linkOverlay"></svg>
       </div>
+    </div>
     </div>
   </div>
 
@@ -6621,7 +6648,22 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script src="https://unpkg.com/@tmcw/togeojson@5.8.1/dist/togeojson.umd.js">
 </script>
+
+<script>
+  function toggleNodeSidebar(){
+    const shell=document.querySelector('.node-shell');
+    const btn=document.getElementById('nodeSidebarToggle');
+    if(!shell || !btn) return;
+    const collapsed=shell.classList.toggle('sidebar-collapsed');
+    btn.textContent=collapsed?'›':'‹';
+    btn.setAttribute('aria-label',collapsed?'Mostrar barra lateral':'Ocultar barra lateral');
+    btn.title=collapsed?'Mostrar barra lateral':'Ocultar barra lateral';
+  }
+</script>
 </body>
 </html>
+
+
+
 
 
