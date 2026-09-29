@@ -129,26 +129,13 @@ function renderShell(){
   const email = localStorage.getItem('user_email') || '';
   document.getElementById('root').innerHTML = `
   <div class="page">
-    <aside class="sidebar" ondblclick="toggleSidebar()">
-      <div class="brand">Nodo O&M</div><div class="subbrand">Control y seguimiento</div>
-      <nav class="nav">
-        <a href="index.html">Inicio</a>
-        <a href="dashboard.html">Dashboard</a>
-        <a href="fallas.html">Tickets / Fallas</a>
-        <a href="mantenimientos.html">Mantenimientos</a>
-        <a href="preventivos.html">Preventivos</a>
-        <a href="instalaciones.html">Instalaciones</a>
-        <a href="factibilidades.html">Factibilidades</a>
-        <a href="traslados.html">Traslados</a>
-        <a href="materiales.html">Materiales</a>
-        <a href="liquidaciones.html" class="active">Liquidaciones</a>
-        <a href="gastos.html">Gastos</a>
-        <a href="tareas.html">Tareas y Alertas</a>
-        <a href="reportes.html">Reportes</a>
-        <a href="https://cacg1022.github.io/LibertyOyM/visormapa.html">Visor</a>
-        <a href="https://cacg1022.github.io/LibertyOyM/seguimiento/nodo.html">Nodo</a>
-      </nav>
-      <div class="session-box"><small>Sesión<br>${email || 'Sin iniciar'}</small><button class="btn secondary" style="width:100%" onclick="safeLogout()">Cerrar sesión</button></div>
+    <aside class="sidebar" ondblclick="toggleSidebar()" style="padding:0;overflow:hidden;" aria-label="Barra lateral Nodo O&amp;M">
+      <iframe
+        id="sidebarFrame"
+        src="barra_lateral.html?page=liquidaciones.html"
+        title="Barra lateral Nodo O&amp;M"
+        style="display:block;width:100%;height:100vh;border:0;background:#08142a;"
+      ></iframe>
     </aside>
     <button id="sidebarToggleTab" class="sidebar-toggle-tab" title="Ocultar / mostrar barra lateral" onclick="toggleSidebar()">‹</button>
     <main class="main">
@@ -752,5 +739,6 @@ loadAll();
 </script>
 </body>
 </html>
+
 
 
