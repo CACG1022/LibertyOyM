@@ -81,8 +81,8 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;background:lin
       <a href="index.html">Inicio</a>
       <a href="dashboard.html">Dashboard</a>
       <a href="fallas.html">Tickets / Fallas</a>
-      <a href="mantenimientos.html">Mantenimientos</a>
-      <a href="preventivos.html" class="active">Preventivos</a>
+      <a href="mantenimientos.html" class="active">Mantenimientos</a>
+      <a href="preventivos.html">Preventivos</a>
       <a href="instalaciones.html">Instalaciones</a>
       <a href="factibilidades.html">Factibilidades</a>
       <a href="traslados.html">Traslados</a>
@@ -564,4 +564,6 @@ function exportCSV(){let rows=filtered();if(!rows.length)return alert('No hay da
 function fmt(v){if(!v)return'';let s=String(v);return s.includes('T')?new Date(s).toLocaleString('es-CO'):s.slice(0,10)} function esc(v){return String(v??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
 </script>
 </body></html>
+
+
 
