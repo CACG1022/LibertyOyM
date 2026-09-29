@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Barra lateral Nodo O&M</title>
+  <style>
+    :root{
+      --bg1:#08142a;
+      --bg2:#081126;
+      --border:rgba(255,255,255,.10);
+      --text:#ffffff;
+      --muted:#9ab0d0;
+      --active:rgba(255,255,255,.06);
+      --active-border:rgba(147,197,253,.22);
+      --button:#1f3d79;
+    }
+
+    *{box-sizing:border-box}
+
+    html,body{
+      margin:0;
+      width:100%;
+      min-height:100%;
+      background:transparent;
+      font-family:Arial,Helvetica,sans-serif;
+      color:var(--text);
+    }
+
+    body{
+      min-height:100vh;
+      background:linear-gradient(180deg,var(--bg1),var(--bg2));
+    }
+
+    .sidebar{
+      width:100%;
+      min-height:100vh;
+      padding:18px 16px;
+      border-right:1px solid var(--border);
+      background:linear-gradient(180deg,var(--bg1),var(--bg2));
+      overflow-y:auto;
+    }
+
+    .brand{
+      font-size:18px;
+      font-weight:800;
+      margin-bottom:4px;
+    }
+
+    .subbrand{
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:24px;
+    }
+
+    .nav{
+      display:flex;
+      flex-direction:column;
+      gap:0;
+    }
+
+    .nav a{
+      display:block;
+      padding:12px;
+      border-radius:12px;
+      color:#fff;
+      text-decoration:none;
+      margin-bottom:8px;
+      border:1px solid transparent;
+      font-size:14px;
+      font-weight:600;
+      transition:background .15s ease,border-color .15s ease,transform .15s ease;
+    }
+
+    .nav a:hover{
+      background:rgba(255,255,255,.05);
+      border-color:var(--border);
+      transform:translateX(2px);
+    }
+
+    .nav a.active{
+      background:var(--active);
+      border-color:var(--active-border);
+      box-shadow:inset 3px 0 0 #3b82f6;
+    }
+
+    .session-box{
+      margin-top:24px;
+      padding:14px;
+      border:1px solid var(--border);
+      border-radius:16px;
+      background:rgba(255,255,255,.03);
+    }
+
+    .session-box small{
+      display:block;
+      color:var(--muted);
+      margin-bottom:8px;
+      word-break:break-all;
+      line-height:1.35;
+    }
+
+    .logout-btn{
+      width:100%;
+      border:none;
+      border-radius:12px;
+      padding:12px 16px;
+      font-weight:700;
+      cursor:pointer;
+      background:var(--button);
+      color:#fff;
+    }
+
+    .logout-btn:hover{filter:brightness(1.08)}
+
+    @media(max-width:600px){
+      .sidebar{padding:16px 14px}
+      .nav a{min-height:44px;display:flex;align-items:center}
+    }
+  </style>
+</head>
+
+<body>
+  <aside class="sidebar">
+    <div class="brand">Nodo O&amp;M</div>
+    <div class="subbrand">Control y seguimiento</div>
+
+    <nav class="nav" id="menuNav">
+      <a href="index.html" data-page="index.html">Inicio</a>
+      <a href="dashboard.html" data-page="dashboard.html">Dashboard</a>
+      <a href="fallas.html" data-page="fallas.html">Tickets / Fallas</a>
+      <a href="mantenimientos.html" data-page="mantenimientos.html">Mantenimientos</a>
+      <a href="preventivos.html" data-page="preventivos.html">Preventivos</a>
+      <a href="instalaciones.html" data-page="instalaciones.html">Instalaciones</a>
+      <a href="factibilidades.html" data-page="factibilidades.html">Factibilidades</a>
+      <a href="traslados.html" data-page="traslados.html">Traslados</a>
+      <a href="materiales.html" data-page="materiales.html">Materiales</a>
+      <a href="liquidaciones.html" data-page="liquidaciones.html">Liquidaciones</a>
+      <a href="gastos.html" data-page="gastos.html">Gastos</a>
+      <a href="tareas.html" data-page="tareas.html">Tareas y Alertas</a>
+      <a href="reportes.html" data-page="reportes.html">Reportes</a>
+
+      <a href="https://cacg1022.github.io/LibertyOyM/visormapa.html"
+         data-page="visormapa.html">Visor</a>
+
+      <a href="https://cacg1022.github.io/LibertyOyM/seguimiento/nodo.html"
+         data-page="nodo.html">Nodo</a>
+    </nav>
+
+    <div class="session-box">
+      <small>
+        Sesión<br>
+        <span id="sidebarUserEmail">Sin iniciar</span>
+      </small>
+      <button class="logout-btn" type="button" id="logoutBtn">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <script>
+    (function(){
+      function getCurrentPage(){
+        const params = new URLSearchParams(location.search);
+        const fromParam = params.get('page');
+        if(fromParam) return fromParam.toLowerCase();
+
+        try{
+          if(document.referrer){
+            const ref = new URL(document.referrer);
+            const file = ref.pathname.split('/').pop();
+            if(file) return file.toLowerCase();
+          }
+        }catch(e){}
+
+        const file = location.pathname.split('/').pop();
+        return (file || '').toLowerCase();
+      }
+
+      function markActive(){
+        const current = getCurrentPage();
+        document.querySelectorAll('#menuNav a').forEach(a=>{
+          const page = (a.dataset.page || '').toLowerCase();
+          a.classList.toggle('active', !!page && current.includes(page));
+        });
+      }
+
+      function loadUser(){
+        const email =
+          localStorage.getItem('user_email') ||
+          localStorage.getItem('email') ||
+          '';
+
+        const el = document.getElementById('sidebarUserEmail');
+        if(el) el.textContent = email || 'Sin iniciar';
+      }
+
+      function navigate(e){
+        const a = e.currentTarget;
+        const href = a.getAttribute('href');
+        if(!href) return;
+
+        // Si la barra se usa dentro de un iframe, navega la ventana principal.
+        if(window.parent && window.parent !== window){
+          e.preventDefault();
+          window.parent.location.href = href;
+        }
+      }
+
+      document.querySelectorAll('#menuNav a').forEach(a=>{
+        a.addEventListener('click', navigate);
+      });
+
+      document.getElementById('logoutBtn').addEventListener('click', function(){
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('email');
+
+        if(window.parent && window.parent !== window){
+          try{
+            if(typeof window.parent.logout === 'function'){
+              window.parent.logout();
+              return;
+            }
+          }catch(e){}
+          window.parent.location.href = 'index.html';
+        }else{
+          try{
+            if(typeof logout === 'function'){
+              logout();
+              return;
+            }
+          }catch(e){}
+          location.href = 'index.html';
+        }
+      });
+
+      markActive();
+      loadUser();
+
+      window.addEventListener('storage', loadUser);
+    })();
+  </script>
+</body>
+</html>
