@@ -74,30 +74,13 @@ body:before{content:"";position:fixed;inset:0;pointer-events:none;background:lin
 </head>
 <body>
 <div class="page" id="omPage">
-  <aside class="sidebar" ondblclick="toggleSidebar()">
-    <div class="brand">Nodo O&amp;M</div>
-    <div class="subbrand">Control y seguimiento</div>
-    <nav class="nav">
-      <a href="index.html">Inicio</a>
-      <a href="dashboard.html">Dashboard</a>
-      <a href="fallas.html">Tickets / Fallas</a>
-      <a href="mantenimientos.html" class="active">Mantenimientos</a>
-      <a href="preventivos.html">Preventivos</a>
-      <a href="instalaciones.html">Instalaciones</a>
-      <a href="factibilidades.html">Factibilidades</a>
-      <a href="traslados.html">Traslados</a>
-      <a href="materiales.html">Materiales</a>
-      <a href="liquidaciones.html">Liquidaciones</a>
-      <a href="gastos.html">Gastos</a>
-      <a href="tareas.html">Tareas y Alertas</a>
-      <a href="reportes.html">Reportes</a>
-      <a href="https://cacg1022.github.io/LibertyOyM/visormapa.html">Visor</a>
-      <a href="https://cacg1022.github.io/LibertyOyM/seguimiento/nodo.html">Nodo</a>
-    </nav>
-    <div class="session-box">
-      <small>Sesión<br><span id="sidebarUserEmail">Sin iniciar</span></small>
-      <button class="session-btn" type="button" onclick="safeLogoutPreventivos()">Cerrar sesión</button>
-    </div>
+  <aside class="sidebar" ondblclick="toggleSidebar()" style="padding:0;overflow:hidden;" aria-label="Barra lateral Nodo O&amp;M">
+    <iframe
+      id="sidebarFrame"
+      src="barra_lateral.html?page=preventivos.html"
+      title="Barra lateral Nodo O&amp;M"
+      style="display:block;width:100%;height:100vh;border:0;background:#08142a;"
+    ></iframe>
   </aside>
   <button id="sidebarToggleTab" class="sidebar-toggle-tab" title="Ocultar / mostrar barra lateral" type="button" onclick="toggleSidebar()">‹</button>
   <div class="module-content">
@@ -564,6 +547,7 @@ function exportCSV(){let rows=filtered();if(!rows.length)return alert('No hay da
 function fmt(v){if(!v)return'';let s=String(v);return s.includes('T')?new Date(s).toLocaleString('es-CO'):s.slice(0,10)} function esc(v){return String(v??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]))}
 </script>
 </body></html>
+
 
 
 
