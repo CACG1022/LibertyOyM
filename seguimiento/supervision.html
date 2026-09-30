@@ -75,7 +75,7 @@
   .kpi{padding:16px;border-radius:14px;background:var(--panel2);border:1px solid var(--border)}
   .kpi .v{font-size:25px;font-weight:900}
   .kpi .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
-  table{width:100%;border-collapse:collapse;min-width:930px}
+  table{width:100%;border-collapse:collapse;min-width:760px}
   th,td{border-bottom:1px solid #283a53;padding:9px;vertical-align:top}
   th{font-size:11px;text-align:left;color:#a9bdd7;background:#0d1726;position:sticky;top:0}
   td{font-size:12px}
@@ -268,10 +268,9 @@
         <thead>
           <tr>
             <th style="width:10%">Categoría</th>
-            <th style="width:25%">Ítem de verificación</th>
+            <th style="width:34%">Ítem de verificación</th>
             <th style="width:14%">Estado</th>
             <th>Observación</th>
-            <th style="width:14%">Evidencia</th>
           </tr>
         </thead>
         <tbody id="checkBody"></tbody>
@@ -434,7 +433,7 @@ const checklist = [
   ["CTO / NAP / Caja","Puerto utilizado coincide con documentación","Validar puerto, splitter y trazabilidad."],
   ["Empalmes","Empalmes protegidos y organizados","Mangas/fusion protectors correctamente ubicados en bandeja."],
   ["Conectores","Conectores limpios y bien acoplados","Sin contaminación, conectores flojos o adaptadores dañados."],
-  ["Identificación","Cable, caja, puerto y equipo debidamente identificados","Etiquetado legible y consistente con la documentación."],
+  ["Marquillado","Cable de fibra debidamente marquillado en cada punto de apoyo, poste o cámara","Verificar que el cable de fibra cuente con marquilla legible y correctamente instalada en cada punto de apoyo, poste o cámara."],
   ["Seguridad","Trabajo ejecutado sin condiciones inseguras visibles","Uso de EPP y ausencia de riesgos evidentes en la instalación terminada."],
   ["Aseo","Área intervenida limpia y ordenada","Sin residuos, recortes de fibra o elementos abandonados."],
   ["Documentación","Registro fotográfico completo y claro","Fotos generales y de detalle suficientes para evidenciar la instalación."],
@@ -521,8 +520,7 @@ function init(){
         <option value="">Seleccionar</option><option value="C">C - Conforme</option>
         <option value="NC">NC - No conforme</option><option value="NA">NA - No aplica</option>
       </select></td>
-      <td><textarea class="obs" data-i="${i}" placeholder="Observación técnica"></textarea></td>
-      <td><input class="ev" data-i="${i}" type="file" accept="image/*"></td>`;
+      <td><textarea class="obs" data-i="${i}" placeholder="Observación técnica"></textarea></td>`;
     body.appendChild(tr);
   });
 
