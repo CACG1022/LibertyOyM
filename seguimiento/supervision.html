@@ -23,11 +23,7 @@
   body{
     margin:0;
     font-family:Inter,Segoe UI,Arial,sans-serif;
-    background:
-      radial-gradient(circle at 15% 0%,rgba(37,99,235,.18),transparent 30%),
-      radial-gradient(circle at 95% 35%,rgba(34,211,238,.08),transparent 28%),
-      linear-gradient(180deg,#050d1c,#07152b);
-    background-attachment:fixed;
+    background:linear-gradient(180deg,#08101c,#0d1626 35%,#0a1220);
     color:var(--text);
   }
   .app{max-width:1500px;margin:auto;padding:18px}
@@ -151,14 +147,6 @@
     #report{position:absolute;left:0;top:0;width:100%}
   }
 
-
-  .om-module-content{
-    background:
-      radial-gradient(circle at 15% 0%,rgba(37,99,235,.18),transparent 30%),
-      radial-gradient(circle at 95% 35%,rgba(34,211,238,.08),transparent 28%),
-      linear-gradient(180deg,#050d1c,#07152b);
-  }
-
   /* Barra lateral centralizada Nodo O&M */
   .om-page{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh;transition:grid-template-columns .25s ease}
   .om-page.sidebar-hidden{grid-template-columns:0 minmax(0,1fr)}
@@ -215,7 +203,7 @@
   <div class="card">
     <h2>1. Información general</h2>
     <div class="grid g4">
-      <div><label>No. supervisión</label><input id="numero" placeholder="SUP-2026-001"></div>
+      <div><label>No. supervisión</label><input id="numero" readonly title="Consecutivo generado automáticamente"></div>
       <div><label>Fecha</label><input id="fecha" type="date"></div>
       <div><label>Hora</label><input id="hora" type="time"></div>
       <div><label>Ciudad / Municipio</label><input id="ciudad" placeholder="Villavicencio"></div>
@@ -276,10 +264,7 @@
       <div><label>Prueba OTDR</label><select id="otdr"><option>No aplica</option><option>Conforme</option><option>No conforme</option><option>No realizada</option></select></div>
     </div>
     <div class="grid g4" style="margin-top:10px">
-      <div><label>Pérdida total medida (dB)</label><input id="perdida" type="number" step="0.01"></div>
       <div><label>No. de empalmes</label><input id="empalmes" type="number"></div>
-      <div><label>No. de conectores</label><input id="conectores" type="number"></div>
-      <div><label>Referencia equipo de prueba</label><input id="equipoPrueba" placeholder="Power Meter / OTDR / VFL"></div>
     </div>
   </div>
 
@@ -381,6 +366,45 @@ const checklist = [
 let photoData = [];
 let findingSeq = 0;
 
+function generarConsecutivoSupervision(){
+  const year = new Date().getFullYear();
+  const key = `supervisionConsecutivo_${year}`;
+  let actual = parseInt(localStorage.getItem(key) || '0', 10);
+  if(!Number.isFinite(actual)) actual = 0;
+  actual += 1;
+  localStorage.setItem(key, String(actual));
+  return `SUP-${year}-${String(actual).padStart(4,'0')}`;
+}
+
+function cargarDatosDesdeInstalaciones(){
+  let raw = null;
+  try{ raw = localStorage.getItem('supervision_prefill'); }catch(e){}
+  if(!raw) return false;
+
+  try{
+    const data = JSON.parse(raw);
+    const set = (id, value) => {
+      const el = document.getElementById(id);
+      if(el && value !== undefined && value !== null) el.value = String(value);
+    };
+
+    set('ciudad', data.ciudad || '');
+    set('idCliente', data.idCliente || '');
+    set('cliente', data.cliente || '');
+    set('direccion', data.direccion || '');
+    set('coordenadas', data.coordenadas || '');
+
+    // Se consume una sola vez para evitar que vuelva a cargarse al abrir el módulo manualmente.
+    localStorage.removeItem('supervision_prefill');
+    localStorage.removeItem('supervisionDraft');
+    return true;
+  }catch(err){
+    console.warn('No fue posible cargar los datos enviados desde Instalaciones:', err);
+    try{ localStorage.removeItem('supervision_prefill'); }catch(e){}
+    return false;
+  }
+}
+
 function init(){
   document.getElementById("fecha").value = new Date().toISOString().slice(0,10);
   document.getElementById("hora").value = new Date().toTimeString().slice(0,5);
@@ -398,8 +422,15 @@ function init(){
       <td><input class="ev" data-i="${i}" type="file" accept="image/*"></td>`;
     body.appendChild(tr);
   });
+
   setupSignatures();
-  restoreDraft();
+
+  const vieneDeInstalaciones = cargarDatosDesdeInstalaciones();
+  if(!vieneDeInstalaciones) restoreDraft();
+
+  if(!val('numero')){
+    document.getElementById('numero').value = generarConsecutivoSupervision();
+  }
 }
 function calcularKPIs(){
   const vals=[...document.querySelectorAll(".estado")].map(x=>x.value);
@@ -500,7 +531,7 @@ function setupSignatures(){
 function clearSig(id){const c=document.getElementById(id),ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);}
 function val(id){return document.getElementById(id)?.value||"";}
 function gather(){
-  const fields=["numero","fecha","hora","ciudad","idCliente","cliente","direccion","coordenadas","contratista","supervisor","tipoInstalacion","tipoRed","cable","longitud","estadoGeneral","potenciaRx","lambda","continuidad","otdr","perdida","empalmes","conectores","equipoPrueba","concepto","compromisos","responsableCierre","fechaCompromiso","reinspeccion"];
+  const fields=["numero","fecha","hora","ciudad","idCliente","cliente","direccion","coordenadas","contratista","supervisor","tipoInstalacion","tipoRed","cable","longitud","estadoGeneral","potenciaRx","lambda","continuidad","otdr","empalmes","concepto","compromisos","responsableCierre","fechaCompromiso","reinspeccion"];
   const data={};fields.forEach(id=>data[id]=val(id));
   data.checklist=[...document.querySelectorAll("#checkBody tr")].map((tr,i)=>({
     categoria:checklist[i][0],item:checklist[i][1],estado:tr.querySelector(".estado").value,observacion:tr.querySelector(".obs").value
@@ -573,7 +604,7 @@ function prepararReporte(){
     <h3>Ubicación e información técnica</h3>
     <div class="report-grid">
       ${box("Dirección",d.direccion)}${box("Coordenadas",d.coordenadas)}${box("Cable",d.cable)}${box("Longitud",d.longitud?d.longitud+" m":"")}
-      ${box("Potencia RX",d.potenciaRx?d.potenciaRx+" dBm":"")}${box("Longitud de onda",d.lambda)}${box("Pérdida",d.perdida?d.perdida+" dB":"")}${box("OTDR",d.otdr)}
+      ${box("Potencia RX",d.potenciaRx?d.potenciaRx+" dBm":"")}${box("Longitud de onda",d.lambda)}${box("Prueba continuidad",d.continuidad)}${box("OTDR",d.otdr)}
     </div>
     <h3>Checklist técnico</h3>
     <table class="report-table"><thead><tr><th>Categoría</th><th>Ítem</th><th>Estado</th><th>Observación</th></tr></thead><tbody>${rows}</tbody></table>
@@ -583,7 +614,7 @@ function prepararReporte(){
     <div style="border:1px solid #d4dde7;border-radius:8px;padding:10px;font-size:11px;white-space:pre-wrap">${esc(d.concepto)}</div>
     <h3>Compromisos / acciones de cierre</h3>
     <div style="border:1px solid #d4dde7;border-radius:8px;padding:10px;font-size:11px;white-space:pre-wrap">${esc(d.compromisos)}</div>
-    <div class="report-grid" style="margin-top:8px">${box("Responsable cierre",d.responsableCierre)}${box("Fecha compromiso",d.fechaCompromiso)}${box("Empalmes",d.empalmes)}${box("Conectores",d.conectores)}</div>
+    <div class="report-grid" style="margin-top:8px">${box("Responsable cierre",d.responsableCierre)}${box("Fecha compromiso",d.fechaCompromiso)}${box("Empalmes",d.empalmes)}</div>
     <h3>Evidencias fotográficas</h3>
     <div class="report-photo-grid">${photos}</div>
     <div class="report-signatures">
