@@ -21,7 +21,7 @@
     .session-box small{display:block;color:var(--muted);margin-bottom:8px;word-break:break-all}
     .btn{border:none;border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#2563eb,#22c55e);color:#fff}
     .btn.secondary{background:#1f3d79}.btn.ghost{background:rgba(255,255,255,.04);border:1px solid var(--border)}
-    .small-btn{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:#fff;cursor:pointer}.sol-btn{margin-top:7px;width:100%;padding:7px 10px;min-height:28px;font-size:12px;border-radius:9px;background:linear-gradient(135deg,#2563eb,#06b6d4);border:1px solid rgba(255,255,255,.12);color:#fff;font-weight:800;cursor:pointer}.copy-msg{font-size:12px;color:#86efac;margin-left:10px;align-self:center}
+    .small-btn{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:#fff;cursor:pointer}.actions-grid{display:grid;grid-template-columns:repeat(2,minmax(72px,1fr));gap:6px;min-width:158px;max-width:190px}.actions-grid button{width:100%;height:32px;min-height:32px;margin:0!important;padding:5px 7px!important;border-radius:8px!important;font-size:10px!important;line-height:1.05;font-weight:800;display:flex;align-items:center;justify-content:center;text-align:center;white-space:normal}.actions-grid .small-btn{background:rgba(255,255,255,.05);border:1px solid var(--border)}.sol-btn{background:linear-gradient(135deg,#2563eb,#06b6d4);border:1px solid rgba(255,255,255,.12);color:#fff;cursor:pointer}.supervision-btn{background:linear-gradient(135deg,#7c3aed,#2563eb);border:1px solid rgba(255,255,255,.14);color:#fff;cursor:pointer}.supervision-btn:hover{filter:brightness(1.08)}.copy-msg{font-size:12px;color:#86efac;margin-left:10px;align-self:center}
     .main{padding:26px 28px}
     .header h1{margin:0 0 6px;font-size:28px}.header p{margin:0 0 20px;color:var(--muted)}
     .toolbar-row{display:grid;grid-template-columns:1fr;gap:12px;align-items:center;margin-bottom:0}
@@ -112,7 +112,7 @@
     .detail-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.detail-card{border:1px solid var(--border);border-radius:16px;padding:14px;background:rgba(255,255,255,.03)}
     .detail-title{font-size:12px;color:var(--muted);margin-bottom:6px}.detail-value{font-size:14px;font-weight:700;white-space:pre-wrap}
 
-    .audit-btn{display:block;width:100%;margin-top:7px;padding:7px 10px;line-height:1.05;font-size:11px;min-height:26px;border-radius:9px;border:1px solid rgba(251,191,36,.35);background:linear-gradient(135deg,rgba(245,158,11,.24),rgba(37,99,235,.18));color:#fff;font-weight:800;cursor:pointer;white-space:nowrap}
+    .audit-btn{border:1px solid rgba(251,191,36,.35);background:linear-gradient(135deg,rgba(245,158,11,.24),rgba(37,99,235,.18));color:#fff;cursor:pointer}
     .audit-table-wrap{max-height:62vh;overflow:auto;border:1px solid var(--border);border-radius:16px;background:rgba(255,255,255,.02)}
     .audit-table{width:100%;border-collapse:separate;border-spacing:0}
     .audit-table th,.audit-table td{padding:11px 12px;border-bottom:1px solid rgba(255,255,255,.07);font-size:12px;text-align:left;vertical-align:top}
@@ -1687,7 +1687,7 @@ function getColumnValue(r, field){
     case 'duracion_total': return calcularDuracionTotalInstRow(r);
     case 'tiempo_muerto': return calcularTiempoMuertoInstRow(r);
     case 'duracion_efectiva': return calcularDuracionEfectivaInstRow(r);
-    case 'acciones': return 'Editar | Sol Contratista | Historial';
+    case 'acciones': return 'Editar | Sol Contratista | Supervisión | Historial';
     default: return '';
   }
 }
@@ -1827,12 +1827,87 @@ function renderTable(){
       <td><div class="row-kpi dead"><span class="rk-label">Muerto</span><span class="rk-value">${esc(calcularTiempoMuertoInstRow(r))}</span></div></td>
       <td><div class="row-kpi effective"><span class="rk-label">Efectiva</span><span class="rk-value">${esc(calcularDuracionEfectivaInstRow(r))}</span></div></td>
       <td onclick="event.stopPropagation()">
-        <button class="small-btn" onclick="editRow('${r.id}')">Editar</button>
-        <button class="sol-btn" onclick="solicitarContratistaInstalacion('${r.id}')">Sol Contratista</button>
-        <button class="audit-btn" onclick="verAuditoria('instalaciones', '${r.id}', '${esc(r.cliente || r.id_cambio || r.id)}')">Historial</button>
+        <div class="actions-grid">
+          <button class="small-btn" onclick="editRow('${r.id}')">Editar</button>
+          <button class="sol-btn" onclick="solicitarContratistaInstalacion('${r.id}')">Sol Contratista</button>
+          <button class="supervision-btn" onclick="crearSupervisionInstalacion('${r.id}')">Supervisión</button>
+          <button class="audit-btn" onclick="verAuditoria('instalaciones', '${r.id}', '${esc(r.cliente || r.id_cambio || r.id)}')">Historial</button>
+        </div>
       </td>
     </tr>
   `).join('');
+}
+
+
+function obtenerCoordenadasSupervision(row){
+  if(!row) return '';
+
+  const directa =
+    row.coordenadas ??
+    row.coordenada ??
+    row.coords ??
+    row.ubicacion_gps ??
+    row.gps ??
+    row.COORDENADAS ??
+    '';
+
+  if(String(directa ?? '').trim()) return String(directa).trim();
+
+  const lat =
+    row.latitud ??
+    row.latitude ??
+    row.lat ??
+    row.LATITUD ??
+    row.LATITUDE ??
+    row.LAT ??
+    '';
+
+  const lon =
+    row.longitud ??
+    row.longitude ??
+    row.lon ??
+    row.lng ??
+    row.LONGITUD ??
+    row.LONGITUDE ??
+    row.LON ??
+    row.LNG ??
+    '';
+
+  if(String(lat ?? '').trim() && String(lon ?? '').trim()){
+    return `${String(lat).trim()}, ${String(lon).trim()}`;
+  }
+  return '';
+}
+
+function crearSupervisionInstalacion(id){
+  const row = instalacionesRows.find(x => String(x.id) === String(id));
+  if(!row){
+    alert('No se encontró la instalación seleccionada.');
+    return;
+  }
+
+  const payload = {
+    ciudad: row.ciudad || row.municipio || row.CIUDAD || row.MUNICIPIO || 'VILLAVICENCIO',
+    idCliente: row.id_cliente || row.id_tarea || row.id_cambio || '',
+    cliente: row.cliente || '',
+    direccion: row.direccion || '',
+    coordenadas: obtenerCoordenadasSupervision(row),
+    instalacionId: row.id || '',
+    idCambio: row.id_cambio || '',
+    idTarea: row.id_tarea || ''
+  };
+
+  try{
+    // Elimina un borrador anterior para garantizar que la supervisión abra con la instalación elegida.
+    localStorage.removeItem('supervisionDraft');
+    localStorage.setItem('supervision_prefill', JSON.stringify(payload));
+  }catch(err){
+    console.error(err);
+    alert('No fue posible preparar los datos para la supervisión.');
+    return;
+  }
+
+  window.location.href = 'supervision.html?from=instalaciones';
 }
 
 async function loadInstalaciones(){
@@ -3316,6 +3391,7 @@ loadInstalaciones();
 
 </body>
 </html>
+
 
 
 
