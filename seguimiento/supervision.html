@@ -141,6 +141,29 @@
   .report-photo-grid img{width:100%;aspect-ratio:4/3;object-fit:cover;border:1px solid #d5dfea;border-radius:6px}
   .report-signatures{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:25px}
   .report-signatures img{width:100%;max-height:120px;object-fit:contain;border-bottom:1px solid #777}
+
+  .search-modal-backdrop{
+    position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.62);backdrop-filter:blur(5px);z-index:120;padding:18px;
+  }
+  .search-modal-backdrop.show{display:flex}
+  .search-modal{
+    width:min(1250px,100%);max-height:92vh;overflow:auto;
+    background:linear-gradient(180deg,#0b1628,#0f1d32);
+    border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:18px;
+  }
+  .search-modal-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px}
+  .search-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:12px}
+  .search-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .search-results{overflow:auto;border:1px solid var(--border);border-radius:12px;max-height:56vh}
+  .search-results table{min-width:980px}
+  .search-results tbody tr{cursor:pointer}
+  .search-results tbody tr:hover{background:rgba(47,128,237,.10)}
+  .search-empty{padding:24px;text-align:center;color:var(--muted)}
+  .search-meta{font-size:11px;color:var(--muted);margin:6px 0 10px}
+  @media(max-width:1000px){.search-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:600px){.search-grid{grid-template-columns:1fr}.search-modal{padding:12px}}
+
   @media print{
     body *{visibility:hidden}
     #report,#report *{visibility:visible}
@@ -184,7 +207,8 @@
     </div>
     <div class="actions">
       <button onclick="nuevo()">Nuevo</button>
-      <button onclick="guardarLocal()">Guardar</button>
+      <button onclick="abrirBuscadorSupervisiones()">Buscar supervisión</button>
+      <button class="primary" id="btnGuardarSupervision" onclick="guardarSupervision()">Guardar</button>
       <button onclick="exportarJSON()">Exportar JSON</button>
       <button onclick="document.getElementById('importJson').click()">Importar</button>
       <button class="primary" onclick="prepararReporte()">Vista reporte</button>
@@ -334,9 +358,65 @@
 
   <div class="footer-note">Módulo SUPERVISIÓN · Inspección profesional de instalaciones de fibra óptica</div>
 </div>
+
+<div id="searchSupervisionModal" class="search-modal-backdrop">
+  <div class="search-modal">
+    <div class="search-modal-header">
+      <div>
+        <h2 style="margin:0">Buscar supervisiones</h2>
+        <div class="subtitle">Consulta supervisiones guardadas en Supabase y abre cualquiera para revisar o editar.</div>
+      </div>
+      <button onclick="cerrarBuscadorSupervisiones()">✕</button>
+    </div>
+
+    <div class="search-grid">
+      <div><label>No. supervisión</label><input id="buscarNumero" placeholder="SUP-2026-0001"></div>
+      <div><label>ID cliente / OT</label><input id="buscarIdCliente"></div>
+      <div><label>Cliente</label><input id="buscarCliente"></div>
+      <div><label>Ciudad</label><input id="buscarCiudad"></div>
+      <div><label>Estado</label>
+        <select id="buscarEstado">
+          <option value="">Todos</option>
+          <option>PENDIENTE</option>
+          <option>APROBADA</option>
+          <option>APROBADA CON OBSERVACIONES</option>
+          <option>RECHAZADA</option>
+        </select>
+      </div>
+      <div><label>Fecha</label><input id="buscarFecha" type="date"></div>
+    </div>
+
+    <div class="search-actions">
+      <button class="primary" onclick="buscarSupervisiones()">Buscar</button>
+      <button onclick="limpiarFiltrosBusqueda()">Limpiar</button>
+    </div>
+
+    <div id="searchMeta" class="search-meta"></div>
+
+    <div class="search-results">
+      <table>
+        <thead>
+          <tr>
+            <th>No. supervisión</th>
+            <th>Fecha</th>
+            <th>ID cliente</th>
+            <th>Cliente</th>
+            <th>Ciudad</th>
+            <th>Estado</th>
+            <th>Conformidad</th>
+          </tr>
+        </thead>
+        <tbody id="searchResultsBody"></tbody>
+      </table>
+      <div id="searchEmpty" class="search-empty">Usa los filtros y presiona Buscar.</div>
+    </div>
+  </div>
+</div>
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -365,15 +445,32 @@ const checklist = [
 
 let photoData = [];
 let findingSeq = 0;
+let prefillInstalacionMeta = { instalacionId:'', idCambio:'', idTarea:'' };
 
-function generarConsecutivoSupervision(){
-  const year = new Date().getFullYear();
-  const key = `supervisionConsecutivo_${year}`;
-  let actual = parseInt(localStorage.getItem(key) || '0', 10);
-  if(!Number.isFinite(actual)) actual = 0;
-  actual += 1;
-  localStorage.setItem(key, String(actual));
-  return `SUP-${year}-${String(actual).padStart(4,'0')}`;
+let supervisionActualId = null;
+let numeroSupervisionActual = '';
+
+async function resolveSupervisionClient(){
+  if(window.__supervisionClient) return window.__supervisionClient;
+
+  if(typeof getClient === 'function'){
+    try{
+      window.__supervisionClient = await getClient();
+      return window.__supervisionClient;
+    }catch(e){
+      console.warn('getClient() no disponible para Supervisión:', e);
+    }
+  }
+
+  const url = localStorage.getItem('sb_url');
+  const key = localStorage.getItem('sb_key');
+
+  if(!url || !key){
+    throw new Error('No se encontró la configuración de Supabase. Verifica app.js o sb_url / sb_key.');
+  }
+
+  window.__supervisionClient = window.supabase.createClient(url, key);
+  return window.__supervisionClient;
 }
 
 function cargarDatosDesdeInstalaciones(){
@@ -393,6 +490,12 @@ function cargarDatosDesdeInstalaciones(){
     set('cliente', data.cliente || '');
     set('direccion', data.direccion || '');
     set('coordenadas', data.coordenadas || '');
+
+    prefillInstalacionMeta = {
+      instalacionId: data.instalacionId || '',
+      idCambio: data.idCambio || '',
+      idTarea: data.idTarea || ''
+    };
 
     // Se consume una sola vez para evitar que vuelva a cargarse al abrir el módulo manualmente.
     localStorage.removeItem('supervision_prefill');
@@ -429,7 +532,7 @@ function init(){
   if(!vieneDeInstalaciones) restoreDraft();
 
   if(!val('numero')){
-    document.getElementById('numero').value = generarConsecutivoSupervision();
+    document.getElementById('numero').value = 'Se asignará al guardar';
   }
 }
 function calcularKPIs(){
@@ -487,6 +590,8 @@ document.getElementById("photoInput").addEventListener("change", async e=>{
     photoData.push({
       type:document.getElementById("photoType").value,
       desc:document.getElementById("photoDesc").value || file.name,
+      originalName:file.name,
+      nombre_archivo:null,
       data
     });
   }
@@ -500,7 +605,11 @@ function renderPhotos(){
   const box=document.getElementById("photos");box.innerHTML="";
   photoData.forEach((p,i)=>{
     const d=document.createElement("div");d.className="photo";
-    d.innerHTML=`<button onclick="removePhoto(${i})">×</button><img src="${p.data}"><small><b>${p.type}</b><br>${p.desc}</small>`;
+    const preview = p.data
+      ? `<img src="${p.data}" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><div style="display:none;aspect-ratio:4/3;place-items:center;color:#9eb0c8;padding:10px;text-align:center">Imagen almacenada externamente</div>`
+      : `<div style="display:grid;aspect-ratio:4/3;place-items:center;color:#9eb0c8;padding:10px;text-align:center">Imagen almacenada externamente</div>`;
+    const link = p.drive_url ? `<br><a href="${p.drive_url}" target="_blank" style="color:#67d5ff">Abrir foto</a>` : '';
+    d.innerHTML=`<button onclick="removePhoto(${i})">×</button>${preview}<small><b>${p.type}</b><br>${p.desc}${p.nombre_archivo?`<br><span style="color:#7dd3fc">${p.nombre_archivo}</span>`:''}${p.estado_subida?`<br><span style="color:#9eb0c8">${p.estado_subida}</span>`:''}${link}</small>`;
     box.appendChild(d);
   });
 }
@@ -533,6 +642,9 @@ function val(id){return document.getElementById(id)?.value||"";}
 function gather(){
   const fields=["numero","fecha","hora","ciudad","idCliente","cliente","direccion","coordenadas","contratista","supervisor","tipoInstalacion","tipoRed","cable","longitud","estadoGeneral","potenciaRx","lambda","continuidad","otdr","empalmes","concepto","compromisos","responsableCierre","fechaCompromiso","reinspeccion"];
   const data={};fields.forEach(id=>data[id]=val(id));
+  data.instalacionId = prefillInstalacionMeta.instalacionId || '';
+  data.idCambio = prefillInstalacionMeta.idCambio || '';
+  data.idTarea = prefillInstalacionMeta.idTarea || '';
   data.checklist=[...document.querySelectorAll("#checkBody tr")].map((tr,i)=>({
     categoria:checklist[i][0],item:checklist[i][1],estado:tr.querySelector(".estado").value,observacion:tr.querySelector(".obs").value
   }));
@@ -545,10 +657,178 @@ function gather(){
   data.firmaSupervisor=document.getElementById("sigSupervisor").toDataURL("image/png");
   return data;
 }
-function guardarLocal(){
-  try{localStorage.setItem("supervisionDraft",JSON.stringify(gather()));alert("Supervisión guardada en este navegador.");}
-  catch(e){alert("No se pudo guardar. Si hay muchas fotos, exporte el JSON como respaldo.");}
+function numeroDesdeKpi(id){
+  const txt = document.getElementById(id)?.textContent || '0';
+  const n = parseFloat(String(txt).replace('%','').replace(',','.'));
+  return Number.isFinite(n) ? n : 0;
 }
+
+function construirPayloadSupervision(){
+  const d = gather();
+
+  return {
+    instalacion_id: d.instalacionId || null,
+    id_cambio: d.idCambio || null,
+    id_tarea: d.idTarea || null,
+    id_cliente: d.idCliente || null,
+
+    fecha: d.fecha || null,
+    hora: d.hora || null,
+    ciudad: d.ciudad || null,
+    cliente: d.cliente || null,
+    direccion: d.direccion || null,
+    coordenadas: d.coordenadas || null,
+    contratista: d.contratista || null,
+    supervisor: d.supervisor || null,
+
+    tipo_instalacion: d.tipoInstalacion || null,
+    tipo_red: d.tipoRed || null,
+    cable_acometida: d.cable || null,
+    longitud_instalada: d.longitud !== '' ? Number(d.longitud) : null,
+    estado_general: d.estadoGeneral || 'PENDIENTE',
+
+    potencia_rx: d.potenciaRx !== '' ? Number(d.potenciaRx) : null,
+    longitud_onda: d.lambda || null,
+    prueba_continuidad: d.continuidad || null,
+    prueba_otdr: d.otdr || null,
+    numero_empalmes: d.empalmes !== '' ? Number(d.empalmes) : null,
+
+    conformidad_porcentaje: numeroDesdeKpi('kpiScore'),
+    items_conformes: numeroDesdeKpi('kpiOk'),
+    items_no_conformes: numeroDesdeKpi('kpiNo'),
+    items_no_aplica: (d.checklist || []).filter(x => x.estado === 'NA').length,
+    hallazgos_criticos_mayores: numeroDesdeKpi('kpiCritical'),
+
+    checklist: d.checklist || [],
+    hallazgos: d.hallazgos || [],
+
+    concepto_tecnico: d.concepto || null,
+    compromisos: d.compromisos || null,
+    responsable_cierre: d.responsableCierre || null,
+    fecha_compromiso: d.fechaCompromiso || null,
+    requiere_reinspeccion: String(d.reinspeccion || '').toLowerCase() === 'sí' || String(d.reinspeccion || '').toLowerCase() === 'si',
+
+    actualizado_por: localStorage.getItem('user_email') || null
+  };
+}
+
+function nombreFotoSupervision(indice, foto){
+  const base = numeroSupervisionActual || val('numero') || 'SUPERVISION';
+  const limpio = String(base).replace(/[^A-Za-z0-9_-]/g,'_');
+  const ext = (foto?.originalName || '').match(/\.[A-Za-z0-9]{2,5}$/)?.[0] || '.jpg';
+  return `${limpio}_FOTO_${String(indice + 1).padStart(2,'0')}${ext}`;
+}
+
+async function guardarMetadatosFotos(client, supervisionId){
+  if(!supervisionId || !photoData.length) return;
+
+  const { data: existentes, error: errorSelect } = await client
+    .from('supervision_fotos')
+    .select('nombre_archivo')
+    .eq('supervision_id', supervisionId);
+
+  if(errorSelect) throw errorSelect;
+
+  const nombresExistentes = new Set((existentes || []).map(x => String(x.nombre_archivo || '')));
+
+  const nuevas = photoData.map((foto, i) => ({
+    supervision_id: supervisionId,
+    nombre_archivo: foto.nombre_archivo || nombreFotoSupervision(i, foto),
+    tipo_evidencia: foto.type || null,
+    descripcion: foto.desc || null,
+    estado_subida: 'PENDIENTE',
+    fecha_captura: new Date().toISOString()
+  })).filter(x => !nombresExistentes.has(x.nombre_archivo));
+
+  if(!nuevas.length) return;
+
+  const { error } = await client
+    .from('supervision_fotos')
+    .insert(nuevas);
+
+  if(error) throw error;
+
+  nuevas.forEach((row, i) => {
+    const foto = photoData.find((p, idx) => (p.nombre_archivo || nombreFotoSupervision(idx, p)) === row.nombre_archivo);
+    if(foto) foto.nombre_archivo = row.nombre_archivo;
+  });
+}
+
+async function guardarSupervision(){
+  const btn = document.getElementById('btnGuardarSupervision');
+  const originalText = btn?.textContent || 'Guardar';
+
+  try{
+    calcularKPIs();
+
+    if(btn){
+      btn.disabled = true;
+      btn.textContent = 'Guardando...';
+    }
+
+    const client = await resolveSupervisionClient();
+    const payload = construirPayloadSupervision();
+
+    let registro = null;
+
+    if(supervisionActualId){
+      const { data, error } = await client
+        .from('supervisiones')
+        .update(payload)
+        .eq('id', supervisionActualId)
+        .select('id,numero_supervision')
+        .single();
+
+      if(error) throw error;
+      registro = data;
+    }else{
+      payload.creado_por = localStorage.getItem('user_email') || null;
+
+      // No enviamos numero_supervision.
+      // El trigger de Supabase genera SUP-AAAA-0001, SUP-AAAA-0002, etc.
+      const { data, error } = await client
+        .from('supervisiones')
+        .insert(payload)
+        .select('id,numero_supervision')
+        .single();
+
+      if(error) throw error;
+      registro = data;
+    }
+
+    supervisionActualId = registro.id;
+    numeroSupervisionActual = registro.numero_supervision || '';
+
+    if(numeroSupervisionActual){
+      document.getElementById('numero').value = numeroSupervisionActual;
+    }
+
+    await guardarMetadatosFotos(client, supervisionActualId);
+
+    // Mantener un respaldo local liviano del formulario.
+    try{
+      const draft = gather();
+      draft.photos = photoData.map(p => ({
+        type: p.type,
+        desc: p.desc,
+        nombre_archivo: p.nombre_archivo || null
+      }));
+      localStorage.setItem('supervisionDraft', JSON.stringify(draft));
+    }catch(e){}
+
+    alert(`Supervisión ${numeroSupervisionActual || ''} guardada correctamente en Supabase.`);
+
+  }catch(err){
+    console.error('Error guardando supervisión:', err);
+    alert('No fue posible guardar la supervisión en Supabase:\\n' + (err.message || err));
+  }finally{
+    if(btn){
+      btn.disabled = false;
+      btn.textContent = originalText;
+    }
+  }
+}
+
 function restoreDraft(){
   const s=localStorage.getItem("supervisionDraft"); if(!s)return;
   try{
@@ -566,7 +846,9 @@ function loadData(d){
     });
   }
   document.getElementById("findings").innerHTML="";findingSeq=0;(d.hallazgos||[]).forEach(agregarHallazgo);
-  photoData=d.photos||[];renderPhotos();calcularKPIs();
+  photoData=(d.photos||[]).filter(p=>p && p.data);
+  renderPhotos();
+  calcularKPIs();
 }
 function exportarJSON(){
   const blob=new Blob([JSON.stringify(gather(),null,2)],{type:"application/json"});
@@ -578,9 +860,218 @@ document.getElementById("importJson").addEventListener("change", async e=>{
   try{loadData(JSON.parse(await e.target.files[0].text()));alert("Supervisión importada.");}
   catch(err){alert("Archivo JSON no válido.");}
 });
+
+function abrirBuscadorSupervisiones(){
+  document.getElementById('searchSupervisionModal')?.classList.add('show');
+
+  // Si el formulario actual tiene un cliente, lo propone como filtro inicial.
+  const idCliente = val('idCliente');
+  const cliente = val('cliente');
+
+  if(idCliente && !document.getElementById('buscarIdCliente').value){
+    document.getElementById('buscarIdCliente').value = idCliente;
+  }else if(cliente && !document.getElementById('buscarCliente').value){
+    document.getElementById('buscarCliente').value = cliente;
+  }
+
+  buscarSupervisiones();
+}
+
+function cerrarBuscadorSupervisiones(){
+  document.getElementById('searchSupervisionModal')?.classList.remove('show');
+}
+
+function limpiarFiltrosBusqueda(){
+  ['buscarNumero','buscarIdCliente','buscarCliente','buscarCiudad','buscarFecha'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.value='';
+  });
+  const estado=document.getElementById('buscarEstado');
+  if(estado) estado.value='';
+  buscarSupervisiones();
+}
+
+function fmtFechaSupervision(v){
+  if(!v) return '';
+  try{
+    return new Date(v+'T00:00:00').toLocaleDateString('es-CO');
+  }catch(e){
+    return v;
+  }
+}
+
+async function buscarSupervisiones(){
+  const body = document.getElementById('searchResultsBody');
+  const empty = document.getElementById('searchEmpty');
+  const meta = document.getElementById('searchMeta');
+
+  if(body) body.innerHTML='';
+  if(empty){
+    empty.style.display='block';
+    empty.textContent='Consultando supervisiones...';
+  }
+
+  try{
+    const client = await resolveSupervisionClient();
+
+    let query = client
+      .from('supervisiones')
+      .select('id,numero_supervision,fecha,id_cliente,cliente,ciudad,estado_general,conformidad_porcentaje')
+      .order('fecha',{ascending:false})
+      .order('created_at',{ascending:false})
+      .limit(200);
+
+    const numero = document.getElementById('buscarNumero')?.value.trim() || '';
+    const idCliente = document.getElementById('buscarIdCliente')?.value.trim() || '';
+    const cliente = document.getElementById('buscarCliente')?.value.trim() || '';
+    const ciudad = document.getElementById('buscarCiudad')?.value.trim() || '';
+    const estado = document.getElementById('buscarEstado')?.value || '';
+    const fecha = document.getElementById('buscarFecha')?.value || '';
+
+    if(numero) query = query.ilike('numero_supervision', `%${numero}%`);
+    if(idCliente) query = query.ilike('id_cliente', `%${idCliente}%`);
+    if(cliente) query = query.ilike('cliente', `%${cliente}%`);
+    if(ciudad) query = query.ilike('ciudad', `%${ciudad}%`);
+    if(estado) query = query.eq('estado_general', estado);
+    if(fecha) query = query.eq('fecha', fecha);
+
+    const {data,error}=await query;
+    if(error) throw error;
+
+    const rows=data||[];
+    if(meta) meta.textContent=`${rows.length} supervisión(es) encontrada(s).`;
+
+    if(!rows.length){
+      if(empty){
+        empty.style.display='block';
+        empty.textContent='No se encontraron supervisiones con los filtros seleccionados.';
+      }
+      return;
+    }
+
+    if(empty) empty.style.display='none';
+
+    body.innerHTML=rows.map(r=>`
+      <tr onclick="cargarSupervisionGuardada('${r.id}')">
+        <td><b>${esc(r.numero_supervision||'')}</b></td>
+        <td>${esc(fmtFechaSupervision(r.fecha))}</td>
+        <td>${esc(r.id_cliente||'')}</td>
+        <td>${esc(r.cliente||'')}</td>
+        <td>${esc(r.ciudad||'')}</td>
+        <td>${esc(r.estado_general||'')}</td>
+        <td>${esc(r.conformidad_porcentaje ?? 0)}%</td>
+      </tr>
+    `).join('');
+
+  }catch(err){
+    console.error('Error buscando supervisiones:',err);
+    if(empty){
+      empty.style.display='block';
+      empty.textContent='Error consultando supervisiones: '+(err.message||err);
+    }
+  }
+}
+
+async function cargarSupervisionGuardada(id){
+  try{
+    const client = await resolveSupervisionClient();
+
+    const {data,error}=await client
+      .from('supervisiones')
+      .select('*')
+      .eq('id',id)
+      .single();
+
+    if(error) throw error;
+
+    supervisionActualId = data.id;
+    numeroSupervisionActual = data.numero_supervision || '';
+
+    document.getElementById('numero').value = data.numero_supervision || '';
+    document.getElementById('fecha').value = data.fecha || '';
+    document.getElementById('hora').value = (data.hora || '').slice(0,5);
+    document.getElementById('ciudad').value = data.ciudad || '';
+    document.getElementById('idCliente').value = data.id_cliente || '';
+    document.getElementById('cliente').value = data.cliente || '';
+    document.getElementById('direccion').value = data.direccion || '';
+    document.getElementById('coordenadas').value = data.coordenadas || '';
+    document.getElementById('contratista').value = data.contratista || '';
+    document.getElementById('supervisor').value = data.supervisor || '';
+    document.getElementById('tipoInstalacion').value = data.tipo_instalacion || 'FTTH';
+    document.getElementById('tipoRed').value = data.tipo_red || 'Aérea';
+    document.getElementById('cable').value = data.cable_acometida || '';
+    document.getElementById('longitud').value = data.longitud_instalada ?? '';
+    document.getElementById('estadoGeneral').value = data.estado_general || 'PENDIENTE';
+
+    document.getElementById('potenciaRx').value = data.potencia_rx ?? '';
+    document.getElementById('lambda').value = data.longitud_onda || '1310 nm';
+    document.getElementById('continuidad').value = data.prueba_continuidad || 'Conforme';
+    document.getElementById('otdr').value = data.prueba_otdr || 'No aplica';
+    document.getElementById('empalmes').value = data.numero_empalmes ?? '';
+
+    document.getElementById('concepto').value = data.concepto_tecnico || '';
+    document.getElementById('compromisos').value = data.compromisos || '';
+    document.getElementById('responsableCierre').value = data.responsable_cierre || '';
+    document.getElementById('fechaCompromiso').value = data.fecha_compromiso || '';
+    document.getElementById('reinspeccion').value = data.requiere_reinspeccion ? 'Sí' : 'No';
+
+    prefillInstalacionMeta = {
+      instalacionId: data.instalacion_id || '',
+      idCambio: data.id_cambio || '',
+      idTarea: data.id_tarea || ''
+    };
+
+    const checklistGuardado = Array.isArray(data.checklist) ? data.checklist : [];
+    [...document.querySelectorAll('#checkBody tr')].forEach((tr,i)=>{
+      const itemActual = checklist[i]?.[1];
+      const saved = checklistGuardado.find(x => x.item === itemActual);
+      tr.querySelector('.estado').value = saved?.estado || '';
+      tr.querySelector('.obs').value = saved?.observacion || '';
+    });
+
+    document.getElementById('findings').innerHTML='';
+    findingSeq=0;
+    (Array.isArray(data.hallazgos)?data.hallazgos:[]).forEach(agregarHallazgo);
+
+    const {data:fotos,error:fotosError}=await client
+      .from('supervision_fotos')
+      .select('id,nombre_archivo,tipo_evidencia,descripcion,drive_file_id,drive_url,estado_subida')
+      .eq('supervision_id',id)
+      .order('created_at',{ascending:true});
+
+    if(fotosError) throw fotosError;
+
+    // Las imágenes no están en Supabase. Se cargan como referencias.
+    photoData = (fotos||[]).map(f=>({
+      type:f.tipo_evidencia || 'Otro',
+      desc:f.descripcion || '',
+      nombre_archivo:f.nombre_archivo || '',
+      drive_file_id:f.drive_file_id || '',
+      drive_url:f.drive_url || '',
+      estado_subida:f.estado_subida || '',
+      data:f.drive_url || ''
+    }));
+
+    renderPhotos();
+    calcularKPIs();
+    cerrarBuscadorSupervisiones();
+
+    // Llevar al usuario al inicio del formulario.
+    window.scrollTo({top:0,behavior:'smooth'});
+
+  }catch(err){
+    console.error('Error cargando supervisión:',err);
+    alert('No fue posible cargar la supervisión:\\n'+(err.message||err));
+  }
+}
+
 function nuevo(){
   if(!confirm("¿Crear una supervisión nueva? Se limpiará el formulario actual."))return;
-  localStorage.removeItem("supervisionDraft");location.reload();
+  supervisionActualId = null;
+  numeroSupervisionActual = '';
+  localStorage.removeItem("supervisionDraft");
+  localStorage.removeItem("supervision_prefill");
+  location.reload();
 }
 function statusText(s){return s==="C"?"Conforme":s==="NC"?"No conforme":s==="NA"?"No aplica":"Sin evaluar";}
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
@@ -654,7 +1145,13 @@ async function generarPDF(){
 document.addEventListener("input",e=>{
   if(e.target.matches("input,select,textarea")) {
     clearTimeout(window._autosave);
-    window._autosave=setTimeout(()=>{try{localStorage.setItem("supervisionDraft",JSON.stringify(gather()))}catch(e){}},700);
+    window._autosave=setTimeout(()=>{
+      try{
+        const draft=gather();
+        draft.photos=photoData.map(p=>({type:p.type,desc:p.desc,nombre_archivo:p.nombre_archivo||null}));
+        localStorage.setItem("supervisionDraft",JSON.stringify(draft));
+      }catch(e){}
+    },700);
   }
 });
 function toggleSidebar(){
@@ -676,9 +1173,12 @@ function restoreSidebarState(){
   if(tab)tab.textContent=hidden?'›':'‹';
 }
 
+document.getElementById('searchSupervisionModal')?.addEventListener('click',e=>{
+  if(e.target?.id==='searchSupervisionModal') cerrarBuscadorSupervisiones();
+});
+
 restoreSidebarState();
 init();
 </script>
 </body>
 </html>
-
