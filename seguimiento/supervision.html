@@ -84,6 +84,21 @@
   .desc{font-size:11px;color:var(--muted);margin-top:3px}
   .estado{min-width:125px}
   .obs{min-width:220px}
+  .check-row-nc{
+    background:rgba(245,158,11,.16) !important;
+    box-shadow:inset 4px 0 0 #f59e0b;
+  }
+  .check-row-nc td{
+    border-bottom-color:rgba(245,158,11,.35) !important;
+  }
+  .check-row-nc .item{
+    color:#ffb84d;
+  }
+  .check-row-nc .estado{
+    border-color:#f59e0b;
+    box-shadow:0 0 0 2px rgba(245,158,11,.10);
+  }
+
   .chip{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;font-size:11px;font-weight:800}
   .chip.ok{background:rgba(39,174,96,.15);color:#68e598}
   .chip.bad{background:rgba(235,87,87,.15);color:#ff8e8e}
@@ -179,12 +194,78 @@
   .om-page.sidebar-hidden .sidebar-toggle-tab{left:0}
   .om-module-content{min-width:0;overflow:hidden}
   @media(max-width:900px){
-    .om-page{grid-template-columns:1fr}
-    .om-sidebar{position:fixed;left:0;top:0;width:240px;transform:translateX(-100%);opacity:0;pointer-events:none}
-    .om-page:not(.sidebar-hidden) .om-sidebar{transform:translateX(0);opacity:1;pointer-events:auto}
-    .sidebar-toggle-tab{left:0}
-    .om-page:not(.sidebar-hidden) .sidebar-toggle-tab{left:240px}
-    .om-module-content{width:100%}
+    html,body{width:100%;max-width:100%;overflow-x:hidden}
+
+    /* En móvil la barra lateral se comporta como panel superpuesto.
+       Nunca debe reservar espacio ni desplazar el formulario. */
+    .om-page,
+    .om-page.sidebar-hidden{
+      display:block;
+      width:100%;
+      min-width:0;
+      min-height:100vh;
+    }
+
+    .om-sidebar{
+      position:fixed;
+      left:0;
+      top:0;
+      width:min(82vw,280px);
+      max-width:280px;
+      height:100dvh;
+      z-index:70;
+      transform:translateX(-105%);
+      opacity:0;
+      pointer-events:none;
+      transition:transform .25s ease,opacity .25s ease;
+      box-shadow:18px 0 45px rgba(0,0,0,.34);
+    }
+
+    .om-page:not(.sidebar-hidden) .om-sidebar{
+      transform:translateX(0);
+      opacity:1;
+      pointer-events:auto;
+    }
+
+    .om-page.sidebar-hidden .om-sidebar{
+      transform:translateX(-105%);
+      opacity:0;
+      pointer-events:none;
+    }
+
+    .sidebar-toggle-tab{
+      left:0;
+      top:50%;
+      z-index:90;
+    }
+
+    .om-page:not(.sidebar-hidden) .sidebar-toggle-tab{
+      left:min(82vw,280px);
+    }
+
+    .om-page.sidebar-hidden .sidebar-toggle-tab{
+      left:0;
+    }
+
+    .om-module-content{
+      display:block;
+      width:100% !important;
+      max-width:100% !important;
+      min-width:0 !important;
+      margin:0 !important;
+      padding:0 !important;
+      transform:none !important;
+      overflow:visible !important;
+    }
+
+    .om-module-content > .app,
+    .app{
+      width:100% !important;
+      max-width:100% !important;
+      min-width:0 !important;
+      margin:0 !important;
+      padding:10px !important;
+    }
   }
 
 </style>
@@ -508,6 +589,11 @@ function cargarDatosDesdeInstalaciones(){
 }
 
 function init(){
+  try{
+    if(!localStorage.getItem('supervision_prefill')){
+      localStorage.removeItem('supervisionDraft');
+    }
+  }catch(e){}
   document.getElementById("fecha").value = new Date().toISOString().slice(0,10);
   document.getElementById("hora").value = new Date().toTimeString().slice(0,5);
   const body = document.getElementById("checkBody");
@@ -533,7 +619,16 @@ function init(){
     document.getElementById('numero').value = 'Se asignará al guardar';
   }
 }
+
+function actualizarColorChecklist(){
+  document.querySelectorAll('#checkBody tr').forEach(tr=>{
+    const estado = tr.querySelector('.estado')?.value || '';
+    tr.classList.toggle('check-row-nc', estado === 'NC');
+  });
+}
+
 function calcularKPIs(){
+  actualizarColorChecklist();
   const vals=[...document.querySelectorAll(".estado")].map(x=>x.value);
   const c=vals.filter(x=>x==="C").length;
   const nc=vals.filter(x=>x==="NC").length;
@@ -828,11 +923,10 @@ async function guardarSupervision(){
 }
 
 function restoreDraft(){
-  const s=localStorage.getItem("supervisionDraft"); if(!s)return;
-  try{
-    const d=JSON.parse(s);
-    if(confirm("Se encontró una supervisión guardada. ¿Desea recuperarla?")) loadData(d);
-  }catch(e){}
+  // Se desactiva la recuperación automática de borradores para evitar
+  // mostrar una ventana de confirmación cada vez que se abre el módulo.
+  // Las supervisiones guardadas se recuperan desde "Buscar supervisión".
+  return;
 }
 function loadData(d){
   Object.entries(d).forEach(([k,v])=>{const el=document.getElementById(k);if(el && typeof v!=="object")el.value=v??""});
@@ -1052,6 +1146,7 @@ async function cargarSupervisionGuardada(id){
 
     renderPhotos();
     calcularKPIs();
+    actualizarColorChecklist();
     cerrarBuscadorSupervisiones();
 
     // Llevar al usuario al inicio del formulario.
