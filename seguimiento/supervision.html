@@ -525,6 +525,7 @@ const checklist = [
 
 let photoData = [];
 let findingSeq = 0;
+let firmaSupervisorTrazos = [];
 let prefillInstalacionMeta = { instalacionId:'', idCambio:'', idTarea:'' };
 
 let supervisionActualId = null;
@@ -710,27 +711,106 @@ function removePhoto(i){photoData.splice(i,1);renderPhotos();}
 function setupSignatures(){
   ["sigSupervisor"].forEach(id=>{
     const c=document.getElementById(id),ctx=c.getContext("2d");
-    function size(){
+
+    function prepararCanvas(){
       const dpr=window.devicePixelRatio||1;
       const rect=c.getBoundingClientRect();
-      const old=c.toDataURL();
-      c.width=rect.width*dpr;c.height=160*dpr;ctx.scale(dpr,dpr);
-      ctx.lineWidth=2;ctx.lineCap="round";ctx.strokeStyle="#111";
+      c.width=Math.max(1,rect.width*dpr);
+      c.height=160*dpr;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+      ctx.lineWidth=2;
+      ctx.lineCap="round";
+      ctx.lineJoin="round";
+      ctx.strokeStyle="#111";
+      redibujarFirmaSupervisor();
     }
-    size();
+
+    prepararCanvas();
+
     let drawing=false;
+    let trazoActual=null;
+
     const pos=e=>{
       const r=c.getBoundingClientRect(), t=e.touches?e.touches[0]:e;
-      return {x:t.clientX-r.left,y:t.clientY-r.top};
+      return {
+        x: Math.max(0, Math.min(r.width, t.clientX-r.left)),
+        y: Math.max(0, Math.min(160, t.clientY-r.top))
+      };
     };
-    const start=e=>{drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);e.preventDefault();}
-    const move=e=>{if(!drawing)return;const p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();e.preventDefault();}
-    const end=()=>drawing=false;
-    c.addEventListener("mousedown",start);c.addEventListener("mousemove",move);window.addEventListener("mouseup",end);
-    c.addEventListener("touchstart",start,{passive:false});c.addEventListener("touchmove",move,{passive:false});c.addEventListener("touchend",end);
+
+    const start=e=>{
+      drawing=true;
+      const p=pos(e);
+      trazoActual={points:[p]};
+      firmaSupervisorTrazos.push(trazoActual);
+      ctx.beginPath();
+      ctx.moveTo(p.x,p.y);
+      e.preventDefault();
+    };
+
+    const move=e=>{
+      if(!drawing || !trazoActual) return;
+      const p=pos(e);
+      trazoActual.points.push(p);
+      ctx.lineTo(p.x,p.y);
+      ctx.stroke();
+      e.preventDefault();
+    };
+
+    const end=()=>{
+      drawing=false;
+      trazoActual=null;
+    };
+
+    c.addEventListener("mousedown",start);
+    c.addEventListener("mousemove",move);
+    window.addEventListener("mouseup",end);
+    c.addEventListener("mouseleave",end);
+
+    c.addEventListener("touchstart",start,{passive:false});
+    c.addEventListener("touchmove",move,{passive:false});
+    c.addEventListener("touchend",end);
+    c.addEventListener("touchcancel",end);
+
+    window.addEventListener("resize",()=>{
+      clearTimeout(window._sigResize);
+      window._sigResize=setTimeout(prepararCanvas,120);
+    });
   });
 }
-function clearSig(id){const c=document.getElementById(id),ctx=c.getContext("2d");ctx.clearRect(0,0,c.width,c.height);}
+
+function redibujarFirmaSupervisor(){
+  const c=document.getElementById("sigSupervisor");
+  if(!c) return;
+  const ctx=c.getContext("2d");
+  const dpr=window.devicePixelRatio||1;
+
+  ctx.save();
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,c.width/dpr,c.height/dpr);
+  ctx.lineWidth=2;
+  ctx.lineCap="round";
+  ctx.lineJoin="round";
+  ctx.strokeStyle="#111";
+
+  (firmaSupervisorTrazos||[]).forEach(trazo=>{
+    const pts=Array.isArray(trazo?.points)?trazo.points:[];
+    if(!pts.length) return;
+    ctx.beginPath();
+    ctx.moveTo(Number(pts[0].x)||0, Number(pts[0].y)||0);
+    for(let i=1;i<pts.length;i++){
+      ctx.lineTo(Number(pts[i].x)||0, Number(pts[i].y)||0);
+    }
+    ctx.stroke();
+  });
+
+  ctx.restore();
+}
+function clearSig(id){
+  if(id==="sigSupervisor") firmaSupervisorTrazos=[];
+  const c=document.getElementById(id),ctx=c.getContext("2d");
+  ctx.clearRect(0,0,c.width,c.height);
+}
 function val(id){return document.getElementById(id)?.value||"";}
 function gather(){
   const fields=["numero","fecha","hora","ciudad","idCliente","cliente","direccion","coordenadas","contratista","supervisor","tipoInstalacion","tipoRed","cable","longitud","estadoGeneral","potenciaRx","lambda","continuidad","otdr","empalmes","concepto","compromisos","responsableCierre","fechaCompromiso","reinspeccion"];
@@ -747,6 +827,7 @@ function gather(){
     descripcion:f.querySelector(".f-desc").value,accion:f.querySelector(".f-accion").value
   }));
   data.photos=photoData;
+  data.firmaSupervisorDatos = firmaSupervisorTrazos;
   data.firmaSupervisor=document.getElementById("sigSupervisor").toDataURL("image/png");
   return data;
 }
@@ -800,6 +881,8 @@ function construirPayloadSupervision(){
     responsable_cierre: d.responsableCierre || null,
     fecha_compromiso: d.fechaCompromiso || null,
     requiere_reinspeccion: String(d.reinspeccion || '').toLowerCase() === 'sí' || String(d.reinspeccion || '').toLowerCase() === 'si',
+
+    firma_supervisor_datos: Array.isArray(d.firmaSupervisorDatos) ? d.firmaSupervisorDatos : [],
 
     actualizado_por: localStorage.getItem('user_email') || null
   };
@@ -938,6 +1021,8 @@ function loadData(d){
     });
   }
   document.getElementById("findings").innerHTML="";findingSeq=0;(d.hallazgos||[]).forEach(agregarHallazgo);
+  firmaSupervisorTrazos = Array.isArray(d.firmaSupervisorDatos) ? d.firmaSupervisorDatos : [];
+  redibujarFirmaSupervisor();
   photoData=(d.photos||[]).filter(p=>p && p.data);
   renderPhotos();
   calcularKPIs();
@@ -1106,6 +1191,8 @@ async function cargarSupervisionGuardada(id){
     document.getElementById('responsableCierre').value = data.responsable_cierre || '';
     document.getElementById('fechaCompromiso').value = data.fecha_compromiso || '';
     document.getElementById('reinspeccion').value = data.requiere_reinspeccion ? 'Sí' : 'No';
+    firmaSupervisorTrazos = Array.isArray(data.firma_supervisor_datos) ? data.firma_supervisor_datos : [];
+    redibujarFirmaSupervisor();
 
     prefillInstalacionMeta = {
       instalacionId: data.instalacion_id || '',
@@ -1275,4 +1362,5 @@ init();
 </script>
 </body>
 </html>
+
 
