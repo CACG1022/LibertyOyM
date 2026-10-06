@@ -3361,11 +3361,11 @@ document.getElementById('instalacionForm').addEventListener('submit', async func
       operador: (el['operador'].value || '').trim() || null,
       cliente: (el['cliente'].value || '').trim(),
       direccion: (el['direccion'].value || '').trim() || null,
-      fo_externa: (el['fo_externa'].value || '').trim() || null,
-      fo_interna: (el['fo_interna'].value || '').trim() || null,
+      fo_externa: String(el['fo_externa']?.value ?? '').trim() === '' ? null : Number(el['fo_externa'].value),
+      fo_interna: String(el['fo_interna']?.value ?? '').trim() === '' ? null : Number(el['fo_interna'].value),
       capacidad: (el['capacidad'].value || '').trim() || null,
       Linea_base: (el['Linea_base']?.value || '').trim() || null,
-      tipo_fibra: (el['tipo_fibra'].value || '').trim() || null,
+
       estado_general: el['estado_general'].value,
       fecha_solicitud_permisos: el['fecha_solicitud_permisos'].value || null,
       fecha_respuesta_permisos: el['fecha_respuesta_permisos']?.value || null,
@@ -3389,39 +3389,23 @@ document.getElementById('instalacionForm').addEventListener('submit', async func
       tiempo_muerto_radicacion_telefonica: el['checklist_radicacion_telefonica']?.checked ? (el['tiempo_muerto_radicacion_telefonica']?.value || null) : null,
       tiempo_total_instalacion: el['tiempo_total_instalacion']?.value || null,
       tiempo_efectivo_instalacion: el['tiempo_efectivo_instalacion']?.value || null,
-      estado_permisos: el['estado_permisos'].value || null,
-      fecha_agendamiento_pe: el['fecha_agendamiento_pe'].value || null,
-      fecha_agendamiento_pi: el['fecha_agendamiento_pi'].value || null,
-      hora_agendamiento: el['hora_agendamiento'].value || null,
-      fecha_entrega: el['fecha_entrega'].value || null,
+      estado_permisos: el['estado_permisos']?.value || null,
+      fecha_agendamiento_pe: el['fecha_agendamiento_pe']?.value || null,
+      fecha_agendamiento_pi: el['fecha_agendamiento_pi']?.value || null,
+      hora_agendamiento: el['hora_agendamiento']?.value || null,
+      fecha_entrega: el['fecha_entrega']?.value || null,
       longitud_enlace_otdr: (el['longitud_enlace_otdr']?.value || '').trim() !== '' ? Number(el['longitud_enlace_otdr'].value) : null,
       fecha_entrega_documentacion: el['fecha_entrega_documentacion']?.value || null,
-      observaciones: (el['observaciones'].value || '').trim() || null,
-      estado_planta_externa: el['estado_planta_externa'].value || null,
-      estado_planta_interna: el['estado_planta_interna'].value || null,
-      fo_total: (el['fo_total'].value || '').trim() || null,
-      cant_herrajes_retencion: (el['cant_herrajes_retencion'].value || '').trim() || null,
-      cant_herrajes_suspension: (el['cant_herrajes_suspension'].value || '').trim() || null,
-      cant_argolla_poste: (el['cant_argolla_poste'].value || '').trim() || null,
-      cant_caja_ob: (el['cant_caja_ob'].value || '').trim() || null,
-      cant_patchcord: (el['cant_patchcord'].value || '').trim() || null,
-      cinta_bandi_it_metros: (el['cinta_bandi_it_metros'].value || '').trim() || null,
-      cant_marquilla_amarilla: (el['cant_marquilla_amarilla'].value || '').trim() || null,
-      cant_marquillas: (el['cant_marquillas'].value || '').trim() || null,
-      tipo_patchcord: (el['tipo_patchcord'].value || '').trim() || null,
-      longitud_patchcord: (el['longitud_patchcord'].value || '').trim() || null,
-      sfp_cliente_descripcion: (el['sfp_cliente_descripcion'].value || '').trim() || null,
-      serial_sfp_cliente: (el['serial_sfp_cliente'].value || '').trim() || null,
-      marca_sfp_cliente: (el['marca_sfp_cliente'].value || '').trim() || null,
-      sfp_nodo_descripcion: (el['sfp_nodo_descripcion'].value || '').trim() || null,
-      serial_sfp_nodo: (el['serial_sfp_nodo'].value || '').trim() || null,
-      marca_sfp_nodo: (el['marca_sfp_nodo'].value || '').trim() || null,
-      alistamiento_material: el['alistamiento_material'].checked,
-      enrutamiento_solicitado: el['enrutamiento_solicitado'].checked,
-      enrutamiento_aprobado: el['enrutamiento_aprobado'].checked,
-      agenda_aprovisionamiento: el['agenda_aprovisionamiento'].checked,
-      contratista: (el['contratista'].value || '').trim() || null,
-      responsable: (el['responsable'].value || '').trim() || null
+      observaciones: (el['observaciones']?.value || '').trim() || null,
+      estado_planta_externa: el['estado_planta_externa']?.value || null,
+      estado_planta_interna: el['estado_planta_interna']?.value || null,
+
+      alistamiento_material: el['alistamiento_material']?.checked,
+      enrutamiento_solicitado: el['enrutamiento_solicitado']?.checked,
+      enrutamiento_aprobado: el['enrutamiento_aprobado']?.checked,
+      agenda_aprovisionamiento: el['agenda_aprovisionamiento']?.checked,
+      contratista: (el['contratista']?.value || '').trim() || null,
+      responsable: (el['responsable']?.value || '').trim() || null
     };
 
     const estadosQuePuedenPasarAutomaticamente = [
@@ -3609,19 +3593,6 @@ function registrosPendientesFO(){
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
