@@ -341,6 +341,48 @@
 }
 
 </style>
+
+<style>
+/* Reportes y acciones en una sola fila */
+.toolbar-right{min-width:0;overflow-x:auto;overflow-y:hidden;padding-bottom:3px}
+.toolbar-right .filter-actions{
+  display:flex !important;
+  flex-wrap:nowrap !important;
+  align-items:center;
+  gap:8px;
+  width:max-content;
+  min-width:max-content;
+}
+.toolbar-right .filter-actions > *{flex:0 0 auto !important;white-space:nowrap}
+</style>
+
+
+<style>
+.actions-below-kpis{
+  width:100%;
+  margin:12px 0 14px;
+  overflow-x:auto;
+  overflow-y:hidden;
+}
+.actions-below-kpis .toolbar-right{
+  width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+}
+.actions-below-kpis .filter-actions{
+  display:flex !important;
+  flex-wrap:nowrap !important;
+  align-items:center;
+  gap:8px;
+  width:max-content;
+  min-width:max-content;
+}
+.actions-below-kpis .filter-actions > *{
+  flex:0 0 auto !important;
+  white-space:nowrap;
+}
+</style>
+
 </head>
 <body>
 <div id="root"></div>
@@ -744,23 +786,6 @@ function renderShell(){
               </div>
               <div class="filter-help">Puedes usar un filtro o combinarlos. La búsqueda toma como base el campo Fecha entrega.</div>
             </div>
-            <div class="toolbar-right">
-              <div class="filter-actions">
-                <select id="sortBy" class="control">
-                  <option value="fecha_ingreso_desc">Más recientes</option>
-                  <option value="fecha_ingreso_asc">Más antiguas</option>
-                  <option value="cliente_asc">Cliente A-Z</option>
-                  <option value="estado_asc">Estado</option>
-                </select>
-                <button class="btn ghost import-btn" type="button" onclick="openImportPicker()">Cargar plantilla</button>
-                <button class="btn ghost" type="button" onclick="descargarReporteColumbus()">Reporte Columbus</button>
-                <button class="btn ghost" type="button" onclick="descargarReporteDashboard()">Reporte para dashboard</button>
-                <button class="btn ghost" type="button" onclick="openCorreoTemplateConfig()">Config. plantilla correo</button>
-                <button class="btn ghost" type="button" onclick="descargarReporteWIP()">WIP</button>
-                <button class="btn ghost" onclick="loadInstalaciones()">Actualizar</button>
-                <input id="plantillaInput" type="file" accept=".txt,.csv,.tsv,text/plain" style="display:none">
-              </div>
-            </div>
           </div>
 
           <div id="weeklyKpis" class="weekly-kpis">
@@ -772,6 +797,21 @@ function renderShell(){
         </div>
 
         <div id="summary" class="summary"></div>
+<div class="actions-below-kpis">
+            <div class="toolbar-right">
+              <div class="filter-actions">
+                <button class="btn ghost import-btn" type="button" onclick="openImportPicker()">Cargar plantilla</button>
+                <button class="btn ghost" type="button" onclick="descargarReporteColumbus()">Reporte Columbus</button>
+                <button class="btn ghost" type="button" onclick="descargarReporteDashboard()">Reporte para dashboard</button>
+                <button class="btn ghost" type="button" onclick="openCorreoTemplateConfig()">Config. plantilla correo</button>
+                <button class="btn ghost" type="button" onclick="descargarReporteWIP()">WIP</button>
+                <button class="btn ghost" type="button" onclick="abrirReporteFibraPeriodo('semana')">Reporte semanal FO</button>
+                <button class="btn ghost" type="button" onclick="abrirReporteFibraPeriodo('mes')">Reporte mensual FO</button>
+                <button class="btn ghost" onclick="loadInstalaciones()">Actualizar</button>
+                
+                <input id="plantillaInput" type="file" accept=".txt,.csv,.tsv,text/plain" style="display:none">
+              </div>
+            </div></div>
 
         <div class="card">
           <div class="table-wrap">
@@ -3442,7 +3482,7 @@ document.getElementById('instalacionForm').addEventListener('submit', async func
   }
 });
 
-['searchInst','filterFecha','filterFechaEntrega','filterMesEntrega','filterAnioEntrega','filterSemanaEntrega','sortBy'].forEach(id => {
+['searchInst','filterFecha','filterFechaEntrega','filterMesEntrega','filterAnioEntrega','filterSemanaEntrega'].forEach(id => {
   const el = document.getElementById(id);
   if(el){
     el.addEventListener('input', renderTable);
@@ -3508,8 +3548,135 @@ function registrosPendientesFO(){
     (esFoSinDiligenciar(r.fo_externa) || esFoSinDiligenciar(r.fo_interna))
   );
 }
+
+let tipoReporteFibraPeriodo = 'semana';
+let filasReporteFibraPeriodo = [];
+function nrfo(v){ if(v===null||v===undefined||String(v).trim()==='') return 0; const n=Number(String(v).replace(',','.')); return Number.isFinite(n)?n:0; }
+function frfo(v){
+  if(v===null || v===undefined || String(v).trim()==='') return null;
+  if(v instanceof Date && !isNaN(v)) return new Date(v.getFullYear(),v.getMonth(),v.getDate(),12);
+  const raw=String(v).trim();
+  let m=raw.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m) return new Date(+m[1],+m[2]-1,+m[3],12);
+  m=raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if(m) return new Date(+m[3],+m[2]-1,+m[1],12); // datos del módulo: dd/mm/yyyy
+  const d=new Date(raw);
+  return isNaN(d)?null:new Date(d.getFullYear(),d.getMonth(),d.getDate(),12);
+}
+function weekrfo(d){
+  // ISO-8601: lunes-domingo. Devuelve YYYY-Www, igual que input[type=week].
+  const x=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  const day=x.getUTCDay() || 7;
+  x.setUTCDate(x.getUTCDate()+4-day);
+  const yearStart=new Date(Date.UTC(x.getUTCFullYear(),0,1));
+  const week=Math.ceil((((x-yearStart)/86400000)+1)/7);
+  return x.getUTCFullYear()+'-W'+String(week).padStart(2,'0');
+}
+function monthrfo(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+}
+function actualrfo(t){
+  const d=new Date();
+  return t==='mes'?monthrfo(d):weekrfo(d);
+}
+
+function fuenteReporteFO(){
+  return Array.isArray(instalacionesRows) ? instalacionesRows.slice() : [];
+}
+function normalizarEstadoReporteFO(v){
+  return String(v == null ? '' : v).trim().toUpperCase();
+}
+function fechaEntregaReporteFO(r){
+  return frfo(r && (r.fecha_entrega || r['Fecha entrega'] || r['fecha entrega'] || ''));
+}
+function periodoReporteFOSeleccionado(){
+  const id=tipoReporteFibraPeriodo==='semana'?'semanaReporteFibra':'mesReporteFibra';
+  const el=document.getElementById(id);
+  return el ? String(el.value||'') : '';
+}
+function filasrfo(){
+  const periodo=periodoReporteFOSeleccionado();
+  return fuenteReporteFO().filter(function(r){
+    if(normalizarEstadoReporteFO(r.estado_general)!=='ENTREGADA') return false;
+    const d=fechaEntregaReporteFO(r);
+    if(!d || isNaN(d.getTime())) return false;
+    if(tipoReporteFibraPeriodo==='semana'){
+      if(!periodo) return false;
+      const p=periodo.split('-W');
+      return p.length===2 && weekrfo(d)===periodo;
+    }
+    if(!periodo) return false;
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')===periodo;
+  }).map(function(r){
+    const fi=nrfo(r.fo_interna), fe=nrfo(r.fo_externa);
+    return {id_cliente:r.id_cliente||'',cliente:r.cliente||'',fo_interna:fi,fo_externa:fe,total_fibra:fi+fe};
+  });
+}
+function abrirReporteFibraPeriodo(t){
+ tipoReporteFibraPeriodo=t; document.getElementById('wrapSemanaReporte').style.display=t==='semana'?'block':'none'; document.getElementById('wrapMesReporte').style.display=t==='mes'?'block':'none';
+ document.getElementById('tituloReporteFibraPeriodo').textContent=t==='semana'?'Reporte semanal de fibra':'Reporte mensual de fibra';
+ const inp=document.getElementById(t==='semana'?'semanaReporteFibra':'mesReporteFibra'); if(!inp.value)inp.value=actualrfo(t);
+ document.getElementById('modalReporteFibraPeriodo').style.display='flex'; renderReporteFibraPeriodo();
+}
+function cerrarReporteFibraPeriodo(){document.getElementById('modalReporteFibraPeriodo').style.display='none';}
+function renderReporteFibraPeriodo(){
+  const tb=document.getElementById('tbodyReporteFibraPeriodo');
+  if(!tb) return;
+  filasReporteFibraPeriodo=filasrfo();
+  tb.innerHTML=filasReporteFibraPeriodo.length ? filasReporteFibraPeriodo.map(function(r){
+    return '<tr><td>'+esc(String(r.id_cliente||''))+'</td><td>'+esc(String(r.cliente||''))+
+      '</td><td>'+r.fo_interna.toLocaleString('es-CO',{maximumFractionDigits:2})+
+      '</td><td>'+r.fo_externa.toLocaleString('es-CO',{maximumFractionDigits:2})+
+      '</td><td><b>'+r.total_fibra.toLocaleString('es-CO',{maximumFractionDigits:2})+'</b></td></tr>';
+  }).join('') : '<tr><td colspan="5" style="text-align:center;padding:24px">No hay clientes ENTREGADOS en el período seleccionado.</td></tr>';
+  const ti=filasReporteFibraPeriodo.reduce((s,r)=>s+r.fo_interna,0);
+  const te=filasReporteFibraPeriodo.reduce((s,r)=>s+r.fo_externa,0);
+  const res=document.getElementById('resumenReporteFibraPeriodo');
+  if(res) res.textContent=filasReporteFibraPeriodo.length+' cliente(s) · FO Interna: '+ti.toLocaleString('es-CO')+
+    ' m · FO Externa: '+te.toLocaleString('es-CO')+' m · Total: '+(ti+te).toLocaleString('es-CO')+' m';
+}
+function exportarReporteFibraPeriodo(){
+  filasReporteFibraPeriodo=filasrfo();
+ filasReporteFibraPeriodo=filasrfo(); if(!filasReporteFibraPeriodo.length){alert('No hay registros para exportar.');return;} if(typeof XLSX==='undefined'){alert('No se encontró la librería de Excel.');return;}
+ const data=filasReporteFibraPeriodo.map(function(r){return{'ID Cliente':r.id_cliente,'Cliente':r.cliente,'FO Interna (m)':r.fo_interna,'FO Externa (m)':r.fo_externa,'Total fibra (m)':r.total_fibra};});
+ data.push({'ID Cliente':'','Cliente':'TOTAL','FO Interna (m)':filasReporteFibraPeriodo.reduce(function(s,r){return s+r.fo_interna},0),'FO Externa (m)':filasReporteFibraPeriodo.reduce(function(s,r){return s+r.fo_externa},0),'Total fibra (m)':filasReporteFibraPeriodo.reduce(function(s,r){return s+r.total_fibra},0)});
+ const ws=XLSX.utils.json_to_sheet(data);ws['!cols']=[{wch:20},{wch:42},{wch:18},{wch:18},{wch:18}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,tipoReporteFibraPeriodo==='semana'?'Reporte semanal':'Reporte mensual');
+ const per=tipoReporteFibraPeriodo==='semana'?document.getElementById('semanaReporteFibra').value:document.getElementById('mesReporteFibra').value;XLSX.writeFile(wb,'reporte_'+tipoReporteFibraPeriodo+'_fibra_'+per+'.xlsx');
+}
+
+
+
+
+document.addEventListener('input',function(e){
+  if(e.target && (e.target.id==='semanaReporteFibra'||e.target.id==='mesReporteFibra')) renderReporteFibraPeriodo();
+});
+document.addEventListener('change',function(e){
+  if(e.target && (e.target.id==='semanaReporteFibra'||e.target.id==='mesReporteFibra')) renderReporteFibraPeriodo();
+});
+
 </script>
 
+
+
+<div id="modalReporteFibraPeriodo" class="modal-backdrop" style="display:none;z-index:10050">
+  <div class="modal large" style="max-width:1050px">
+    <div class="modal-header">
+      <div><h3 id="tituloReporteFibraPeriodo" style="margin:0">Reporte de fibra</h3>
+      <div class="muted">Registros ENTREGADA filtrados por Fecha de entrega.</div></div>
+      <button type="button" class="icon-btn" onclick="cerrarReporteFibraPeriodo()">✕</button>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin:14px 0">
+      <label id="wrapSemanaReporte">Semana<input id="semanaReporteFibra" class="control" type="week" onchange="renderReporteFibraPeriodo()"></label>
+      <label id="wrapMesReporte">Mes<input id="mesReporteFibra" class="control" type="month" onchange="renderReporteFibraPeriodo()"></label>
+      <button class="btn ghost" type="button" onclick="exportarReporteFibraPeriodo()">Exportar Excel</button>
+    </div>
+    <div id="resumenReporteFibraPeriodo" class="muted" style="margin-bottom:10px"></div>
+    <div class="table-wrap" style="max-height:55vh;overflow:auto">
+      <table style="width:100%"><thead><tr><th>ID Cliente</th><th>Cliente</th><th>FO Interna (m)</th><th>FO Externa (m)</th><th>Total fibra (m)</th></tr></thead>
+      <tbody id="tbodyReporteFibraPeriodo"></tbody></table>
+    </div>
+  </div>
+</div>
 
 <div id="installTemplateModal" class="modal-backdrop">
   <div class="modal large">
@@ -3593,18 +3760,4 @@ function registrosPendientesFO(){
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
