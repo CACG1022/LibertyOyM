@@ -302,6 +302,44 @@
   #radicacionesModal .rad-table tbody tr{grid-template-columns:1fr 1fr}
 }
 
+
+/* ===== KPI PRINCIPALES COMPACTOS EN UNA SOLA FILA ===== */
+@media (min-width: 901px){
+  #summary.summary{
+    display:grid !important;
+    grid-template-columns:repeat(8,minmax(0,1fr)) !important;
+    gap:8px !important;
+    width:100% !important;
+  }
+  #summary .stat{
+    min-width:0 !important;
+    min-height:108px !important;
+    padding:10px 11px !important;
+    border-radius:13px !important;
+    overflow:hidden;
+  }
+  #summary .stat .label{
+    font-size:10px !important;
+    line-height:1.15 !important;
+    margin-bottom:5px !important;
+  }
+  #summary .stat .value{
+    font-size:23px !important;
+    line-height:1 !important;
+  }
+  #summary .stat .sub{
+    font-size:9px !important;
+    line-height:1.18 !important;
+    margin-top:6px !important;
+  }
+  #summary .docs-export-btn{
+    min-height:26px !important;
+    padding:4px 5px !important;
+    margin-top:6px !important;
+    font-size:8px !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -515,69 +553,64 @@
       </div>
 
       <div style="display:flex;justify-content:flex-end;margin-top:12px">
-        <button type="button" id="btnToggleMateriales" class="materials-toggle-btn" onclick="toggleMaterialsSection()">Mostrar materiales</button>
-      </div>
-
-      <div id="materialsSection" class="materials-section hidden">
-        <div class="materials-header" onclick="toggleMaterialsSection()">
-          <div>
-            <div class="materials-title">Materiales usados en la instalación</div>
-            <div class="materials-sub">Se muestra automáticamente cuando el estado es ENTREGADA o puedes desplegarla manualmente.</div>
-          </div>
-          <div id="materialsToggleIcon" class="materials-sub">▼</div>
-        </div>
-        <div id="materialsContent" style="margin-top:14px;">
-<div class="grid">
-        <div class="field"><label>FO Externa</label><input type="number" step="0.01" min="0" name="fo_externa"></div>
-        <div class="field"><label>FO Interna</label><input type="number" step="0.01" min="0" name="fo_interna"></div>
-        <div class="field"><label>FO Total</label><input type="number" step="0.01" min="0" name="fo_total" readonly></div>
-        <div class="field"><label>Cant. Herrajes retención</label><input type="number" min="0" name="cant_herrajes_retencion"></div>
-
-        <div class="field"><label>Cant. Herrajes suspensión</label><input type="number" min="0" name="cant_herrajes_suspension"></div>
-        <div class="field"><label>Cant. Argolla poste</label><input type="number" min="0" name="cant_argolla_poste"></div>
-        <div class="field"><label>Cant. Caja OB</label><input type="number" min="0" name="cant_caja_ob"></div>
-        <div class="field"><label>Cant. Patchcord</label><input type="number" min="0" name="cant_patchcord"></div>
-        <div class="field"><label>Cinta Bandi-it (Metros)</label><input type="number" step="0.01" min="0" name="cinta_bandi_it_metros"></div>
-        <div class="field"><label>Cant Marquilla amarilla</label><input type="number" min="0" name="cant_marquilla_amarilla"></div>
-        <div class="field"><label>Cant. Marquillas</label><input type="number" min="0" name="cant_marquillas"></div>
-
-        <div class="field"><label>Tipo fibra</label>
-<select name="tipo_fibra">
-<option>N/A</option>
-<option>4H AEREA</option>
-<option>4H ARMADA</option>
-<option>12H AEREA</option>
-<option>12H ARMADA</option>
-<option>24H AEREA</option>
-<option>24H ARMADA</option>
-<option>48H AEREA</option>
-<option>48H ARMADA</option>
-<option>96H AEREA</option>
-<option>96H ARMADA</option>
-</select>
+  <button type="button" id="btnToggleMateriales" class="materials-toggle-btn" onclick="toggleMaterialsSection()">Mostrar materiales</button>
 </div>
-
-        <div class="field"><label>Tipo patchcord</label>
-          <select name="tipo_patchcord">
-            <option value="">Seleccionar</option>
-            <option>LC-LC</option>
-            <option>SC-LC</option>
-            <option>N/A</option>
-          </select>
-        </div>
-        <div class="field"><label>Longitud patchcord</label><input name="longitud_patchcord" placeholder="Ej. 2M, 3M, 5M"></div>
-        <div class="field"><label>SFP cliente</label><input name="sfp_cliente_descripcion" placeholder="Descripción"></div>
-        <div class="field"><label>Serial SFP cliente</label><input name="serial_sfp_cliente"></div>
-
-        <div class="field"><label>Marca SFP cliente</label><input name="marca_sfp_cliente"></div>
-        <div class="field"><label>SFP nodo</label><input name="sfp_nodo_descripcion" placeholder="Descripción"></div>
-        <div class="field"><label>Serial SFP nodo</label><input name="serial_sfp_nodo"></div>
-        <div class="field"><label>Marca SFP nodo</label><input name="marca_sfp_nodo"></div>
+<div id="materialsSection" class="materials-section hidden">
+  <div class="materials-header" onclick="toggleMaterialsSection()">
+    <div>
+      <div class="materials-title">Materiales relacionados a la instalación</div>
+      <div class="materials-sub">Consulta automática por ID Cliente / ID Cambio desde el módulo Materiales.</div>
+    </div>
+    <div id="materialsToggleIcon" class="materials-sub">▼</div>
+  </div>
+  <div id="materialsContent" style="margin-top:14px">
+    <div class="grid" style="margin-bottom:14px">
+      <div class="field">
+        <label>FO Externa (m)</label>
+        <input type="number" step="0.01" min="0" name="fo_externa" placeholder="0">
       </div>
-
-      
-        </div>
+      <div class="field">
+        <label>FO Interna (m)</label>
+        <input type="number" step="0.01" min="0" name="fo_interna" placeholder="0">
       </div>
+      <div class="field">
+        <label>FO Total diligenciada (m)</label>
+        <input type="number" step="0.01" min="0" name="fo_total" readonly>
+      </div>
+      <div class="field">
+        <label>Fibra total reportada en materiales (m)</label>
+        <input type="number" step="0.01" min="0" id="foMaterialesTotal" readonly value="0">
+      </div>
+    </div>
+    <div id="foValidationMsg" style="display:none;margin:0 0 12px;padding:10px 12px;border-radius:10px;font-weight:700"></div>
+
+    <!-- Campos legacy ocultos para conservar compatibilidad con el guardado existente -->
+    <div style="display:none">
+      <input name="cant_herrajes_retencion"><input name="cant_herrajes_suspension">
+      <input name="cant_argolla_poste"><input name="cant_caja_ob"><input name="cant_patchcord">
+      <input name="cinta_bandi_it_metros"><input name="cant_marquilla_amarilla"><input name="cant_marquillas">
+      <input name="tipo_patchcord"><input name="longitud_patchcord">
+      <input name="sfp_cliente_descripcion"><input name="serial_sfp_cliente"><input name="marca_sfp_cliente">
+      <input name="sfp_nodo_descripcion"><input name="serial_sfp_nodo"><input name="marca_sfp_nodo">
+    </div>
+
+    <div id="materialsAutoMsg" style="padding:12px;border:1px dashed rgba(147,197,253,.28);border-radius:12px;color:#bfdbfe">
+      Abre una instalación para consultar sus materiales.
+    </div>
+    <div id="materialsAutoTableWrap" style="display:none;overflow:auto;margin-top:10px">
+      <table style="width:100%;border-collapse:collapse;min-width:900px">
+        <thead><tr>
+          <th>Fecha</th><th>Código SAP</th><th>Material</th><th>Cantidad</th><th>Unidad</th>
+          <th>Serial</th><th>Cod. reserva</th><th>Responsable</th><th>Soporte</th>
+        </tr></thead>
+        <tbody id="materialsAutoTableBody"></tbody>
+      </table>
+    </div>
+    <div style="display:flex;justify-content:flex-end;margin-top:10px">
+      <button type="button" class="small-btn" onclick="recargarMaterialesInstalacion()">Actualizar materiales</button>
+    </div>
+  </div>
+</div>
 
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:18px">
         <button type="button" class="small-btn" onclick="closeFormModal()">Cancelar</button>
@@ -619,7 +652,8 @@
 <div id="radicacionesModal" class="modal-backdrop">
   <div class="modal large" style="width:min(1500px,100%)">
     <div class="modal-header"><div><h3 style="margin:0 0 6px">Reporte de radicaciones</h3><div class="muted-note">Seguimiento de radicaciones pendientes de respuesta ante EMSA y Telefónica.</div></div><button class="close-btn" type="button" onclick="cerrarReporteRadicaciones()">✕</button></div>
-    <div id="radicacionesKpis" class="rad-kpis"></div>
+    
+<div id="radicacionesKpis" class="rad-kpis"></div>
     <div class="rad-toolbar"><select id="radFiltroEntidad" class="control" onchange="renderReporteRadicaciones()"><option value="">Todas las entidades</option><option value="EMSA">EMSA</option><option value="TELEFONICA">Telefónica</option></select><input id="radBuscar" class="control" placeholder="Buscar cliente, ID o radicado" oninput="renderReporteRadicaciones()"><button class="small-btn" onclick="exportarRadicacionesExcel()">Exportar Excel</button></div>
     <div class="rad-table-wrap"><table class="rad-table"><thead><tr><th>Entidad</th><th>ID Cambio</th><th>ID Cliente</th><th>Cliente</th><th>Operador</th><th>Fecha radicación</th><th>N.º radicado</th><th>Estado</th><th>Días hábiles transcurridos</th><th>Días calendario transcurridos</th><th>Responsable</th></tr></thead><tbody id="radicacionesBody"></tbody></table></div>
   </div>
@@ -1146,6 +1180,12 @@ function applyKpiFilter(rows){
         normalizarTextoReporte(r.estado_general).toUpperCase() === 'ENTREGADA' &&
         !String(r.fecha_entrega_documentacion || '').trim()
       );
+    case 'PENDIENTE_FO':
+      return rows.filter(r =>
+        normalizarTextoReporte(r.estado_general).toUpperCase() === 'ENTREGADA' &&
+        (r.fo_externa === null || r.fo_externa === undefined || String(r.fo_externa).trim() === '' ||
+         r.fo_interna === null || r.fo_interna === undefined || String(r.fo_interna).trim() === '')
+      );
     case 'AGENDADAS':
       return rows.filter(r => r.estado_general === 'AGENDADA');
     case 'ENTREGADAS_EJECUCION':
@@ -1195,7 +1235,143 @@ function actualizarFoTotal(){
   const inte = parseFloat(form.elements['fo_interna']?.value || 0) || 0;
   const total = ext + inte;
   if(form.elements['fo_total']) form.elements['fo_total'].value = total.toFixed(2).replace(/\.00$/,'');
+  validarFoContraMateriales(false);
 }
+
+const CODIGOS_SAP_FIBRA = new Set(['522171','522155','522157','522167','522143']);
+let foTotalMaterialesReportado = 0;
+
+function actualizarTotalFibraMateriales(rows){
+  foTotalMaterialesReportado = (rows || [])
+    .filter(r => CODIGOS_SAP_FIBRA.has(String(r.codigo_sap || '').trim()))
+    .reduce((sum, r) => sum + (Number(r.cantidad) || 0), 0);
+
+  const out = document.getElementById('foMaterialesTotal');
+  if(out) out.value = foTotalMaterialesReportado.toFixed(2).replace(/\.00$/,'');
+  validarFoContraMateriales(false);
+}
+
+function validarFoContraMateriales(mostrarAlerta=true){
+  const form = document.getElementById('instalacionForm');
+  const box = document.getElementById('foValidationMsg');
+  if(!form) return true;
+
+  const extRaw = String(form.elements['fo_externa']?.value ?? '').trim();
+  const intRaw = String(form.elements['fo_interna']?.value ?? '').trim();
+  const ext = Number(extRaw || 0);
+  const inte = Number(intRaw || 0);
+  const diligenciado = ext + inte;
+  const reportado = Number(foTotalMaterialesReportado || 0);
+  const coincide = Math.abs(diligenciado - reportado) < 0.01;
+
+  if(box){
+    box.style.display = reportado > 0 ? '' : 'none';
+    if(reportado > 0 && coincide){
+      box.style.background = 'rgba(34,197,94,.12)';
+      box.style.border = '1px solid rgba(34,197,94,.45)';
+      box.style.color = '#86efac';
+      box.textContent = `✓ FO Externa + FO Interna = ${diligenciado.toFixed(2)} m. Coincide con los ${reportado.toFixed(2)} m reportados en materiales.`;
+    }else if(reportado > 0){
+      box.style.background = 'rgba(239,68,68,.12)';
+      box.style.border = '1px solid rgba(239,68,68,.5)';
+      box.style.color = '#fecaca';
+      box.textContent = `⚠ FO Externa + FO Interna = ${diligenciado.toFixed(2)} m, pero materiales reporta ${reportado.toFixed(2)} m. Diferencia: ${Math.abs(reportado-diligenciado).toFixed(2)} m.`;
+    }
+  }
+
+  if(reportado > 0 && (!extRaw || !intRaw || !coincide)){
+    if(mostrarAlerta){
+      const msg = document.getElementById('formMsg');
+      if(msg){
+        msg.style.color = '#fecaca';
+        msg.textContent = `FO Externa + FO Interna debe ser exactamente igual a la fibra reportada en materiales (${reportado.toFixed(2)} m).`;
+      }
+      (!extRaw ? form.elements['fo_externa'] : !intRaw ? form.elements['fo_interna'] : form.elements['fo_externa'])?.focus();
+    }
+    return false;
+  }
+  return true;
+}
+
+let materialesInstalacionRowActual = null;
+
+function _matNorm(v){ return String(v ?? '').trim().toUpperCase(); }
+function _matQty(v){
+  const n=Number(v||0);
+  return Number.isFinite(n) ? n.toLocaleString('es-CO',{maximumFractionDigits:2}) : String(v||'');
+}
+function renderMaterialesInstalacion(rows, aviso=''){
+  actualizarTotalFibraMateriales(rows);
+  const body=document.getElementById('materialsAutoTableBody');
+  const wrap=document.getElementById('materialsAutoTableWrap');
+  const msg=document.getElementById('materialsAutoMsg');
+  if(!body||!wrap||!msg) return;
+  if(!rows.length){
+    body.innerHTML='';
+    wrap.style.display='none';
+    msg.style.display='';
+    msg.innerHTML=aviso || 'No se encontraron materiales asociados a esta instalación.';
+    return;
+  }
+  msg.style.display=aviso ? '' : 'none';
+  if(aviso) msg.innerHTML=aviso;
+  wrap.style.display='';
+  body.innerHTML=rows.map(r=>{
+    const mat=r.material_descripcion || r.om_materiales_catalogo?.material || '';
+    const soporte=r.soporte_acta_url
+      ? `<a href="${esc(r.soporte_acta_url)}" target="_blank">Ver acta</a>` : '—';
+    return `<tr>
+      <td>${esc(fmtDate(r.fecha))}</td>
+      <td>${esc(r.codigo_sap||'')}</td>
+      <td><b>${esc(mat)}</b></td>
+      <td>${esc(_matQty(r.cantidad))}</td>
+      <td>${esc(r.unidad||'')}</td>
+      <td>${esc(r.codigo_serial||'—')}</td>
+      <td>${esc(r.cod_reserva||'—')}</td>
+      <td>${esc(r.responsable||r.created_by_email||'—')}</td>
+      <td>${soporte}</td>
+    </tr>`;
+  }).join('');
+}
+async function cargarMaterialesInstalacion(row){
+  materialesInstalacionRowActual=row||null;
+  if(!row){
+    renderMaterialesInstalacion([], 'Guarda o abre una instalación para consultar materiales.');
+    return;
+  }
+  const idCliente=String(row.id_cliente||'').trim();
+  const idCambio=String(row.id_cambio||'').trim();
+  if(!idCliente && !idCambio){
+    renderMaterialesInstalacion([], 'Esta instalación no tiene ID Cliente ni ID Cambio.');
+    return;
+  }
+  const msg=document.getElementById('materialsAutoMsg');
+  if(msg){msg.style.display='';msg.textContent='Consultando materiales relacionados...';}
+  try{
+    const client=await resolveClient();
+    let q=client.from('om_materiales_movimientos')
+      .select('*, om_materiales_catalogo(material)')
+      .eq('tipo_movimiento','CONSUMO_INSTALACION')
+      .neq('estado','ANULADO')
+      .order('fecha',{ascending:false})
+      .order('created_at',{ascending:false});
+    q=idCliente ? q.ilike('id_cliente',idCliente) : q.ilike('id_cambio',idCambio);
+    const {data,error}=await q;
+    if(error) throw error;
+    let rows=data||[], aviso='';
+    if(idCliente && idCambio){
+      const exact=rows.filter(r=>_matNorm(r.id_cambio)===_matNorm(idCambio));
+      if(exact.length) rows=exact;
+      else if(rows.length) aviso=`No hubo coincidencia exacta con ID Cambio ${esc(idCambio)}; se muestran materiales del ID Cliente ${esc(idCliente)}.`;
+    }
+    renderMaterialesInstalacion(rows,aviso);
+  }catch(err){
+    console.error(err);
+    renderMaterialesInstalacion([], 'Error consultando materiales: '+esc(err.message||err));
+  }
+}
+window.recargarMaterialesInstalacion=()=>cargarMaterialesInstalacion(materialesInstalacionRowActual);
+
 function setMaterialsVisibility(){
   const form = document.getElementById('instalacionForm');
   const section = document.getElementById('materialsSection');
@@ -1614,6 +1790,11 @@ function renderSummary(rows){
   const pendientes = rows.filter(r => r.estado_general !== 'ENTREGADA' && r.estado_general !== 'CANCELADA').length;
   const ejecucion = rows.filter(r => r.estado_general === 'EN_EJECUCION').length;
   const radicados = rows.filter(r => String(r.fecha_radicacion_emsa || '').trim() || String(r.fecha_radicacion_telefonica || '').trim()).length;
+  const pendientesFO = rows.filter(r =>
+    normalizarTextoReporte(r.estado_general).toUpperCase() === 'ENTREGADA' &&
+    (r.fo_externa === null || r.fo_externa === undefined || String(r.fo_externa).trim() === '' ||
+     r.fo_interna === null || r.fo_interna === undefined || String(r.fo_interna).trim() === '')
+  ).length;
 
   document.getElementById('summary').innerHTML = `
     <div class="stat ${activeKpi==='TOTAL'?'active':''}" data-kpi="TOTAL"><div class="label">Total solicitudes</div><div class="value">${total}</div><div class="sub">Base visible</div></div>
@@ -1625,6 +1806,7 @@ function renderSummary(rows){
       <div class="sub">ENTREGADAS sin fecha · doble clic para ranking</div>
       <button type="button" class="docs-export-btn" onclick="event.stopPropagation(); descargarPendientesDocumentacionExcel()">Exportar Excel</button>
     </div>
+    <div class="stat fo-pendientes ${activeKpi==='PENDIENTE_FO'?'active':''}" data-kpi="PENDIENTE_FO"><div class="label">Pendientes FO</div><div class="value">${pendientesFO}</div><div class="sub">ENTREGADAS sin FO Externa o FO Interna · clic para filtrar</div></div>
     <div class="stat radicaciones" onclick="event.stopPropagation(); abrirReporteRadicaciones()"><div class="label">Radicaciones</div><div class="value">${radicados}</div><div class="sub">Puntos radicados · ver reporte</div></div>
     <div class="stat ${activeKpi==='AGENDADAS'?'active':''}" data-kpi="AGENDADAS"><div class="label">Agendadas</div><div class="value">${agendadas}</div><div class="sub">Con contratista</div></div>
     <div class="stat ${activeKpi==='ENTREGADAS_EJECUCION'?'active':''}" data-kpi="ENTREGADAS_EJECUCION"><div class="label">Entregadas / Ejecución</div><div class="value">${entregadas} / ${ejecucion}</div><div class="sub">Cierre y avance</div></div>
@@ -2890,6 +3072,8 @@ window.openFormModal = function(row=null){
   const el = form.elements;
 
   form.reset();
+  foTotalMaterialesReportado = 0;
+  const foMatTotal = document.getElementById('foMaterialesTotal'); if(foMatTotal) foMatTotal.value = '0';
   msg.textContent = '';
   el['id'].value = '';
   document.getElementById('formModalTitle').textContent = row ? 'Editar solicitud de instalación' : 'Nueva solicitud de instalación';
@@ -2916,6 +3100,7 @@ window.openFormModal = function(row=null){
   actualizarRequeridoFechaEntrega();
   setMaterialsVisibility();
   modal.classList.add('show');
+  cargarMaterialesInstalacion(row);
 };
 
 window.closeFormModal = function(){
@@ -3143,6 +3328,28 @@ document.getElementById('instalacionForm').addEventListener('submit', async func
       return;
     }
 
+    const estadoSeleccionadoNorm = String(form.elements['estado_general']?.value || '').trim().toUpperCase();
+    const foExtRaw = String(form.elements['fo_externa']?.value ?? '').trim();
+    const foIntRaw = String(form.elements['fo_interna']?.value ?? '').trim();
+
+    if(estadoSeleccionadoNorm === 'ENTREGADA' && (!foExtRaw || !foIntRaw)){
+      const faltantes=[];
+      if(!foExtRaw) faltantes.push('FO Externa');
+      if(!foIntRaw) faltantes.push('FO Interna');
+      msg.style.color='#fecaca';
+      msg.textContent='Para guardar como ENTREGADA debes diligenciar obligatoriamente: '+faltantes.join(' y ')+'.';
+      document.getElementById('materialsSection')?.classList.remove('hidden');
+      const b=document.getElementById('btnToggleMateriales'); if(b) b.textContent='Ocultar materiales';
+      (!foExtRaw ? form.elements['fo_externa'] : form.elements['fo_interna'])?.focus();
+      return;
+    }
+
+    if(estadoSeleccionadoNorm === 'ENTREGADA' && !validarFoContraMateriales(true)){
+      document.getElementById('materialsSection')?.classList.remove('hidden');
+      const b=document.getElementById('btnToggleMateriales'); if(b) b.textContent='Ocultar materiales';
+      return;
+    }
+
     calcularTiemposMuertosInstalacion();
     const client = await resolveClient();
 
@@ -3306,6 +3513,17 @@ setInterval(() => {
 updateEstadoMultiLabel();
 loadCorreoTemplateInstalaciones();
 loadInstalaciones();
+
+
+function esFoSinDiligenciar(v){
+  return v === null || v === undefined || String(v).trim() === '';
+}
+function registrosPendientesFO(){
+  return (instalacionesRows || []).filter(r =>
+    normalizarTextoReporte(r.estado_general).toUpperCase() === 'ENTREGADA' &&
+    (esFoSinDiligenciar(r.fo_externa) || esFoSinDiligenciar(r.fo_interna))
+  );
+}
 </script>
 
 
@@ -3391,6 +3609,19 @@ loadInstalaciones();
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
