@@ -350,8 +350,8 @@
   flex-wrap:nowrap !important;
   align-items:center;
   gap:8px;
-  width:max-content;
-  min-width:max-content;
+  
+  min-
 }
 .toolbar-right .filter-actions > *{flex:0 0 auto !important;white-space:nowrap}
 </style>
@@ -374,12 +374,76 @@
   flex-wrap:nowrap !important;
   align-items:center;
   gap:8px;
-  width:max-content;
-  min-width:max-content;
+  
+  min-
 }
 .actions-below-kpis .filter-actions > *{
   flex:0 0 auto !important;
   white-space:nowrap;
+}
+</style>
+
+
+<style>
+/* ===== Barra de acciones compacta, sin scroll horizontal ===== */
+.actions-below-kpis{
+  width:100% !important;
+  margin:10px 0 14px !important;
+  overflow:visible !important;
+}
+
+.actions-below-kpis .toolbar-right{
+  width:100% !important;
+  overflow:visible !important;
+}
+
+.actions-below-kpis .filter-actions{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  align-items:center !important;
+  gap:7px !important;
+  width:100% !important;
+  min-width:0 !important;
+}
+
+.actions-below-kpis .filter-actions > *{
+  flex:0 0 auto !important;
+  width:auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+  white-space:nowrap !important;
+}
+
+.actions-below-kpis .btn,
+.actions-below-kpis button{
+  width:auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+  padding:8px 13px !important;
+  font-size:11px !important;
+  line-height:1.1 !important;
+}
+
+@media (max-width: 1100px){
+  .actions-below-kpis .filter-actions{
+    gap:6px !important;
+  }
+  .actions-below-kpis .btn,
+  .actions-below-kpis button{
+    padding:7px 10px !important;
+    font-size:10px !important;
+  }
+}
+
+@media (max-width: 700px){
+  .actions-below-kpis .filter-actions{
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:7px !important;
+  }
+  .actions-below-kpis .filter-actions > *{
+    width:100% !important;
+  }
 }
 </style>
 
@@ -3760,4 +3824,6 @@ document.addEventListener('change',function(e){
 
 </body>
 </html>
+
+
 
