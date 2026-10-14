@@ -192,6 +192,39 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
 
 
+
+    /* Entradas: morado translúcido, equivalente al verde y al cian */
+    #movimientosBody tr.row-entrada-morada{
+      background:rgba(168,85,247,.13) !important;
+      box-shadow:inset 4px 0 0 rgba(168,85,247,.85);
+    }
+    #movimientosBody tr.row-entrada-morada:hover{
+      background:rgba(168,85,247,.18) !important;
+    }
+    #movimientosBody tr.row-entrada-morada .badge{
+      background:rgba(168,85,247,.19);
+      color:#e9d5ff;
+      border-color:rgba(168,85,247,.38);
+    }
+
+    /* Reclasificaciones WBS: misma transparencia que las filas verdes */
+    #movimientosBody tr.row-reclasificacion-wbs{
+      background:rgba(39,218,245,.13) !important;
+      box-shadow:inset 4px 0 0 rgba(39,218,245,.85);
+    }
+    #movimientosBody tr.row-reclasificacion-wbs:hover{
+      background:rgba(39,218,245,.18) !important;
+    }
+    #movimientosBody tr.row-reclasificacion-wbs td,
+    #movimientosBody tr.row-reclasificacion-wbs .title,
+    #movimientosBody tr.row-reclasificacion-wbs .desc{
+      color:inherit;
+    }
+    #movimientosBody tr.row-reclasificacion-wbs .badge{
+      background:rgba(39,218,245,.19);
+      color:#a5f3fc;
+      border-color:rgba(39,218,245,.38);
+    }
     .row-reserva-ok{
       background:rgba(34,197,94,.13) !important;
       box-shadow:inset 4px 0 0 rgba(34,197,94,.85);
@@ -222,7 +255,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     tbody tr:hover{background:rgba(255,255,255,.04)}
     .title{font-weight:700;margin-bottom:4px}.desc{font-size:10px;color:var(--muted);white-space:pre-wrap}
     .badge{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:10px;font-weight:700;border:1px solid var(--border)}
-    .tipo-ENTRADA{background:rgba(34,197,94,.16);color:#bbf7d0}.tipo-SALIDA{background:rgba(239,68,68,.16);color:#fecaca}.tipo-TRANSFERENCIA{background:rgba(59,130,246,.16);color:#bfdbfe}.tipo-CONSUMO_INSTALACION{background:rgba(245,158,11,.16);color:#fde68a}.tipo-AJUSTE_POSITIVO{background:rgba(34,197,94,.16);color:#bbf7d0}.tipo-AJUSTE_NEGATIVO{background:rgba(239,68,68,.16);color:#fecaca}
+    .tipo-ENTRADA{background:rgba(34,197,94,.16);color:#bbf7d0}.tipo-SALIDA{background:rgba(239,68,68,.16);color:#fecaca}.tipo-TRANSFERENCIA{background:rgba(59,130,246,.16);color:#bfdbfe}.tipo-CONSUMO_INSTALACION{background:rgba(245,158,11,.16);color:#fde68a}.tipo-AJUSTE_POSITIVO{background:rgba(34,197,94,.16);color:#bbf7d0}.tipo-RECLASIFICACION\ WBS{background:rgba(56,189,248,.18);color:#7dd3fc}.tipo-AJUSTE_NEGATIVO{background:rgba(239,68,68,.16);color:#fecaca}
     .tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}.tab{padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:#fff;cursor:pointer;font-weight:800}.tab.active{background:rgba(37,99,235,.28);border-color:rgba(96,165,250,.45)}
     .floating-add{position:fixed;right:28px;bottom:28px;width:62px;height:62px;border-radius:50%;border:none;font-size:34px;font-weight:700;cursor:pointer;color:#fff;background:linear-gradient(135deg,#2563eb,#22c55e);box-shadow:var(--shadow);z-index:40}
     .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:60;padding:20px}
@@ -1166,13 +1199,27 @@ function renderShell(){
   const email = localStorage.getItem('user_email') || '';
   document.getElementById('root').innerHTML = `
   <div class="page">
-    <aside class="sidebar" ondblclick="toggleSidebar()" style="padding:0;overflow:hidden;" aria-label="Barra lateral Nodo O&amp;M">
-      <iframe
-        id="sidebarFrame"
-        src="barra_lateral.html?page=materiales.html"
-        title="Barra lateral Nodo O&amp;M"
-        style="display:block;width:100%;height:100vh;border:0;background:#08142a;"
-      ></iframe>
+    <aside class="sidebar" ondblclick="toggleSidebar()">
+      <div class="brand">Nodo O&M</div>
+      <div class="subbrand">Control y seguimiento</div>
+      <nav class="nav">
+        <a href="index.html">Inicio</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="fallas.html">Tickets / Fallas</a>
+        <a href="mantenimientos.html">Mantenimientos</a>
+        <a href="instalaciones.html">Instalaciones</a>
+        <a href="factibilidades.html">Factibilidades</a>
+        <a href="traslados.html">Traslados</a>
+        <a href="materiales.html" class="active">Materiales</a>
+        <a href="liquidaciones.html">Liquidaciones</a>
+        <a href="gastos.html">Gastos</a>
+        <a href="tareas.html">Tareas y Alertas</a>
+        <a href="reportes.html">Reportes</a>
+      </nav>
+      <div class="session-box">
+        <small>Sesión<br>${email || 'Sin iniciar'}</small>
+        <button class="btn secondary" style="width:100%" onclick="safeLogout()">Cerrar sesión</button>
+      </div>
     </aside>
     <button id="sidebarToggleTab" class="sidebar-toggle-tab" title="Ocultar / mostrar barra lateral" onclick="toggleSidebar()">‹</button>
     <main class="main">
@@ -1311,6 +1358,13 @@ let movimientoColumnFilters = { tipo:'', material:'', cantidad:'', origen:'', de
 function esc(v){ return String(v ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;"); }
 function fmtDate(v){ if(!v) return ''; try{return new Date(String(v)+'T00:00:00').toLocaleDateString('es-CO')}catch(e){return v} }
 function fmtNum(v){ const n = Number(v || 0); return n.toFixed(2).replace(/\.00$/,'').replace(/(\.\d)0$/,'$1'); }
+function esReclasificacionWbs(r){
+  return ['AJUSTE_POSITIVO','AJUSTE_NEGATIVO'].includes(String(r?.tipo_movimiento || '').toUpperCase())
+    && /^Reclasificación manual WBS WBS-/i.test(String(r?.observaciones || ''));
+}
+function tipoMovimientoVisible(r){
+  return esReclasificacionWbs(r) ? 'RECLASIFICACION WBS' : (r?.tipo_movimiento || '');
+}
 function badge(v){ return `<span class="badge tipo-${esc(v)}">${esc(v || '')}</span>`; }
 
 async function resolveClient(){
@@ -1830,10 +1884,10 @@ function renderMovimientos(){
   empty.style.display='none';
 
   body.innerHTML = rows.map(r => `
-    <tr class="${r.cod_reserva ? 'row-reserva-ok' : ''}" onclick="onMovimientoRowClick(event, '${esc(r.id)}')" style="cursor:pointer" title="Clic para ver o editar el movimiento">
+    <tr class="${esReclasificacionWbs(r) ? 'row-reclasificacion-wbs' : (String(r.tipo_movimiento || '').toUpperCase() === 'ENTRADA' ? 'row-entrada-morada' : (r.cod_reserva ? 'row-reserva-ok' : ''))}" onclick="onMovimientoRowClick(event, '${esc(r.id)}')" style="cursor:pointer" title="Clic para ver o editar el movimiento">
       <td><input type="checkbox" class="mov-select mov-row-select" value="${esc(r.id)}" ${movimientoEstaConsumido(r) ? '' : 'disabled'} onclick="toggleSelectMovimiento(event, '${esc(r.id)}')"></td>
       <td>${fmtDate(r.fecha)}<div class="desc">${esc(r.hora || '')}</div></td>
-      <td>${badge(r.tipo_movimiento)}</td>
+      <td>${badge(tipoMovimientoVisible(r))}</td>
       <td><div class="title">${esc(r.codigo_sap || '')}</div><div class="desc">${esc(r.material_descripcion || r.om_materiales_catalogo?.material || '')}</div>${r.codigo_serial ? `<div class="desc"><b>Serial:</b> ${esc(r.codigo_serial)}</div>` : ''}</td>
       <td><b>${fmtNum(r.cantidad)}</b><div class="desc">${esc(r.unidad)}</div></td>
       <td>${esc(r.origen_nombre || '')}${r.bodega_origen_stock ? `<div class="desc">Stock SAP: ${esc(r.bodega_origen_stock)}</div>` : ''}</td>
@@ -2065,7 +2119,7 @@ function exportarTodosMovimientosExcel(){
     const rows = movimientos.map(r => ({
       'Fecha': r.fecha || '',
       'Hora': r.hora || '',
-      'Tipo movimiento': r.tipo_movimiento || '',
+      'Tipo movimiento': tipoMovimientoVisible(r),
       'Estado': r.estado || '',
       'Código SAP': r.codigo_sap || '',
       'Material': r.material_descripcion || r.om_materiales_catalogo?.material || '',
