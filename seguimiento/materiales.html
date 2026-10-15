@@ -998,7 +998,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         </div>
       </div>
 
-<table>
+<table id="tablaLineasMovimiento">
               <thead>
                 <tr>
                   <th style="width:135px">Código SAP</th>
@@ -1140,7 +1140,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         </div>
 
         <div class="field">
-          <label>Stock SAP / Bodega *</label>
+          <label>Bodega origen (con material disponible) *</label>
           <select id="wbsMgrStock" required onchange="wbsManagerStockChanged()">
             <option value="">Selecciona bodega</option>
           </select>
@@ -1188,7 +1188,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
       <div id="wbsMgrSaldoBox"
            style="margin-top:14px;padding:13px;border:1px solid rgba(148,163,184,.22);border-radius:12px;background:rgba(15,23,42,.55);color:#bfdbfe">
-        Selecciona Código SAP y Stock SAP para consultar los WBS disponibles.
+        Selecciona un código SAP y una bodega de origen con existencias para consultar los WBS disponibles.
       </div>
 
       <div id="wbsMgrMsg" style="margin-top:9px;color:#86efac"></div>
@@ -1946,44 +1946,53 @@ function exportarInventarioExcel(){
 
     // ============================================================
     // HOJA 1: INVENTARIO POR WBS
-    // Una fila por Código SAP + Stock SAP/Bodega + WBS.
+    // Una fila por Código SAP + bodega con material + WBS.
     // No incluye historial de movimientos.
     // ============================================================
     const detalleWbs=[];
+    const filtroBodegaActual=String(getBodega() || '').trim();
+    const nombresBodegas=['ALMAGRARIO','NODO','CONTRATISTA','WOM'];
 
+    // La disponibilidad física del panel prevalece sobre el saldo histórico WBS.
+    // Una reclasificación WBS no crea existencias en otra bodega.
     (resumen || []).forEach(r=>{
       const codigoSap=String(r.codigo_sap || '').trim();
       if(!codigoSap) return;
-
       const material=String(r.material || '').trim();
       const unidad=String(r.unidad || '').trim() || 'EA';
       const totalSap=Number(r.total || 0);
-
       if(totalSap<=0.000001) return;
 
-      const stocks=getBodegasStockPorSap(codigoSap);
+      const bodegasDisponibles=nombresBodegas.map(nombre=>({
+        nombre, disponible:Number(r[bodegaKeyInventario(nombre)] || 0)
+      }));
+      if(Number(r.otros || 0)>0) bodegasDisponibles.push({nombre:'OTROS',disponible:Number(r.otros)});
 
-      // Si por alguna razón no hay ubicación SAP detectable, se intenta
-      // igualmente con una ubicación vacía para no perder el material.
-      const stocksAConsultar=stocks.length ? stocks : [''];
-
-      stocksAConsultar.forEach(stock=>{
-        const saldos=obtenerSaldosWbsMaterial(codigoSap,stock);
-
-        saldos.forEach(item=>{
-          const disponible=Number(item.disponible || 0);
-          if(disponible<=0.000001) return;
-
-          detalleWbs.push({
-            codigo_sap:codigoSap,
-            material,
-            unidad,
-            stock_sap:stock || 'SIN UBICACIÓN',
-            wbs:etiquetaWbsInventario(item.wbs),
-            disponible,
-            total_sap:totalSap
+      bodegasDisponibles.forEach(({nombre,disponible})=>{
+        if(disponible<=0.000001) return;
+        if(filtroBodegaActual && bodegaKeyInventario(filtroBodegaActual)!==bodegaKeyInventario(nombre)) return;
+        const stockUbicaciones=getBodegasStockPorSap(codigoSap)
+          .filter(stock=>bodegaKeyInventario(stock)===bodegaKeyInventario(nombre));
+        const saldosAgrupados=new Map();
+        stockUbicaciones.forEach(stock=>{
+          obtenerSaldosWbsMaterial(codigoSap,stock).forEach(item=>{
+            const key=etiquetaWbsInventario(item.wbs);
+            saldosAgrupados.set(key,(saldosAgrupados.get(key)||0)+Number(item.disponible||0));
           });
         });
+        let restante=disponible;
+        for(const [wbs,qty] of saldosAgrupados){
+          if(restante<=0.000001) break;
+          const cantidad=Math.min(Math.max(0,qty),restante);
+          if(cantidad<=0.000001) continue;
+          detalleWbs.push({codigo_sap:codigoSap,material,unidad,bodega:nombre,
+            stock_sap:nombre,wbs,disponible:cantidad,total_sap:totalSap});
+          restante-=cantidad;
+        }
+        if(restante>0.000001){
+          detalleWbs.push({codigo_sap:codigoSap,material,unidad,bodega:nombre,
+            stock_sap:nombre,wbs:'SIN WBS',disponible:restante,total_sap:totalSap});
+        }
       });
     });
 
@@ -2008,7 +2017,7 @@ function exportarInventarioExcel(){
       'Código SAP':r.codigo_sap,
       'Material':r.material,
       'Unidad':r.unidad,
-      'Stock SAP / Bodega':r.stock_sap,
+      'Bodega':r.bodega,
       'WBS':r.wbs,
       'Disponible WBS':r.disponible,
       'Total disponible SAP':r.total_sap
@@ -2020,7 +2029,7 @@ function exportarInventarioExcel(){
       {wch:14}, // Código SAP
       {wch:48}, // Material
       {wch:10}, // Unidad
-      {wch:22}, // Stock SAP / Bodega
+      {wch:22}, // Bodega
       {wch:24}, // WBS
       {wch:18}, // Disponible WBS
       {wch:20}  // Total SAP
@@ -2440,12 +2449,52 @@ function lineRequiresDestino(tipo = getTipoMovimientoActual()){
   return ['ENTRADA','TRANSFERENCIA','AJUSTE_POSITIVO'].includes(tipo);
 }
 
+function actualizarBodegasOrigenDisponibles(tr){
+  const select=tr?.querySelector('.line-bodega-origen-id');
+  if(!select) return;
+  const tipo=getTipoMovimientoActual();
+  if(!esTipoConsumoMaterial(tipo)){
+    if(select.dataset.filtroDisponible==='1'){
+      const anterior=select.value;
+      select.innerHTML=getBodegaOptionsHtml(anterior);
+      select.dataset.filtroDisponible='0';
+    }
+    return;
+  }
+  const codigo=normalizarCodigoSap(tr.querySelector('.line-sap')?.value || '');
+  const anterior=select.value;
+  const inventario=codigo ? calcularInventarioDesdeStockSap().find(r=>normalizarCodigoSap(r.codigo_sap)===codigo) : null;
+  const disponibles=bodegas.filter(b=>inventario && Number(inventario[bodegaKeyInventario(b.nombre)] || 0)>0.000001);
+  select.innerHTML='<option value="">Selecciona bodega con stock</option>'+disponibles.map(b=>
+    `<option value="${esc(b.id)}">${esc(b.nombre)} (${Number(inventario[bodegaKeyInventario(b.nombre)]).toLocaleString('es-CO')})</option>`
+  ).join('');
+  if(disponibles.some(b=>String(b.id)===String(anterior))) select.value=anterior;
+  else if(disponibles.length===1) select.value=String(disponibles[0].id);
+  select.dataset.filtroDisponible='1';
+  select.title=disponibles.length ? 'Solo bodegas con inventario físico disponible para este SAP' : 'No hay inventario disponible para este material';
+}
+
 function actualizarRequeridosBodegasPorLinea(){
   const tipo = getTipoMovimientoActual();
+  // Columnas por tipo: destino solo en entradas/transferencias (y ajuste positivo);
+  // Stock SAP se mantiene internamente para la conciliación WBS, pero no se presenta.
+  const tabla = document.getElementById('tablaLineasMovimiento');
+  if(tabla){
+    const mostrarOrigen = lineRequiresOrigen(tipo);
+    const mostrarDestino = lineRequiresDestino(tipo);
+    const visibilidad = {4:mostrarOrigen, 5:mostrarDestino, 6:false};
+    for(const fila of tabla.rows){
+      for(const [indice, visible] of Object.entries(visibilidad)){
+        const celda = fila.cells[Number(indice)];
+        if(celda) celda.style.display = visible ? '' : 'none';
+      }
+    }
+  }
   document.querySelectorAll('#materialLinesBody tr').forEach(tr => {
     const origen = tr.querySelector('.line-bodega-origen-id');
     const destino = tr.querySelector('.line-bodega-destino-id');
     if(origen) origen.required = lineRequiresOrigen(tipo);
+    actualizarBodegasOrigenDisponibles(tr);
     if(destino) destino.required = lineRequiresDestino(tipo);
 
     // Limpieza visual por tipo. No borra en TRANSFERENCIA.
@@ -2745,12 +2794,14 @@ function syncMaterialLineBySap(input){
     tr.querySelector('.line-material').value = '';
     setUnidadSelectValue(tr.querySelector('.line-unidad'), '');
     cargarBodegasStockEnLinea(tr, []);
+    actualizarBodegasOrigenDisponibles(tr);
     return;
   }
 
   const item = buscarMaterialPorSap(codigo);
   const bodegasOpciones = getBodegasStockPorSap(codigo);
   cargarBodegasStockEnLinea(tr, bodegasOpciones);
+  actualizarBodegasOrigenDisponibles(tr);
 
   if(item){
     tr.querySelector('.line-material').value = item.material || '';
@@ -2773,6 +2824,7 @@ function syncMaterialLineByName(input){
     tr.querySelector('.line-sap').value = item.codigo_sap || '';
     setUnidadSelectValue(tr.querySelector('.line-unidad'), item.unidad || 'Unidades');
     cargarBodegasStockEnLinea(tr, getBodegasStockPorSap(item.codigo_sap));
+    actualizarBodegasOrigenDisponibles(tr);
     validarCodigosSapDuplicadosEnModal();
   }
 }
@@ -3474,7 +3526,7 @@ function openWbsManagerModal(){
 
   const box=document.getElementById('wbsMgrSaldoBox');
   if(box){
-    box.textContent='Selecciona Código SAP y Stock SAP para consultar los WBS disponibles.';
+    box.textContent='Selecciona un código SAP y una bodega de origen con existencias para consultar los WBS disponibles.';
   }
 
   const sapList=document.getElementById('wbsMgrSapList');
@@ -3522,6 +3574,35 @@ function getMaterialInfoParaWbsManager(codigoSap){
     })();
 }
 
+// Conciliación para el gestor: el inventario físico del panel es la fuente de verdad.
+function saldoFisicoGestorWbs(sap, bodega){
+  const fila=(resumen||[]).find(r=>normalizarCodigoSap(r.codigo_sap)===normalizarCodigoSap(sap));
+  return fila ? Math.max(0,Number(fila[bodegaKeyInventario(bodega)]||0)) : 0;
+}
+function saldosConciliadosGestorWbs(sap,bodega){
+  const fisico=saldoFisicoGestorWbs(sap,bodega);
+  if(fisico<=0.000001) return [];
+  const ubicaciones=getBodegasStockPorSap(sap).filter(x=>bodegaKeyInventario(x)===bodegaKeyInventario(bodega));
+  const sumas=new Map();
+  ubicaciones.forEach(u=>obtenerSaldosWbsMaterial(sap,u).forEach(item=>{
+    sumas.set(item.wbs,(sumas.get(item.wbs)||0)+Number(item.disponible||0));
+  }));
+  let restante=fisico;
+  const resultado=[];
+  for(const [wbs,cantidad] of sumas){
+    const disponible=Math.min(restante,Math.max(0,cantidad));
+    if(disponible>0.000001) resultado.push({wbs,disponible});
+    restante-=disponible;
+    if(restante<=0.000001) break;
+  }
+  if(restante>0.000001){
+    const sin=resultado.find(x=>x.wbs===WBS_SIN_ASIGNAR);
+    if(sin) sin.disponible+=restante;
+    else resultado.push({wbs:WBS_SIN_ASIGNAR,disponible:restante});
+  }
+  return resultado;
+}
+
 function wbsManagerSapChanged(){
   const sap=String(document.getElementById('wbsMgrSap')?.value || '').trim();
   const materialInput=document.getElementById('wbsMgrMaterial');
@@ -3554,7 +3635,10 @@ function wbsManagerSapChanged(){
     if(unidadInput) unidadInput.value=normalizarUnidadSap(info.unidad || 'EA');
   }
 
-  const stocks=getBodegasStockPorSap(sap);
+  // Mostrar exclusivamente bodegas con saldo WBS positivo para este SAP.
+  const stocks=['ALMAGRARIO','NODO','CONTRATISTA','WOM'].filter(nombre=>
+    saldoFisicoGestorWbs(sap,nombre)>0.000001
+  );
   if(stockSelect){
     stockSelect.innerHTML=
       '<option value="">Selecciona bodega</option>'+
@@ -3592,7 +3676,7 @@ function wbsManagerStockChanged(){
   }
 
   const unidad=document.getElementById('wbsMgrUnidad')?.value || '';
-  const saldos=obtenerSaldosWbsMaterial(sap,stock);
+  const saldos=saldosConciliadosGestorWbs(sap,stock);
 
   if(origen){
     origen.innerHTML=
@@ -3640,11 +3724,11 @@ function wbsManagerActualizarSaldoInfo(){
   if(!box) return;
 
   if(!sap || !stock){
-    box.textContent='Selecciona Código SAP y Stock SAP para consultar los WBS disponibles.';
+    box.textContent='Selecciona un código SAP y una bodega de origen con existencias para consultar los WBS disponibles.';
     return;
   }
 
-  const saldos=obtenerSaldosWbsMaterial(sap,stock);
+  const saldos=saldosConciliadosGestorWbs(sap,stock);
 
   if(!saldos.length){
     box.innerHTML='<b>No hay saldo disponible para reclasificar.</b>';
@@ -3695,7 +3779,7 @@ document.getElementById('wbsManagerForm')?.addEventListener('submit', async func
 
   try{
     if(!sap) throw new Error('Debes seleccionar el Código SAP.');
-    if(!stock) throw new Error('Debes seleccionar el Stock SAP / Bodega.');
+    if(!stock) throw new Error('Debes seleccionar una bodega de origen con material disponible.');
     if(!stockDestino) throw new Error('Debes seleccionar la bodega destino.');
     if(!origenKey) throw new Error('Debes seleccionar el WBS origen.');
     if(!Number.isFinite(cantidad) || cantidad<=0){
@@ -3706,7 +3790,8 @@ document.getElementById('wbsManagerForm')?.addEventListener('submit', async func
       throw new Error('El WBS origen y el WBS destino no pueden ser iguales.');
     }
 
-    const saldoOrigen=getSaldoWbsSeleccionado(sap,stock,origenKey);
+    const saldoOrigen=saldosConciliadosGestorWbs(sap,stock)
+      .find(x=>x.wbs===normalizarWbsInventario(origenKey))?.disponible || 0;
 
     if(cantidad>saldoOrigen+0.000001){
       throw new Error(
