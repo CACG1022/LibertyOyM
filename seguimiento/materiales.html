@@ -1010,6 +1010,51 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   @media(max-width:900px){.if-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.if-kpis{grid-template-columns:repeat(2,1fr)}.if-panel{padding:12px;max-height:100vh;height:100vh;width:100vw;border-radius:0}}
   @media(max-width:530px){.if-grid{grid-template-columns:1fr}.if-top h2{font-size:18px}.if-btn{flex:1}.if-stat b{font-size:21px}}
 </style>
+<style id="estilosEtiquetasMateriales">
+/* Impresión QR material SAP — componentes aislados del resto del módulo. */
+.et-overlay{display:none;position:fixed;inset:0;background:rgba(2,8,23,.84);z-index:99000;align-items:center;justify-content:center;padding:15px;color:#e2e8f0}
+.et-overlay.show{display:flex}
+.et-dialog{width:min(1230px,100%);max-height:96vh;overflow:auto;border:1px solid #38628b;border-radius:17px;background:#0b162b;box-shadow:0 24px 90px rgba(0,0,0,.56)}
+.et-heading{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:18px 20px;background:linear-gradient(105deg,#10244c,#0d5271);border-bottom:1px solid #426386;position:sticky;top:0;z-index:5}
+.et-heading h2{margin:0;font-size:21px;color:white}.et-heading p{color:#bfd6ee;font-size:12px;margin:5px 0 0}
+.et-close{border:1px solid #7392b4;border-radius:10px;background:rgba(255,255,255,.12);color:#fff;cursor:pointer;padding:9px 12px;font-weight:800;font-size:18px}
+.et-body{padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.et-card{background:#101e36;border:1px solid #304866;border-radius:13px;padding:15px;min-width:0}
+.et-card h3{font-size:15px;margin:0 0 13px;color:#e8f3ff}.et-card p{font-size:12px;margin:7px 0;color:#a9c5db}
+.et-search{grid-column:1/-1}.et-searchbar{display:flex;gap:8px;align-items:end}.et-searchbar>div{flex:1;min-width:0}
+.et-label{display:block;color:#c7d8ea;font-weight:750;font-size:12px;margin-bottom:5px}
+.et-input,.et-select{background:#091529;color:#ecf8ff;border:1px solid #47617c;border-radius:8px;padding:10px 11px;width:100%;font-family:inherit;font-size:14px;min-width:0}
+.et-input:focus,.et-select:focus{outline:2px solid #38bdf8;outline-offset:1px}
+.et-input[readonly]{background:#142137;color:#9cc2df}.et-button{padding:10px 13px;border:0;border-radius:9px;background:#2563eb;color:#fff;font-weight:800;cursor:pointer;white-space:nowrap;font-size:13px}.et-button.secondary{background:#263d5b;border:1px solid #4b6887}.et-button.success{background:#0d8860}.et-button.danger{background:#a42d3b}.et-button:disabled{opacity:.46;cursor:not-allowed}
+.et-quicklist{display:none;max-height:176px;overflow:auto;margin-top:9px;border:1px solid #344d6b;border-radius:9px;background:#0b192e}.et-quicklist.show{display:block}.et-result{padding:10px 12px;cursor:pointer;border-bottom:1px solid #243b58}.et-result:hover,.et-result:focus{background:#17385a}.et-result strong{color:#7dd3fc}.et-result span{font-size:12px;color:#bed1e6;margin-left:6px}
+.et-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.et-three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.et-field{min-width:0;margin:0 0 10px}.et-info{font-size:12px;color:#bddef6;background:#102b4d;padding:11px;border-radius:9px;border:1px solid #2c5479;line-height:1.45}
+.et-preview{background:#e7eef5;border-radius:12px;overflow:auto;text-align:center;padding:18px 7px}.et-preview canvas{display:inline-block;max-width:100%;height:auto;width:min(100%,576px);background:#fff;cursor:move;touch-action:none;image-rendering:auto;border:1px solid #8295a8;box-shadow:0 4px 12px rgba(10,25,45,.2)}
+.et-instructions{font-size:12px;color:#acc4dc;padding:8px 0}.et-grid-full{grid-column:1/-1}.et-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.et-log{max-height:95px;overflow:auto;white-space:pre-wrap;background:#091528;color:#97f2c4;border:1px solid #28415a;border-radius:9px;padding:9px;font-family:Consolas,monospace;font-size:11px}
+.et-status{font-weight:800;font-size:13px;color:#fbbf24}.et-status.ok{color:#4ade80}
+.et-inline-btn{background:transparent;border:1px solid #345a7f;color:#67d4f9;cursor:pointer;font-size:11px;font-weight:750;padding:3px 6px;border-radius:6px;margin-top:4px}
+.et-inline-btn:hover{background:#134360;color:white}
+.et-check{display:flex;gap:8px;align-items:center;font-size:12px;color:#c8dded}.et-check input{width:auto}
+.et-advanced{background:#0d1b30;border:1px solid #2b4868;border-radius:12px;padding:12px;margin-top:12px}
+.et-advanced summary{cursor:pointer;font-weight:800;font-size:13px;color:#9ee7ff}
+.et-advanced-body{margin-top:12px}
+/* Aislar buscador de estilos globales del dashboard que expanden los botones */
+#etMaterialModal .et-searchbar{display:grid!important;grid-template-columns:minmax(0,1fr) 180px!important;gap:12px!important;align-items:end!important;width:100%!important}
+#etMaterialModal .et-searchbar>div{min-width:0!important;width:100%!important;max-width:100%!important;flex:none!important}
+#etMaterialModal #etSearchSap{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;box-sizing:border-box!important}
+#etMaterialModal .et-searchbar .et-button{display:block!important;width:180px!important;min-width:0!important;max-width:180px!important;height:41px!important;margin:0!important;flex:none!important;white-space:normal!important}
+#etMaterialModal .et-heading .et-close{display:inline-flex!important;width:44px!important;min-width:44px!important;max-width:44px!important;height:44px!important;flex:0 0 44px!important;align-items:center;justify-content:center;margin:0!important}
+#etMaterialModal .et-quick-settings{margin-top:12px;padding:12px;border:1px solid #335779;border-radius:11px;background:#102744}
+#etMaterialModal .et-range-row{display:flex;align-items:center;gap:12px;width:100%;margin-top:7px}
+#etMaterialModal .et-range-row input[type=range]{display:block!important;flex:1 1 auto!important;width:100%!important;min-width:0!important;height:24px;accent-color:#38bdf8;cursor:pointer}
+#etMaterialModal .et-range-number{display:inline-flex;align-items:center;justify-content:center;color:#f0f9ff;font-size:13px;font-weight:800;white-space:nowrap;background:#1e3a5a;border:1px solid #43688d;border-radius:8px;min-width:84px;padding:6px 9px}
+#etMaterialModal .et-quick-help{font-size:11px;color:#a9c9e6;line-height:1.4;margin-top:6px}
+#etMaterialModal .et-quality-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:center;margin-bottom:9px}
+#etMaterialModal .et-quality-grid .et-field{margin:0}
+@media(max-width:650px){#etMaterialModal .et-searchbar{grid-template-columns:minmax(0,1fr)!important}#etMaterialModal .et-searchbar .et-button{width:100%!important;max-width:100%!important}#etMaterialModal .et-quality-grid{grid-template-columns:1fr}}
+@media(max-width:900px){.et-body{grid-template-columns:1fr;padding:10px}.et-search{grid-column:1}.et-dialog{max-height:100vh}.et-overlay{padding:0}.et-dialog{border-radius:0;height:100vh}.et-heading{padding:12px}.et-heading h2{font-size:17px}}
+@media(max-width:520px){.et-searchbar{flex-direction:column;align-items:stretch}.et-searchbar .et-button{width:100%}.et-two,.et-three{grid-template-columns:1fr 1fr}.et-actions .et-button{flex:1}.et-body .et-card{padding:12px}}
+</style>
 </head>
 <body>
 <div id="root"></div>
@@ -1024,6 +1069,103 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     </div>
     <div id="ifContenido"></div>
   </div>
+</div>
+
+<!-- Etiquetado QR para materiales: reutiliza el protocolo BLE raster de MINI Y50 y el catálogo SAP del módulo. -->
+<div id="etMaterialModal" class="et-overlay" role="dialog" aria-modal="true" aria-labelledby="etTitulo" onclick="if(event.target===this)cerrarEtiquetasMaterialSAP()">
+ <div class="et-dialog">
+  <div class="et-heading">
+   <div><h2 id="etTitulo">🏷️ Etiquetas QR · Materiales SAP</h2><p>Etiqueta 50 × 30 mm · MINI Y50 Bluetooth · Código SAP + descripción · QR para inventario físico</p></div>
+   <button class="et-close" onclick="cerrarEtiquetasMaterialSAP()" type="button" title="Cerrar etiquetas">✕</button>
+  </div>
+  <div class="et-body">
+   <section class="et-card et-search">
+    <h3>🔎 Buscar material en la base de datos</h3>
+    <div class="et-searchbar">
+     <div><label class="et-label" for="etSearchSap">Código SAP o parte de la descripción</label><input id="etSearchSap" class="et-input" placeholder="Ej. 522109 o cable fibra" autocomplete="off" oninput="etSugerirMateriales()" onkeydown="if(event.key==='Enter'){event.preventDefault();etBuscarMaterial()}"></div>
+     <button type="button" class="et-button" onclick="etBuscarMaterial()">🔎 Buscar material</button>
+    </div>
+    <div id="etResultados" class="et-quicklist" role="listbox"></div>
+    <p id="etMensajeBusqueda">Selecciona un material de la base de datos para generar la etiqueta. También puedes abrirla desde la tabla Inventario usando el botón «QR».</p>
+   </section>
+   <section class="et-card">
+    <h3>📦 Información del material</h3>
+    <div class="et-two">
+     <label class="et-field"><span class="et-label">Código SAP</span><input id="etCodigo" class="et-input" readonly placeholder="Busca un material"></label>
+     <label class="et-field"><span class="et-label">Unidad</span><input id="etUnidad" class="et-input" placeholder="EA" oninput="etDibujar()"></label>
+    </div>
+    <label class="et-field"><span class="et-label">Descripción para impresión</span><textarea id="etDescripcion" class="et-input" rows="3" placeholder="La descripción se obtiene de Supabase; puedes ajustarla solo para esta impresión." oninput="etDibujar()"></textarea></label>
+    <div class="et-two">
+     <label class="et-field"><span class="et-label">Fecha de impresión</span><input id="etFecha" class="et-input" oninput="etDibujar()"></label>
+     <label class="et-field"><span class="et-label">Contenido exacto del QR</span><input id="etQRContenido" class="et-input" readonly placeholder="Código SAP"></label>
+    </div>
+    <div class="et-info">El código QR codifica <strong>solamente el SAP</strong>. Al escanearlo en «Inventario físico», el material podrá identificarse sin buscar su descripción manualmente.</div>
+    <div class="et-quick-settings">
+      <label class="et-label" for="etQRSizeSlider">▣ Tamaño del código QR en la etiqueta</label>
+      <div class="et-range-row">
+        <input id="etQRSizeSlider" type="range" min="80" max="190" step="5" value="160" oninput="etCambiarTamanoQR(this.value)" aria-label="Tamaño del código QR">
+        <output id="etQRSizeValor" class="et-range-number" for="etQRSizeSlider">160 px</output>
+      </div>
+      <div class="et-quick-help">El tamaño se ajusta inmediatamente en la vista previa. También puedes mover el QR arrastrándolo.</div>
+    </div>
+    <details class="et-advanced">
+     <summary>⚙ Editor de posiciones y plantilla de etiqueta</summary>
+     <div class="et-advanced-body">
+      <label class="et-field"><span class="et-label">Elemento que deseas configurar</span><select id="etObjeto" class="et-select" onchange="etMostrarAjustesObjeto()">
+        <option value="qr">Código QR</option><option value="sap">Código SAP (texto)</option><option value="desc">Descripción</option><option value="unidad">Unidad</option><option value="fecha">Fecha</option><option value="linea">Línea divisoria</option>
+      </select></label>
+      <label class="et-check" style="margin-bottom:10px"><input id="etActivo" type="checkbox" checked onchange="etCambiarAjuste('active',this.checked)"> Mostrar este elemento</label>
+      <div class="et-three">
+       <label class="et-field"><span class="et-label">Posición X</span><input id="etPosX" class="et-input" type="number" min="0" max="383" onchange="etCambiarAjuste('x',this.value)"></label>
+       <label class="et-field"><span class="et-label">Posición Y</span><input id="etPosY" class="et-input" type="number" min="0" max="239" onchange="etCambiarAjuste('y',this.value)"></label>
+       <label class="et-field"><span class="et-label">Tamaño (px)</span><input id="etTamano" class="et-input" type="number" min="8" max="240" onchange="etCambiarAjuste('size',this.value)"></label>
+       <label class="et-field"><span class="et-label">Ángulo (°)</span><input id="etAngulo" class="et-input" type="number" min="-180" max="180" onchange="etCambiarAjuste('angle',this.value)"></label>
+       <label class="et-field"><span class="et-label">Ancho texto (px)</span><input id="etAncho" class="et-input" type="number" min="30" max="330" onchange="etCambiarAjuste('maxWidth',this.value)"></label>
+       <label class="et-field"><span class="et-label">Grosor texto</span><select id="etGrosor" class="et-select" onchange="etCambiarAjuste('weight',this.value)"><option value="400">Normal</option><option value="700">Negrita</option><option value="800">Extra negrita</option></select></label>
+      </div>
+      <p>También puedes arrastrar cada elemento directamente sobre el lienzo. Los cambios se conservan en este navegador al pulsar Guardar diseño.</p>
+      <div class="et-actions"><button class="et-button secondary" type="button" onclick="etGuardarDiseno()">💾 Guardar diseño</button><button class="et-button secondary" type="button" onclick="etRestaurarDiseno()">↺ Restaurar diseño</button></div>
+     </div>
+    </details>
+   </section>
+   <section class="et-card">
+    <h3>🖨 Vista previa · Etiqueta 50 × 30 mm</h3>
+    <div class="et-preview"><canvas id="etCanvas" width="384" height="240" aria-label="Vista previa de etiqueta QR"></canvas></div>
+    <div class="et-instructions">Pulsa un elemento de la etiqueta para seleccionarlo y arrástralo para ubicarlo. Tamaño real: 384 × 240 puntos.</div>
+    <div class="et-actions">
+      <button class="et-button secondary" type="button" onclick="etDescargarPNG()">⬇ Guardar etiqueta PNG</button>
+      <button class="et-button secondary" type="button" onclick="etImprimirNavegador()">🖨 Imprimir desde navegador</button>
+    </div>
+   </section>
+   <section class="et-card et-grid-full">
+    <h3>🔵 Impresora Bluetooth · MINI Y50</h3>
+    <div class="et-actions" style="margin:0 0 12px">
+      <button id="etConectar" class="et-button" type="button" onclick="etConectarY50()">🔗 Conectar Y50 BLE</button>
+      <button id="etImprimir" class="et-button success" type="button" onclick="etImprimirY50()" disabled>🖨 Imprimir etiqueta Y50</button>
+      <button class="et-button secondary" type="button" onclick="etLeerBateriaY50()">🔋 Consultar batería</button>
+      <span id="etEstado" class="et-status">● Impresora desconectada</span>
+    </div>
+    <div class="et-three">
+      <label class="et-field"><span class="et-label">Número de copias</span><input id="etCopias" class="et-input" type="number" min="1" max="30" value="1"></label>
+      <label class="et-field"><span class="et-label">Densidad</span><select id="etDensidad" class="et-select"><option value="0">Clara</option><option value="1" selected>Normal</option><option value="2">Oscura</option></select></label>
+      <label class="et-field"><span class="et-label">Velocidad Bluetooth</span><select id="etPerfil" class="et-select"><option value="144,8" selected>144 bytes / 8 ms</option><option value="144,5">144 bytes / 5 ms</option><option value="96,8">96 bytes / 8 ms</option></select></label>
+    </div>
+    <div class="et-quick-settings" style="margin:10px 0 13px">
+      <div class="et-quality-grid">
+        <div>
+          <label class="et-label" for="etNitidez">✦ Nitidez de impresión (detalle de bordes)</label>
+          <div class="et-range-row"><input id="etNitidez" type="range" min="0" max="3" step="1" value="1" oninput="etActualizarNitidez()" aria-label="Nitidez de impresión"><output id="etNitidezValor" class="et-range-number" for="etNitidez">Normal</output></div>
+        </div>
+        <div class="et-quick-help">Suave → Normal → Alta → Máxima. Ajusta el umbral de blanco/negro del raster. La <strong>densidad</strong> regula la intensidad térmica y es independiente.</div>
+      </div>
+      <div class="et-quick-help">Recomendación: empieza con <strong>Normal</strong> y densidad <strong>Normal</strong>. Una nitidez extrema puede adelgazar los trazos en algunos materiales; haz una impresión de prueba.</div>
+    </div>
+    <label class="et-check"><input id="etCorte" type="checkbox" checked> Avanzar hasta el punto de corte después de imprimir</label>
+    <p>Conexión Y50 mediante Web Bluetooth y el protocolo BLE del archivo de impresiones que adjuntaste. Para conectar la impresora usa Chrome/Edge compatible y HTTPS o localhost; otros navegadores pueden no admitir Web Bluetooth.</p>
+    <div id="etLog" class="et-log">Impresora lista para conectar.</div>
+   </section>
+  </div>
+ </div>
 </div>
 
 <div id="movModal" class="modal-backdrop">
@@ -1366,6 +1508,7 @@ function renderShell(){
 <option>CONSUMO_MTO_CORRECTIVO</option><option>CONSUMO_MTO_PREVENTIVO</option></select>
         <button class="btn ghost" onclick="openMatModal()">Crear material</button>
         <button class="btn ghost" onclick="openWbsManagerModal()">Gestionar WBS</button>
+        <button class="btn" style="background:linear-gradient(135deg,#0f766e,#155e75)" onclick="abrirEtiquetasMaterialSAP()" title="Buscar material y generar/ imprimir QR de código SAP">🏷️ Etiquetas QR SAP</button>
         <button class="btn" style="background:linear-gradient(135deg,#0e7490,#2563eb)" onclick="abrirInventarioFisico()" title="Conteo físico mediante QR / Código SAP">📦 Inventario físico</button>
         <button class="btn ghost" onclick="exportarInventarioExcel()">Exportar inventario + WBS</button>
         <button class="btn ghost" onclick="exportarTodosMovimientosExcel()">Exportar movimientos Excel</button>
@@ -1893,7 +2036,7 @@ function renderInventario(){
 
   body.innerHTML = rows.map(r => `
     <tr>
-      <td><div class="title">${esc(r.codigo_sap || '')}</div></td>
+      <td><div class="title">${esc(r.codigo_sap || '')}</div><button type="button" class="et-inline-btn" data-et-sap="${esc(r.codigo_sap || '')}" onclick="abrirEtiquetasMaterialSAP(this.dataset.etSap)" title="Imprimir etiqueta QR del material">🏷️ QR</button></td>
       <td><div class="title">${esc(r.material)}</div><div class="desc">${esc(r.categoria || '')}</div></td>
       <td>${esc(r.unidad)}</td>
       <td>${fmtNum(r.almagrario)}</td>
@@ -6614,6 +6757,298 @@ function ifImprimirReporte(){
   setTimeout(()=>ventana.print(),450);
 }
 
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" id="libreriaQREtiquetasSAP"></script>
+<script id="scriptEtiquetasMateriales">
+/* Etiquetas Materiales: misma trama raster y servicio BLE de la MINI Y50 del editor proporcionado. */
+const ET_BLE_SERVICE='0000ff00-0000-1000-8000-00805f9b34fb';
+const ET_BLE_WRITE='0000ff02-0000-1000-8000-00805f9b34fb';
+const ET_BLE_NOTIFY='0000ff01-0000-1000-8000-00805f9b34fb';
+const ET_LAYOUT_KEY='om_materiales_etiquetas_qr_y50_layout_v1';
+const ET_=(id)=>document.getElementById(id);
+const etSleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+let etDevice=null,etWriter=null,etNotify=null,etImprimiendo=false,etPreparado=false;
+let etObjetoSeleccionado='qr',etArrastrando=false,etArrastreOffset={x:0,y:0};
+const ET_PLANTILLA={
+ qr:{active:true,type:'qr',x:18,y:39,size:160,angle:0},
+ sap:{active:true,type:'text',x:213,y:39,size:22,angle:0,maxWidth:162,weight:800,maxLines:1},
+ desc:{active:true,type:'text',x:213,y:81,size:16,angle:0,maxWidth:161,weight:700,maxLines:4},
+ unidad:{active:true,type:'text',x:213,y:184,size:13,angle:0,maxWidth:160,weight:700,maxLines:1},
+ fecha:{active:true,type:'text',x:213,y:212,size:11,angle:0,maxWidth:160,weight:400,maxLines:1},
+ linea:{active:true,type:'line',x:199,y:27,size:187,angle:90,thickness:3}
+};
+let etObjetos=JSON.parse(JSON.stringify(ET_PLANTILLA));
+function etRegistro(m){const el=ET_('etLog');if(el){el.textContent=`[${new Date().toLocaleTimeString('es-CO')}] ${m}\n`+(el.textContent==='Impresora lista para conectar.'?'':el.textContent);el.textContent=el.textContent.slice(0,6000);}}
+function etAlerta(m,error=false){const el=ET_('etMensajeBusqueda');if(el){el.textContent=m;el.style.color=error?'#fca5a5':'#a9c5db';}}
+function etEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function etCatalogo(){
+ const map=new Map();
+ try{for(const r of mergeCatalogoSap()){let c=normalizarCodigoSap(r.codigo_sap);if(c)map.set(c,r);}}catch(e){console.warn(e);}
+ // Resumen incluye materiales en inventario aunque ya no estén en stock SAP.
+ try{for(const r of resumen||[]){let c=normalizarCodigoSap(r.codigo_sap);if(c&&!map.has(c))map.set(c,{codigo_sap:c,material:r.material,unidad:r.unidad});}}catch(e){}
+ return [...map.values()];
+}
+function etFechaHoy(){const d=new Date(),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}/${p(d.getMonth()+1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;}
+function abrirEtiquetasMaterialSAP(codigo=''){
+ const modal=ET_('etMaterialModal');if(!modal)return;
+ modal.classList.add('show');document.body.style.overflow='hidden';
+ if(!ET_('etFecha').value)ET_('etFecha').value=etFechaHoy();
+ etLeerDisenoGuardado();etMostrarAjustesObjeto();
+ try{const sharp=localStorage.getItem('om_materiales_etiquetas_nitidez_v1');if(sharp!==null && ET_('etNitidez'))ET_('etNitidez').value=sharp;}catch(e){}
+ etActualizarNitidez();
+ if(codigo){ET_('etSearchSap').value=String(codigo);etBuscarMaterial();}else{etDibujar();ET_('etSearchSap').focus();}
+ etActualizarImpresora();
+}
+function cerrarEtiquetasMaterialSAP(){ET_('etMaterialModal')?.classList.remove('show');document.body.style.overflow='';ET_('etResultados').classList.remove('show');}
+function etSugerirMateriales(){
+ const lista=ET_('etResultados');if(!lista)return;
+ const texto=String(ET_('etSearchSap').value||'').trim().toUpperCase();
+ if(texto.length<2){lista.innerHTML='';lista.classList.remove('show');return;}
+ const matches=etCatalogo().filter(r=>String(r.codigo_sap||'').toUpperCase().includes(texto)||String(r.material||'').toUpperCase().includes(texto)).slice(0,30);
+ lista.innerHTML=matches.map(r=>`<div class="et-result" role="option" tabindex="0" data-sap="${etEsc(r.codigo_sap)}" onclick="etSeleccionarMaterial(this.dataset.sap)" onkeydown="if(event.key==='Enter')etSeleccionarMaterial(this.dataset.sap)"><strong>${etEsc(r.codigo_sap)}</strong><span>${etEsc(r.material)}</span></div>`).join('')||'<div class="et-result">No hay coincidencias con los datos cargados.</div>';
+ lista.classList.add('show');
+}
+async function etBuscarMaterial(){
+ const termino=String(ET_('etSearchSap').value||'').trim();if(!termino){etAlerta('Digita un código SAP o descripción.',true);return;}
+ const exacto=normalizarCodigoSap(termino);
+ let encontrado=etCatalogo().find(r=>normalizarCodigoSap(r.codigo_sap)===exacto);
+ if(!encontrado){
+  const matches=etCatalogo().filter(r=>String(r.codigo_sap).toUpperCase().includes(termino.toUpperCase())||String(r.material).toUpperCase().includes(termino.toUpperCase()));
+  if(matches.length===1)encontrado=matches[0];
+  else if(matches.length>1){etSugerirMateriales();etAlerta(`Se encontraron ${matches.length} coincidencias. Selecciona el material de la lista.`);return;}
+ }
+ if(!encontrado){
+  try{
+   const sb=await resolveClient();
+   let {data,error}=await sb.from('stock_sap_villao').select('*').eq('codigo_sap',exacto).limit(1);
+   if(error)throw error;
+   if(data?.length){const d=data[0];encontrado={codigo_sap:d.codigo_sap,material:d.material_description||d.descripcion_gp_antiguo||'',unidad:d.unidad_sap||d.unidad||'EA'};}
+   if(!encontrado){const m=await sb.from('om_materiales_catalogo').select('*').eq('codigo_sap',exacto).limit(1);if(m.data?.length){const d=m.data[0];encontrado={codigo_sap:d.codigo_sap,material:d.material||'',unidad:d.unidad||'EA'};}}
+  }catch(e){etRegistro('Búsqueda adicional: '+e.message);}
+ }
+ if(encontrado){etCargarMaterial(encontrado);}else{etAlerta(`No se encontró el material «${termino}». Verifica el SAP o pulsa Actualizar en el módulo.`,true);}
+}
+function etSeleccionarMaterial(codigo){
+ const encontrado=etCatalogo().find(r=>normalizarCodigoSap(r.codigo_sap)===normalizarCodigoSap(codigo));
+ if(encontrado)etCargarMaterial(encontrado);
+ else{ET_('etSearchSap').value=codigo;etBuscarMaterial();}
+}
+function etCargarMaterial(m){
+ const codigo=normalizarCodigoSap(m.codigo_sap);
+ if(!codigo)return;
+ ET_('etSearchSap').value=codigo;ET_('etCodigo').value=codigo;
+ ET_('etDescripcion').value=m.material||'';ET_('etUnidad').value=m.unidad||'EA';
+ ET_('etQRContenido').value=codigo;ET_('etFecha').value=etFechaHoy();
+ ET_('etResultados').classList.remove('show');
+ etAlerta(`Material cargado: ${codigo} · ${m.material||'Sin descripción'} · QR listo para imprimir.`);
+ etDibujar();etActualizarImpresora();
+}
+function etLeerDisenoGuardado(){
+ try{const d=JSON.parse(localStorage.getItem(ET_LAYOUT_KEY));if(d&&typeof d==='object')for(const [k,v]of Object.entries(d))if(etObjetos[k]&&v&&typeof v==='object'){
+  for(const prop of ['active','x','y','size','angle','maxWidth','weight','thickness'])if(v[prop]!==undefined)etObjetos[k][prop]=v[prop];
+ }}catch(e){console.warn('Plantilla etiqueta:',e);}
+}
+function etGuardarDiseno(){try{localStorage.setItem(ET_LAYOUT_KEY,JSON.stringify(etObjetos));etRegistro('Diseño guardado en este navegador.');alert('Diseño de etiqueta guardado en este navegador.');}catch(e){alert('No se pudo guardar el diseño: '+e.message);}}
+function etRestaurarDiseno(){etObjetos=JSON.parse(JSON.stringify(ET_PLANTILLA));etObjetoSeleccionado='qr';etMostrarAjustesObjeto();etDibujar();etRegistro('Diseño original de Materiales restaurado (pulsa Guardar diseño si deseas conservarlo).');}
+function etSincronizarTamanoQR(){
+ const size=Number(etObjetos.qr.size)||160;
+ const control=ET_('etQRSizeSlider'),label=ET_('etQRSizeValor');
+ if(control){control.value=String(Math.max(Number(control.min),Math.min(Number(control.max),size)));}
+ if(label)label.textContent=`${Math.round(size)} px`;
+}
+function etCambiarTamanoQR(valor){
+ const n=Number(valor);if(!Number.isFinite(n))return;
+ const o=etObjetos.qr;
+ o.size=Math.max(80,Math.min(190,Math.round(n/5)*5));
+ etSincronizarTamanoQR();
+ if(ET_('etObjeto')?.value==='qr'){ET_('etTamano').value=o.size;}
+ etDibujar();
+}
+function etActualizarNitidez(){
+ const el=ET_('etNitidez'),label=ET_('etNitidezValor');
+ const modo=Math.max(0,Math.min(3,Number(el?.value)||0));
+ if(label)label.textContent=['Suave','Normal','Alta','Máxima'][modo];
+ try{localStorage.setItem('om_materiales_etiquetas_nitidez_v1',String(modo));}catch(e){}
+}
+function etMostrarAjustesObjeto(){
+ const o=etObjetos[ET_('etObjeto')?.value||'qr'];if(!o)return;
+ etObjetoSeleccionado=ET_('etObjeto').value;
+ for(const [id,p] of [['etActivo','active'],['etPosX','x'],['etPosY','y'],['etTamano','size'],['etAngulo','angle'],['etAncho','maxWidth'],['etGrosor','weight']]){
+  const el=ET_(id);if(!el)continue;
+  if(p==='active')el.checked=o.active!==false;else el.value=o[p]??(p==='maxWidth'?160:p==='weight'?700:0);
+  if(p==='maxWidth'||p==='weight')el.disabled=o.type!=='text';
+ }
+ etSincronizarTamanoQR();
+ etDibujar();
+}
+function etCambiarAjuste(prop,value){
+ const o=etObjetos[ET_('etObjeto').value];if(!o)return;
+ if(prop==='active')o.active=!!value;
+ else{
+  const n=Number(value);if(!Number.isFinite(n))return;
+  if(prop==='angle')o.angle=Math.max(-180,Math.min(180,n));
+  else if(prop==='size')o.size=Math.max(o.type==='qr'?80:8,Math.min(o.type==='qr'?190:240,n));
+  else if(prop==='x')o.x=Math.max(0,Math.min(383,n));
+  else if(prop==='y')o.y=Math.max(0,Math.min(239,n));
+  else if(prop==='maxWidth')o.maxWidth=Math.max(35,Math.min(330,n));
+  else o[prop]=n;
+ }
+ if(o.type==='qr')etSincronizarTamanoQR();
+ etDibujar();
+}
+function etQrInfo(content,requested){
+ if(!content||typeof qrcode!=='function')return null;
+ try{
+  const q=qrcode(0,'M');q.addData(content,'Byte');q.make();
+  const n=q.getModuleCount(),quiet=4,scale=Math.max(1,Math.floor(requested/(n+2*quiet)));
+  return {q,n,quiet,scale,total:(n+2*quiet)*scale};
+ }catch(e){etRegistro('ERROR creando QR: '+e.message);return null;}
+}
+function etGetLineas(ctx,txt,maxWidth,maxLines){
+ const result=[];for(const p of String(txt||'').split(/\r?\n/)){
+  if(!p.trim()){result.push('');continue;}
+  let line='';
+  for(const word of p.trim().split(/\s+/)){
+   if(!word)continue;const trial=line?line+' '+word:word;
+   if(line && ctx.measureText(trial).width>maxWidth){result.push(line);line=word;}else{line=trial;}
+   if(ctx.measureText(line).width>maxWidth){
+    let temp='';for(const c of line){if(temp&&ctx.measureText(temp+c).width>maxWidth){result.push(temp);temp=c;}else temp+=c;}line=temp;
+   }
+  }
+  if(line)result.push(line);
+ }
+ return result.slice(0,maxLines||4);
+}
+function etDrawText(ctx,o,text,guia,key){
+ ctx.save();ctx.translate(o.x,o.y);ctx.rotate((o.angle||0)*Math.PI/180);
+ ctx.fillStyle='#020617';ctx.textBaseline='top';ctx.font=`${o.weight||700} ${o.size}px Arial,sans-serif`;
+ const lines=etGetLineas(ctx,text,o.maxWidth||160,o.maxLines||4);let ancho=0;
+ lines.forEach((ln,i)=>{ctx.fillText(ln,0,i*(o.size+3));ancho=Math.max(ancho,ctx.measureText(ln).width);});
+ const h=Math.max(o.size,lines.length*(o.size+3));o._box={x:0,y:0,w:Math.max(18,ancho),h};
+ if(guia&&etObjetoSeleccionado===key){ctx.strokeStyle='#0284c7';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.strokeRect(-2,-2,o._box.w+4,h+4);}
+ ctx.restore();
+}
+function etDrawQR(ctx,o,text,guia){
+ const inf=etQrInfo(text,o.size);
+ ctx.save();ctx.fillStyle='white';ctx.fillRect(o.x,o.y,o.size,o.size);
+ if(inf){ctx.fillStyle='#000';for(let y=0;y<inf.n;y++)for(let x=0;x<inf.n;x++)if(inf.q.isDark(y,x))ctx.fillRect(o.x+(x+inf.quiet)*inf.scale,o.y+(y+inf.quiet)*inf.scale,inf.scale,inf.scale);}
+ else if(!text){ctx.strokeStyle='#cbd5e1';ctx.strokeRect(o.x+4,o.y+4,o.size-8,o.size-8);}
+ o._box={x:0,y:0,w:o.size,h:o.size};
+ if(guia&&etObjetoSeleccionado==='qr'){ctx.strokeStyle='#0284c7';ctx.setLineDash([3,3]);ctx.strokeRect(o.x-2,o.y-2,o.size+4,o.size+4);}
+ ctx.restore();
+}
+function etDrawLine(ctx,o,guia){ctx.save();ctx.translate(o.x,o.y);ctx.rotate((o.angle||0)*Math.PI/180);
+ ctx.fillStyle='#0f172a';ctx.fillRect(0,0,o.size,o.thickness||3);o._box={x:0,y:0,w:o.size,h:Math.max(6,o.thickness||3)};
+ if(guia&&etObjetoSeleccionado==='line'){ctx.strokeStyle='#0284c7';ctx.setLineDash([3,3]);ctx.strokeRect(-3,-3,o.size+6,10);}
+ ctx.restore();}
+function etDibujar(guia=true){
+ const canvas=ET_('etCanvas');if(!canvas)return;
+ const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.fillStyle='#fff';ctx.fillRect(0,0,384,240);
+ const textos={sap:ET_('etCodigo')?.value||'',desc:ET_('etDescripcion')?.value||'',unidad:ET_('etUnidad')?.value?`UNIDAD: ${ET_('etUnidad').value}`:'',fecha:ET_('etFecha')?.value||''};
+ for(const [key,o]of Object.entries(etObjetos)){
+  if(!o.active)continue;
+  if(o.type==='qr')etDrawQR(ctx,o,ET_('etQRContenido')?.value||'',guia);
+  else if(o.type==='line')etDrawLine(ctx,o,guia);
+  else etDrawText(ctx,o,textos[key]||'',guia,key);
+ }
+ if(guia&&!ET_('etCodigo')?.value){ctx.fillStyle='rgba(15,23,42,.66)';ctx.font='bold 15px Arial';ctx.fillText('Busca un SAP para generar el QR',28,230);}
+}
+function etPunto(e){const r=ET_('etCanvas').getBoundingClientRect();return {x:(e.clientX-r.left)*384/r.width,y:(e.clientY-r.top)*240/r.height};}
+function etHit(o,p){
+ if(!o._box)return false;const ang=-(o.angle||0)*Math.PI/180;const dx=p.x-o.x,dy=p.y-o.y;
+ const x=dx*Math.cos(ang)-dy*Math.sin(ang),y=dx*Math.sin(ang)+dy*Math.cos(ang);
+ return x>=-7&&y>=-8&&x<=o._box.w+7&&y<=o._box.h+8;
+}
+function etConfigurarLienzo(){
+ const cv=ET_('etCanvas');if(!cv||cv.dataset.etWired)return;cv.dataset.etWired='1';
+ cv.addEventListener('pointerdown',e=>{
+  const p=etPunto(e);for(const key of Object.keys(etObjetos).reverse()){
+   const o=etObjetos[key];if(o.active&&etHit(o,p)){
+    etObjetoSeleccionado=key;ET_('etObjeto').value=key;etMostrarAjustesObjeto();
+    etArrastrando=true;etArrastreOffset={x:p.x-o.x,y:p.y-o.y};cv.setPointerCapture?.(e.pointerId);e.preventDefault();return;
+   }
+  }
+ });
+ cv.addEventListener('pointermove',e=>{if(!etArrastrando)return;const o=etObjetos[etObjetoSeleccionado],p=etPunto(e);
+  o.x=Math.max(0,Math.min(383,Math.round(p.x-etArrastreOffset.x)));o.y=Math.max(0,Math.min(239,Math.round(p.y-etArrastreOffset.y)));
+  ET_('etPosX').value=o.x;ET_('etPosY').value=o.y;etDibujar();e.preventDefault();
+ });
+ for(const name of ['pointerup','pointercancel','lostpointercapture'])cv.addEventListener(name,()=>{etArrastrando=false;});
+ document.addEventListener('keydown',e=>{if(!ET_('etMaterialModal')?.classList.contains('show'))return;if(e.key==='Escape'){cerrarEtiquetasMaterialSAP();return;}
+  if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)||['INPUT','TEXTAREA','SELECT'].includes(e.target?.tagName))return;
+  const o=etObjetos[etObjetoSeleccionado],n=e.shiftKey?5:1;
+  if(e.key==='ArrowLeft')o.x=Math.max(0,o.x-n);if(e.key==='ArrowRight')o.x=Math.min(383,o.x+n);
+  if(e.key==='ArrowUp')o.y=Math.max(0,o.y-n);if(e.key==='ArrowDown')o.y=Math.min(239,o.y+n);
+  etMostrarAjustesObjeto();e.preventDefault();
+ });
+}
+function etValidarMaterial(){
+ const sap=ET_('etCodigo')?.value||'';
+ if(!sap||!ET_('etQRContenido')?.value||sap!==ET_('etQRContenido').value){alert('Primero busca y selecciona un material SAP válido.');return false;}
+ if(typeof qrcode!=='function'){alert('No se cargó la librería QR. Revisa la conexión y vuelve a abrir el módulo.');return false;}
+ return true;
+}
+function etCanvasLimpio(){etDibujar(false);return ET_('etCanvas');}
+function etDescargarPNG(){if(!etValidarMaterial())return;
+ const cv=etCanvasLimpio(),link=document.createElement('a');link.download=`QR_SAP_${ET_('etCodigo').value}.png`;link.href=cv.toDataURL('image/png');link.click();etDibujar();}
+function etImprimirNavegador(){if(!etValidarMaterial())return;
+ const image=etCanvasLimpio().toDataURL('image/png');etDibujar();
+ const w=window.open('','_blank','width=700,height=430');if(!w){alert('Permite las ventanas emergentes para imprimir desde el navegador.');return;}
+ w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>QR SAP ${etEsc(ET_('etCodigo').value)}</title><style>@page{size:50mm 30mm;margin:0}html,body{margin:0;padding:0;background:white}img{display:block;width:50mm;height:30mm;object-fit:fill}@media screen{body{padding:12px;background:#ddd}img{box-shadow:0 0 8px #888}}</style></head><body><img id="etPrintable" alt="Etiqueta SAP" src="${image}"><script>document.getElementById('etPrintable').onload=function(){setTimeout(()=>window.print(),250)}<\/script></body></html>`);
+ w.document.close();
+}
+function etActualizarImpresora(){const conectado=!!etWriter,st=ET_('etEstado');if(st){st.classList.toggle('ok',conectado);st.textContent=conectado?`● Conectada ${etDevice?.name||'Y50'}`:'● Impresora desconectada';}
+ const btn=ET_('etImprimir');if(btn)btn.disabled=!conectado||etImprimiendo||!ET_('etCodigo')?.value;
+ const conn=ET_('etConectar');if(conn)conn.disabled=etImprimiendo;
+}
+async function etConectarY50(){
+ if(!navigator.bluetooth){alert('Web Bluetooth no está disponible en este navegador. Utiliza Chrome o Edge compatible, en HTTPS o localhost.');return;}
+ try{
+  etRegistro('Solicitando conexión Bluetooth con MINI Y50…');
+  etDevice=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:[ET_BLE_SERVICE,'49535343-fe7d-4ae5-8fa9-9fafd205e455']});
+  etDevice.addEventListener('gattserverdisconnected',()=>{etWriter=null;etNotify=null;etActualizarImpresora();etRegistro('Impresora desconectada.');});
+  const gatt=await etDevice.gatt.connect(),srv=await gatt.getPrimaryService(ET_BLE_SERVICE);
+  etWriter=await srv.getCharacteristic(ET_BLE_WRITE);etNotify=await srv.getCharacteristic(ET_BLE_NOTIFY);
+  await etNotify.startNotifications();etNotify.addEventListener('characteristicvaluechanged',e=>{const b=new Uint8Array(e.target.value.buffer);if(b.length===2&&b[0]===0&&b[1]<=100)etRegistro('Batería '+b[1]+'%');});
+  etRegistro('Conexión BLE FF00 / FF02 lista.');etActualizarImpresora();await etSleep(200);await etLeerBateriaY50();
+ }catch(e){etRegistro('ERROR Bluetooth: '+e.message);etWriter=null;etActualizarImpresora();alert('No fue posible conectar MINI Y50: '+e.message);}
+}
+async function etTX(bytes){if(!etWriter)throw new Error('Conecta primero la impresora Y50.');
+ if(etWriter.properties.writeWithoutResponse)await etWriter.writeValueWithoutResponse(bytes);else await etWriter.writeValue(bytes);
+}
+async function etLeerBateriaY50(){if(!etWriter){etRegistro('Conecta la impresora para consultar batería.');return;}
+ try{await etTX(new Uint8Array([0x10,0xff,0x50,0xf1]));}catch(e){etRegistro('Error consultando batería: '+e.message);}}
+function etRasterY50(){
+ const canvas=etCanvasLimpio(),ctx=canvas.getContext('2d',{willReadFrequently:true}),im=ctx.getImageData(0,0,384,240),wb=48,data=new Uint8Array(wb*240);
+ // Umbral binario para afinar bordes antialias (QR y textos). No cambia la resolución física de la Y50.
+ const sharp=Math.max(0,Math.min(3,Number(ET_('etNitidez')?.value)||0));
+ const umbral=[190,145,115,95][sharp];
+ for(let y=0;y<240;y++)for(let x=0;x<384;x++){const i=(y*384+x)*4;if(im.data[i]<umbral)data[y*wb+(x>>3)]|=0x80>>(x&7);}
+ const h=new Uint8Array([0x1d,0x76,0x30,0,wb,0,240,0]),r=new Uint8Array(h.length+data.length);r.set(h);r.set(data,h.length);etDibujar();return r;
+}
+async function etEnviarTramaY50(datos){const [chunk,pausa]=ET_('etPerfil').value.split(',').map(Number);
+ for(let i=0;i<datos.length;i+=chunk){await etTX(datos.slice(i,Math.min(i+chunk,datos.length)));await etSleep(pausa);}
+}
+async function etImprimirY50(){
+ if(etImprimiendo||!etValidarMaterial())return;
+ if(!etWriter){alert('Primero conecta MINI Y50.');return;}
+ etImprimiendo=true;etActualizarImpresora();
+ try{
+  ET_('etFecha').value=etFechaHoy();etDibujar();const trama=etRasterY50();
+  const copias=Math.max(1,Math.min(30,parseInt(ET_('etCopias').value)||1));
+  for(let i=0;i<copias;i++){
+   for(const a of [[0x1f,0xc0,1,0],[0x1f,0x11,0x51,0,1],[0x1f,0xc0,1,1]]){await etTX(new Uint8Array(a));await etSleep(a.length===5?250:100);}
+   await etSleep(700);await etTX(new Uint8Array([0x10,0xff,0x10,0,Number(ET_('etDensidad').value)]));await etSleep(120);
+   await etEnviarTramaY50(trama);await etSleep(300);
+   if(ET_('etCorte').checked||i<copias){await etTX(new Uint8Array([0x1d,0x0c]));await etSleep(700);await etTX(new Uint8Array([0x1f,0x11,0x50]));await etSleep(350);}
+   etRegistro(`Etiqueta ${i+1}/${copias}: SAP ${ET_('etCodigo').value} enviada (${trama.length} bytes).`);
+   if(i<copias-1)await etSleep(500);
+  }
+  etRegistro('Impresión terminada.');
+ }catch(e){etRegistro('ERROR impresión: '+e.message);alert('Error durante la impresión: '+e.message);}
+ finally{etImprimiendo=false;etActualizarImpresora();}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',etConfigurarLienzo);else etConfigurarLienzo();
 </script>
 </body>
 </html>
