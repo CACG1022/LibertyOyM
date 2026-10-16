@@ -207,6 +207,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       border-color:rgba(168,85,247,.38);
     }
 
+    /* Reversión segura de una reclasificación WBS (par de movimientos). */
+    .wbs-revert-btn{border:1px solid rgba(251,146,60,.5);border-radius:9px;
+      background:rgba(234,88,12,.13);color:#fed7aa;font-size:11px;font-weight:800;
+      padding:8px 10px;cursor:pointer;white-space:nowrap}
+    .wbs-revert-btn:hover{background:rgba(234,88,12,.3)}
+    .wbs-revert-btn:disabled{opacity:.55;cursor:wait}
+    #movimientosBody tr.wbs-reclas-anulada{opacity:.55}
+    .wbs-anulado-etiqueta{display:inline-block;margin-top:4px;color:#fca5a5;font-size:10px;font-weight:800}
+    .wbs-traza{font-size:10px;color:#a5f3fc;line-height:1.5;margin-top:5px;max-width:290px;overflow-wrap:anywhere}
+
     /* Reclasificaciones WBS: misma transparencia que las filas verdes */
     #movimientosBody tr.row-reclasificacion-wbs{
       background:rgba(39,218,245,.13) !important;
@@ -908,9 +918,113 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 }
 </style>
+<style id="estilosKpiPendientesReserva">
+  /* Todos los indicadores en una sola línea. En pantallas estrechas, desplazar horizontalmente. */
+  #summary.summary {
+    display: grid !important;
+    grid-template-columns: repeat(9, minmax(140px, 1fr)) !important;
+    grid-auto-flow: row !important;
+    gap: 10px !important;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    padding: 2px 1px 7px;
+    margin-bottom: 14px;
+  }
+  #summary.summary .stat {
+    min-width: 0;
+    min-height: 105px !important;
+    padding: 13px 12px !important;
+    overflow: hidden;
+  }
+  #summary.summary .stat .label {line-height: 1.25; font-size: 10px;}
+  #summary.summary .stat .value {font-size: clamp(23px, 2vw, 30px);}
+  #summary.summary .stat .sub {line-height: 1.25; font-size: 9px;}
+  #summary.summary .stat.kpi-pendientes-rojo {
+    background: linear-gradient(180deg,rgba(185,28,28,.32),rgba(127,29,29,.17)) !important;
+    border-color: rgba(248,113,113,.8) !important;
+    box-shadow: inset 0 0 0 1px rgba(248,113,113,.12), 0 8px 20px rgba(127,29,29,.12);
+  }
+  #summary.summary .stat.kpi-pendientes-rojo .label,
+  #summary.summary .stat.kpi-pendientes-rojo .value {color: #fecaca;}
+  #summary.summary .stat.kpi-pendientes-rojo .sub {color: #fca5a5;}
+  #summary.summary .stat.kpi-pendientes-rojo.active {
+    border-color: #f87171 !important;
+    box-shadow: inset 0 0 0 2px #f87171,0 8px 20px rgba(127,29,29,.2);
+  }
+</style>
+
+<style id="estilosInventarioFisico">
+  .if-backdrop{position:fixed;inset:0;z-index:180;display:none;align-items:center;justify-content:center;padding:15px;background:rgba(1,7,20,.83);backdrop-filter:blur(6px)}
+  .if-backdrop.show{display:flex}
+  .if-panel{width:min(1260px,99vw);max-height:96vh;overflow:auto;border:1px solid rgba(125,182,255,.3);border-radius:20px;background:linear-gradient(180deg,#0a1730,#08152a);box-shadow:0 22px 90px #000b;color:#eaf3ff;padding:22px}
+  .if-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:18px}
+  .if-top h2{font-size:22px;margin:0 0 5px}
+  .if-note{color:#a7c6ee;font-size:12px;line-height:1.4}
+  .if-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+  .if-field{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:700;color:#c3d9ff}
+  .if-field input,.if-field select{width:100%;padding:12px;border:1px solid rgba(145,185,243,.28);border-radius:10px;background:#0b1931;color:#fff;font-size:15px}
+  .if-buttons{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+  .if-btn{min-height:40px;padding:10px 15px;border-radius:10px;border:1px solid rgba(148,183,245,.25);background:#152441;color:#f8fbff;cursor:pointer;font-weight:750}
+  .if-btn.primary{background:linear-gradient(120deg,#2563eb,#10b981);border:0}
+  .if-btn.danger{background:#7f1d1d;border-color:#ef4444}
+  .if-btn:disabled{opacity:.45;cursor:not-allowed}
+  .if-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:14px 0}
+  .if-stat{padding:14px;border:1px solid rgba(150,185,232,.19);border-radius:14px;background:#101e36}
+  .if-stat small{display:block;color:#a8c5eb;font-size:11px;margin-bottom:7px}
+  .if-stat b{display:block;font-size:26px}
+  .if-stat.bad b{color:#fda4af}
+  .if-stat.good b{color:#86efac}
+  .if-stat.pending b{color:#fde68a}
+  .if-entry{border:1px solid rgba(96,165,250,.25);background:#0e203c;border-radius:15px;padding:14px;margin:12px 0}
+  .if-entry .if-grid{align-items:end}
+  .if-compare{padding:10px 12px;border:1px solid rgba(147,197,253,.2);border-radius:12px;margin:10px 0;font-size:14px}
+  .if-compare.is-bad{background:rgba(127,29,29,.3);border-color:#fb7185;color:#fecdd3;font-weight:800}
+  .if-compare.is-good{background:rgba(20,83,45,.28);border-color:#22c55e;color:#bbf7d0;font-weight:800}
+  .if-table{overflow:auto;max-height:37vh;border:1px solid rgba(145,185,243,.18);border-radius:12px}
+  .if-table table{width:100%;min-width:770px;border-collapse:collapse}
+  .if-table th,.if-table td{padding:10px 11px;font-size:12px;text-align:left;border-bottom:1px solid rgba(180,200,233,.11);vertical-align:middle}
+  .if-table th{position:sticky;top:0;z-index:1;background:#15243c;color:#c4dfff}
+  .if-row-bad{background:rgba(180,33,51,.22)!important}
+  .if-row-good{background:rgba(23,109,64,.15)!important}
+  .if-row-pending{color:#b9c8e1}
+  .if-row-bad .if-state{color:#fda4af;font-weight:800}
+  .if-row-good .if-state{color:#86efac;font-weight:800}
+  .if-status{min-height:22px;font-size:12px;color:#a8c5eb;margin:9px 0}
+  .if-separator{margin:15px 0;border:0;border-top:1px solid rgba(150,185,232,.2)}
+  .if-progress{height:9px;overflow:hidden;border-radius:999px;background:#182941;margin-top:8px}
+  .if-progress div{height:100%;background:linear-gradient(90deg,#2563eb,#22c55e);transition:width .2s}
+  #ifQrReader{width:100%;max-width:440px;margin:10px auto;background:#030b19;border-radius:12px;overflow:hidden}
+  #ifQrReader video{max-height:300px;object-fit:contain}
+  .if-scan-area{display:none;margin-top:10px;border-radius:13px;border:1px solid rgba(80,170,245,.3);padding:12px;background:#071529}
+  .if-scan-area.show{display:block}
+  .if-pill{font-size:11px;padding:5px 9px;border-radius:8px;background:#1a3459;color:#bfdbfe}
+  .if-sync{display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;padding:10px 13px;border:1px solid rgba(56,189,248,.35);border-radius:12px;background:rgba(14,116,144,.12);margin-bottom:14px;font-size:12px;color:#c5e4fd}
+  .if-sync.warning{border-color:rgba(251,191,36,.65);background:rgba(120,53,15,.15);color:#fde68a}
+  .if-history{margin-top:13px;display:grid;gap:7px}
+  .if-history-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between;background:#101f39;border:1px solid rgba(150,185,232,.18);padding:10px;border-radius:10px}
+  .if-history-row b{color:#e5f2ff}
+  .if-history-row small{color:#a8c5eb}
+  @media(max-width:900px){.if-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.if-kpis{grid-template-columns:repeat(2,1fr)}.if-panel{padding:12px;max-height:100vh;height:100vh;width:100vw;border-radius:0}}
+  @media(max-width:530px){.if-grid{grid-template-columns:1fr}.if-top h2{font-size:18px}.if-btn{flex:1}.if-stat b{font-size:21px}}
+</style>
 </head>
 <body>
 <div id="root"></div>
+
+
+<!-- Inventario físico: sesiones y conteos sincronizados en Supabase; stock sin modificación automática. -->
+<div id="inventarioFisicoModal" class="if-backdrop" role="dialog" aria-modal="true" aria-labelledby="ifTitulo">
+  <div class="if-panel">
+    <div class="if-top">
+      <div><h2 id="ifTitulo">📦 Inventario físico · QR / SAP</h2><div class="if-note">Registra cada conteo y su historial en Supabase. Nunca modifica el stock de materiales automáticamente.</div></div>
+      <button type="button" class="if-btn" onclick="cerrarInventarioFisico()" title="Cerrar">✕</button>
+    </div>
+    <div id="ifContenido"></div>
+  </div>
+</div>
 
 <div id="movModal" class="modal-backdrop">
   <div class="modal">
@@ -1252,6 +1366,7 @@ function renderShell(){
 <option>CONSUMO_MTO_CORRECTIVO</option><option>CONSUMO_MTO_PREVENTIVO</option></select>
         <button class="btn ghost" onclick="openMatModal()">Crear material</button>
         <button class="btn ghost" onclick="openWbsManagerModal()">Gestionar WBS</button>
+        <button class="btn" style="background:linear-gradient(135deg,#0e7490,#2563eb)" onclick="abrirInventarioFisico()" title="Conteo físico mediante QR / Código SAP">📦 Inventario físico</button>
         <button class="btn ghost" onclick="exportarInventarioExcel()">Exportar inventario + WBS</button>
         <button class="btn ghost" onclick="exportarTodosMovimientosExcel()">Exportar movimientos Excel</button>
         <button class="btn ghost" onclick="loadAll()">Actualizar</button>
@@ -1279,6 +1394,10 @@ function renderShell(){
           <input id="bulkReservaCode" class="control" placeholder="Filtrar o copiar Cod_reserva" oninput="filtrarPorCodigoReserva()">
           <button class="small-btn" onclick="aplicarReservaSeleccionados()">Copiar código a seleccionados</button>
           <button class="small-btn" onclick="limpiarSeleccionMovimientos()">Limpiar selección</button>
+          <label style="display:inline-flex;align-items:center;gap:7px;color:#bfdbfe;font-size:12px;white-space:nowrap;cursor:pointer">
+            <input id="verReclasificacionesAnuladas" type="checkbox" onchange="renderMovimientos()" style="accent-color:#38bdf8">
+            Mostrar reclasificaciones anuladas
+          </label>
           <span id="bulkReservaMsg" class="muted-note"></span>
         </div>
         <div class="table-wrap">
@@ -1294,7 +1413,7 @@ function renderShell(){
                 <th><div class="th-filter"><span>Destino</span><select id="filterMovDestino" onchange="setMovimientoColumnFilter('destino', this.value)"><option value="">Todos</option></select></div></th>
                 <th><div class="th-filter"><span>Guía</span><select id="filterMovGuia" onchange="setMovimientoColumnFilter('guia', this.value)"><option value="">Todas</option></select></div></th>
                 <th><div class="th-filter"><span>Cliente / Instalación</span><select id="filterMovCliente" onchange="setMovimientoColumnFilter('cliente', this.value)"><option value="">Todos</option></select></div></th>
-                <th><div class="th-filter"><span>Responsable</span><select id="filterMovResponsable" onchange="setMovimientoColumnFilter('responsable', this.value)"><option value="">Todos</option></select></div></th><th>Cod_reserva</th><th>Soporte</th>
+                <th><div class="th-filter"><span>Responsable</span><select id="filterMovResponsable" onchange="setMovimientoColumnFilter('responsable', this.value)"><option value="">Todos</option></select></div></th><th>Cod_reserva</th><th>Soporte</th><th>Acciones</th>
               </tr>
             </thead>
             <tbody id="movimientosBody"></tbody>
@@ -1373,6 +1492,96 @@ function esReclasificacionWbs(r){
 function tipoMovimientoVisible(r){
   return esReclasificacionWbs(r) ? 'RECLASIFICACION WBS' : (r?.tipo_movimiento || '');
 }
+// Ambas líneas de una reclasificación comparten un mismo identificador WBS-...
+// en observaciones. No agrupar por fecha, SAP ni cantidad: pueden coincidir.
+function referenciaReclasificacionWbs(row){
+  if(!esReclasificacionWbs(row)) return '';
+  const texto=String(row?.observaciones || '');
+  return texto.match(/^Reclasificación manual WBS (WBS-\d{8}-\d{6}-[a-z0-9]+):/i)?.[1] || '';
+}
+function reclasificacionAnulada(row){
+  return esReclasificacionWbs(row) && String(row?.estado||'').toUpperCase()==='ANULADO';
+}
+function renderTrazaWbs(row){
+  if(!esReclasificacionWbs(row)) return '';
+  const texto=String(row.observaciones||'');
+  const ref=referenciaReclasificacionWbs(row);
+  const detalle=texto.match(/:\s*(.+?)(?:\s*\|\s*.*)?$/)?.[1] || '';
+  return `<div class="wbs-traza" title="${esc(texto)}">${esc(detalle)}`+
+    (ref?`<div style="opacity:.75">${esc(ref)}</div>`:'')+`</div>`+
+    (reclasificacionAnulada(row)?'<span class="wbs-anulado-etiqueta">ANULADA · sin efecto en inventario</span>':'');
+}
+
+// Marcar ambos registros como ANULADO en una sola actualización SQL permite
+// retirar el efecto de la reclasificación y conservar trazabilidad.
+let reversionWbsEnCurso=false;
+async function revertirReclasificacionWbs(id){
+  if(reversionWbsEnCurso) return;
+  const original=(movimientos||[]).find(x=>String(x.id)===String(id));
+  if(!original || !esReclasificacionWbs(original)){
+    alert('Este movimiento no corresponde a una reclasificación WBS gestionable.');
+    return;
+  }
+  if(reclasificacionAnulada(original)){
+    alert('Esta reclasificación ya fue anulada.');
+    return;
+  }
+  const ref=referenciaReclasificacionWbs(original);
+  if(!ref){
+    alert('No se identificó la pareja de esta reclasificación. No se modificó ningún movimiento.');
+    return;
+  }
+  reversionWbsEnCurso=true;
+  try{
+    const client=await resolveClient();
+    // Consultar nuevamente Supabase: nunca confiar solo en la tabla visible.
+    const consulta=await client.from('om_materiales_movimientos')
+      .select('id,tipo_movimiento,estado,observaciones,codigo_sap,cantidad,wbs,bodega_origen_id,bodega_destino_id')
+      .ilike('observaciones',`Reclasificación manual WBS ${ref}:%`);
+    if(consulta.error) throw consulta.error;
+    const pareja=(consulta.data||[]).filter(r=>referenciaReclasificacionWbs(r)===ref);
+    const tipos=pareja.map(x=>String(x.tipo_movimiento||'').toUpperCase());
+    if(pareja.length!==2 || tipos.filter(x=>x==='AJUSTE_NEGATIVO').length!==1 ||
+       tipos.filter(x=>x==='AJUSTE_POSITIVO').length!==1){
+      throw new Error(`Se esperaba una salida y una entrada de la reclasificación ${ref}, pero se encontraron ${pareja.length} registros. No se modificó nada.`);
+    }
+    if(pareja.some(x=>String(x.estado||'').toUpperCase()==='ANULADO')){
+      throw new Error('La reclasificación ya está anulada total o parcialmente. Actualiza el historial antes de continuar.');
+    }
+    if(pareja.some(x=>String(x.codigo_sap)!==String(original.codigo_sap) ||
+        Number(x.cantidad)!==Number(original.cantidad))){
+      throw new Error('Los datos del par de movimientos no coinciden. No se modificó nada.');
+    }
+    const detalle=String(original.observaciones||'').split(' | ')[0];
+    const ok=confirm(
+      `¿ANULAR LA RECLASIFICACIÓN COMPLETA?\n\n`+
+      `SAP: ${original.codigo_sap}\nCantidad: ${fmtNum(original.cantidad)} ${original.unidad||''}\n`+
+      `${detalle}\n\n`+
+      `Se anularán sus DOS movimientos (salida y entrada). Se recalculará la distribución WBS. `+
+      `La operación quedará visible como ANULADA para auditoría.`
+    );
+    if(!ok) return;
+    // Una sola instrucción UPDATE para las dos filas: no borrar una sola mitad.
+    const ids=pareja.map(x=>x.id);
+    const respuesta=await client.from('om_materiales_movimientos')
+      .update({estado:'ANULADO'})
+      .in('id',ids)
+      .neq('estado','ANULADO')
+      .select('id');
+    if(respuesta.error) throw respuesta.error;
+    if((respuesta.data||[]).length!==2){
+      throw new Error('No se confirmó la anulación de ambas líneas. Actualiza y verifica el estado en Supabase.');
+    }
+    await loadAll();
+    alert(`Reclasificación ${ref} anulada correctamente. Sus dos movimientos quedaron sin efecto sobre inventario y WBS.`);
+  }catch(err){
+    console.error('Error anulando reclasificación WBS:',err);
+    alert('No se pudo anular la reclasificación: '+(err.message||err));
+  }finally{
+    reversionWbsEnCurso=false;
+  }
+}
+
 function badge(v){ return `<span class="badge tipo-${esc(v)}">${esc(v || '')}</span>`; }
 
 async function resolveClient(){
@@ -1566,6 +1775,16 @@ function materialMatches(row, terms){
   return terms.every(t => nombre.includes(String(t).toUpperCase()));
 }
 
+// Un pendiente es un movimiento de consumo (instalación o mantenimiento),
+// sin Cod_reserva. No se consideran anulaciones ni reclasificaciones WBS.
+function esConsumoPendienteReserva(row){
+  const tipo = String(row?.tipo_movimiento || '').trim().toUpperCase();
+  const estado = String(row?.estado || '').trim().toUpperCase();
+  const codigoReserva = String(row?.cod_reserva ?? '').trim();
+  return ['CONSUMO_INSTALACION','CONSUMO_MTO_CORRECTIVO','CONSUMO_MTO_PREVENTIVO'].includes(tipo)
+    && estado !== 'ANULADO' && codigoReserva === '';
+}
+
 function applyKpi(rows, mode){
   if(!activeKpi) return rows;
   if(mode === 'inventario'){
@@ -1580,6 +1799,7 @@ function applyKpi(rows, mode){
     if(['ALMAGRARIO','NODO','CONTRATISTA','WOM'].includes(activeKpi)) return rows.filter(r => Number(r[activeKpi.toLowerCase()] || 0) > 0);
   }
   if(mode === 'movimientos'){
+    if(activeKpi === 'PENDIENTES_CONSUMO') return rows.filter(esConsumoPendienteReserva);
     if(activeKpi === 'SALIDAS') return rows.filter(r => ['SALIDA','CONSUMO_INSTALACION','CONSUMO_MTO_CORRECTIVO','CONSUMO_MTO_PREVENTIVO'].includes(r.tipo_movimiento));
   }
   return rows;
@@ -1613,8 +1833,14 @@ function renderSummary(){
   const sfps = totalPorCodigoSap('522588');
   const patchcordLcSc = totalPorCodigoSap('523024');
   const consumido = movimientos.filter(x => ['CONSUMO_INSTALACION','CONSUMO_MTO_CORRECTIVO','CONSUMO_MTO_PREVENTIVO'].includes(x.tipo_movimiento)).reduce((a,b)=>a+Number(b.cantidad||0),0);
+  const pendientesConsumo = movimientos.filter(esConsumoPendienteReserva).length;
 
   document.getElementById('summary').innerHTML = `
+    <div class="stat ${activeKpi==='PENDIENTES_CONSUMO'?'active':''} ${pendientesConsumo>0?'kpi-pendientes-rojo':''}" onclick="toggleKpiPendientesConsumo()" title="Ver registros de consumo sin código de reserva">
+      <div class="label">Pendientes por consumir</div>
+      <div class="value">${fmtNum(pendientesConsumo)}</div>
+      <div class="sub">Consumos sin Cod_reserva</div>
+    </div>
     <div class="stat ${activeKpi==='FIBRA_12H'?'active':''}" onclick="toggleKpi('FIBRA_12H')"><div class="label">Fibra 12 hilos</div><div class="value">${fmtNum(fibra12h)}</div><div class="sub">Total en todas las bodegas</div></div>
     <div class="stat ${activeKpi==='FIBRA_4H'?'active':''}" onclick="toggleKpi('FIBRA_4H')"><div class="label">Fibra 4 hilos</div><div class="value">${fmtNum(fibra4h)}</div><div class="sub">Disponible SAP 522171</div></div>
     <div class="stat ${activeKpi==='HERRAJE_RET_117_128'?'active':''}" onclick="toggleKpi('HERRAJE_RET_117_128')"><div class="label">Herraje retención</div><div class="value">${fmtNum(herrajeRet117128)}</div><div class="sub">Disponible SAP 523098</div></div>
@@ -1625,6 +1851,23 @@ function renderSummary(){
     <div class="stat ${activeKpi==='SALIDAS'?'active':''}" onclick="toggleKpi('SALIDAS')"><div class="label">Consumido / salidas</div><div class="value">${fmtNum(consumido)}</div><div class="sub">Instalaciones y salidas</div></div>
   `;
 }
+// El KPI lleva al historial y muestra todos los consumos sin Cod_reserva,
+// sin que filtros usados anteriormente oculten registros pendientes.
+function toggleKpiPendientesConsumo(){
+  const activar = activeKpi !== 'PENDIENTES_CONSUMO';
+  activeKpi = activar ? 'PENDIENTES_CONSUMO' : null;
+  if(activar){
+    ['searchBox','filterBodega','filterTipo','bulkReservaCode'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.value = '';
+    });
+    Object.keys(movimientoColumnFilters).forEach(key=>{movimientoColumnFilters[key]='';});
+    const verAnuladas = document.getElementById('verReclasificacionesAnuladas');
+    if(verAnuladas) verAnuladas.checked = false;
+  }
+  setTab('movimientos');
+}
+
 function toggleKpi(kpi){
   activeKpi = activeKpi === kpi ? null : kpi;
   renderAll();
@@ -1759,6 +2002,11 @@ function actualizarReservaInputs(){
 
 function onMovimientoRowClick(event, id){
   if(event.target.closest('a,button,input,select,textarea,label')) return;
+  const row=movimientos.find(x=>String(x.id)===String(id));
+  if(row && esReclasificacionWbs(row)){
+    alert('Esta fila forma parte de una reclasificación WBS de dos movimientos. Para corregirla usa «Anular reclasificación» en la columna Acciones y realiza después una nueva reclasificación.');
+    return;
+  }
   openMovModalById(id);
 }
 
@@ -1852,8 +2100,10 @@ function renderMovimientos(){
   const bodega = getBodega();
   const tipo = getTipo();
   const filtroReserva = getFiltroCodigoReserva();
+  const verAnuladas=Boolean(document.getElementById('verReclasificacionesAnuladas')?.checked);
 
   let rows = movimientos.filter(r => {
+    if(!verAnuladas && reclasificacionAnulada(r)) return false;
     const matchText = !txt || [
       r.codigo_sap, r.om_materiales_catalogo?.material, r.material_descripcion, r.guia, r.transportadora,
       r.cliente, r.id_cambio, r.id_cliente, r.responsable,
@@ -1892,10 +2142,10 @@ function renderMovimientos(){
   empty.style.display='none';
 
   body.innerHTML = rows.map(r => `
-    <tr class="${esReclasificacionWbs(r) ? 'row-reclasificacion-wbs' : (String(r.tipo_movimiento || '').toUpperCase() === 'ENTRADA' ? 'row-entrada-morada' : (r.cod_reserva ? 'row-reserva-ok' : ''))}" onclick="onMovimientoRowClick(event, '${esc(r.id)}')" style="cursor:pointer" title="Clic para ver o editar el movimiento">
+    <tr class="${esReclasificacionWbs(r) ? 'row-reclasificacion-wbs' : (String(r.tipo_movimiento || '').toUpperCase() === 'ENTRADA' ? 'row-entrada-morada' : (r.cod_reserva ? 'row-reserva-ok' : ''))}${reclasificacionAnulada(r)?' wbs-reclas-anulada':''}" onclick="onMovimientoRowClick(event, '${esc(r.id)}')" style="cursor:pointer" title="Clic para ver o editar el movimiento">
       <td><input type="checkbox" class="mov-select mov-row-select" value="${esc(r.id)}" ${movimientoEstaConsumido(r) ? '' : 'disabled'} onclick="toggleSelectMovimiento(event, '${esc(r.id)}')"></td>
       <td>${fmtDate(r.fecha)}<div class="desc">${esc(r.hora || '')}</div></td>
-      <td>${badge(tipoMovimientoVisible(r))}</td>
+      <td>${badge(tipoMovimientoVisible(r))}${renderTrazaWbs(r)}</td>
       <td><div class="title">${esc(r.codigo_sap || '')}</div><div class="desc">${esc(r.material_descripcion || r.om_materiales_catalogo?.material || '')}</div>${r.codigo_serial ? `<div class="desc"><b>Serial:</b> ${esc(r.codigo_serial)}</div>` : ''}</td>
       <td><b>${fmtNum(r.cantidad)}</b><div class="desc">${esc(r.unidad)}</div></td>
       <td>${esc(r.origen_nombre || '')}${r.bodega_origen_stock ? `<div class="desc">Stock SAP: ${esc(r.bodega_origen_stock)}</div>` : ''}</td>
@@ -1905,6 +2155,10 @@ function renderMovimientos(){
       <td>${esc(r.responsable || r.created_by_email || '')}</td>
       <td>${renderReservaCell(r)}${r.cod_reserva ? `<div class="cod-reserva-pill">SAP descargado</div>` : ''}</td>
       <td>${r.soporte_acta_url ? `<a class="link-btn" href="${esc(r.soporte_acta_url)}" target="_blank">Ver acta</a>` : '<span class="desc">Sin soporte</span>'}</td>
+      <td>${esReclasificacionWbs(r) ?
+        (reclasificacionAnulada(r) ? '<span class="wbs-anulado-etiqueta">ANULADA</span>' :
+          `<button type="button" class="wbs-revert-btn" onclick="event.stopPropagation();revertirReclasificacionWbs('${esc(r.id)}')" title="Anula juntos los dos movimientos de esta reclasificación">Anular reclasificación</button>`) :
+        '<span class="desc">—</span>'}</td>
     </tr>
   `).join('');
 }
@@ -1971,14 +2225,14 @@ function exportarInventarioExcel(){
       bodegasDisponibles.forEach(({nombre,disponible})=>{
         if(disponible<=0.000001) return;
         if(filtroBodegaActual && bodegaKeyInventario(filtroBodegaActual)!==bodegaKeyInventario(nombre)) return;
-        const stockUbicaciones=getBodegasStockPorSap(codigoSap)
-          .filter(stock=>bodegaKeyInventario(stock)===bodegaKeyInventario(nombre));
+        // La misma fuente de verdad utilizada en Gestionar WBS y Consumos:
+        // saldos conciliados por bodega FÍSICA, no por ubicación Stock SAP.
+        // La conciliación ya integra todas las ubicaciones SAP de la bodega;
+        // no iterarlas aquí porque duplicaría o perdería las asignaciones WBS.
         const saldosAgrupados=new Map();
-        stockUbicaciones.forEach(stock=>{
-          obtenerSaldosWbsMaterial(codigoSap,stock).forEach(item=>{
-            const key=etiquetaWbsInventario(item.wbs);
-            saldosAgrupados.set(key,(saldosAgrupados.get(key)||0)+Number(item.disponible||0));
-          });
+        saldosConciliadosGestorWbs(codigoSap,nombre).forEach(item=>{
+          const key=etiquetaWbsInventario(item.wbs);
+          saldosAgrupados.set(key,(saldosAgrupados.get(key)||0)+Number(item.disponible||0));
         });
         let restante=disponible;
         for(const [wbs,qty] of saldosAgrupados){
@@ -2198,6 +2452,25 @@ function renderAll(){
   renderConsumos();
 }
 
+// Supabase/PostgREST suele limitar a 1000 registros por consulta.
+// La conciliación WBS necesita el historial completo de ajustes de ambos signos.
+async function cargarTodosMovimientosWbs(client){
+  const pageSize=1000;
+  const data=[];
+  for(let inicio=0;inicio<1000000;inicio+=pageSize){
+    const respuesta=await client.from('om_materiales_movimientos')
+      .select('*, om_materiales_catalogo(material)')
+      .order('created_at',{ascending:false})
+      .order('id',{ascending:false})
+      .range(inicio,inicio+pageSize-1);
+    if(respuesta.error) return respuesta;
+    const pagina=respuesta.data || [];
+    data.push(...pagina);
+    if(pagina.length<pageSize) return {data,error:null};
+  }
+  return {data,error:new Error('Se excedió el límite de lectura de movimientos; no se puede conciliar WBS.')};
+}
+
 async function loadAll(){
   try{
     const client = await resolveClient();
@@ -2205,7 +2478,7 @@ async function loadAll(){
     const [bodegasRes, materialesRes, movRes, consRes, sapRes] = await Promise.all([
       client.from('om_bodegas').select('*').order('nombre'),
       client.from('om_materiales_catalogo').select('*').order('material'),
-      client.from('om_materiales_movimientos').select('*, om_materiales_catalogo(material)').order('created_at',{ascending:false}),
+      cargarTodosMovimientosWbs(client),
       client.from('om_v_consumo_instalaciones').select('*').order('fecha',{ascending:false}),
       client.from('stock_sap_villao').select('*').order('material_description')
     ]);
@@ -2538,8 +2811,8 @@ function validarCodigosSapDuplicadosEnModal({enfocar = false} = {}){
       wbs=normalizarWbsInventario(
         tr.querySelector('.line-wbs-input')?.value || ''
       );
-    }else if(esTipoConsumoMaterial(tipo)){
-      // En consumos NO validar duplicados hasta que el usuario
+    }else if(esTipoConsumoMaterial(tipo) || tipo==='TRANSFERENCIA'){
+      // En consumos y transferencias no validar duplicados hasta que el usuario
       // haya escogido explícitamente un WBS.
       wbs=String(
         tr.querySelector('.line-wbs-select')?.value || ''
@@ -2582,7 +2855,7 @@ function validarCodigosSapDuplicadosEnModal({enfocar = false} = {}){
       duplicados[0].rows[1] ||
       duplicados[0].rows[0];
 
-    const control=esTipoConsumoMaterial(tipo)
+    const control=(esTipoConsumoMaterial(tipo) || tipo==='TRANSFERENCIA')
       ? target?.querySelector('.line-wbs-select')
       : target?.querySelector('.line-wbs-input');
 
@@ -2659,7 +2932,7 @@ function addMaterialLine(data = {}){
       <input class="control line-unidad" value="${esc(normalizarUnidadSap(data.unidad || ''))}" readonly placeholder="Unidad">
     </td>
     <td>
-      <select class="control line-bodega-origen-id">
+      <select class="control line-bodega-origen-id" onchange="alCambiarBodegaOrigenMaterial(this)">
         ${getBodegaOptionsHtml(selectedOrigen)}
       </select>
     </td>
@@ -2676,7 +2949,7 @@ function addMaterialLine(data = {}){
     <td>
       <input class="control line-wbs-input"
              value="${esc(data.wbs || '')}"
-             placeholder="WBS (opcional)"
+             placeholder="WBS obligatorio en entradas"
              autocomplete="off"
              oninput="validarCodigosSapDuplicadosEnModal()">
       <select class="control line-wbs-select"
@@ -2826,6 +3099,7 @@ function syncMaterialLineByName(input){
     cargarBodegasStockEnLinea(tr, getBodegasStockPorSap(item.codigo_sap));
     actualizarBodegasOrigenDisponibles(tr);
     validarCodigosSapDuplicadosEnModal();
+    actualizarWbsLinea(tr);
   }
 }
 
@@ -2909,7 +3183,7 @@ function obtenerSaldosWbsMaterial(codigoSap, bodegaStock){
 
   (movimientos || [])
     .filter(r=>String(r.estado || '').toUpperCase()!=='ANULADO')
-    .filter(r=>movimientoAplicaParaInventario(r))
+    .filter(r=>movimientoAplicaParaInventario(r) || esReclasificacionWbs(r))
     .filter(r=>!movimientoPerteneceActaActual(r))
     .filter(r=>normalizarCodigoSap(r.codigo_sap)===codigo)
     .forEach(r=>{
@@ -2955,14 +3229,54 @@ function obtenerSaldosWbsMaterial(codigoSap, bodegaStock){
     });
 }
 
+// El consumo se descuenta de la bodega física seleccionada, no del campo
+// Stock SAP oculto. Ambas vistas (gestor WBS y consumo) usan la misma
+// conciliación de existencias por Código SAP + bodega.
+function bodegaFisicaOrigenLinea(tr){
+  const id=tr?.querySelector('.line-bodega-origen-id')?.value || '';
+  return id ? getBodegaNombreById(id) : '';
+}
+
+function sincronizarStockOcultoConBodegaConsumo(tr){
+  if(!tr || !esTipoConsumoMaterial(getTipoMovimientoActual())) return;
+  const bodega=bodegaFisicaOrigenLinea(tr);
+  const stockSelect=tr.querySelector('.line-bodega-stock');
+  if(!stockSelect || !bodega){
+    if(stockSelect) stockSelect.value='';
+    return;
+  }
+  const sap=tr.querySelector('.line-sap')?.value || '';
+  const candidato=getBodegasStockPorSap(sap).find(
+    stock=>bodegaKeyInventario(stock)===bodegaKeyInventario(bodega)
+  ) || bodega;
+  // Permite consumos en bodegas que recibieron material mediante
+  // transferencias, aunque no existieran en el STOCK SAP inicial.
+  setBodegaStockValue(stockSelect,candidato);
+}
+
+function alCambiarBodegaOrigenMaterial(select){
+  const tr=select?.closest('tr');
+  if(!tr) return;
+  if(esTipoConsumoMaterial(getTipoMovimientoActual()) || getTipoMovimientoActual()==='TRANSFERENCIA'){
+    // El WBS de otra bodega no puede quedar elegido al cambiar el origen.
+    const wbs=tr.querySelector('.line-wbs-select');
+    if(wbs) wbs.value='';
+    const viejo=tr.querySelector('.line-wbs-input');
+    if(viejo && !currentMovimientoId) viejo.value='';
+  }
+  actualizarWbsLinea(tr);
+}
+
 function cargarOpcionesWbsConsumo(tr, valorPreferido=''){
   const select=tr?.querySelector('.line-wbs-select');
   if(!select) return;
 
   const sap=tr.querySelector('.line-sap')?.value || '';
-  const stock=tr.querySelector('.line-bodega-stock')?.value || '';
+  const bodega=bodegaFisicaOrigenLinea(tr);
   const unidad=tr.querySelector('.line-unidad')?.value || '';
-  const saldos=obtenerSaldosWbsMaterial(sap,stock);
+  const esTransferencia=String(getTipoMovimientoActual()||'').toUpperCase()==='TRANSFERENCIA';
+  const saldos=sap && bodega ? saldosConciliadosGestorWbs(sap,bodega)
+    .filter(item=>!esTransferencia || normalizarWbsInventario(item.wbs)!==WBS_SIN_ASIGNAR) : [];
 
   const preferido=String(valorPreferido || '').trim();
   const actual=select.value || preferido;
@@ -2979,7 +3293,7 @@ function cargarOpcionesWbsConsumo(tr, valorPreferido=''){
     select.appendChild(opt);
   });
 
-  if(actual && !Array.from(select.options).some(o=>o.value===actual)){
+  if(currentMovimientoId && actual && !Array.from(select.options).some(o=>o.value===actual)){
     const opt=document.createElement('option');
     opt.value=actual;
     opt.textContent=`${etiquetaWbsInventario(actual)} — WBS registrado en este movimiento`;
@@ -3004,19 +3318,44 @@ function actualizarWbsLinea(tr){
   const select=tr.querySelector('.line-wbs-select');
   const note=tr.querySelector('.wbs-note');
   const sap=tr.querySelector('.line-sap')?.value || '';
-  const stock=tr.querySelector('.line-bodega-stock')?.value || '';
+  const bodegaOrigen=bodegaFisicaOrigenLinea(tr);
 
   if(!input || !select) return;
 
   input.classList.remove('wbs-missing');
   select.classList.remove('wbs-missing');
+  input.required=(tipo==='ENTRADA');
+  select.required=(tipo==='TRANSFERENCIA'||esTipoConsumoMaterial(tipo));
 
   if(tipo==='ENTRADA'){
     input.style.display='';
     select.style.display='none';
     input.readOnly=false;
-    input.placeholder='WBS (opcional)';
-    if(note) note.textContent='Editable. Si el material no tiene WBS, déjalo vacío.';
+    input.placeholder='WBS obligatorio *';
+    if(note) note.textContent='Obligatorio: indique el código WBS al cual ingresará el material.';
+    validarCodigosSapDuplicadosEnModal();
+    return;
+  }
+
+  if(tipo==='TRANSFERENCIA'){
+    input.style.display='none';
+    select.style.display='';
+    // En una transferencia el usuario debe elegir un WBS asignado y con saldo
+    // en la bodega física de origen; SIN WBS no cumple esta exigencia.
+    const valorGuardado=String(input.value||'').trim();
+    cargarOpcionesWbsConsumo(tr,valorGuardado);
+    if(!sap){
+      select.value='';
+      if(note) note.textContent='Ingrese primero el Código SAP.';
+    }else if(!bodegaOrigen){
+      select.value='';
+      if(note) note.textContent='Seleccione la Bodega origen para consultar sus WBS.';
+    }else if(select.options.length<=1){
+      select.classList.add('wbs-missing');
+      if(note) note.textContent='No hay WBS asignados con saldo en esta bodega. Clasifique primero el material.';
+    }else{
+      if(note) note.textContent='Obligatorio: seleccione un WBS con existencias en la bodega origen.';
+    }
     validarCodigosSapDuplicadosEnModal();
     return;
   }
@@ -3024,6 +3363,7 @@ function actualizarWbsLinea(tr){
   if(esTipoConsumoMaterial(tipo)){
     input.style.display='none';
     select.style.display='';
+    sincronizarStockOcultoConBodegaConsumo(tr);
 
     const valorGuardado=String(input.value || '').trim();
     cargarOpcionesWbsConsumo(
@@ -3034,9 +3374,9 @@ function actualizarWbsLinea(tr){
     if(!sap){
       select.value='';
       if(note) note.textContent='Digite primero el Código SAP.';
-    }else if(!stock){
+    }else if(!bodegaOrigen){
       select.value='';
-      if(note) note.textContent='Seleccione primero el Stock SAP.';
+      if(note) note.textContent='Seleccione primero la Bodega origen con existencias.';
     }else if(select.options.length<=1){
       select.classList.add('wbs-missing');
       if(note) note.textContent='No hay saldo disponible para consumir en ningún WBS.';
@@ -3076,12 +3416,9 @@ function onWbsConsumoChanged(select){
   validarCodigosSapDuplicadosEnModal();
 }
 
-function getSaldoWbsSeleccionado(codigoSap,bodegaStock,wbs){
-  const key = wbs === WBS_SIN_ASIGNAR
-    ? WBS_SIN_ASIGNAR
-    : normalizarWbsInventario(wbs);
-
-  return obtenerSaldosWbsMaterial(codigoSap,bodegaStock)
+function getSaldoWbsSeleccionado(codigoSap,bodegaFisica,wbs){
+  const key=normalizarWbsInventario(wbs);
+  return saldosConciliadosGestorWbs(codigoSap,bodegaFisica)
     .find(x=>x.wbs===key)?.disponible || 0;
 }
 
@@ -3089,6 +3426,9 @@ function getMaterialLineItems(){
   asegurarSinCodigosSapDuplicados();
   const tipo = getTipoMovimientoActual();
   const rows = Array.from(document.querySelectorAll('#materialLinesBody tr'));
+  if(esTipoConsumoMaterial(tipo)){
+    rows.forEach(tr=>sincronizarStockOcultoConBodegaConsumo(tr));
+  }
   const items = rows.map(tr => {
     const bodegaOrigenId = tr.querySelector('.line-bodega-origen-id')?.value || '';
     const bodegaDestinoId = tr.querySelector('.line-bodega-destino-id')?.value || '';
@@ -3107,9 +3447,8 @@ function getMaterialLineItems(){
         if(tipoActual==='ENTRADA'){
           return tr.querySelector('.line-wbs-input')?.value.trim() || '';
         }
-        if(esTipoConsumoMaterial(tipoActual)){
-          const value=tr.querySelector('.line-wbs-select')?.value || '';
-          return value;
+        if(esTipoConsumoMaterial(tipoActual) || tipoActual==='TRANSFERENCIA'){
+          return tr.querySelector('.line-wbs-select')?.value || '';
         }
         return tr.querySelector('.line-wbs-input')?.value.trim() || '';
       })(),
@@ -3122,8 +3461,10 @@ function getMaterialLineItems(){
   const invalid = items.find(x => !x.material_nombre || !x.cantidad || x.cantidad <= 0);
   if(invalid) throw new Error('Cada material debe tener descripción y cantidad mayor a cero.');
 
-  const sinStock = items.find(x => x.codigo_sap && !x.bodega_origen_stock);
-  if(sinStock) throw new Error(`Debes seleccionar el Stock SAP del código ${sinStock.codigo_sap}.`);
+  // Stock SAP es opcional: la bodega física (origen/destino) define
+  // el movimiento. No bloquear entradas ni ajustes cuando no exista
+  // una ubicación de Stock SAP seleccionada o asociada al código.
+  // Se conserva el valor interno cuando esté disponible para trazabilidad.
 
   const sinOrigen = items.find(x => lineRequiresOrigen(tipo) && !x.bodega_origen_id);
   if(sinOrigen) throw new Error(`Debes seleccionar Bodega origen para el material ${sinOrigen.codigo_sap || sinOrigen.material_nombre}.`);
@@ -3133,6 +3474,34 @@ function getMaterialLineItems(){
 
   const mismoOrigenDestino = items.find(x => tipo === 'TRANSFERENCIA' && x.bodega_origen_id && x.bodega_destino_id && String(x.bodega_origen_id) === String(x.bodega_destino_id));
   if(mismoOrigenDestino) throw new Error(`En una transferencia, origen y destino no pueden ser iguales para ${mismoOrigenDestino.codigo_sap || mismoOrigenDestino.material_nombre}.`);
+
+  // Validación en el guardado, además del required visual del formulario.
+  // Un valor vacío o SIN WBS no satisface la asignación obligatoria.
+  if(tipo==='ENTRADA' || tipo==='TRANSFERENCIA'){
+    const sinWbs=items.find(item=>{
+      const valor=String(item.wbs||'').trim();
+      return !valor || normalizarWbsInventario(valor)===WBS_SIN_ASIGNAR || /^SIN\s*WBS$/i.test(valor);
+    });
+    if(sinWbs){
+      const indice=items.indexOf(sinWbs);
+      const control=rows[indice]?.querySelector(tipo==='TRANSFERENCIA'?'.line-wbs-select':'.line-wbs-input');
+      control?.classList.add('wbs-missing');
+      control?.focus();
+      throw new Error(`El WBS es obligatorio para ${tipo} del código SAP ${sinWbs.codigo_sap || sinWbs.material_nombre}.`);
+    }
+  }
+
+  if(tipo==='TRANSFERENCIA'){
+    rows.forEach((tr,index)=>{
+      const item=items[index];
+      if(!item) return;
+      const disponible=getSaldoWbsSeleccionado(item.codigo_sap,item.bodega_origen_nombre,item.wbs);
+      if(Number(item.cantidad)>Number(disponible)+0.000001){
+        tr.querySelector('.line-wbs-select')?.focus();
+        throw new Error(`Cantidad insuficiente en el WBS ${etiquetaWbsInventario(item.wbs)} del SAP ${item.codigo_sap} en ${item.bodega_origen_nombre}. Disponible: ${Number(disponible).toLocaleString('es-CO',{maximumFractionDigits:2})} ${item.unidad}.`);
+      }
+    });
+  }
 
   if(esTipoConsumoMaterial(tipo)){
     const rowsActuales=Array.from(document.querySelectorAll('#materialLinesBody tr'));
@@ -3151,7 +3520,7 @@ function getMaterialLineItems(){
 
       const saldo=getSaldoWbsSeleccionado(
         item.codigo_sap,
-        item.bodega_origen_stock,
+        item.bodega_origen_nombre,
         selected
       );
 
@@ -3580,25 +3949,95 @@ function saldoFisicoGestorWbs(sap, bodega){
   return fila ? Math.max(0,Number(fila[bodegaKeyInventario(bodega)]||0)) : 0;
 }
 function saldosConciliadosGestorWbs(sap,bodega){
+  // Reconstruir el saldo por Código SAP + bodega física + WBS desde el
+  // libro de movimientos CON SIGNO. No usar saldos parciales positivos
+  // ni Math.max() para fusionar WBS: eso resucita unidades que ya salieron
+  // del WBS de origen al reclasificarlas hacia otro WBS.
   const fisico=saldoFisicoGestorWbs(sap,bodega);
   if(fisico<=0.000001) return [];
-  const ubicaciones=getBodegasStockPorSap(sap).filter(x=>bodegaKeyInventario(x)===bodegaKeyInventario(bodega));
-  const sumas=new Map();
-  ubicaciones.forEach(u=>obtenerSaldosWbsMaterial(sap,u).forEach(item=>{
-    sumas.set(item.wbs,(sumas.get(item.wbs)||0)+Number(item.disponible||0));
-  }));
+
+  const codigo=normalizarCodigoSap(sap);
+  const claveBodega=bodegaKeyInventario(bodega);
+  const saldos=new Map();
+  const ultimaAsignacion=new Map();
+  const epsilon=0.000001;
+  const agregar=(wbs,delta,fecha=0)=>{
+    const key=normalizarWbsInventario(wbs);
+    const valor=Number(delta);
+    if(!Number.isFinite(valor) || Math.abs(valor)<=epsilon) return;
+    saldos.set(key,Number(saldos.get(key)||0)+valor);
+    if(valor>0 && key!==WBS_SIN_ASIGNAR){
+      ultimaAsignacion.set(key,Math.max(ultimaAsignacion.get(key)||0,fecha));
+    }
+  };
+  const perteneceBodega=(nombre)=>Boolean(String(nombre||'').trim()) &&
+    bodegaKeyInventario(nombre)===claveBodega;
+
+  // Base SAP: este inventario no trae WBS, inicialmente es SIN WBS.
+  // Agrupar por bodega física, no por ubicación de Stock SAP, pues una
+  // bodega puede tener varias ubicaciones y transferencias posteriores.
+  (sapStock||[]).forEach(r=>{
+    if(normalizarCodigoSap(r.codigo_sap)!==codigo) return;
+    const ubicacion=r.description_storage_location ||
+      r.storage_location || r.storage_location_description || '';
+    if(!perteneceBodega(ubicacion)) return;
+    const base=parseStockSap(r.unrestricted_stock,r);
+    agregar(WBS_SIN_ASIGNAR,Number(base?.cantidad||0));
+  });
+
+  (movimientos||[]).forEach(r=>{
+    if(normalizarCodigoSap(r.codigo_sap)!==codigo) return;
+    if(String(r.estado||'').toUpperCase()==='ANULADO') return;
+    const reclas=esReclasificacionWbs(r);
+    // Las reclasificaciones son asientos de asignación WBS y también
+    // deben considerarse cuando la carga de SAP sea posterior a ellas.
+    if(!reclas && !movimientoAplicaParaInventario(r)) return;
+    if(movimientoPerteneceActaActual(r)) return;
+
+    const tipo=String(r.tipo_movimiento||'').toUpperCase();
+    if(tipo==='AJUSTE_INICIAL') return; // Ya está incorporado a la base SAP.
+    const cantidad=Number(r.cantidad||0);
+    if(!Number.isFinite(cantidad) || cantidad<=epsilon) return;
+    const wbs=normalizarWbsInventario(r.wbs);
+    const fecha=fechaMovimientoParaWbs(r);
+
+    // Las bodegas de los movimientos son las FÍSICAS guardadas con sus
+    // IDs. Stock SAP es solo la ubicación de referencia y se usa como
+    // respaldo cuando el ID de bodega de un registro histórico falta.
+    const origen=r.origen_nombre || r.bodega_origen_stock || '';
+    const destino=r.destino_nombre ||
+      (['ENTRADA','AJUSTE_POSITIVO'].includes(tipo)?r.bodega_origen_stock:'') || '';
+
+    if(['SALIDA','CONSUMO_INSTALACION','CONSUMO_MTO_CORRECTIVO',
+        'CONSUMO_MTO_PREVENTIVO','AJUSTE_NEGATIVO','TRANSFERENCIA'].includes(tipo)
+        && perteneceBodega(origen)){
+      agregar(wbs,-cantidad,fecha);
+    }
+    if(['ENTRADA','AJUSTE_POSITIVO','TRANSFERENCIA'].includes(tipo)
+        && perteneceBodega(destino)){
+      agregar(wbs,cantidad,fecha);
+    }
+  });
+
+  // Saldos WBS asignados: respetar el saldo neto de entradas y salidas.
+  // Ante un historial antiguo incompleto, priorizar la asignación más
+  // reciente y conciliar sin exceder el inventario físico actual.
+  const asignados=[...saldos.entries()]
+    .filter(([wbs,cantidad])=>wbs!==WBS_SIN_ASIGNAR && cantidad>epsilon)
+    .sort((a,b)=>(ultimaAsignacion.get(b[0])||0)-(ultimaAsignacion.get(a[0])||0)
+      || String(a[0]).localeCompare(String(b[0]),'es',{numeric:true}));
+
   let restante=fisico;
   const resultado=[];
-  for(const [wbs,cantidad] of sumas){
+  asignados.forEach(([wbs,cantidad])=>{
     const disponible=Math.min(restante,Math.max(0,cantidad));
-    if(disponible>0.000001) resultado.push({wbs,disponible});
-    restante-=disponible;
-    if(restante<=0.000001) break;
-  }
-  if(restante>0.000001){
-    const sin=resultado.find(x=>x.wbs===WBS_SIN_ASIGNAR);
-    if(sin) sin.disponible+=restante;
-    else resultado.push({wbs:WBS_SIN_ASIGNAR,disponible:restante});
+    if(disponible>epsilon){
+      resultado.push({wbs,disponible});
+      restante-=disponible;
+    }
+  });
+  if(restante>epsilon){
+    resultado.push({wbs:WBS_SIN_ASIGNAR,disponible:restante});
   }
   return resultado;
 }
@@ -4284,6 +4723,11 @@ function toggleMovementFields(){
 
   actualizarRequeridosBodegasPorLinea();
   actualizarReservaInputs();
+  const encabezadoWbs=document.querySelector('#tablaLineasMovimiento thead tr th:nth-child(8)');
+  if(encabezadoWbs){
+    encabezadoWbs.textContent=(tipo==='ENTRADA'||tipo==='TRANSFERENCIA'||esTipoConsumoMaterial(tipo))
+      ? 'WBS *' : 'WBS';
+  }
   actualizarWbsTodasLasLineas();
 }
 
@@ -5547,6 +5991,630 @@ async function importarCodigosReservaDesdeFAL024(input){
 }
 </script>
 
+<script id="scriptInventarioFisico">
+/* INVENTARIO FÍSICO — sesiones de conteo locales, baseline en inventario calculado por bodega. */
+const IF_STORAGE_PREFIX = 'om_materiales_conteo_fisico_v1_';
+let ifSesion = null;
+let ifCodigoActual = '';
+let ifScanner = null;
+let ifScannerActivo = false;
+let ifVozActiva = true;
+let ifEscaneoContinuo = false;
+let ifFiltro = 'TODOS';
+
+// Persistencia en Supabase: jornada + fotografía lógica de stock + conteos individuales.
+// El respaldo local permite continuar sin Internet; los cambios se suben al reconectar.
+const IF_TABLA_JORNADAS='om_inventarios_fisicos';
+const IF_TABLA_DETALLE='om_inventarios_fisicos_detalle';
+let ifSyncEnCurso=false;
+let ifSyncRepetir=false;
+let ifSyncTimer=null;
+let ifSyncUltimoError='';
+let ifSyncSubiendo='';
+
+function ifControlNube(sesion=ifSesion){
+  if(!sesion)return null;
+  if(!sesion._nube || typeof sesion._nube!=='object')sesion._nube={baseSubida:false,pendientes:{},metaPendiente:true,revisionMeta:0,ultima:null};
+  const n=sesion._nube;
+  if(!n.pendientes || typeof n.pendientes!=='object')n.pendientes={};
+  if(typeof n.revisionMeta!=='number')n.revisionMeta=0;
+  if(typeof n.baseSubida!=='boolean')n.baseSubida=false;
+  return n;
+}
+function ifGuardarLocal(sesion=ifSesion){
+  if(!sesion)return;
+  try{localStorage.setItem(ifClaveSesion(),JSON.stringify(sesion));}
+  catch(e){console.warn('Inventario físico: almacenamiento local no disponible',e);ifMensaje('No se pudo guardar el respaldo local. Exporta Excel.',true);}
+}
+function ifHayPendientesNube(sesion=ifSesion){
+  const n=ifControlNube(sesion);
+  return !!n && (!n.baseSubida || n.metaPendiente || Object.keys(n.pendientes).length>0);
+}
+function ifEstadoNube(){
+  const sesion=ifSesion,n=ifControlNube();
+  if(!sesion)return 'Sin jornada activa. Las jornadas guardadas en Supabase están en el historial.';
+  if(ifSyncEnCurso && ifSyncSubiendo===sesion.id)return '⏳ Sincronizando con Supabase…';
+  if(ifHayPendientesNube())return (ifSyncUltimoError?'⚠️ '+ifSyncUltimoError+' · ':'⚠️ ')+'Cambios guardados localmente; pendientes de subir a Supabase.';
+  return `✓ Guardado en Supabase${n.ultima?' · '+ifFecha(n.ultima):''}`;
+}
+function ifMostrarEstadoNube(){
+  const el=document.getElementById('ifSyncTexto');
+  if(el)el.textContent=ifEstadoNube();
+  const caja=document.getElementById('ifSyncBox');
+  if(caja)caja.classList.toggle('warning',ifHayPendientesNube()||!!ifSyncUltimoError);
+}
+function ifBannerNube(){
+  return `<div id="ifSyncBox" class="if-sync"><span id="ifSyncTexto">${ifTexto(ifEstadoNube())}</span><button class="if-btn" type="button" onclick="ifSincronizarNube(true)">☁ Sincronizar ahora</button></div>`;
+}
+function ifProgramarSync(delay=700){
+  if(ifSyncEnCurso){ifSyncRepetir=true;return;}
+  if(ifSyncTimer)clearTimeout(ifSyncTimer);
+  ifSyncTimer=setTimeout(()=>{ifSyncTimer=null;ifSincronizarNube(false);},delay);
+}
+function ifFilaNube(sesion,item){
+  const conteo=sesion.conteos?.[item.sap];
+  return {
+    inventario_id:sesion.id,codigo_sap:String(item.sap),material:item.material||'',unidad:item.unidad||'EA',
+    cantidad_sistema:Number(item.teorico||0),
+    cantidad_fisica:conteo?Number(conteo.cantidad):null,
+    observacion:conteo?.observacion||'',fecha_conteo:conteo?.fecha||null,
+    actualizado_en:new Date().toISOString()
+  };
+}
+async function ifClienteNube(){
+  const client=await resolveClient();
+  if(!client?.auth?.getUser)throw new Error('No se pudo verificar la sesión de Supabase.');
+  const {data,error}=await client.auth.getUser();
+  if(error)throw error;
+  if(!data?.user?.id)throw new Error('Inicia sesión en Supabase para sincronizar tus inventarios físicos.');
+  return {client,usuario:data.user};
+}
+async function ifUpsertDetallesNube(client,filas){
+  for(let i=0;i<filas.length;i+=150){
+    const lote=filas.slice(i,i+150);
+    if(!lote.length)continue;
+    const res=await client.from(IF_TABLA_DETALLE).upsert(lote,{onConflict:'inventario_id,codigo_sap'});
+    if(res.error)throw res.error;
+  }
+}
+async function ifSubirSesionNube(sesion,client,usuario){
+  const n=ifControlNube(sesion);
+  const versionMeta=n.revisionMeta;
+  const encabezado={
+    id:sesion.id,usuario_id:usuario.id,bodega:sesion.bodega,responsable:sesion.responsable||'',
+    fecha_inicio:sesion.inicio,fecha_fin:sesion.fin||null,estado:sesion.estado,
+    actualizado_en:new Date().toISOString()
+  };
+  const res=await client.from(IF_TABLA_JORNADAS).upsert(encabezado,{onConflict:'id'});
+  if(res.error)throw res.error;
+  if(n.revisionMeta===versionMeta)n.metaPendiente=false;
+  if(!n.baseSubida){
+    // Reintentos idempotentes: no se duplican los materiales ni las jornadas.
+    const copia=sesion.base.map(item=>ifFilaNube(sesion,item));
+    await ifUpsertDetallesNube(client,copia);
+    n.baseSubida=true;
+  }
+  // Actualizar SOLO los SAP modificados después de cargar la base inicial.
+  const revisiones=Object.entries(n.pendientes);
+  if(revisiones.length){
+    const sapSet=new Set(revisiones.map(([sap])=>sap));
+    const filas=sesion.base.filter(item=>sapSet.has(item.sap)).map(item=>ifFilaNube(sesion,item));
+    await ifUpsertDetallesNube(client,filas);
+    revisiones.forEach(([sap,rev])=>{if(n.pendientes[sap]===rev)delete n.pendientes[sap];});
+  }
+  n.ultima=new Date().toISOString();
+  if(ifSesion?.id===sesion.id)ifGuardarLocal(sesion);
+}
+async function ifSincronizarNube(manual=false){
+  if(ifSyncTimer){clearTimeout(ifSyncTimer);ifSyncTimer=null;}
+  if(!ifSesion)return;
+  if(ifSyncEnCurso){ifSyncRepetir=true;return;}
+  ifSyncEnCurso=true;
+  let sesion=ifSesion;
+  ifSyncSubiendo=sesion.id;
+  ifSyncUltimoError='';
+  ifMostrarEstadoNube();
+  let correcto=false;
+  try{
+    const {client,usuario}=await ifClienteNube();
+    let vueltas=0;
+    do{
+      ifSyncRepetir=false;
+      await ifSubirSesionNube(sesion,client,usuario);
+      vueltas++;
+    }while(ifSyncRepetir && ifSesion?.id===sesion.id && vueltas<6);
+    correcto=true;
+  }catch(err){
+    ifSyncUltimoError=String(err.message||err).slice(0,200);
+    console.error('Inventario físico: no se pudo guardar en Supabase:',err);
+    if(manual)alert('No fue posible sincronizar con Supabase. El conteo se conserva localmente.\n\n'+ifSyncUltimoError+'\n\nComprueba que ejecutaste el SQL de Inventario físico y que has iniciado sesión.');
+  }finally{
+    ifSyncEnCurso=false;ifSyncSubiendo='';
+    ifMostrarEstadoNube();
+    if(correcto && ifSesion?.id===sesion.id && ifHayPendientesNube(sesion))ifProgramarSync(300);
+  }
+}
+async function ifCargarHistorialNube(){
+  const el=document.getElementById('ifHistorialNube');if(!el)return;
+  el.textContent='Consultando inventarios guardados en Supabase…';
+  try{
+    const {client}=await ifClienteNube();
+    const res=await client.from(IF_TABLA_JORNADAS)
+      .select('id,bodega,responsable,fecha_inicio,fecha_fin,estado')
+      .order('fecha_inicio',{ascending:false}).limit(50);
+    if(res.error)throw res.error;
+    if(!document.getElementById('ifHistorialNube'))return;
+    const registros=res.data||[];
+    el.innerHTML=registros.length?registros.map(r=>{
+      const id=String(r.id).replace(/[^\w-]/g,'');
+      return `<div class="if-history-row"><div><b>${ifTexto(r.bodega)}</b> · ${ifTexto(r.estado)}<br><small>${ifTexto(ifFecha(r.fecha_inicio))} · ${ifTexto(r.responsable||'Sin responsable')}</small></div><button class="if-btn" onclick="ifAbrirJornadaNube('${id}')">Abrir</button></div>`;
+    }).join(''):'No hay jornadas guardadas en Supabase con esta cuenta.';
+  }catch(err){
+    if(document.getElementById('ifHistorialNube'))el.textContent='No se pudo consultar Supabase: '+(err.message||err)+'. Ejecuta el SQL y revisa la sesión.';
+  }
+}
+async function ifAbrirJornadaNube(id){
+  if(!/^[\w-]+$/.test(id))return;
+  if(ifSesion && ifHayPendientesNube()){alert('Primero sincroniza la jornada local pendiente antes de abrir otra desde Supabase.');return;}
+  if(ifSesion && !confirm('¿Abrir esta jornada guardada en Supabase? Reemplazará la vista actual del conteo local.'))return;
+  const el=document.getElementById('ifHistorialNube');if(el)el.textContent='Descargando la jornada y todos sus materiales…';
+  try{
+    const {client}=await ifClienteNube();
+    const j=await client.from(IF_TABLA_JORNADAS).select('*').eq('id',id).single();
+    if(j.error)throw j.error;
+    const detalles=[];
+    for(let offset=0;offset<1000000;offset+=1000){
+      const res=await client.from(IF_TABLA_DETALLE).select('codigo_sap,material,unidad,cantidad_sistema,cantidad_fisica,observacion,fecha_conteo')
+        .eq('inventario_id',id).order('codigo_sap',{ascending:true}).range(offset,offset+999);
+      if(res.error)throw res.error;
+      const pagina=res.data||[];detalles.push(...pagina);
+      if(pagina.length<1000)break;
+    }
+    const conteos={};
+    const base=detalles.map(d=>{
+      const sap=String(d.codigo_sap);
+      if(d.cantidad_fisica!==null && d.cantidad_fisica!==undefined){
+        conteos[sap]={cantidad:Number(d.cantidad_fisica),observacion:d.observacion||'',fecha:d.fecha_conteo||j.data.fecha_inicio};
+      }
+      return {sap,material:d.material||'',unidad:d.unidad||'EA',teorico:Number(d.cantidad_sistema||0)};
+    });
+    await ifDetenerQR();
+    ifSesion={version:1,id:j.data.id,bodega:j.data.bodega,responsable:j.data.responsable,
+      inicio:j.data.fecha_inicio,fin:j.data.fecha_fin,estado:j.data.estado,base,conteos,
+      _nube:{baseSubida:true,pendientes:{},metaPendiente:false,revisionMeta:0,ultima:new Date().toISOString()}};
+    ifCodigoActual='';ifFiltro='TODOS';ifSyncUltimoError='';ifGuardarLocal();ifRenderTrabajo();
+  }catch(err){
+    console.error('No se pudo abrir el inventario físico desde Supabase:',err);
+    alert('No se pudo abrir esta jornada: '+(err.message||err));
+    ifCargarHistorialNube();
+  }
+}
+window.addEventListener('online',()=>{if(ifSesion&&ifHayPendientesNube())ifProgramarSync(250);});
+
+function ifClaveSesion(){return IF_STORAGE_PREFIX + String(localStorage.getItem('user_email') || 'local').toLowerCase().trim();}
+function ifTexto(v){return typeof esc==='function' ? esc(v) : String(v||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;');}
+function ifFecha(v){return v ? new Date(v).toLocaleString('es-CO') : '' ;}
+function ifNumero(v){return typeof fmtNum==='function' ? fmtNum(v) : String(v);}
+function ifDecimal(v){return Number(String(v).trim().replace(',','.'));}
+function ifNormalizaSap(v){
+  const texto=String(v||'').trim();
+  const catalogo = (resumen||[]).map(x=>String(x.codigo_sap||'').trim());
+  if(catalogo.includes(texto)) return texto;
+  const numeros=texto.match(/\d{5,12}/g)||[];
+  const hallado=numeros.find(n=>catalogo.includes(n));
+  return hallado || (numeros.length===1 ? numeros[0] : texto);
+}
+function ifListaBodegas(){
+  const seen=new Set();
+  return (bodegas||[]).map(b=>String(b.nombre||'').trim()).filter(nombre=>{
+    const key=nombre.toUpperCase();
+    if(!nombre||seen.has(key)) return false;
+    seen.add(key);return true;
+  });
+}
+function ifSnapshot(bodega){
+  const key=bodegaKeyInventario(bodega);
+  const base=(resumen||[]).filter(x=>String(x.codigo_sap||'').trim()).map(r=>({
+    sap:String(r.codigo_sap||'').trim(),
+    material:String(r.material||''),unidad:String(r.unidad||'EA'),
+    teorico:Number(r[key]||0)
+  })).filter(x=>x.teorico>0.000001);
+  const map=new Map();
+  base.forEach(x=>{const previo=map.get(x.sap); if(previo){previo.teorico+=x.teorico;} else map.set(x.sap,x);});
+  return [...map.values()].sort((a,b)=>a.sap.localeCompare(b.sap,'es',{numeric:true}));
+}
+function ifGuardar(sap=null){
+  if(!ifSesion)return;
+  const n=ifControlNube();
+  n.metaPendiente=true;
+  n.revisionMeta++;
+  if(sap)n.pendientes[sap]=(n.pendientes[sap]||0)+1;
+  ifGuardarLocal();
+  ifMostrarEstadoNube();
+  ifProgramarSync();
+}
+function ifLeer(){
+  try{
+    const a=JSON.parse(localStorage.getItem(ifClaveSesion())||'null');
+    if(a && a.version===1 && Array.isArray(a.base) && a.conteos && a.bodega) return a;
+  }catch(e){console.warn('Sesión de conteo ilegible',e);}
+  return null;
+}
+function ifMensaje(msg,error=false){
+  const el=document.getElementById('ifEstadoMensaje');
+  if(el){el.textContent=msg;el.style.color=error?'#fda4af':'#a8c5eb';}
+}
+function abrirInventarioFisico(){
+  if(!(resumen||[]).length){alert('El inventario aún no está cargado. Pulsa Actualizar e inténtalo de nuevo.');return;}
+  ifSesion=ifLeer();ifCodigoActual='';ifFiltro='TODOS';
+  const modal=document.getElementById('inventarioFisicoModal');
+  modal.classList.add('show');
+  document.body.style.overflow='hidden';
+  ifRenderInicio();
+  if(ifSesion && ifHayPendientesNube())ifProgramarSync(180);
+}
+async function cerrarInventarioFisico(){
+  await ifDetenerQR();
+  document.getElementById('inventarioFisicoModal')?.classList.remove('show');
+  document.body.style.overflow='';
+}
+function ifRenderInicio(){
+  const opciones=ifListaBodegas();
+  const filtroBodegaActual=String(document.getElementById('filterBodega')?.value||'').trim();
+  const seleccion=opciones.includes(filtroBodegaActual)?filtroBodegaActual:(opciones[0]||'');
+  document.getElementById('ifContenido').innerHTML=`
+    ${ifBannerNube()}
+    ${ifSesion?`<div class="if-entry">
+      <strong>${ifSesion.estado==='FINALIZADO'?'Último inventario finalizado':'Inventario físico guardado'}</strong>
+      <p class="if-note">${ifTexto(ifSesion.bodega)} · Iniciado: ${ifTexto(ifFecha(ifSesion.inicio))} · ${Object.keys(ifSesion.conteos||{}).length} códigos contados · ${ifTexto(ifSesion.estado)}</p>
+      <div class="if-buttons"><button class="if-btn primary" onclick="ifRenderTrabajo()">${ifSesion.estado==='FINALIZADO'?'Ver reporte':'Continuar inventario'}</button></div>
+    </div>`:''}
+    <div class="if-entry">
+      <h3 style="margin:0 0 12px">Iniciar nuevo inventario físico</h3>
+      <div class="if-grid" style="align-items:end">
+        <label class="if-field">Bodega que se va a contar
+          <select id="ifBodegaNueva">${opciones.map(nombre=>`<option value="${ifTexto(nombre)}" ${nombre===seleccion?'selected':''}>${ifTexto(nombre)}</option>`).join('')}</select>
+        </label>
+        <label class="if-field">Responsable del conteo <input id="ifResponsableNuevo" placeholder="Nombre del responsable" value="${ifTexto(localStorage.getItem('user_email')||'')}"></label>
+        <div class="if-buttons"><button class="if-btn primary" onclick="ifIniciarNueva()">Iniciar inventario</button></div>
+      </div>
+      <p class="if-note">Se guarda una copia de las cantidades disponibles al iniciar. La jornada y sus conteos se sincronizan en <b>Supabase</b> y también quedan como respaldo local si no tienes conexión. No se altera el stock automáticamente.</p>
+    </div>
+    <div class="if-entry"><div class="if-buttons" style="justify-content:space-between"><h3 style="margin:0">Historial de inventarios en Supabase</h3><button class="if-btn" onclick="ifCargarHistorialNube()">↻ Actualizar historial</button></div><div class="if-history" id="ifHistorialNube">Cargando…</div></div>`;
+  ifMostrarEstadoNube();
+  ifCargarHistorialNube();
+}
+function ifIniciarNueva(){
+  const bodega=document.getElementById('ifBodegaNueva')?.value||'';
+  const responsable=document.getElementById('ifResponsableNuevo')?.value.trim()||'';
+  if(!bodega){alert('Selecciona la bodega.');return;}
+  if(ifSesion && ifHayPendientesNube()){alert('Primero sincroniza con Supabase la jornada anterior antes de empezar otra. Si estás sin conexión, conserva el conteo local y exporta el Excel.');return;}
+  if(ifSesion && !confirm('La jornada anterior ya está en Supabase. ¿Iniciar una nueva? Podrás recuperar la anterior desde Historial.'))return;
+  const base=ifSnapshot(bodega);
+  if(!base.length && !confirm('En la base de datos no se encontraron existencias positivas para esta bodega. ¿Iniciar conteo igualmente?'))return;
+  ifSesion={version:1,id:'IF-'+Date.now()+'-'+Math.random().toString(36).slice(2,8),bodega,responsable,inicio:new Date().toISOString(),fin:null,estado:'EN_CURSO',base,conteos:{}};
+  ifCodigoActual='';ifFiltro='TODOS';ifGuardar();ifRenderTrabajo();
+}
+function ifFilas(){
+  if(!ifSesion)return[];
+  const base=ifSesion.base||[];
+  const all=base.map(x=>({...x,conteo:ifSesion.conteos[x.sap]||null}));
+  return all.sort((a,b)=>{
+    const prioridad=r=>!r.conteo?2:(Math.abs(Number(r.conteo.cantidad)-Number(r.teorico))>0.000001?0:1);
+    return prioridad(a)-prioridad(b)||a.sap.localeCompare(b.sap,'es',{numeric:true});
+  });
+}
+function ifEstadisticas(){
+  const lista=ifFilas();
+  const contados=lista.filter(x=>x.conteo);
+  return {
+    total:lista.length,
+    contados:contados.length,
+    diferencia:contados.filter(x=>Math.abs(Number(x.conteo.cantidad)-Number(x.teorico))>0.000001).length,
+    correctos:contados.filter(x=>Math.abs(Number(x.conteo.cantidad)-Number(x.teorico))<=0.000001).length,
+    sinContar:lista.length-contados.length
+  };
+}
+function ifRenderTrabajo(){
+  if(!ifSesion){ifRenderInicio();return;}
+  const finalizado=ifSesion.estado==='FINALIZADO';
+  document.getElementById('ifContenido').innerHTML=`
+    ${ifBannerNube()}
+    <div class="if-buttons" style="justify-content:space-between;margin-bottom:8px">
+      <div><b>${ifTexto(ifSesion.bodega)}</b> <span class="if-pill">${finalizado?'FINALIZADO':'EN CURSO'}</span>
+      <div class="if-note">Responsable: ${ifTexto(ifSesion.responsable||'Sin especificar')} · Inició: ${ifTexto(ifFecha(ifSesion.inicio))}</div></div>
+      <div class="if-buttons">
+        <button class="if-btn" onclick="ifExportarExcel()">📊 Exportar Excel</button>
+        <button class="if-btn" onclick="ifImprimirReporte()">🖨️ Imprimir / PDF</button>
+        <button class="if-btn" onclick="ifRenderInicio()">Volver</button>
+      </div>
+    </div>
+    <div class="if-kpis" id="ifKpis"></div>
+    <div class="if-progress"><div id="ifBarra"></div></div>
+    ${finalizado?'<div class="if-entry">Este conteo está finalizado. Puedes exportar el reporte o iniciar una nueva jornada. Los registros no se han aplicado como ajustes al inventario.</div>':`
+      <div class="if-entry">
+        <div class="if-grid">
+          <label class="if-field">Código SAP o QR
+            <input id="ifSapInput" autocomplete="off" inputmode="numeric" placeholder="Escanear QR / escribir SAP y Enter" onkeydown="ifTeclaCodigo(event)">
+          </label>
+          <div class="if-buttons" style="align-self:end">
+            <button class="if-btn primary" onclick="ifBuscarSAP()">Buscar SAP</button>
+            <button class="if-btn" onclick="ifAlternarQR()">📷 Escanear QR</button>
+          </div>
+          <label class="if-field" style="align-self:center;flex-direction:row;align-items:center;gap:9px">
+            <input type="checkbox" id="ifVoz" ${ifVozActiva?'checked':''} onchange="ifVozActiva=this.checked" style="width:20px;height:20px;accent-color:#22c55e"> Alertas por voz
+          </label>
+          <label class="if-field" style="align-self:center;flex-direction:row;align-items:center;gap:9px">
+            <input type="checkbox" ${ifEscaneoContinuo?'checked':''} onchange="ifEscaneoContinuo=this.checked" style="width:20px;height:20px;accent-color:#22c55e"> Escaneo continuo (siguiente QR al guardar)
+          </label>
+        </div>
+        <div id="ifZonaQr" class="if-scan-area"><div id="ifQrReader"></div><div class="if-buttons"><button class="if-btn" onclick="ifDetenerQR()">Detener cámara</button></div><div class="if-note">Requiere permiso de cámara y normalmente HTTPS o localhost. También puedes usar lector USB o escribir el SAP.</div></div>
+        <div id="ifDetalleMaterial" style="margin-top:12px"></div>
+        <div class="if-status" id="ifEstadoMensaje" aria-live="polite"></div>
+      </div>`}
+    <div class="if-buttons" style="justify-content:space-between;margin:10px 0">
+      <div class="if-buttons" style="gap:6px">
+        <button class="if-btn" id="ifFilTodos" onclick="ifCambiarFiltro('TODOS')">Todos</button>
+        <button class="if-btn" id="ifFilDiferencia" onclick="ifCambiarFiltro('DIFERENCIAS')">Inconsistencias</button>
+        <button class="if-btn" id="ifFilSinContar" onclick="ifCambiarFiltro('SIN_CONTAR')">Sin contar</button>
+      </div>
+      <input class="control" id="ifBuscarTabla" placeholder="Filtrar materiales por SAP o descripción" style="max-width:280px" oninput="ifRenderTabla()">
+    </div>
+    <div class="if-table"><table><thead><tr><th>SAP</th><th>Material</th><th>Unidad</th><th>En base de datos</th><th>Conteo físico</th><th>Diferencia</th><th>Estado</th><th>Acción</th></tr></thead><tbody id="ifFilasTabla"></tbody></table></div>
+    <div class="if-buttons" style="margin-top:14px;justify-content:flex-end">
+      ${!finalizado?'<button class="if-btn danger" onclick="ifFinalizar()">Finalizar conteo y generar reporte</button>':''}
+    </div>
+    <p class="if-note">La diferencia se calcula como <b>cantidad física − cantidad en la base de datos</b>. Los materiales sin contar se reportan por separado y no se consideran automáticamente faltantes.</p>`;
+  ifActualizarKpis();ifRenderTabla();ifMostrarEstadoNube();
+  if(!finalizado){
+    if(ifCodigoActual){ifMostrarDetalle(ifCodigoActual);}else{document.getElementById('ifSapInput')?.focus();}
+  }
+}
+function ifActualizarKpis(){
+  const s=ifEstadisticas();
+  const el=document.getElementById('ifKpis');
+  if(el)el.innerHTML=`<div class="if-stat"><small>Referencias en jornada</small><b>${s.total}</b></div>
+    <div class="if-stat good"><small>Contadas correctamente</small><b>${s.correctos}</b></div>
+    <div class="if-stat bad"><small>Con inconsistencias</small><b>${s.diferencia}</b></div>
+    <div class="if-stat pending"><small>Sin contar</small><b>${s.sinContar}</b></div>`;
+  const barra=document.getElementById('ifBarra');
+  if(barra)barra.style.width=(s.total?Math.round(100*s.contados/s.total):100)+'%';
+}
+function ifCambiarFiltro(valor){ifFiltro=valor;ifRenderTabla();}
+function ifRenderTabla(){
+  const tabla=document.getElementById('ifFilasTabla');if(!tabla)return;
+  const buscar=String(document.getElementById('ifBuscarTabla')?.value||'').toLowerCase().trim();
+  const filas=ifFilas().filter(r=>{
+    if(buscar && !(r.sap+' '+r.material).toLowerCase().includes(buscar))return false;
+    const diferencia=r.conteo?Number(r.conteo.cantidad)-Number(r.teorico):0;
+    if(ifFiltro==='DIFERENCIAS')return !!r.conteo && Math.abs(diferencia)>0.000001;
+    if(ifFiltro==='SIN_CONTAR')return !r.conteo;
+    return true;
+  });
+  tabla.innerHTML=filas.map(r=>{
+    const contado=!!r.conteo;
+    const dif=contado?Number(r.conteo.cantidad)-Number(r.teorico):null;
+    const mala=contado&&Math.abs(dif)>0.000001;
+    return `<tr class="${!contado?'if-row-pending':mala?'if-row-bad':'if-row-good'}">
+      <td><b>${ifTexto(r.sap)}</b></td><td>${ifTexto(r.material)}</td><td>${ifTexto(r.unidad)}</td>
+      <td>${ifNumero(r.teorico)}</td><td>${contado?ifNumero(r.conteo.cantidad):'—'}</td>
+      <td>${contado?(dif>0?'+':'')+ifNumero(dif):'—'}</td>
+      <td class="if-state">${!contado?'SIN CONTAR':mala?'DIFERENCIA':'CORRECTO'}</td>
+      <td>${ifSesion.estado==='FINALIZADO'?'—':`<button class="if-btn" style="min-height:30px;padding:6px 9px" onclick="ifSeleccionarSap(${JSON.stringify(r.sap).replaceAll('"','&quot;')})">${contado?'Editar':'Contar'}</button>`}</td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="8" style="text-align:center;padding:20px;color:#b8c9df">No hay materiales con este filtro.</td></tr>';
+  ['TODOS','DIFERENCIAS','SIN_CONTAR'].forEach(n=>{
+    const ids={TODOS:'ifFilTodos',DIFERENCIAS:'ifFilDiferencia',SIN_CONTAR:'ifFilSinContar'};
+    const b=document.getElementById(ids[n]);if(b)b.style.borderColor=ifFiltro===n?'#38bdf8':'';
+  });
+}
+function ifTeclaCodigo(e){if(e.key==='Enter'){e.preventDefault();ifBuscarSAP();}}
+function ifSeleccionarSap(sap){
+  if(ifSesion?.estado!=='EN_CURSO')return;
+  document.getElementById('ifSapInput').value=sap;
+  ifBuscarSAP();
+  document.getElementById('ifSapInput')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function ifBuscarSAP(){
+  if(!ifSesion||ifSesion.estado!=='EN_CURSO')return;
+  const campo=document.getElementById('ifSapInput');
+  const sap=ifNormalizaSap(campo?.value||'');
+  if(!sap){ifMensaje('Escanea o digita un código SAP.',true);campo?.focus();return;}
+  // Se admite material nuevo/encontrado físicamente sin existencia registrada en esta bodega.
+  let item=ifSesion.base.find(r=>r.sap===sap);
+  if(!item){
+    const conocido=(resumen||[]).find(r=>String(r.codigo_sap||'').trim()===sap);
+    if(!conocido && !/^\d{5,12}$/.test(sap)){
+      ifMensaje('El QR no contiene un código SAP reconocible. Verifica el contenido o escribe el código.',true);return;
+    }
+    item={sap,material:conocido?.material||'MATERIAL NO REGISTRADO EN LA BASE',unidad:conocido?.unidad||'EA',teorico:0};
+    ifSesion.base.push(item);ifGuardar(sap);ifActualizarKpis();ifRenderTabla();
+  }
+  ifCodigoActual=sap;
+  if(campo)campo.value=sap;
+  ifMostrarDetalle(sap);
+  ifMensaje(ifSesion.conteos[sap]?'Este SAP ya fue contado. Puedes corregir su cantidad; no se sumará dos veces.':'Material identificado. Digita la cantidad física y pulsa Guardar conteo.');
+}
+function ifMostrarDetalle(sap){
+  const item=ifSesion?.base.find(r=>r.sap===sap);
+  const el=document.getElementById('ifDetalleMaterial');if(!item||!el)return;
+  const anterior=ifSesion.conteos[sap];
+  el.innerHTML=`<div style="padding:13px;border:1px solid #2563eb70;border-radius:13px;background:#101b33">
+    <div style="font-weight:900">${ifTexto(item.sap)} — ${ifTexto(item.material)}</div>
+    <div class="if-note">Bodega: ${ifTexto(ifSesion.bodega)} · Unidad: ${ifTexto(item.unidad)}${anterior?' · Ya contado anteriormente':''}</div>
+    <div class="if-grid" style="margin-top:12px;align-items:end">
+      <div class="if-stat"><small>Cantidad en base de datos (inicio de jornada)</small><b>${ifNumero(item.teorico)}</b></div>
+      <label class="if-field">Cantidad física encontrada *<input id="ifCantidadFisica" type="number" min="0" step="any" inputmode="decimal" placeholder="0" value="${anterior?ifTexto(anterior.cantidad):''}" oninput="ifCompararBorrador()" onkeydown="ifTeclaCantidad(event)"></label>
+      <label class="if-field">Observación (opcional)<input id="ifObservacion" placeholder="Ej. sobrante / faltante" value="${ifTexto(anterior?.observacion||'')}"></label>
+      <button class="if-btn primary" onclick="ifGuardarConteo()">✓ Guardar conteo</button>
+    </div>
+    <div class="if-compare" id="ifComparacion">Escribe la cantidad encontrada para comparar.</div>
+  </div>`;
+  ifCompararBorrador();
+  document.getElementById('ifCantidadFisica')?.focus();
+  document.getElementById('ifCantidadFisica')?.select();
+}
+function ifTeclaCantidad(e){if(e.key==='Enter'){e.preventDefault();ifGuardarConteo();}}
+function ifCompararBorrador(){
+  const campo=document.getElementById('ifCantidadFisica');
+  const box=document.getElementById('ifComparacion');
+  const item=ifSesion?.base.find(r=>r.sap===ifCodigoActual);
+  if(!campo||!box||!item)return;
+  const valor=campo.value.trim();
+  box.className='if-compare';
+  if(valor===''){box.textContent='Escribe la cantidad física encontrada para comparar.';return;}
+  const n=ifDecimal(valor);
+  if(!Number.isFinite(n)||n<0){box.textContent='La cantidad debe ser un número mayor o igual que cero.';box.classList.add('is-bad');return;}
+  const diferencia=n-Number(item.teorico);
+  if(Math.abs(diferencia)>0.000001){
+    box.classList.add('is-bad');
+    box.textContent=`⚠️ INCONSISTENCIA: Base de datos ${ifNumero(item.teorico)} ${item.unidad} · Físico ${ifNumero(n)} ${item.unidad} · Diferencia ${diferencia>0?'+':''}${ifNumero(diferencia)} ${item.unidad}`;
+  }else{
+    box.classList.add('is-good');box.textContent=`✓ COINCIDE: ${ifNumero(n)} ${item.unidad} en base de datos y en físico.`;
+  }
+}
+function ifHablarDiferencia(item,dif){
+  if(!ifVozActiva || !('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window))return;
+  try{
+    window.speechSynthesis.cancel();
+    const frase=`Atención. Diferencia de inventario para código SAP ${item.sap}. ${dif<0?'Faltan':'Sobran'} ${Math.abs(dif).toLocaleString('es-CO')} unidades.`;
+    const voz=new SpeechSynthesisUtterance(frase);
+    voz.lang='es-CO';voz.rate=.97;voz.volume=1;
+    window.speechSynthesis.speak(voz);
+  }catch(e){console.warn('No se pudo reproducir alerta por voz',e);}
+}
+function ifGuardarConteo(){
+  if(!ifSesion||ifSesion.estado!=='EN_CURSO')return;
+  const item=ifSesion.base.find(r=>r.sap===ifCodigoActual);
+  const campo=document.getElementById('ifCantidadFisica');
+  if(!item||!campo)return;
+  const texto=campo.value.trim();const qty=ifDecimal(texto);
+  if(texto===''||!Number.isFinite(qty)||qty<0){ifMensaje('Digita una cantidad física válida, mayor o igual a cero.',true);campo.focus();return;}
+  ifSesion.conteos[item.sap]={cantidad:qty,observacion:document.getElementById('ifObservacion')?.value.trim()||'',fecha:new Date().toISOString()};
+  ifGuardar(item.sap);ifActualizarKpis();ifRenderTabla();ifCompararBorrador();
+  const dif=qty-Number(item.teorico);
+  if(Math.abs(dif)>0.000001){ifHablarDiferencia(item,dif);ifMensaje(`⚠️ Diferencia guardada para SAP ${item.sap}: ${dif>0?'+':''}${ifNumero(dif)} ${item.unidad}.`,true);}
+  else ifMensaje(`✓ Conteo correcto del SAP ${item.sap}.`);
+  ifCodigoActual='';
+  document.getElementById('ifDetalleMaterial').innerHTML='';
+  const input=document.getElementById('ifSapInput');if(input){input.value='';input.focus();}
+  if(ifEscaneoContinuo && !ifScannerActivo)ifAlternarQR();
+}
+async function ifAlternarQR(){
+  if(ifScannerActivo){await ifDetenerQR();return;}
+  if(!window.Html5Qrcode){ifMensaje('No se cargó la librería de escaneo. Puedes utilizar lector USB o introducir el SAP manualmente.',true);return;}
+  const zona=document.getElementById('ifZonaQr');zona?.classList.add('show');
+  ifMensaje('Solicitando acceso a la cámara…');
+  try{
+    if(!ifScanner){ifScanner=new Html5Qrcode('ifQrReader');}
+    await ifScanner.start({facingMode:'environment'},{fps:10,qrbox:{width:230,height:230}},async decoded=>{
+      if(!ifScannerActivo)return;
+      ifScannerActivo=false;
+      const campo=document.getElementById('ifSapInput');if(campo)campo.value=ifNormalizaSap(decoded);
+      await ifDetenerQR();ifBuscarSAP();
+    },()=>{});
+    ifScannerActivo=true;
+    ifMensaje('Apunta al código QR o código de barras del material.');
+  }catch(e){
+    ifScannerActivo=false;
+    zona?.classList.remove('show');
+    ifMensaje('No se pudo abrir la cámara. Revisa permisos y utiliza HTTPS (o localhost). También puedes usar lector USB o ingresar el SAP.',true);
+    console.warn('Escáner de inventario físico:',e);
+    try{if(ifScanner){await ifScanner.clear();ifScanner=null;}}catch(_e){}
+  }
+}
+async function ifDetenerQR(){
+  ifScannerActivo=false;
+  if(ifScanner){
+    try{if(ifScanner.isScanning)await ifScanner.stop();}catch(e){}
+    try{await ifScanner.clear();}catch(e){}
+    ifScanner=null;
+  }
+  document.getElementById('ifZonaQr')?.classList.remove('show');
+}
+function ifFinalizar(){
+  if(!ifSesion||ifSesion.estado!=='EN_CURSO')return;
+  const st=ifEstadisticas();
+  const mensaje=`¿Finalizar el inventario físico de ${ifSesion.bodega}?\n\nContados: ${st.contados}\nCon diferencias: ${st.diferencia}\nSin contar: ${st.sinContar}\n\nLos materiales sin contar se reportarán como SIN CONTAR, no como faltantes. No se realizarán ajustes automáticos al inventario.`;
+  if(!confirm(mensaje))return;
+  ifSesion.estado='FINALIZADO';ifSesion.fin=new Date().toISOString();
+  ifGuardar();ifCodigoActual='';ifDetenerQR();ifRenderTrabajo();
+}
+function ifReporteFilas(){
+  return ifFilas().map(r=>{
+    const qty=r.conteo?Number(r.conteo.cantidad):null;
+    const dif=qty===null?null:qty-Number(r.teorico);
+    return {
+      'Código SAP':r.sap,
+      'Material':r.material,
+      'Unidad':r.unidad,
+      'Bodega':ifSesion.bodega,
+      'Cantidad base de datos':Number(r.teorico),
+      'Cantidad física':qty===null?'':qty,
+      'Diferencia (físico - sistema)':dif===null?'':dif,
+      'Estado':qty===null?'SIN CONTAR':Math.abs(dif)>0.000001?'DIFERENCIA':'CORRECTO',
+      'Observación':r.conteo?.observacion||'',
+      'Fecha conteo':r.conteo?ifFecha(r.conteo.fecha):''
+    };
+  });
+}
+function ifNombreReporte(){
+  return `Inventario_fisico_${ifSesion.bodega.replace(/[^\w-]/g,'_')}_${ifSesion.inicio.slice(0,10)}`;
+}
+function ifExportarExcel(){
+  if(!ifSesion)return;
+  if(typeof XLSX==='undefined'){alert('La librería Excel no está disponible. Revisa tu conexión a Internet y vuelve a intentar.');return;}
+  try{
+    const filas=ifReporteFilas();
+    const st=ifEstadisticas();
+    const resumenExcel=[
+      {Concepto:'Bodega',Valor:ifSesion.bodega},
+      {Concepto:'Responsable',Valor:ifSesion.responsable},
+      {Concepto:'Inicio',Valor:ifFecha(ifSesion.inicio)},
+      {Concepto:'Finalización',Valor:ifSesion.fin?ifFecha(ifSesion.fin):'EN CURSO'},
+      {Concepto:'Estado',Valor:ifSesion.estado},
+      {Concepto:'Referencias por revisar',Valor:st.total},
+      {Concepto:'Referencias contadas',Valor:st.contados},
+      {Concepto:'Referencias correctas',Valor:st.correctos},
+      {Concepto:'Referencias con diferencia',Valor:st.diferencia},
+      {Concepto:'Referencias sin contar',Valor:st.sinContar},
+      {Concepto:'Nota',Valor:'Comparación contra inventario calculado en la aplicación al INICIAR la jornada. No genera ajustes automáticos.'}
+    ];
+    const wb=XLSX.utils.book_new();
+    const wsR=XLSX.utils.json_to_sheet(resumenExcel);
+    wsR['!cols']=[{wch:28},{wch:95}];
+    XLSX.utils.book_append_sheet(wb,wsR,'Resumen');
+    const detalle=XLSX.utils.json_to_sheet(filas);
+    detalle['!cols']=[{wch:16},{wch:48},{wch:12},{wch:22},{wch:24},{wch:20},{wch:30},{wch:17},{wch:38},{wch:25}];
+    XLSX.utils.book_append_sheet(wb,detalle,'Conteo completo');
+    const fallas=filas.filter(r=>r.Estado==='DIFERENCIA');
+    const sheetDif=XLSX.utils.json_to_sheet(fallas.length?fallas:[{'Código SAP':'Sin inconsistencias registradas'}]);
+    sheetDif['!cols']=detalle['!cols'];
+    XLSX.utils.book_append_sheet(wb,sheetDif,'Inconsistencias');
+    const pendientes=filas.filter(r=>r.Estado==='SIN CONTAR');
+    const sheetPend=XLSX.utils.json_to_sheet(pendientes.length?pendientes:[{'Código SAP':'Todos los materiales fueron contados'}]);
+    sheetPend['!cols']=detalle['!cols'];
+    XLSX.utils.book_append_sheet(wb,sheetPend,'Sin contar');
+    XLSX.writeFile(wb,ifNombreReporte()+'.xlsx');
+  }catch(e){console.error('Exportación inventario físico',e);alert('No se pudo exportar: '+(e.message||e));}
+}
+function ifImprimirReporte(){
+  if(!ifSesion)return;
+  const filas=ifReporteFilas();const st=ifEstadisticas();
+  const html=`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Reporte inventario físico</title>
+  <style>body{font-family:Arial,sans-serif;color:#132238;padding:22px}h1{font-size:22px;margin:0 0 8px}p{font-size:12px}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #cbd5e1;padding:5px;text-align:left}th{background:#dbeafe}tr.bad{background:#fee2e2}tr.pending{background:#fef9c3}h2{margin-top:25px;font-size:15px}@page{size:A4 landscape;margin:12mm}thead{display:table-header-group}</style></head><body>
+  <h1>Inventario físico — ${ifTexto(ifSesion.bodega)}</h1><p>Responsable: ${ifTexto(ifSesion.responsable)} | Inicio: ${ifTexto(ifFecha(ifSesion.inicio))} | Estado: ${ifTexto(ifSesion.estado)}</p>
+  <p>Contados: ${st.contados} | Correctos: ${st.correctos} | Inconsistencias: ${st.diferencia} | Sin contar: ${st.sinContar}</p>
+  <h2>Conteo y diferencias</h2><table><thead><tr>${Object.keys(filas[0]||{'Código SAP':''}).map(k=>`<th>${ifTexto(k)}</th>`).join('')}</tr></thead><tbody>
+  ${filas.map(r=>`<tr class="${r.Estado==='DIFERENCIA'?'bad':r.Estado==='SIN CONTAR'?'pending':''}">${Object.values(r).map(v=>`<td>${ifTexto(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>
+  <p>Los materiales sin contar no se consideran faltantes. No se generaron ajustes de inventario.</p></body></html>`;
+  const ventana=window.open('','_blank');
+  if(!ventana){alert('El navegador bloqueó la ventana para imprimir. Habilita las ventanas emergentes o exporta Excel.');return;}
+  ventana.document.open();ventana.document.write(html);ventana.document.close();ventana.focus();
+  setTimeout(()=>ventana.print(),450);
+}
+
+</script>
 </body>
 </html>
 
