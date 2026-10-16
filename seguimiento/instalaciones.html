@@ -801,8 +801,8 @@ function renderShell(){
       <aside class="sidebar" ondblclick="toggleSidebar()" style="padding:0;overflow:hidden;" aria-label="Barra lateral Nodo O&amp;M">
         <iframe
           id="sidebarFrame"
-          src="barra_lateral.html?page=instalaciones.html"
           title="Barra lateral Nodo O&amp;M"
+          loading="eager"
           style="display:block;width:100%;height:100vh;border:0;background:#08142a;"
         ></iframe>
       </aside>
@@ -909,6 +909,19 @@ function renderShell(){
     </div>
   `;
 }
+// Barra lateral ÚNICA, alojada en GitHub Pages (seguimiento/barra_lateral.html).
+// No existe una copia del menú dentro del módulo de Instalaciones.
+// El parámetro de versión evita que el navegador use un HTML anterior al abrir el módulo.
+const SIDEBAR_COMPARTIDA_URL = 'https://cacg1022.github.io/LibertyOyM/seguimiento/barra_lateral.html';
+function cargarBarraLateralCompartida(){
+  const frame = document.getElementById('sidebarFrame');
+  if(!frame) return;
+  const url = new URL(SIDEBAR_COMPARTIDA_URL);
+  url.searchParams.set('page', 'instalaciones.html');
+  url.searchParams.set('v', String(Date.now()));
+  frame.src = url.toString();
+}
+
 function safeLogout(){ try{ if(typeof logout==='function'){ logout(); return; } }catch(e){} localStorage.removeItem('user_email'); location.href='index.html'; }
 function toggleSidebar(){
   const page = document.querySelector('.page');
@@ -927,7 +940,7 @@ function restoreSidebarState(){
   page.classList.toggle('sidebar-hidden', hidden);
   if(tab) tab.textContent = hidden ? '›' : '‹';
 }
-try{ renderShell(); restoreSidebarState(); }catch(err){ console.error(err); safeRenderError(err.message || err); throw err; }
+try{ renderShell(); restoreSidebarState(); cargarBarraLateralCompartida(); }catch(err){ console.error(err); safeRenderError(err.message || err); throw err; }
 
 let clientRef = null;
 let instalacionesRows = [];
@@ -3824,6 +3837,10 @@ document.addEventListener('change',function(e){
 
 </body>
 </html>
+
+
+
+
 
 
 
