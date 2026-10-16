@@ -538,16 +538,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     overflow-y:auto !important;
   }
 
-  body:not(.sidebar-collapsed) .sidebar{
+  .page:not(.sidebar-hidden) .sidebar{
     transform:translateX(0) !important;
   }
 
-  body.sidebar-collapsed .sidebar{
+  .page.sidebar-hidden .sidebar{
     transform:translateX(-100%) !important;
   }
 
-  body.sidebar-collapsed .page,
-  body:not(.sidebar-collapsed) .page{
+  .page.sidebar-hidden,
+  .page:not(.sidebar-hidden){
     grid-template-columns:1fr !important;
   }
 
@@ -1055,6 +1055,46 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 @media(max-width:900px){.et-body{grid-template-columns:1fr;padding:10px}.et-search{grid-column:1}.et-dialog{max-height:100vh}.et-overlay{padding:0}.et-dialog{border-radius:0;height:100vh}.et-heading{padding:12px}.et-heading h2{font-size:17px}}
 @media(max-width:520px){.et-searchbar{flex-direction:column;align-items:stretch}.et-searchbar .et-button{width:100%}.et-two,.et-three{grid-template-columns:1fr 1fr}.et-actions .et-button{flex:1}.et-body .et-card{padding:12px}}
 </style>
+<style id="estiloBarraLateralCompartida">
+/* Barra lateral centralizada: solo se carga desde GitHub Pages. */
+.page { grid-template-columns:240px minmax(0,1fr); }
+.page > .sidebar { padding:0 !important; overflow:hidden !important; }
+.page > .sidebar > iframe { display:block; width:100%; height:100vh; border:0; }
+@media (max-width:768px) {
+  .page > .sidebar {
+    height:100dvh !important;
+    overflow:hidden !important;
+    opacity:1;
+  }
+  .page > .sidebar > iframe { height:100dvh; }
+  .page:not(.sidebar-hidden) > .sidebar {
+    opacity:1 !important;
+    transform:translateX(0) !important;
+    pointer-events:auto !important;
+  }
+  .page.sidebar-hidden > .sidebar {
+    opacity:0 !important;
+    transform:translateX(-100%) !important;
+    pointer-events:none !important;
+  }
+  .page .sidebar-toggle-tab {
+    position:fixed !important;
+    top:12px !important;
+    left:min(265px, 82vw) !important;
+    transform:none !important;
+    width:42px !important;
+    height:46px !important;
+    border-radius:0 12px 12px 0 !important;
+    z-index:1200 !important;
+    transition:left .25s ease !important;
+  }
+  .page.sidebar-hidden .sidebar-toggle-tab {
+    left:12px !important;
+    border-radius:12px !important;
+    border-left:1px solid var(--border) !important;
+  }
+}
+</style>
 </head>
 <body>
 <div id="root"></div>
@@ -1460,30 +1500,20 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 <script>
 const N8N_WEBHOOK_MATERIALES_URL = 'https://ftth-n8n2.pzveh5.easypanel.host/webhook/d9151e2f-0083-4bb7-89df-b5e2153b6cfd';
 function renderShell(){
-  const email = localStorage.getItem('user_email') || '';
+  // El menú se administra exclusivamente en seguimiento/barra_lateral.html.
+  // El parámetro de versión evita reutilizar una copia antigua del navegador.
+  const sidebarUrl = 'https://cacg1022.github.io/LibertyOyM/seguimiento/barra_lateral.html'
+    + '?page=materiales.html&v=' + Date.now();
   document.getElementById('root').innerHTML = `
   <div class="page">
-    <aside class="sidebar" ondblclick="toggleSidebar()">
-      <div class="brand">Nodo O&M</div>
-      <div class="subbrand">Control y seguimiento</div>
-      <nav class="nav">
-        <a href="index.html">Inicio</a>
-        <a href="dashboard.html">Dashboard</a>
-        <a href="fallas.html">Tickets / Fallas</a>
-        <a href="mantenimientos.html">Mantenimientos</a>
-        <a href="instalaciones.html">Instalaciones</a>
-        <a href="factibilidades.html">Factibilidades</a>
-        <a href="traslados.html">Traslados</a>
-        <a href="materiales.html" class="active">Materiales</a>
-        <a href="liquidaciones.html">Liquidaciones</a>
-        <a href="gastos.html">Gastos</a>
-        <a href="tareas.html">Tareas y Alertas</a>
-        <a href="reportes.html">Reportes</a>
-      </nav>
-      <div class="session-box">
-        <small>Sesión<br>${email || 'Sin iniciar'}</small>
-        <button class="btn secondary" style="width:100%" onclick="safeLogout()">Cerrar sesión</button>
-      </div>
+    <aside class="sidebar" ondblclick="toggleSidebar()" style="padding:0;overflow:hidden;" aria-label="Barra lateral Nodo O&amp;M">
+      <iframe
+        id="sidebarFrame"
+        src="${sidebarUrl}"
+        title="Barra lateral Nodo O&amp;M"
+        loading="eager"
+        style="display:block;width:100%;height:100vh;border:0;background:#08142a;"
+      ></iframe>
     </aside>
     <button id="sidebarToggleTab" class="sidebar-toggle-tab" title="Ocultar / mostrar barra lateral" onclick="toggleSidebar()">‹</button>
     <main class="main">
@@ -1601,7 +1631,8 @@ function restoreSidebarState(){
   const page = document.querySelector('.page');
   const tab = document.getElementById('sidebarToggleTab');
   if(!page) return;
-  const hidden = localStorage.getItem('om_sidebar_hidden') === '1';
+  const hidden = localStorage.getItem('om_sidebar_hidden') === '1'
+    || (window.innerWidth <= 768 && !localStorage.getItem('materiales_sidebar_user_set'));
   page.classList.toggle('sidebar-hidden', hidden);
   if(tab) tab.textContent = hidden ? '›' : '‹';
 }
@@ -5595,11 +5626,15 @@ document.addEventListener('keydown', function(e){
 
 (function(){
   function aplicarSidebarMovil(){
-    if(window.innerWidth <= 768 && !localStorage.getItem('materiales_sidebar_user_set')){
-      document.body.classList.add('sidebar-collapsed');
-    }
+    if(localStorage.getItem('materiales_sidebar_user_set')) return;
+    const page = document.querySelector('.page');
+    if(!page) return;
+    const hidden = localStorage.getItem('om_sidebar_hidden') === '1'
+      || window.innerWidth <= 768;
+    page.classList.toggle('sidebar-hidden', hidden);
+    const tab = document.getElementById('sidebarToggleTab');
+    if(tab) tab.textContent = hidden ? '›' : '‹';
   }
-  aplicarSidebarMovil();
   window.addEventListener('resize', aplicarSidebarMovil);
 })();
 
