@@ -1,0 +1,923 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#101b31" />
+<title>RECORREDOR | Centro de inspección O&M FO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--bg:#0b1526;--nav:#111e34;--panel:#13243a;--panel2:#172b43;--border:#294058;--muted:#8fa6bf;--text:#f1f7ff;--mint:#2bdfb1;--blue:#55a5ff;--orange:#f7ae52;--red:#fb6170;--soft:#b8c9db;--radius:17px;--shadow:0 16px 55px #06101fc0}
+*{box-sizing:border-box}body{margin:0;color:var(--text);font:14px 'DM Sans',sans-serif;background:var(--bg);overflow:hidden}button,input,select,textarea{font:inherit}button{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.42}button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+.app{height:100dvh;display:grid;grid-template-rows:65px minmax(0,1fr)}.top{display:flex;justify-content:space-between;align-items:center;padding:0 23px;border-bottom:1px solid var(--border);background:#101c30;z-index:1002;gap:14px}.brand{display:flex;align-items:center;gap:11px;min-width:0}.brandmark{width:36px;height:36px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(140deg,#1fc8aa,#5483ff);color:#071b27;font-size:19px;font-weight:800;box-shadow:0 4px 20px #28caab35}.brandname{font-family:'Space Grotesk',Arial,sans-serif;font-size:18px;font-weight:700;letter-spacing:.02em}.subbrand{font-size:10px;text-transform:uppercase;letter-spacing:2px;color:#94abc3}.topright{display:flex;align-items:center;gap:9px}.pill{display:inline-flex;align-items:center;gap:7px;padding:9px 12px;border:1px solid #35516b;border-radius:99px;color:#c3d5e7;background:#1b2b41;font-size:12px;white-space:nowrap}.pulse{width:7px;height:7px;background:var(--orange);border-radius:50%;box-shadow:0 0 0 4px #f7ae5222}.pulse.good{background:var(--mint);box-shadow:0 0 0 4px #2bdfb122}.pill strong{font-weight:700}.topclock{font-family:'Space Grotesk',Arial,sans-serif;font-weight:600;font-size:15px;white-space:nowrap;margin:0 11px;color:#dce9f7}.action{display:inline-flex;gap:8px;justify-content:center;align-items:center;padding:11px 14px;background:#213753;border:1px solid #35516b;border-radius:10px;color:var(--text);font-weight:700;white-space:nowrap}.action:hover,.smallbtn:hover{filter:brightness(1.15)}.action.primary{background:var(--mint);color:#06251f;border-color:var(--mint)}.action.subtle{background:#1b2c43}.action.danger{border-color:#c44f63;background:#402838;color:#ffe7ed}.smallbtn{height:37px;width:38px;border:1px solid #365572;border-radius:11px;background:#1b3049;color:#d6ebff;font-size:17px}.hide-mobile{display:inline}
+.layout{display:grid;grid-template-columns:291px minmax(300px,1fr) 342px;min-height:0}.leftpanel,.rightpanel{min-height:0;overflow-y:auto;background:var(--nav);scrollbar-width:thin;scrollbar-color:#35516b transparent}.leftpanel{border-right:1px solid var(--border);padding:18px 15px}.rightpanel{border-left:1px solid var(--border);padding:18px 15px}.panelhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:15px}.overline{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;font-weight:800}.paneltitle{font-family:'Space Grotesk',Arial,sans-serif;font-size:21px;font-weight:700;line-height:1.1;margin:6px 0}.tiny{font-size:11px;color:var(--muted)}.routebox{border:1px solid #31516a;border-radius:16px;padding:14px;background:linear-gradient(140deg,#1a3446,#192942);box-shadow:0 9px 26px #050e1b22}.routecode{font:600 13px 'Space Grotesk',Arial,sans-serif;color:var(--mint);margin-bottom:7px;letter-spacing:.4px}.routename{font-size:17px;font-weight:800;line-height:1.3}.route-meta{margin-top:10px;display:grid;gap:6px;color:#b9c9db;font-size:12px}.route-meta span{display:flex;gap:7px}.status{display:inline-flex;align-items:center;gap:6px;border-radius:6px;background:#2c3e54;padding:5px 9px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.9px;color:#d5e5f6}.status.recording{background:#153f38;color:#66ffce}.status.paused{background:#503c22;color:#ffcc78}.status.finished{background:#263951;color:#91befe}.status.ready{background:#344155;color:#c3d5e7}.controls{margin:14px 0 17px;display:grid;grid-template-columns:1fr 1fr;gap:8px}.controls .wide{grid-column:1/-1}.controls button{padding:11px 9px}.sectionline{margin:18px 0 12px;display:flex;justify-content:space-between;align-items:center}.sectionline strong{font:700 12px 'Space Grotesk',Arial,sans-serif;text-transform:uppercase;letter-spacing:1px}.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.kpi{border:1px solid var(--border);border-radius:13px;background:#182b42;padding:12px}.kpi small{color:#8ea9c1;display:block;font-size:11px;white-space:nowrap}.kpi strong{display:block;font:700 22px 'Space Grotesk',Arial,sans-serif;margin-top:5px;letter-spacing:-.5px}.kpi strong em{font-size:11px;font-style:normal;color:var(--muted);font-weight:500;margin-left:2px}.kpi.accent{background:#163c3c;border-color:#2d7469}.kpi.accent strong{color:var(--mint)}.gps-details{border:1px solid #29445d;border-radius:13px;padding:12px;margin-top:11px;background:#182a41;color:#b9cde1;font-size:11px;display:flex;justify-content:space-between;gap:9px}.gps-details b{color:#eaf7ff}.timeline{display:grid;gap:8px}.event{display:flex;gap:10px;align-items:flex-start;padding:10px;border-radius:12px;background:#192c44;border:1px solid #283e57}.event .dot{display:grid;place-items:center;width:27px;height:27px;flex:none;border-radius:9px;background:#244460;color:var(--mint)}.event b{font-size:12px}.event p{margin:4px 0 0;font-size:11px;color:var(--muted)}.emptysmall{padding:22px 10px;color:var(--muted);text-align:center;font-size:12px;border:1px dashed #37526b;border-radius:13px}.mapzone{position:relative;min-height:0;background:#111c2b}#map{width:100%;height:100%;z-index:1;background:#1a3046}.mapbanner{position:absolute;z-index:500;top:17px;left:17px;max-width:min(440px,calc(100% - 34px));padding:14px 17px;background:#101d30ed;color:white;border-radius:14px;box-shadow:var(--shadow);border:1px solid #42617f;pointer-events:none}.mapbanner b{font:700 15px 'Space Grotesk',Arial,sans-serif;display:block}.mapbanner p{margin:5px 0 0;color:#9fb7cd;font-size:12px;line-height:1.4}.mapactions{z-index:550;position:absolute;right:15px;top:17px;display:grid;gap:9px}.mapactions .mapbtn{display:flex;align-items:center;justify-content:center;width:43px;height:43px;border-radius:13px;background:#13243a;border:1px solid #3c5d79;box-shadow:0 5px 25px #07101e66;color:white;font-size:20px}.mapactions .mapbtn.selected{background:#1b6156;border-color:var(--mint);color:#caffee}.mapbottom{position:absolute;bottom:20px;left:17px;right:17px;z-index:500;display:flex;gap:8px;align-items:end;pointer-events:none}.mapbottom>*{pointer-events:auto}.coordinatelabel{background:#122439f2;border:1px solid #3a5b77;color:#bbd6ea;border-radius:10px;padding:10px 13px;font:12px 'Space Grotesk',Arial,sans-serif;box-shadow:var(--shadow);margin-right:auto;max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.floatadd{border:0;border-radius:16px;background:linear-gradient(120deg,#23dfaa,#46d9c9);color:#052721;padding:15px 19px;font-weight:800;box-shadow:0 10px 30px #00b98d66}.floatadd:hover{transform:translateY(-1px)}.map-pick{cursor:crosshair!important}.leaflet-control-attribution{font-size:9px!important}.gps-marker{height:16px;width:16px;background:#5da8ff;border:3px solid white;border-radius:50%;box-shadow:0 0 0 8px #489cff36,0 0 20px #428dfb}.finding-icon{height:29px;width:29px;display:flex;align-items:center;justify-content:center;background:#18283d;border:2px solid var(--severity);border-radius:50%;box-shadow:0 3px 16px #0008;color:white;font-size:14px}.finding-icon:after{content:'';position:absolute;bottom:-5px;left:12px;width:5px;height:5px;background:var(--severity);transform:rotate(45deg)}
+.righthead{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}.filterbar{display:flex;gap:6px;margin:10px 0 15px;overflow-x:auto;padding-bottom:4px}.filter{padding:8px 11px;border:1px solid #38526b;border-radius:30px;background:#17283e;color:#b4c5d9;white-space:nowrap;font-size:11px;font-weight:800}.filter.active{background:#255e58;border-color:#37bfa8;color:#e2fff7}.findinglist{display:grid;gap:10px}.findingcard{background:#172b43;border:1px solid #2b4965;border-radius:14px;padding:13px;transition:.15s}.findingcard:hover{border-color:#64b6c8}.findingcard .row1{display:flex;align-items:center;justify-content:space-between;gap:5px}.find-num{color:#7b99b6;font:700 10px 'Space Grotesk',Arial,sans-serif}.sev{display:inline-flex;padding:5px 8px;border-radius:6px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px}.sev.critica{background:#572c40;color:#ff8896}.sev.alta{background:#513e2a;color:#ffc16b}.sev.media{background:#3c4534;color:#d8ed89}.sev.baja{background:#1b4b4b;color:#6de4d9}.findingcard h3{font-size:14px;margin:10px 0 5px}.findingcard p{color:#9fb5ca;font-size:11px;line-height:1.5;margin:3px 0}.findingcard .cardfoot{display:flex;gap:9px;align-items:center;margin-top:9px;border-top:1px solid #30455c;padding-top:10px}.mini-photo{width:44px;height:43px;object-fit:cover;border-radius:8px;border:1px solid #5a738b}.mini-photo-count{font-size:11px;color:#9fb4c9}.cardbtn{background:transparent;border:1px solid #456079;padding:7px 9px;border-radius:8px;color:#d9eafa;font-size:11px;font-weight:800;margin-left:auto}.emptyfind{padding:52px 19px;border:1px dashed #37536c;border-radius:16px;text-align:center;background:#15263c}.emptyfind .symbol{font-size:36px;display:block;margin-bottom:12px}.emptyfind b{font-size:15px}.emptyfind p{color:#8da6be;font-size:12px;line-height:1.5}.emptyfind button{margin-top:12px}.quick{margin-top:18px;border:1px solid #36536d;border-radius:14px;background:#1a2d44;padding:13px}.quick p{font-size:12px;line-height:1.5;color:#a8bfd6;margin-bottom:0}.route-link{color:var(--mint);text-decoration:underline;text-underline-offset:3px;cursor:pointer}.replay{background:#111f34;border:1px solid #385771;border-radius:13px;margin-top:12px;padding:12px}.replayline{display:flex;align-items:center;justify-content:space-between;gap:8px}.replay input{width:100%;accent-color:var(--mint);margin-top:11px}.replay time{font-size:11px;color:#bcdbec;font-family:'Space Grotesk',Arial,sans-serif}.replay button{padding:7px 10px;border-radius:8px;background:#294860;color:white;border:1px solid #3b617d}.replay-hint{font-size:10px;margin:7px 0 0;color:var(--muted)}
+.overlay{position:fixed;inset:0;background:#040b16be;z-index:1300;display:none;align-items:center;justify-content:center;padding:20px}.overlay.show{display:flex}.modal{background:#15253b;border:1px solid #42627c;border-radius:22px;width:min(570px,100%);max-height:min(92dvh,900px);display:flex;flex-direction:column;box-shadow:0 30px 90px #01060da1;overflow:hidden}.modal.wide{width:min(770px,100%)}.modalheader{padding:19px 21px;border-bottom:1px solid #2f4b65;display:flex;justify-content:space-between;align-items:center;gap:14px}.modalheader h2{font:700 19px 'Space Grotesk',Arial,sans-serif;margin:4px 0}.modalbody{padding:19px 21px;overflow-y:auto;min-height:0}.modalfoot{display:flex;justify-content:flex-end;gap:9px;border-top:1px solid #2f4b65;padding:14px 21px;background:#142438}.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:13px}.field{display:flex;flex-direction:column;gap:6px;min-width:0}.field.full{grid-column:1/-1}.field label{font-size:11px;color:#b9cbdc;font-weight:800;letter-spacing:.2px}.field input,.field select,.field textarea{width:100%;background:#0e1d31;border:1px solid #3b5773;color:#f3f8ff;padding:11px 12px;border-radius:10px;min-height:42px}.field textarea{min-height:80px;resize:vertical}.field option{background:#172943}.field input::placeholder,.field textarea::placeholder{color:#69849e}.geobox{margin:13px 0;border-radius:11px;padding:12px;background:#123b3b;color:#c7fff0;border:1px solid #286969;font:12px 'Space Grotesk',Arial,sans-serif;display:flex;justify-content:space-between;align-items:center;gap:7px}.photos{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}.photoitem{position:relative;width:85px;height:85px}.photoitem img{width:100%;height:100%;border-radius:10px;object-fit:cover;border:1px solid #547087}.photoitem button{position:absolute;top:-6px;right:-6px;height:22px;width:22px;border-radius:50%;background:#b94259;border:0;color:white}.labelhint{color:#8ea8c2;font-size:11px;margin:10px 0}.history-item{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px;border-radius:12px;border:1px solid #39546c;background:#1b2e46;margin-bottom:9px}.history-item strong{display:block;margin:5px 0 3px}.history-item small{font-size:11px;color:#9ab2cb}.history-actions{display:flex;gap:5px}.history-actions button{padding:8px 11px}.export-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.exportopt{text-align:left;border:1px solid #385875;border-radius:13px;background:#1b314b;padding:17px;cursor:pointer;color:white}.exportopt .symbol{display:block;font-size:24px;margin-bottom:9px}.exportopt b{font-size:13px}.exportopt small{display:block;line-height:1.4;color:#a5bbd1;margin-top:7px}.exportopt:hover{border-color:var(--mint)}.notice{background:#193c41;border:1px solid #2b7577;padding:12px;border-radius:10px;color:#cef8fa;line-height:1.5;font-size:12px}.toast{position:fixed;z-index:1500;bottom:23px;left:50%;transform:translateX(-50%) translateY(20px);padding:12px 18px;min-width:230px;max-width:min(92vw,550px);border-radius:12px;background:#e6fff6;color:#092d28;box-shadow:0 15px 50px #0008;font-weight:800;text-align:center;opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}.toast.error{background:#ffd9df;color:#5a1320}.mobile-stats{display:none}
+@media(max-width:1180px){.layout{grid-template-columns:255px minmax(300px,1fr) 300px}.leftpanel,.rightpanel{padding:15px 11px}.top{padding:0 14px}.topclock{display:none}}
+@media(max-width:900px){body{overflow:auto}.app{height:auto;min-height:100dvh;display:block}.top{height:60px;position:sticky;top:0}.layout{display:flex;flex-direction:column}.mapzone{height:54dvh;min-height:340px;order:1}.leftpanel{order:2;overflow:visible;border:0;padding:15px}.rightpanel{order:3;overflow:visible;border:0;padding:15px}.leftpanel .left-top{display:grid;grid-template-columns:1fr 1fr;gap:12px}.controls{margin:0;align-content:center}.kpis{grid-template-columns:repeat(4,1fr)}.mapbanner{top:10px;left:9px;padding:10px 11px}.mapbanner b{font-size:12px}.mapbanner p{font-size:11px}.mapactions{top:10px;right:10px}.mapbottom{bottom:22px;left:9px;right:9px}.floatadd{padding:12px}.topright .pill{display:none}}
+@media(max-width:600px){.top{padding:0 11px}.brandmark{height:31px;width:31px;border-radius:9px}.brandname{font-size:16px}.subbrand{font-size:9px}.topright{gap:6px}.topright .action{padding:9px 10px;font-size:12px}.hide-mobile{display:none}.leftpanel .left-top{grid-template-columns:1fr}.controls{margin:10px 0 1px;display:grid;grid-template-columns:repeat(3,1fr)}.controls .wide{grid-column:auto}.controls button{min-height:44px;font-size:12px;padding:7px}.routebox{padding:13px}.route-meta{grid-template-columns:1fr 1fr}.kpis{grid-template-columns:repeat(2,1fr)}.rightpanel{padding-bottom:30px}.mapzone{height:53dvh;min-height:320px}.mapbanner{max-width:calc(100% - 74px)}.mapbanner p{display:none}.mapactions .mapbtn{width:38px;height:38px;font-size:18px}.coordinatelabel{font-size:10px;padding:9px;max-width:52%}.floatadd{font-size:12px}.overlay{padding:8px;align-items:end}.modal{max-height:96dvh;border-radius:18px 18px 8px 8px}.modalheader{padding:13px 14px}.modalbody{padding:14px}.modalfoot{padding:11px 14px}.formgrid{gap:10px}.history-item{flex-wrap:wrap}.exportopt{padding:12px}}
+
+/* Selector de mapa: misma vista híbrida Leaflet de PDR-APP con alternativa */
+.map-provider-chip{position:absolute;bottom:70px;left:16px;z-index:490;background:#112a40e8;color:#daf5ff;border:1px solid #43829b;border-radius:10px;padding:7px 10px;font-size:11px;font-weight:700;box-shadow:0 6px 18px #0006;max-width:calc(100% - 100px);cursor:pointer}
+.map-provider-chip strong{color:#55edce}
+.map-provider-chip:hover{background:#1d4152}
+.map-help{border:1px solid #335774;background:#102538;padding:12px 14px;border-radius:12px;color:#bbd6e8;font-size:12px;line-height:1.65;margin-top:14px}
+.map-help a{color:#63dccc;text-decoration:underline}
+.map-notice{color:#ffd08f}
+@media(max-width:900px){.map-provider-chip{bottom:65px;left:9px}}
+/* V4 · tramo de inspección planificado */
+.route-plan-box{margin:15px 0 17px;border:1px solid #47627e;border-radius:15px;background:linear-gradient(155deg,#1c3149,#102436);padding:13px}
+.plan-heading{display:flex;align-items:center;justify-content:space-between;gap:9px;margin-bottom:9px}.plan-heading strong{font-size:12px;color:#f8d895}.plan-heading small{color:#9bb7cf;font-size:10px}
+.plan-state{font-size:11px;color:#a4bdd2;line-height:1.55;overflow-wrap:anywhere;min-height:27px}
+.plan-name{font-weight:800;color:#f3f9ff;font-size:12px;word-break:break-word;margin:4px 0}
+.plan-metrics{display:flex;gap:9px;flex-wrap:wrap;margin:8px 0;font-size:10px;color:#c8dae7}
+.plan-metrics b{color:#ffd36b}.plan-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:11px}
+.plan-actions button{font-size:11px;min-width:0;padding:9px 7px;border-radius:9px;border:1px solid #53718b;color:#eaf5ff;background:#213c55;font-weight:800}
+.plan-actions button.plan-upload{background:#d8a749;color:#152637;border-color:#ffce67}
+.plan-actions button:disabled{opacity:.35}.plan-key{display:flex;gap:13px;flex-wrap:wrap;align-items:center;margin-top:11px;color:#bbd0e1;font-size:10px}
+.plan-key i{display:inline-block;width:24px;height:4px;vertical-align:middle;border-radius:5px;margin-right:5px}.plan-guidance{padding:8px 10px;margin-top:9px;border-radius:9px;border:1px solid #3b6471;background:#123b43;color:#adf4eb;font-size:11px;line-height:1.4}.plan-guidance.far{background:#4b301e;color:#ffce9b;border-color:#c28041}.plan-guidance.none{color:#a0b8c9;background:#15273b;border-color:#314a61}
+.plan-toggle-off{opacity:.7}.plan-file-help{color:#8faabe;font-size:10px;line-height:1.5;margin-top:10px}
+.plan-point{width:13px;height:13px;border:2px solid #fff;border-radius:50%;box-shadow:0 0 0 3px #183d54;background:#ffca64}
+.plan-point-label{background:#0b1e2de8;border:1px solid #ffcd72;border-radius:6px;padding:3px 6px;color:#ffdfaa;font-size:11px;white-space:nowrap;font-weight:800}
+.plan-endpoint{display:grid;place-items:center;width:21px;height:21px;background:#ffcb69;color:#182a37;border:2px solid #fff;border-radius:50%;font-size:10px;font-weight:900;box-shadow:0 3px 10px #0009}
+.plan-endpoint.b{background:#64b5f9}
+@media(max-width:900px){.route-plan-box{margin:12px 0}.plan-actions{grid-template-columns:repeat(4,minmax(0,1fr))}.plan-actions button{font-size:10px}}
+@media(max-width:550px){.plan-actions{grid-template-columns:1fr 1fr}.plan-key{gap:8px}}
+
+/* V5 · Cobertura, nube y consolidado */
+.coverage-box{margin-top:10px;border:1px solid #2d6463;border-radius:13px;padding:12px;background:linear-gradient(115deg,#143a39,#13293e)}
+.coverage-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.coverage-head span{font-size:11px;color:#a4c7c8}.coverage-head strong{font:700 25px 'Space Grotesk',sans-serif;color:#36ebbb}
+.coverage-track{height:10px;background:#071b2a;border-radius:99px;overflow:hidden;margin:9px 0 7px;border:1px solid #246056}
+.coverage-track i{display:block;width:0;height:100%;background:linear-gradient(90deg,#17b98f,#55f0c7);transition:width .25s}
+.coverage-meters{font-size:11px;font-weight:800;color:#d6fdf0}.coverage-note{font-size:10px;color:#a7bacb;line-height:1.45;margin:7px 0}
+.coverage-select{display:flex;align-items:center;gap:7px;font-size:10px;color:#acbfd1}.coverage-select select{width:auto;min-width:90px;max-width:120px;padding:5px;background:#152b41;color:#fff;border:1px solid #396278;border-radius:8px}
+.cloud-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 8px}.cloud-top .action{flex:1;min-width:105px;font-size:11px;padding:9px}
+.cloud-status{border:1px solid #365777;border-radius:10px;background:#182c43;padding:10px;display:grid;gap:3px;font-size:11px;color:#d4e8f5}.cloud-status small{color:#93aac2}
+.cloud-settings{display:flex;gap:7px;flex-wrap:wrap}.cloud-settings button{flex:1;font-size:12px}
+.cloud-notice{border-left:3px solid #f5b356;background:#2c2b2c;padding:10px;border-radius:8px;color:#dfd1be;font-size:11px;line-height:1.5}
+.cloud-grids{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cloud-grids .full{grid-column:1/-1}
+.cloud-group{padding:12px;border:1px solid #39556c;background:#13243a;border-radius:12px;margin:11px 0}.cloud-group h3{margin:0 0 10px;font-size:13px}
+.generalmodal{width:min(1260px,97vw)!important}.general-layout{display:grid;grid-template-columns:minmax(0,1fr) 295px;gap:10px}
+.general-map{height:430px;min-height:320px;border:1px solid #385c72;border-radius:12px;background:#182b3a;z-index:1}
+.general-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:9px 0 13px}
+.general-kpi{background:#17334b;border:1px solid #37627a;border-radius:11px;padding:10px;min-width:0}
+.general-kpi small{font-size:10px;color:#abc3d4;display:block}.general-kpi b{display:block;margin-top:6px;font:700 21px 'Space Grotesk',sans-serif;color:#33e8bd}
+.general-filters{display:flex;gap:8px;flex-wrap:wrap}.general-filters>*{flex:1;min-width:110px;padding:9px;background:#162d43;border:1px solid #345671;color:#f7fbff;border-radius:9px}
+.general-result-list{height:430px;overflow:auto;border:1px solid #2f526c;border-radius:12px;padding:8px;background:#102237}
+.general-item{display:flex;width:100%;text-align:left;align-items:center;gap:8px;justify-content:space-between;padding:11px 9px;border:1px solid #31516b;background:#192f47;color:#eaf6ff;border-radius:10px;margin-bottom:7px}
+.general-item b{font-size:11px;display:block;line-height:1.35}.general-item small{display:block;color:#91b1c8;font-size:9px;margin-top:3px}
+.general-item strong{white-space:nowrap;color:#31e9b3;font-size:15px}
+.general-info{font-size:11px;color:#a4c5d4;line-height:1.5;margin:8px 0}
+@media(max-width:940px){.general-layout{grid-template-columns:1fr}.general-result-list{height:210px}.general-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:520px){.general-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.general-map{height:345px}.cloud-grids{grid-template-columns:1fr}.topright .general-top-label{display:none}}
+/* V6 · Mira central para georreferenciar hallazgos */
+.mapzone{scroll-margin-top:62px}
+.aim-reticle{display:none;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:88px;height:88px;z-index:570;pointer-events:none;filter:drop-shadow(0 2px 5px #001522e8)}
+.aim-reticle:before,.aim-reticle:after{content:"";position:absolute;background:#ff4b56;box-shadow:0 0 2px #fff,0 0 10px #f23b4c}
+.aim-reticle:before{left:calc(50% - 1.5px);top:0;width:3px;height:100%}
+.aim-reticle:after{left:0;top:calc(50% - 1.5px);width:100%;height:3px}
+.aim-ring{position:absolute;inset:17px;border:3px solid #ff4b56;border-radius:50%;box-shadow:0 0 0 1px #fff9,inset 0 0 6px #000c,0 0 8px #fa334c}
+.aim-ring:before{content:"";position:absolute;inset:19px;background:#fff;border:2px solid #ff4b56;border-radius:50%;z-index:1}
+.aim-info{display:none;position:absolute;top:16px;left:50%;transform:translateX(-50%);z-index:600;background:#0c2036f5;border:1px solid #4de7cb;border-radius:14px;padding:11px 15px;color:#e6fffa;text-align:center;width:min(425px,calc(100% - 22px));box-shadow:0 10px 33px #0009;pointer-events:none}
+.aim-info b{display:block;color:#40ebc3;font-size:14px}.aim-info span{display:block;font:700 13px 'Space Grotesk',Arial,sans-serif;letter-spacing:.2px;margin:6px 0}.aim-info small{color:#bacedd;font-size:10px;line-height:1.4;display:block}
+.aim-actions{display:none;position:absolute;bottom:15px;left:50%;transform:translateX(-50%);z-index:650;width:min(560px,calc(100% - 26px));gap:8px;background:#0a1a2ef2;border:1px solid #46647f;border-radius:14px;padding:10px;box-shadow:0 10px 35px #0009}
+.aim-actions button{min-height:46px;padding:10px 11px;min-width:0;white-space:normal;line-height:1.2;flex:1;border-radius:10px;font-weight:800;border:1px solid #48708b;background:#24415d;color:#ecf8ff}
+.aim-actions .aim-confirm{flex:1.8;background:#24ddb0;color:#052a20;border-color:#59ffd3;font-size:13px}
+.aim-actions .aim-cancel{background:#482a39;border-color:#ae4e66;color:#ffdee5}
+.mapzone.aiming .aim-reticle{display:block}
+.mapzone.aiming .aim-info,.mapzone.aiming .aim-actions{display:flex}
+.mapzone.aiming .aim-info{display:block}
+.mapzone.aiming .mapbanner,.mapzone.aiming .mapbottom,.mapzone.aiming .mapactions,.mapzone.aiming .map-provider-chip{display:none!important}
+.mapzone.aiming .leaflet-bottom.leaflet-right{bottom:80px}
+.geo-mira-btn{border:1px solid #56e6c6;background:#155c57;color:#e1fff9;font-size:11px;font-weight:900;border-radius:9px;padding:9px 11px;white-space:nowrap}
+.geo-mira-btn:hover{background:#1e8278}
+#findingGeo>span{word-break:break-word}#findingGeo small{display:block;font-size:10px;color:#a6e9dd}#findingGeo{gap:12px}
+@media(max-width:900px){.mapzone.aiming{height:calc(100dvh - 60px);min-height:480px;scroll-margin-top:60px}.mapzone.aiming .leaflet-bottom.leaflet-right{bottom:92px}}
+@media(max-width:540px){.aim-info{top:10px;padding:10px 9px}.aim-info span{font-size:12px}.aim-info small{font-size:9px}.aim-actions{bottom:11px;gap:5px;padding:7px}.aim-actions button{font-size:11px;padding:7px 5px;min-height:48px}.aim-actions .aim-confirm{font-size:12px}.aim-reticle{width:78px;height:78px}.aim-ring{inset:15px}.geobox{flex-wrap:wrap}.geo-mira-btn{width:100%;font-size:12px}.mapzone.aiming .leaflet-bottom.leaflet-right{bottom:88px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="top"><div class="brand"><div class="brandmark">R<span style="font-size:10px">•</span></div><div><div class="brandname">RECORREDOR <span style="font-size:10px;color:#2bdfb1;font-weight:600">FO</span></div><div class="subbrand">Operación & mantenimiento</div></div></div><div class="topright"><div class="pill"><span id="gpsDot" class="pulse"></span><span id="gpsStatus">GPS sin señal</span></div><div class="topclock" id="topClock">--:--:--</div><button class="action subtle" id="historyBtn">▤ <span class="hide-mobile">Historial</span></button><button class="action subtle" type="button" id="generalTopBtn" title="Consolidado de inspecciones con mapa">▤ <span class="general-top-label">General</span></button><button class="action primary" id="exportBtn">⇩ <span class="hide-mobile">Reportes</span></button></div></header>
+<div class="layout">
+<aside class="leftpanel"><div class="panelhead"><div><div class="overline">Panel de campo</div><h1 class="paneltitle">Mi recorrido</h1></div><button class="smallbtn" title="Crear nuevo recorrido" id="newBtn">＋</button></div>
+<div class="left-top"><div class="routebox" id="routeBox"><div class="routecode" id="routeCode">SIN RECORRIDO ACTIVO</div><div class="routename" id="routeName">Crea un recorrido para comenzar</div><div class="route-meta"><span id="routeTech">♙ —</span><span id="routeCity">⌖ —</span><span id="routeDate">▦ —</span><span><span id="routeStatus" class="status ready">Sin iniciar</span></span></div></div>
+<div class="controls"><button class="action primary wide" id="startBtn">▶ Iniciar ruta</button><button class="action" id="pauseBtn" disabled>Ⅱ Pausar</button><button class="action danger" id="finishBtn" disabled>■ Finalizar</button></div></div>
+<section class="route-plan-box" id="routePlanBox" aria-label="Tramo asignado para inspección">
+  <div class="plan-heading"><strong>🗺️ TRAMO POR RECORRER</strong><small id="planBadge">Sin archivo</small></div>
+  <div class="plan-state" id="planStatus">Carga el KMZ, KML o GeoJSON que define el tramo a inspeccionar. Aparecerá en amarillo sobre el mapa.</div>
+  <div class="plan-metrics" id="planMetrics" style="display:none"></div>
+  <div class="plan-guidance none" id="planGuidance">📍 En cuanto recibamos tu GPS, verás a qué distancia estás del tramo.</div>
+  <div class="plan-actions">
+   <button class="plan-upload" type="button" id="loadPlanBtn">＋ Cargar tramo</button>
+   <button type="button" id="fitPlanBtn" disabled title="Mostrar todo el tramo">⌖ Ver tramo</button>
+   <button type="button" id="togglePlanBtn" disabled title="Ocultar o mostrar capa">◉ Ocultar</button>
+   <button type="button" id="removePlanBtn" disabled title="Quitar archivo del recorrido">✕ Quitar</button>
+  </div>
+  <div class="plan-key"><span><i style="background:#ffc965"></i>Tramo planificado</span><span><i style="background:#4b9bff"></i>Ruta GPS real</span></div>
+  <p class="plan-file-help">Formatos: KMZ, KML y GeoJSON. El tramo se guarda en este dispositivo junto con el recorrido; puedes cambiarlo sin perder hallazgos ni posiciones GPS.</p>
+  <input id="planFileInput" type="file" accept=".kmz,.kml,.geojson,.json,application/vnd.google-earth.kmz,application/vnd.google-earth.kml+xml,application/geo+json" hidden />
+</section>
+<section class="coverage-box" aria-label="Porcentaje de tramo inspeccionado">
+ <div class="coverage-head"><span>COBERTURA DEL TRAMO</span><strong id="coveragePct">— %</strong></div>
+ <div class="coverage-track"><i id="coverageBar"></i></div>
+ <div class="coverage-meters" id="coverageMeters">Carga una línea para medir cobertura</div>
+ <p class="coverage-note" id="coverageNote">El porcentaje no cuenta la misma sección dos veces.</p>
+ <label class="coverage-select" for="coverageTolerance">Margen GPS de inspección:
+  <select id="coverageTolerance"><option value="15">15 m</option><option value="25">25 m</option><option value="30" selected>30 m</option><option value="40">40 m</option><option value="60">60 m</option></select>
+ </label>
+ <div class="plan-key"><span><i style="background:#ffc965"></i>Pendiente</span><span><i style="background:#24f3bf"></i>Inspeccionado</span></div>
+</section>
+<div class="sectionline"><strong>Indicadores en vivo</strong><span class="tiny" id="saveLabel">Guardado local</span></div><div class="kpis"><div class="kpi accent"><small>Distancia recorrida</small><strong id="statDistance">0.00 <em>km</em></strong></div><div class="kpi"><small>Tiempo activo</small><strong id="statTime">00:00</strong></div><div class="kpi"><small>Hallazgos</small><strong id="statFindings">0</strong></div><div class="kpi"><small>Puntos GPS</small><strong id="statPoints">0</strong></div></div><div class="gps-details"><span>PRECISIÓN GPS <b id="gpsAccuracy">—</b></span><span>VELOCIDAD <b id="gpsSpeed">—</b></span></div>
+<div class="sectionline"><strong>SUPABASE / EQUIPO</strong><span class="tiny">Sincronización</span></div>
+<div class="cloud-status"><b id="cloudState">Solo local</b><small id="cloudSmall">Sin sesión · datos locales</small></div>
+<div class="cloud-top"><button class="action" id="cloudConfigBtn" type="button">⚙ Configurar</button><button class="action primary" type="button" id="cloudSendBtn">☁ Enviar</button></div>
+<div class="sectionline"><strong>Registro de actividad</strong><span class="tiny">Últimos eventos</span></div><div class="timeline" id="timeline"><div class="emptysmall">Los eventos del recorrido aparecerán aquí.</div></div>
+<div class="quick"><span class="overline">Consejo de campo</span><p>Mantén la pantalla activa durante el recorrido. La captura GPS de esta versión web puede interrumpirse cuando el celular se bloquea o la aplicación pasa a segundo plano.</p></div></aside>
+<main class="mapzone" aria-label="Mapa de inspección"><div id="map"></div><div id="aimReticle" class="aim-reticle" aria-hidden="true"><div class="aim-ring"></div></div><div id="aimInfo" class="aim-info" aria-live="off"><b>⌖ MIRA · UBICACIÓN DEL HALLAZGO</b><span id="aimCoords">Moviendo mapa…</span><small>Desplaza y acerca el mapa: el centro de la mira roja define las coordenadas del hallazgo.</small></div><div class="aim-actions" id="aimActions"><button type="button" id="aimCancel" class="aim-cancel">✕ Cancelar</button><button type="button" id="aimGps">◎ Mi GPS</button><button type="button" id="aimConfirm" class="aim-confirm">✓ Confirmar ubicación</button></div><div class="mapbanner"><b id="mapBannerTitle">Mapa de inspección de fibra óptica</b><p id="mapBannerText">Inicia tu recorrido para trazar la ruta. Marca hallazgos con la mira central y confirma su ubicación.</p></div><div class="mapactions"><button class="mapbtn" title="Mi ubicación" id="locateBtn">⌖</button><button class="mapbtn" title="Ver todo el recorrido" id="fitBtn">⤢</button><button class="mapbtn" title="Centrar en tramo planificado" id="mapPlanBtn">♢</button><button class="mapbtn" title="Cambiar mapa base" id="layerBtn">▧</button><button class="mapbtn" title="Marcar hallazgo con la mira central" id="pickBtn">⊕</button></div><button type="button" class="map-provider-chip" id="mapProviderChip" title="Elegir mapa base">Cargando mapa…</button><div class="mapbottom"><span class="coordinatelabel" id="coordsLabel">⌖ Esperando coordenadas GPS</span><button class="floatadd" id="addBtn">＋ Registrar hallazgo</button></div></main>
+<aside class="rightpanel"><div class="righthead"><div><div class="overline">Inspección visual</div><h2 class="paneltitle" style="margin-bottom:0">Hallazgos <span id="findCount" style="color:#76d9cb">0</span></h2></div><button class="smallbtn" title="Nuevo hallazgo" id="sideAddBtn">＋</button></div><div class="filterbar" id="filterbar"><button class="filter active" data-filter="todos">Todos</button><button class="filter" data-filter="critica">Críticos</button><button class="filter" data-filter="alta">Altos</button><button class="filter" data-filter="media">Medios</button><button class="filter" data-filter="baja">Bajos</button></div><div id="findingList" class="findinglist"></div><div id="replayArea"></div></aside>
+</div></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<!-- Modal de nuevo recorrido -->
+<div class="overlay" id="routeModal" role="dialog" aria-modal="true" aria-labelledby="routeModalTitle"><div class="modal"><div class="modalheader"><div><div class="overline">Registro de inspección</div><h2 id="routeModalTitle">Nuevo recorrido</h2></div><button class="smallbtn modalclose" data-close="routeModal" aria-label="Cerrar">×</button></div><form id="routeForm"><div class="modalbody"><div class="formgrid"><div class="field full"><label for="newProject">Proyecto, tramo o red *</label><input id="newProject" maxlength="110" required placeholder="Ej. Red FO Villavicencio — Anillo Norte" /></div><div class="field"><label for="newTechnician">Técnico recorredor *</label><input id="newTechnician" maxlength="100" required placeholder="Nombre completo" /></div><div class="field"><label for="newCity">Ciudad / zona *</label><input id="newCity" maxlength="100" required placeholder="Villavicencio" /></div><div class="field full"><label for="newKind">Tipo de recorrido</label><select id="newKind"><option>Inspección preventiva</option><option>Verificación de avería</option><option>Inspección correctiva</option><option>Auditoría de red</option><option>Otro</option></select></div></div><p class="labelhint">El recorrido se guarda primero en este dispositivo. Si configuraste Supabase y perteneces a un equipo, se sincronizará con el servidor.</p></div><div class="modalfoot"><button type="button" class="action" data-close="routeModal">Cancelar</button><button type="submit" class="action primary">Crear recorrido</button></div></form></div></div>
+<!-- Selector de cartografía: misma capa híbrida Leaflet usada en PDR-APP, con alternativa satelital -->
+<div class="overlay" id="mapSettingsModal" role="dialog" aria-modal="true" aria-labelledby="mapSettingsTitle">
+  <div class="modal">
+    <div class="modalheader"><div><div class="overline">Cartografía de inspección</div><h2 id="mapSettingsTitle">Seleccionar mapa base</h2></div><button class="smallbtn modalclose" data-close="mapSettingsModal" aria-label="Cerrar">×</button></div>
+    <form id="mapSettingsForm">
+      <div class="modalbody">
+        <div class="formgrid"><div class="field full"><label for="mapSource">Mapa base</label>
+          <select id="mapSource">
+            <option value="google-tiles">Google Maps híbrido · igual que PDR-APP · sin clave API</option>
+            <option value="esri-hybrid">Satélite con etiquetas · alternativa</option>
+            <option value="esri">Satélite sin etiquetas · alternativa</option>
+            <option value="carto">Mapa de calles · alternativa</option>
+          </select>
+        </div></div>
+        <div class="map-help"><b>Mapa híbrido de PDR-APP</b><br>
+          Se utiliza el mismo método de Leaflet que en el módulo Mapping: fotografía satelital de Google con vías y nombres superpuestos. No necesitas introducir una clave API.
+          <br><span class="map-notice">Importante:</span> este método utiliza una dirección de teselas de Google que no es una integración oficial pública para aplicaciones con Leaflet. Google puede bloquearla o cambiarla, y su funcionamiento no implica permiso de uso comercial. Si deja de cargar, elige el mapa satelital alternativo. Las capas en línea requieren Internet.
+        </div>
+      </div>
+      <div class="modalfoot"><button type="button" class="action" data-close="mapSettingsModal">Cancelar</button><button type="submit" class="action primary">Aplicar mapa</button></div>
+    </form>
+  </div>
+</div>
+<!-- Modal de hallazgo -->
+<div class="overlay" id="findingModal" role="dialog" aria-modal="true" aria-labelledby="findingModalTitle"><div class="modal wide"><div class="modalheader"><div><div class="overline">Hallazgo georreferenciado</div><h2 id="findingModalTitle">Registrar hallazgo</h2></div><button class="smallbtn modalclose" data-close="findingModal" aria-label="Cerrar">×</button></div><form id="findingForm"><div class="modalbody"><div id="findingGeo" class="geobox"><span id="findingGeoDetails">⌖ Punto por asignar</span><button class="geo-mira-btn" type="button" id="adjustFindingPoint">⌖ Ajustar con mira</button></div><div class="formgrid"><div class="field"><label for="fType">Elemento / tipo *</label><select id="fType" required><option value="">Selecciona...</option><option>Cable FO bajo o descolgado</option><option>Cable FO roto / cortado</option><option>Vegetación sobre red</option><option>Poste en mal estado</option><option>Cámara / recámara</option><option>Caja NAP / CTO</option><option>Mufla / empalme</option><option>Reserva de fibra</option><option>Marquillado / identificación</option><option>Riesgo eléctrico</option><option>Interferencia / obra civil</option><option>Otro hallazgo</option></select></div><div class="field"><label for="fSeverity">Criticidad *</label><select id="fSeverity" required><option value="media">Media</option><option value="baja">Baja</option><option value="alta">Alta</option><option value="critica">Crítica</option></select></div><div class="field full"><label for="fTitle">Descripción corta *</label><input id="fTitle" required maxlength="140" placeholder="Ej. Cable ADSS con flecha excesiva en vano" /></div><div class="field full"><label for="fDescription">Detalle del hallazgo *</label><textarea id="fDescription" required maxlength="3000" placeholder="Describe el estado del elemento, afectación, referencia del punto y observaciones técnicas."></textarea></div><div class="field"><label for="fCondition">Estado de atención</label><select id="fCondition"><option>Pendiente</option><option>En seguimiento</option><option>Corregido en campo</option></select></div><div class="field"><label for="fAction">Acción recomendada</label><input id="fAction" maxlength="220" placeholder="Ej. Reponer herrajes y tensionar vano" /></div><div class="field full"><label>Evidencia fotográfica * (mínimo una foto)</label><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="action" id="cameraBtn">📷 Tomar foto</button><button type="button" class="action" id="galleryBtn">▧ Galería</button><span class="tiny" style="align-self:center">Hasta 8 fotos por hallazgo</span></div><input id="cameraInput" type="file" accept="image/*" capture="environment" hidden /><input id="galleryInput" type="file" accept="image/*" multiple hidden /><div class="photos" id="photoGrid"></div></div></div><p class="labelhint">Las imágenes se reducen de tamaño para ahorrar espacio. Se almacenan temporalmente en este navegador.</p></div><div class="modalfoot"><button type="button" class="action danger" style="margin-right:auto" id="deleteFindingBtn" hidden>Eliminar</button><button type="button" class="action" data-close="findingModal">Cancelar</button><button type="submit" class="action primary">Guardar hallazgo</button></div></form></div></div>
+<!-- Modal historial -->
+<div class="overlay" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="historyTitle"><div class="modal"><div class="modalheader"><div><div class="overline">Guardados en este dispositivo</div><h2 id="historyTitle">Historial de recorridos</h2></div><button class="smallbtn modalclose" data-close="historyModal" aria-label="Cerrar">×</button></div><div class="modalbody" id="historyList"></div><div class="modalfoot"><button class="action primary" id="historyNewBtn">＋ Nuevo recorrido</button></div></div></div>
+<!-- Modal exportación -->
+<div class="overlay" id="exportModal" role="dialog" aria-modal="true" aria-labelledby="exportTitle"><div class="modal"><div class="modalheader"><div><div class="overline">Entregables de inspección</div><h2 id="exportTitle">Generar reportes</h2></div><button class="smallbtn modalclose" data-close="exportModal" aria-label="Cerrar">×</button></div><div class="modalbody"><p style="color:#aac0d4;margin:0 0 16px;line-height:1.5">Exporta evidencias, coordenadas, tiempo, recorrido y hallazgos registrados.</p><div class="export-grid"><button class="exportopt" data-export="pdf"><span class="symbol">▣</span><b>Reporte técnico PDF</b><small>Resumen, trazado GPS, hallazgos y fotografías.</small></button><button class="exportopt" data-export="geojson"><span class="symbol">⌖</span><b>Ruta y puntos GeoJSON</b><small>Compatible con QGIS y herramientas GIS.</small></button><button class="exportopt" data-export="csv"><span class="symbol">▤</span><b>Hallazgos CSV</b><small>Listado para Excel, con fecha y coordenadas.</small></button><button class="exportopt" data-export="json"><span class="symbol">⇩</span><b>Respaldo JSON</b><small>Registro completo, incluyendo fotografías.</small></button><button class="exportopt" id="importBtn" type="button"><span class="symbol">↥</span><b>Restaurar respaldo JSON</b><small>Importar otro recorrido guardado previamente.</small></button><input type="file" id="importInput" accept=".json,application/json" hidden /></div><div class="notice" style="margin-top:15px">ℹ Los datos se guardan localmente. Con Supabase configurado y sesión iniciada, se pueden sincronizar y consultar desde el reporte general. Antes de limpiar el navegador, comprueba la sincronización.</div></div><div class="modalfoot"><button class="action" data-close="exportModal">Cerrar</button></div></div></div>
+
+<!-- V5 · Panel de conexión segura a Supabase y equipos -->
+<div class="overlay" id="cloudModal" role="dialog" aria-modal="true" aria-labelledby="cloudTitle">
+ <div class="modal wide"><div class="modalheader"><div><div class="overline">Datos en la nube</div><h2 id="cloudTitle">Supabase · Recorridos FO</h2></div><button class="smallbtn" data-close="cloudModal" aria-label="Cerrar">×</button></div>
+ <div class="modalbody">
+  <p class="cloud-notice">Primero ejecuta <b>recorredor_supabase.sql</b> en tu proyecto Supabase. Copia la URL y la clave <b>publishable / anon</b> de API Settings. Nunca ingreses service_role. Los recorridos permanecen localmente aunque falle la conexión.</p>
+  <div class="cloud-group"><h3>1. Conexión al proyecto</h3><div class="cloud-grids">
+   <div class="field"><label>URL de Supabase</label><input id="cloudUrl" placeholder="https://xxxxx.supabase.co" autocomplete="off" /></div>
+   <div class="field"><label>Clave pública / anon</label><input id="cloudAnon" placeholder="sb_publishable_... o eyJ..." autocomplete="off" /></div>
+  </div><button class="action primary" type="button" id="cloudSave">Guardar conexión</button></div>
+  <div class="cloud-group"><h3>2. Cuenta del técnico o supervisor</h3>
+   <p class="tiny" id="cloudUserText">Sin iniciar sesión</p><div class="cloud-grids">
+    <div class="field"><label>Correo</label><input type="email" id="cloudEmail" autocomplete="username" /></div>
+    <div class="field"><label>Contraseña</label><input type="password" id="cloudPass" autocomplete="current-password" /></div>
+   </div><div class="cloud-settings"><button type="button" class="action primary" id="cloudLogin">Entrar</button><button type="button" class="action" id="cloudSignup">Registrarme</button><button type="button" class="action danger" id="cloudLogout">Salir</button></div>
+  </div>
+  <div class="cloud-group"><h3>3. Equipo O&M</h3><div class="cloud-grids"><div class="field full"><label>Equipo al que se enviarán tus recorridos</label><select id="cloudTeamSelect"><option value="">Sin equipo</option></select></div><div class="field"><label>Nuevo equipo (solo supervisor)</label><input id="cloudTeamName" placeholder="Ej. O&M Villavicencio" /></div><div class="field" style="align-self:end"><button type="button" class="action" id="cloudTeamCreate">＋ Crear equipo</button></div></div>
+   <div id="cloudInviteBox" hidden><p class="tiny">El técnico primero debe registrarse con su correo. Un administrador del equipo puede agregarlo:</p><div class="cloud-grids"><div class="field"><label>Correo de técnico registrado</label><input id="cloudInviteEmail" type="email" /></div><div class="field"><label>Rol</label><select id="cloudInviteRole"><option value="tecnico">Técnico</option><option value="admin">Administrador</option></select></div></div><button class="action" type="button" id="cloudInviteBtn">Agregar al equipo</button></div>
+  </div>
+  <div class="cloud-group"><h3>4. Sincronización</h3><p class="tiny">Solo los integrantes del mismo equipo pueden visualizar el consolidado. Cada técnico edita sus recorridos; el administrador también puede editarlos.</p>
+   <div class="cloud-settings"><button class="action primary" type="button" id="cloudSyncAll">☁ Sincronizar ahora</button><button class="action" type="button" id="cloudDownload">↓ Descargar recorridos del equipo</button><button class="action" type="button" id="cloudGeneral">▤ Reporte general</button></div>
+  </div>
+ </div><div class="modalfoot"><button type="button" class="action" data-close="cloudModal">Cerrar</button></div></div>
+</div>
+
+<!-- V5 · Informe consolidado de todos los técnicos del equipo -->
+<div class="overlay" id="generalModal" role="dialog" aria-modal="true" aria-labelledby="generalTitle"><div class="modal generalmodal">
+ <div class="modalheader"><div><div class="overline">Reporte de supervisión · O&M FO</div><h2 id="generalTitle">Mapa general de tramos inspeccionados</h2></div><button class="smallbtn" data-close="generalModal" aria-label="Cerrar">×</button></div>
+ <div class="modalbody"><div class="general-filters">
+  <select id="generalCity" aria-label="Filtrar ciudad"><option value="">Todas las ciudades</option></select>
+  <select id="generalStatus" aria-label="Filtrar estado"><option value="">Todos los estados</option><option value="ready">Sin iniciar</option><option value="recording">En ruta</option><option value="paused">En pausa</option><option value="finished">Finalizados</option></select>
+  <input id="generalFrom" type="date" title="Desde" aria-label="Fecha desde" /><input id="generalTo" type="date" title="Hasta" aria-label="Fecha hasta" />
+  <button class="action" type="button" id="generalRefresh">↻ Actualizar</button>
+ </div>
+ <div id="generalKpis" class="general-kpis"></div><div class="general-info" id="generalInfo">El mapa se cargará desde Supabase.</div>
+ <div class="general-layout"><div id="generalMap" class="general-map" aria-label="Mapa consolidado de tramos"></div><div id="generalList" class="general-result-list"></div></div>
+ </div><div class="modalfoot"><button class="action" id="generalCsv" type="button">▤ Excel CSV</button><button class="action primary" type="button" id="generalPdf">▣ PDF general con mapa esquemático</button><button class="action" data-close="generalModal">Cerrar</button></div>
+ </div></div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtDate=ts=>ts?new Date(ts).toLocaleString('es-CO',{dateStyle:'medium',timeStyle:'short'}):'—';
+const fmtTime=ts=>ts?new Date(ts).toLocaleTimeString('es-CO',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'}):'—';
+const fmtDur=ms=>{const m=Math.floor(Math.max(0,ms)/60000);return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')};
+const fmtDist=m=>(m/1000).toFixed(2);
+const severityLabel={critica:'Crítica',alta:'Alta',media:'Media',baja:'Baja'};
+const severityColor={critica:'#fb6170',alta:'#f9b35c',media:'#d5d774',baja:'#36d5c6'};
+const uid=()=>typeof crypto!=='undefined' && crypto.randomUUID?crypto.randomUUID():'r-'+Date.now()+'-'+Math.random().toString(36).slice(2);
+const degrees=x=>Number(x).toFixed(6);
+const STORE_NAME='routes';const DB_NAME='recorredor-fo-v1';
+let db, routes=[], selected=null, map=null, baseLayer=null, referenceLayer=null, liveMarker=null, replayMarker=null, pathLayer=null, markLayer=null, currentGps=null;
+// Capa Google híbrida por Leaflet, como PDR-APP (puede estar sujeta a restricciones del proveedor).
+let mapProvider='google-tiles', googleOverlays=[],googleFindingMarkers=[];
+let watchId=null, gpsWanted=false, saveTimer=null, renderTimer=null, currentFilter='todos', placement=false, pickedPoint=null, editFindingId=null, formPhotos=[], photoBusy=false, timerReplay=null, replayIndex=0, lastScreenPosition=null, aimReturnToForm=false;
+let toastTimer;
+let planLayer=null,planGoogleOverlays=[],planVisible=true,planCache=null,planLastRouteId=null;
+function toast(msg,error=false){const el=$('toast');el.textContent=msg;el.className='toast show'+(error?' error':'');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3700)}
+function openModal(id){$(id).classList.add('show');document.body.style.overflow='hidden';}
+function closeModal(id){$(id).classList.remove('show');if(!document.querySelector('.overlay.show'))document.body.style.overflow='';}
+function distMeters(a,b){const r=6371000,p1=a.lat*Math.PI/180,p2=b.lat*Math.PI/180,dp=(b.lat-a.lat)*Math.PI/180,dl=(b.lng-a.lng)*Math.PI/180;const k=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;return 2*r*Math.atan2(Math.sqrt(k),Math.sqrt(1-k))}
+function activeMs(r){if(!r)return 0;return (r.activeMs||0)+(r.status==='recording'&&r.legStart?Math.max(0,Date.now()-r.legStart):0)}
+function setGpsStatus(message,ok=false){$('gpsStatus').textContent=message;$('gpsDot').classList.toggle('good',ok)}
+function dbOpen(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>{if(!req.result.objectStoreNames.contains(STORE_NAME))req.result.createObjectStore(STORE_NAME,{keyPath:'id'})};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
+function dbAll(){return new Promise((resolve,reject)=>{const tx=db.transaction(STORE_NAME,'readonly'),req=tx.objectStore(STORE_NAME).getAll();req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)})}
+function dbPut(r){return new Promise((resolve,reject)=>{const tx=db.transaction(STORE_NAME,'readwrite');tx.objectStore(STORE_NAME).put(r);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
+function dbDelete(id){return new Promise((resolve,reject)=>{const tx=db.transaction(STORE_NAME,'readwrite');tx.objectStore(STORE_NAME).delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error)})}
+function saveSoon(immediate=false){if(!selected)return;clearTimeout(saveTimer);$('saveLabel').textContent='Guardando…';if(immediate){persist().catch(console.error)}else saveTimer=setTimeout(()=>persist().catch(console.error),900)}
+async function persist(){if(!selected)return;try{selected.localModifiedAt=Date.now();await dbPut(selected);queueCloudSync(2200);$('saveLabel').textContent='Guardado local ✓'}catch(e){console.error(e);$('saveLabel').textContent='Error al guardar';toast('No se pudo guardar. Revisa espacio disponible del dispositivo.',true)}}
+function defaultMapCenter(){return [4.142,-73.6266]}
+function googleActive(){return mapProvider==='google'&&!!window.google?.maps?.Map&&map instanceof google.maps.Map}
+function mapZoom(){return map?.getZoom?.()||13}
+function mapSetView(pt,z){if(!map)return;if(googleActive()){map.setCenter({lat:pt[0],lng:pt[1]});if(z!=null)map.setZoom(z)}else map.setView(pt,z??mapZoom())}
+function mapPanTo(pt){if(!map)return;if(googleActive())map.panTo({lat:pt[0],lng:pt[1]});else map.panTo(pt,{animate:false})}
+function mapSourceName(mode=mapProvider){return {'google-tiles':'Google Maps · Híbrido','esri-hybrid':'Satélite + nombres · Alternativa',esri:'Satélite · Alternativa',carto:'Mapa de calles · Alternativa'}[mode]||'Mapa'}
+function refreshMapProviderBadge(){const chip=$('mapProviderChip');if(!chip)return;chip.textContent='◈ '+mapSourceName()+' · Cambiar mapa';chip.title='Cambiar mapa base';}
+function onMapClick(lat,lng){lastScreenPosition={lat,lng};if(placement){updateAimCoords();return} $('coordsLabel').textContent=`⌖ ${degrees(lat)}, ${degrees(lng)}`}
+function removeOldMap(){stopReplay();if(liveMarker){if(googleActive())liveMarker.setMap(null);else if(map)map.removeLayer(liveMarker)}liveMarker=null;if(googleActive()){googleOverlays.forEach(o=>o.setMap(null));googleOverlays=[];googleFindingMarkers=[];if(map)google.maps.event.clearInstanceListeners(map)}else if(map){map.off();map.remove()}map=null;pathLayer=null;markLayer=null;planLayer=null;baseLayer=null;referenceLayer=null;planGoogleOverlays=[];$('map').replaceChildren()}
+function createMap(){let requested='google-tiles';try{requested=localStorage.getItem('recorredor-map-source')||'google-tiles'}catch(e){}
+ // Compatibilidad con la versión anterior que pedía una API Key para usar Google.
+ if(requested==='google')requested='google-tiles';
+ initLeafletMap(requested);
+}
+function initLeafletMap(mode='google-tiles'){if(map)removeOldMap();mapProvider=['google-tiles','esri-hybrid','esri','carto'].includes(mode)?mode:'google-tiles';if(typeof L==='undefined'){$('map').innerHTML='<div style="display:grid;place-items:center;height:100%;padding:30px;text-align:center;color:#b8c9dd">No se pudo cargar el mapa. Verifica la conexión a Internet.</div>';toast('No se pudo cargar el motor Leaflet',true);refreshMapProviderBadge();return}
+ map=L.map('map',{zoomControl:false,preferCanvas:true}).setView(placement&&pickedPoint?[pickedPoint.lat,pickedPoint.lng]:defaultMapCenter(),placement?18:13);
+ L.control.zoom({position:'bottomright'}).addTo(map);setLeafletTiles();planLayer=L.layerGroup().addTo(map);pathLayer=L.layerGroup().addTo(map);markLayer=L.layerGroup().addTo(map);
+ map.on('mousemove',ev=>{lastScreenPosition=ev.latlng});map.on('click',ev=>onMapClick(ev.latlng.lat,ev.latlng.lng));map.on('move zoom moveend zoomend',updateAimCoords);
+ setTimeout(()=>map?.invalidateSize?.(),120);refreshMapProviderBadge();redrawAllMapObjects()}
+function setLeafletTiles(){if(!map||googleActive())return;if(baseLayer)map.removeLayer(baseLayer);if(referenceLayer){map.removeLayer(referenceLayer);referenceLayer=null}
+ if(mapProvider==='google-tiles'){
+   // MISMA capa del PDR Mapping V139: satélite + calles y rótulos (lyrs=y).
+   baseLayer=L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{
+     subdomains:['mt0','mt1','mt2','mt3'],maxNativeZoom:20,maxZoom:22,
+     attribution:'Google'
+   }).addTo(map);
+   let failed=0,loaded=0;
+   baseLayer.on('tileload',()=>{loaded++;failed=0});
+   baseLayer.on('tileerror',()=>{
+     if(++failed>=4 && loaded===0 && mapProvider==='google-tiles'){
+       // Evita mosaicos 403 persistentes. La ruta y los puntos permanecen.
+       initLeafletMap('esri-hybrid');
+       toast('Google no permitió cargar las imágenes. Activamos el satélite alternativo.',true);
+     }
+   });
+ }else if(mapProvider==='carto'){
+   baseLayer=L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:20,attribution:'© OpenStreetMap © CARTO'}).addTo(map)
+ }else{
+   baseLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:19,maxZoom:21,attribution:'Imágenes © Esri, Maxar, Earthstar Geographics'}).addTo(map);
+   if(mapProvider==='esri-hybrid')referenceLayer=L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png',{pane:'overlayPane',subdomains:'abcd',maxZoom:21,opacity:1,attribution:'Etiquetas © OpenStreetMap © CARTO'}).addTo(map)
+ }
+}
+function changeLayer(){$('mapSource').value=mapProvider;openModal('mapSettingsModal')}
+function saveMapSettings(e){e.preventDefault();const requested=$('mapSource').value;
+ if(!['google-tiles','esri-hybrid','esri','carto'].includes(requested)){toast('Selecciona un mapa válido',true);return}
+ try{localStorage.setItem('recorredor-map-source',requested)}catch(e){toast('No se pudo guardar la preferencia, pero aplicaré el cambio.',true)}
+ closeModal('mapSettingsModal');
+ if(requested!==mapProvider)initLeafletMap(requested);
+ toast('Mapa actualizado: '+mapSourceName(requested));
+}
+function redrawAllMapObjects(){renderMap();if(currentGps)updateGpsMarker(currentGps,false);if(!placement&&(selected?.points?.length||selected?.findings?.length))findBounds();updateAimCoords()}
+function updateGpsMarker(pos,center=false){if(!map)return;const pt=[pos.lat,pos.lng];if(googleActive()){
+ const icon={path:google.maps.SymbolPath.CIRCLE,scale:8,fillColor:'#39bafe',fillOpacity:1,strokeColor:'#fff',strokeWeight:3};
+ if(!liveMarker)liveMarker=new google.maps.Marker({map,position:{lat:pt[0],lng:pt[1]},icon,title:'Ubicación GPS actual',zIndex:1200});else liveMarker.setPosition({lat:pt[0],lng:pt[1]})
+ }else{if(!liveMarker)liveMarker=L.marker(pt,{icon:L.divIcon({className:'',html:'<div class="gps-marker"></div>',iconSize:[20,20],iconAnchor:[10,10]}),zIndexOffset:1000}).addTo(map);else liveMarker.setLatLng(pt)}
+ if(center)mapSetView(pt,Math.max(mapZoom(),17))}
+function recordGps(pos){currentGps={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy||0,speed:pos.coords.speed,timestamp:pos.timestamp||Date.now()};setGpsStatus(`GPS ±${Math.round(currentGps.accuracy)} m`,currentGps.accuracy<=60);$('gpsAccuracy').textContent=`±${Math.round(currentGps.accuracy)} m`;$('gpsSpeed').textContent=Number.isFinite(currentGps.speed)?`${(currentGps.speed*3.6).toFixed(1)} km/h`:'—';$('coordsLabel').textContent=`⌖ ${degrees(currentGps.lat)}, ${degrees(currentGps.lng)}`;updateGpsMarker(currentGps,false);updatePlanGuidance();
+if(!selected || selected.status!=='recording')return;
+if(currentGps.accuracy>60){$('mapBannerText').textContent='Señal GPS imprecisa (> 60 m). Punto descartado para proteger el trazado.';return}
+const last=selected.points.at(-1);const now=Date.now();let d=last?distMeters(last,currentGps):0;
+if(last && last.segment===selected.segment){const dt=(now-last.at)/1000;if(d>Math.max(90,dt*32+Math.max(currentGps.accuracy,last.accuracy)*1.7)){return;}if(d<4&&dt<25)return;}
+if(last && last.segment!==selected.segment)d=0;
+const p={lat:currentGps.lat,lng:currentGps.lng,accuracy:currentGps.accuracy,at:now,segment:selected.segment};selected.points.push(p);
+if(last && last.segment===selected.segment && d>=4)selected.distance=(selected.distance||0)+d;
+selected.lastGpsAt=now;if(selected.points.length===1&&map)mapSetView([p.lat,p.lng],17);
+if(selected.points.length%4===0)saveSoon();else saveSoon(false);
+refresh();renderMap();
+}
+function gpsError(e){const msg=e.code===1?'Permiso GPS denegado. Activa ubicación para este sitio.':e.code===2?'GPS sin posición disponible. Comprueba la señal.':'Tiempo de espera del GPS agotado.';setGpsStatus('GPS no disponible');toast(msg,true);if(selected?.status==='recording'){$('mapBannerText').textContent='La ruta continúa activa, pero no se están recibiendo ubicaciones GPS.'}}
+function startGpsWatch(){if(!('geolocation' in navigator)){toast('Este dispositivo no soporta geolocalización.',true);return}if(!window.isSecureContext){toast('Para usar GPS publica la página con HTTPS (o localhost).',true);return}if(watchId!==null)navigator.geolocation.clearWatch(watchId);watchId=navigator.geolocation.watchPosition(recordGps,gpsError,{enableHighAccuracy:true,maximumAge:0,timeout:18000});setGpsStatus('Buscando señal GPS…')}
+function stopGpsWatch(){if(watchId!==null&&navigator.geolocation){navigator.geolocation.clearWatch(watchId);watchId=null}}
+function locate(){if(!map){toast('Mapa no disponible',true);return}if(currentGps){updateGpsMarker(currentGps,true);return}if(!navigator.geolocation){toast('GPS no disponible',true);return}navigator.geolocation.getCurrentPosition(p=>{recordGps(p);updateGpsMarker(currentGps,true)},gpsError,{enableHighAccuracy:true,timeout:16000,maximumAge:0});toast('Consultando ubicación…')}
+function findBounds(){if(!map)return;const points=(selected?.points||[]).map(p=>[p.lat,p.lng]);(selected?.findings||[]).forEach(f=>points.push([f.lat,f.lng]));if(!points.length){if(selected?.plannedRoute){fitPlannedRoute();return}if(currentGps)locate();else toast('Todavía no hay puntos para encuadrar.');return}if(points.length===1){mapSetView(points[0],17);return}if(googleActive()){const bounds=new google.maps.LatLngBounds();points.forEach(p=>bounds.extend({lat:p[0],lng:p[1]}));map.fitBounds(bounds,58);google.maps.event.addListenerOnce(map,'idle',()=>{if(map.getZoom()>17)map.setZoom(17)})}else map.fitBounds(L.latLngBounds(points).pad(.22),{maxZoom:17})}
+function newRouteModal(){if(selected?.status==='recording'){toast('Pausa o finaliza el recorrido antes de crear otro.',true);return}closeModal('historyModal');openModal('routeModal');setTimeout(()=>$('newProject').focus(),120)}
+async function createRoute(e){e.preventDefault();const proj=$('newProject').value.trim(),tech=$('newTechnician').value.trim(),city=$('newCity').value.trim();if(!proj||!tech||!city)return;const now=Date.now();const r={id:uid(),teamId:cloudConnected()?cloudTeam:null,coverageToleranceM:30,code:'REC-'+new Date(now).toISOString().slice(0,10).replaceAll('-','')+'-'+Math.random().toString(36).slice(2,6).toUpperCase(),project:proj,technician:tech,city,kind:$('newKind').value,createdAt:now,startedAt:null,endedAt:null,activeMs:0,legStart:null,status:'ready',segment:0,distance:0,points:[],findings:[],events:[],plannedRoute:null};routes.unshift(r);selected=r;planVisible=true;localStorage.setItem('recorredor-current',r.id);await dbPut(r);queueCloudSync(1000);$('routeForm').reset();closeModal('routeModal');refresh();renderMap();toast('Recorrido creado. Pulsa «Iniciar ruta» para comenzar.')}
+function eventAdd(type,message){selected?.events.push({at:Date.now(),type,message})}
+function startRoute(){if(selected?.cloudReadOnly){toast('Recorrido recuperado en modo consulta. Edítalo desde el dispositivo original.',true);return}if(!selected){newRouteModal();return}if(selected.status==='finished'){toast('Este recorrido ya está finalizado. Crea uno nuevo.',true);return}if(selected.status==='recording')return;if(!('geolocation' in navigator)||!window.isSecureContext){toast('El recorrido necesita GPS y una conexión HTTPS para funcionar.',true);return}if(selected.status==='ready'){selected.startedAt=Date.now();selected.events=[];eventAdd('start','Recorrido iniciado')}else{selected.segment++;eventAdd('resume','Recorrido reanudado')}selected.status='recording';selected.legStart=Date.now();startGpsWatch();saveSoon(true);refresh();toast('Grabación del recorrido activada')}
+function pauseRoute(){if(selected?.status!=='recording')return;selected.activeMs+=Math.max(0,Date.now()-selected.legStart);selected.legStart=null;selected.status='paused';stopGpsWatch();eventAdd('pause','Recorrido pausado');saveSoon(true);refresh();toast('Grabación pausada')}
+function finishRoute(){if(!selected||!['recording','paused'].includes(selected.status))return;if(!confirm('¿Finalizar este recorrido? Se conservarán los hallazgos y el trazado, pero no se podrá reanudar.'))return;if(selected.status==='recording')selected.activeMs+=Math.max(0,Date.now()-selected.legStart);selected.legStart=null;selected.endedAt=Date.now();selected.status='finished';stopGpsWatch();eventAdd('finish','Recorrido finalizado');saveSoon(true);refresh();toast('Recorrido finalizado. Ya puedes generar el reporte.')}
+function changeRoute(r){if(selected?.status==='recording'){toast('Pausa el recorrido en curso antes de cambiar de ruta.',true);return}stopReplay();selected=r;planVisible=r.plannedRouteVisible!==false;localStorage.setItem('recorredor-current',selected.id);closeModal('historyModal');refresh();renderMap();findBounds();}
+function mapCenterCoords(){if(!map)return null;if(googleActive()){const c=map.getCenter();return c?{lat:c.lat(),lng:c.lng()}:null}const c=map.getCenter?.();return c?{lat:c.lat,lng:c.lng}:null}
+function updateAimCoords(){if(!placement||!map)return;const c=mapCenterCoords();if(!c)return;$('aimCoords').textContent=`${Number(c.lat).toFixed(7)}, ${Number(c.lng).toFixed(7)}`}
+function updateFindingGeo(){if(!pickedPoint)return;const origin=pickedPoint.source==='mira'||pickedPoint.source==='mapa'?'Mira central · punto elegido sobre mapa':`GPS${pickedPoint.accuracy!=null?' ±'+Math.round(pickedPoint.accuracy)+' m':''}`;$('findingGeoDetails').innerHTML=`<b>⌖ ${degrees(pickedPoint.lat)}, ${degrees(pickedPoint.lng)}</b><small>${escapeHtml(origin)}</small>`}
+function beginAim(fromForm=false){
+ if(selected?.cloudReadOnly)return toast('Este recorrido es solo de consulta.',true);
+ if(!selected){newRouteModal();return}if(!fromForm&&selected.status==='finished'){toast('Este recorrido ya está cerrado.',true);return}
+ if(!map)return toast('Es necesario cargar el mapa antes de marcar un hallazgo.',true);
+ if(placement)return;
+ clearTimeout(toastTimer);$('toast').classList.remove('show');
+ aimReturnToForm=fromForm;placement=true;
+ if(fromForm)closeModal('findingModal');
+ $('pickBtn').classList.add('selected');$('map').classList.add('map-pick');document.querySelector('.mapzone').classList.add('aiming');
+ // El GPS sitúa la vista cerca del técnico; la precisión definitiva la elige con la mira.
+ const pt=fromForm&&pickedPoint?pickedPoint:currentGps||(selected.findings?.at(-1))||null;
+ if(pt)mapSetView([pt.lat,pt.lng],Math.max(18,mapZoom()));
+ else if(selected?.plannedRoute){fitPlannedRoute()}
+ else if(mapZoom()<16)mapSetView(defaultMapCenter(),16);
+ setTimeout(()=>{document.querySelector('.mapzone').scrollIntoView({behavior:'smooth',block:'start'});map?.invalidateSize?.();updateAimCoords()},120);
+ updateAimCoords();
+}
+function exitAim(){placement=false;document.querySelector('.mapzone').classList.remove('aiming');$('pickBtn').classList.remove('selected');$('map').classList.remove('map-pick');map?.invalidateSize?.();}
+function cancelAim(){if(!placement)return;const returnToForm=aimReturnToForm;exitAim();aimReturnToForm=false;if(returnToForm)openModal('findingModal')}
+function confirmAim(){if(!placement||!map)return;const c=mapCenterCoords();if(!c||!Number.isFinite(c.lat)||!Number.isFinite(c.lng))return toast('No se pudieron leer las coordenadas del centro.',true);
+ const returnToForm=aimReturnToForm;exitAim();aimReturnToForm=false;
+ const pt={lat:c.lat,lng:c.lng,accuracy:null,source:'mira'};
+ if(returnToForm){pickedPoint=pt;updateFindingGeo();openModal('findingModal');toast('Ubicación ajustada con la mira. Guarda el hallazgo para confirmar el cambio.')}else newFinding(pt);
+}
+function aimToGps(){if(!placement||!map)return;const center=p=>{mapSetView([p.lat,p.lng],Math.max(18,mapZoom()));updateAimCoords()};
+ if(currentGps){center(currentGps);return}
+ if(!navigator.geolocation||!window.isSecureContext)return toast('GPS requiere HTTPS y permisos de ubicación. Puedes mover el mapa manualmente.',true);
+ toast('Buscando GPS para acercar la mira…');navigator.geolocation.getCurrentPosition(p=>{const c={lat:p.coords.latitude,lng:p.coords.longitude,accuracy:p.coords.accuracy};recordGps(p);center(c)},()=>toast('GPS no disponible. Mueve el mapa manualmente.',true),{enableHighAccuracy:true,timeout:16000,maximumAge:0});
+}
+function blankFinding(){beginAim(false)}
+function togglePick(){if(placement)cancelAim();else beginAim(false)}
+function newFinding(pt,editing=null){if(!selected||selected.cloudReadOnly){toast('Este recorrido descargado es solo de consulta.',true);return}pickedPoint={lat:Number(pt.lat),lng:Number(pt.lng),accuracy:pt.accuracy??null,source:pt.source||'gps'};editFindingId=editing?.id||null;formPhotos=(editing?.photos||[]).slice();$('findingForm').reset();$('fType').value=editing?.type||'';$('fSeverity').value=editing?.severity||'media';$('fTitle').value=editing?.title||'';$('fDescription').value=editing?.description||'';$('fCondition').value=editing?.condition||'Pendiente';$('fAction').value=editing?.action||'';$('findingModalTitle').textContent=editing?'Editar hallazgo':'Registrar hallazgo';$('deleteFindingBtn').hidden=!editing;updateFindingGeo();paintPhotos();openModal('findingModal')}
+async function compressImage(file){return new Promise((resolve,reject)=>{const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{try{const max=1600,scale=Math.min(1,max/Math.max(img.width,img.height));const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));canvas.getContext('2d',{alpha:false}).drawImage(img,0,0,canvas.width,canvas.height);const data=canvas.toDataURL('image/jpeg',.76);URL.revokeObjectURL(url);resolve({data,width:canvas.width,height:canvas.height})}catch(e){URL.revokeObjectURL(url);reject(e)}};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Imagen dañada o no compatible'))};img.src=url})}
+async function handlePhotos(files){if(photoBusy)return;if(!files?.length)return;photoBusy=true;try{for(const file of Array.from(files)){if(formPhotos.length>=8){toast('Máximo de 8 fotos por hallazgo.',true);break}if(!file.type.startsWith('image/'))continue;try{const photo=await compressImage(file);formPhotos.push({id:uid(),name:file.name||'foto.jpg',at:Date.now(),data:photo.data,width:photo.width,height:photo.height});paintPhotos()}catch(e){toast('No fue posible procesar '+file.name,true)}}}finally{photoBusy=false;$('cameraInput').value='';$('galleryInput').value=''}}
+function paintPhotos(){$('photoGrid').innerHTML=formPhotos.map((p,i)=>`<div class="photoitem"><img src="${p.data}" alt="Foto del hallazgo ${i+1}" /><button type="button" data-delphoto="${escapeHtml(p.id)}" title="Quitar imagen">×</button></div>`).join('')}
+function saveFinding(e){e.preventDefault();if(!selected||!pickedPoint){toast('Falta seleccionar un punto válido.',true);return}const type=$('fType').value, title=$('fTitle').value.trim(), desc=$('fDescription').value.trim();if(!type||!title||!desc)return;if(photoBusy){toast('Espera a que se procesen las fotografías.',true);return}if(!formPhotos.length){toast('Adjunta al menos una fotografía como evidencia.',true);return}const old=selected.findings.find(f=>f.id===editFindingId),now=Date.now();const f={id:old?.id||uid(),number:old?.number||selected.findings.reduce((m,x)=>Math.max(m,x.number||0),0)+1,at:old?.at||now,updatedAt:now,lat:pickedPoint.lat,lng:pickedPoint.lng,accuracy:pickedPoint.accuracy,source:pickedPoint.source,type,title,description:desc,severity:$('fSeverity').value,condition:$('fCondition').value,action:$('fAction').value.trim(),photos:formPhotos.slice()};if(old){selected.findings[selected.findings.indexOf(old)]=f;eventAdd('edit','Hallazgo #'+f.number+' actualizado')}else{selected.findings.push(f);eventAdd('finding','Hallazgo #'+f.number+': '+f.title)}saveSoon(true);closeModal('findingModal');refresh();renderMap();if(map)mapSetView([f.lat,f.lng],Math.max(mapZoom(),16));toast(editFindingId?'Hallazgo actualizado':'Hallazgo registrado y guardado')}
+function deleteFinding(){if(!selected||!editFindingId)return;const item=selected.findings.find(f=>f.id===editFindingId);if(!item||!confirm('¿Eliminar el hallazgo #'+item.number+' y todas sus fotos?'))return;selected.findings=selected.findings.filter(f=>f.id!==editFindingId);eventAdd('edit','Hallazgo #'+item.number+' eliminado');saveSoon(true);closeModal('findingModal');refresh();renderMap();toast('Hallazgo eliminado')}
+function openFinding(id){const f=selected?.findings.find(i=>i.id===id);if(f)newFinding({lat:f.lat,lng:f.lng,accuracy:f.accuracy,source:f.source},f)}
+function gotoFinding(id){const f=selected?.findings.find(i=>i.id===id);if(!f)return;if(map){mapSetView([f.lat,f.lng],18);if(googleActive()){const m=googleFindingMarkers.find(x=>x._findingId===id);if(m)m._infoWindow?.open({map,anchor:m})}else markLayer?.eachLayer(m=>{if(m._findingId===id)m.openPopup()})}else toast('El mapa no está disponible',true)}
+function selectFilter(f){currentFilter=f;document.querySelectorAll('[data-filter]').forEach(el=>el.classList.toggle('active',el.dataset.filter===f));renderFindings()}
+function renderFindings(){const list=$('findingList'),items=(selected?.findings||[]).filter(f=>currentFilter==='todos'||f.severity===currentFilter).sort((a,b)=>b.at-a.at);$('findCount').textContent=selected?.findings.length||0;if(!items.length){list.innerHTML=`<div class="emptyfind"><span class="symbol">⌖</span><b>${selected?.findings.length?'Sin hallazgos para este filtro':'Aún sin hallazgos'}</b><p>Documenta condiciones de la red en puntos precisos con evidencias fotográficas.</p><button id="emptyAddBtn" class="action primary">＋ Agregar hallazgo</button></div>`;$('emptyAddBtn').onclick=blankFinding;return}list.innerHTML=items.map(f=>`<article class="findingcard"><div class="row1"><span class="find-num">#${String(f.number).padStart(2,'0')} · ${escapeHtml(fmtTime(f.at))}</span><span class="sev ${escapeHtml(f.severity)}">${escapeHtml(severityLabel[f.severity]||f.severity)}</span></div><h3>${escapeHtml(f.title)}</h3><p>${escapeHtml(f.type)} · ${escapeHtml(f.condition)}</p><p title="Ir al punto" style="font-family:'Space Grotesk',Arial,sans-serif">⌖ <a href="#" data-goto="${escapeHtml(f.id)}" class="route-link">${degrees(f.lat)}, ${degrees(f.lng)}</a></p><div class="cardfoot">${f.photos?.length?`<img class="mini-photo" src="${f.photos[0].data}" alt="Primera fotografía" />`:''}<span class="mini-photo-count">${(f.photos||[]).length} foto(s)</span><button class="cardbtn" data-goto="${escapeHtml(f.id)}">Ver mapa</button><button class="cardbtn" data-edit="${escapeHtml(f.id)}" style="margin-left:0">Editar</button></div></article>`).join('')}
+function renderMap(){if(!map)return;renderPlanLayer();if(googleActive()){
+ googleOverlays.forEach(o=>o.setMap(null));googleOverlays=[];googleFindingMarkers=[];
+ if(replayMarker){replayMarker.setMap(null);replayMarker=null}
+ if(!selected)return;
+ const segments=new Map();selected.points.forEach(p=>{if(!segments.has(p.segment))segments.set(p.segment,[]);segments.get(p.segment).push({lat:p.lat,lng:p.lng})});
+ segments.forEach(pts=>{if(pts.length<2)return;googleOverlays.push(new google.maps.Polyline({map,path:pts,strokeColor:'#09243a',strokeWeight:10,strokeOpacity:.78,clickable:false}));googleOverlays.push(new google.maps.Polyline({map,path:pts,strokeColor:'#4b9bff',strokeWeight:5,strokeOpacity:1,clickable:false}))});
+ if(selected.points.length){const first=selected.points[0],last=selected.points.at(-1);for(const [p,label,color] of [[first,'Inicio','#59a6ff'],[last,'Último registro','#2bdfb1']])googleOverlays.push(new google.maps.Marker({map,position:{lat:p.lat,lng:p.lng},title:label+': '+fmtDate(p.at),icon:{path:google.maps.SymbolPath.CIRCLE,scale:7,fillColor:color,fillOpacity:1,strokeWeight:2,strokeColor:'#fff'},zIndex:20}))}
+ selected.findings.forEach(f=>{const color=severityColor[f.severity]||'#fff';const m=new google.maps.Marker({map,position:{lat:f.lat,lng:f.lng},title:'#'+f.number+' '+f.title,icon:{path:google.maps.SymbolPath.CIRCLE,scale:14,fillColor:color,fillOpacity:1,strokeWeight:3,strokeColor:'#fff'},label:{text:'!',color:'#1a2233',fontSize:'17px',fontWeight:'bold'},zIndex:100});m._findingId=f.id;
+ const info=new google.maps.InfoWindow();const container=document.createElement('div');container.style.cssText='min-width:170px;color:#152b3a;font:13px sans-serif';const b=document.createElement('b');b.textContent='#'+f.number+' '+f.title;const p=document.createElement('p');p.textContent=severityLabel[f.severity]+' · '+fmtDate(f.at);const a=document.createElement('button');a.textContent='Ver hallazgo';a.style.cssText='border:0;background:#163e4c;padding:8px 10px;color:white;border-radius:6px;cursor:pointer';a.onclick=()=>openFinding(f.id);container.append(b,p,a);info.setContent(container);m._infoWindow=info;m.addListener('click',()=>info.open({map,anchor:m}));googleFindingMarkers.push(m);googleOverlays.push(m)});return}
+ pathLayer?.clearLayers();markLayer?.clearLayers();if(replayMarker){map.removeLayer(replayMarker);replayMarker=null}if(!selected)return;
+ let segments=new Map();selected.points.forEach(p=>{if(!segments.has(p.segment))segments.set(p.segment,[]);segments.get(p.segment).push([p.lat,p.lng])});segments.forEach(pts=>{if(pts.length>=2){L.polyline(pts,{color:'#09243a',weight:10,opacity:.6}).addTo(pathLayer);L.polyline(pts,{color:'#4b9bff',weight:5,opacity:1,lineCap:'round',lineJoin:'round'}).addTo(pathLayer)}});
+ if(selected.points.length){const first=selected.points[0],last=selected.points.at(-1);for(const [p,label,color] of [[first,'Inicio','#59a6ff'],[last,'Último registro','#2bdfb1']]){const circle=L.circleMarker([p.lat,p.lng],{radius:6,weight:2,color:'#fff',fillColor:color,fillOpacity:1}).addTo(pathLayer);circle.bindTooltip(label+': '+fmtDate(p.at),{direction:'top'})}}
+ selected.findings.forEach(f=>{const color=severityColor[f.severity]||'#fff',icon=L.divIcon({className:'',html:`<div class="finding-icon" style="--severity:${color}">!</div>`,iconSize:[29,33],iconAnchor:[15,34]});const m=L.marker([f.lat,f.lng],{icon}).addTo(markLayer);m._findingId=f.id;const container=document.createElement('div');container.style.minWidth='170px';const b=document.createElement('b');b.textContent=`#${f.number} ${f.title}`;const p=document.createElement('p');p.textContent=`${severityLabel[f.severity]} · ${fmtDate(f.at)}`;const a=document.createElement('button');a.textContent='Ver hallazgo';a.style.cssText='border:0;background:#163e4c;padding:8px 10px;color:white;border-radius:6px;cursor:pointer';a.onclick=()=>openFinding(f.id);container.append(b,p,a);m.bindPopup(container)})
+}
+function renderTimeline(){const events=selected?.events||[];$('timeline').innerHTML=events.length?events.slice(-5).reverse().map(x=>`<div class="event"><div class="dot">${x.type==='finding'?'!':x.type==='start'?'▶':x.type==='finish'?'■':x.type==='pause'?'Ⅱ':'↻'}</div><div><b>${escapeHtml(x.message)}</b><p>${escapeHtml(fmtDate(x.at))}</p></div></div>`).join(''):'<div class="emptysmall">Los eventos del recorrido aparecerán aquí.</div>'}
+function refresh(){const r=selected;$('routeCode').textContent=r?.code||'SIN RECORRIDO ACTIVO';$('routeName').textContent=r?.project||'Crea un recorrido para comenzar';$('routeTech').textContent='♙ '+(r?.technician||'—');$('routeCity').textContent='⌖ '+(r?.city||'—');$('routeDate').textContent='▦ '+(r?fmtDate(r.startedAt||r.createdAt):'—');$('routeStatus').textContent={ready:'Sin iniciar',recording:'En recorrido',paused:'En pausa',finished:'Finalizado'}[r?.status]||'Sin iniciar';$('routeStatus').className='status '+(r?.status||'ready');$('startBtn').textContent=r?.status==='paused'?'▶ Reanudar ruta':r?.status==='recording'?'● Grabando ruta':'▶ Iniciar ruta';$('startBtn').disabled=r?.cloudReadOnly||r?.status==='recording'||r?.status==='finished';$('pauseBtn').disabled=r?.cloudReadOnly||r?.status!=='recording';$('finishBtn').disabled=r?.cloudReadOnly||!['recording','paused'].includes(r?.status);$('statDistance').innerHTML=`${fmtDist(r?.distance||0)} <em>km</em>`;$('statTime').textContent=fmtDur(activeMs(r));$('statFindings').textContent=r?.findings.length||0;$('statPoints').textContent=r?.points.length||0;$('mapBannerTitle').textContent=r?`${r.project} · ${r.code}`:'Mapa de inspección de fibra óptica';$('mapBannerText').textContent=r?.status==='recording'?'Ruta activa: registrando puntos GPS con fecha y hora.':r?.status==='paused'?'Ruta en pausa. Puedes documentar hallazgos o reanudar el GPS.':r?.status==='finished'?'Recorrido finalizado. Revisa los puntos y exporta tu informe.':'Inicia tu recorrido para trazar la ruta y documentar hallazgos.';renderFindings();renderTimeline();renderReplay();renderPlanPanel();updateCoverageUI()}
+function renderReplay(){const area=$('replayArea');if(!selected?.points?.length){area.innerHTML='';stopReplay();return}area.innerHTML=`<div class="replay"><div class="replayline"><div><div class="overline">Reproducir trayectoria</div><div class="tiny" style="margin-top:5px">Explora fecha, hora y posición por punto GPS</div></div><button id="playReplay" title="Iniciar o pausar reproducción">${timerReplay?'Ⅱ':'▶'}</button></div><input id="replaySlider" type="range" min="0" max="${selected.points.length-1}" value="${Math.min(replayIndex,selected.points.length-1)}" step="1" /><div class="replayline"><time id="replayTime">${fmtDate(selected.points[Math.min(replayIndex,selected.points.length-1)].at)}</time><span id="replayCounter" class="tiny">${Math.min(replayIndex+1,selected.points.length)} / ${selected.points.length}</span></div><p class="replay-hint">Puedes mover la barra para ubicar un instante de la inspección.</p></div>`;$('replaySlider').oninput=e=>showReplayPoint(+e.target.value);$('playReplay').onclick=toggleReplay;}
+function showReplayPoint(i){if(!selected?.points.length||!map)return;replayIndex=Math.min(Math.max(i,0),selected.points.length-1);const p=selected.points[replayIndex];if(googleActive()){
+ if(!replayMarker)replayMarker=new google.maps.Marker({map,position:{lat:p.lat,lng:p.lng},title:fmtDate(p.at),icon:{path:google.maps.SymbolPath.CIRCLE,scale:11,fillColor:'#ffbf59',fillOpacity:1,strokeColor:'#fff',strokeWeight:3},zIndex:200});else replayMarker.setPosition({lat:p.lat,lng:p.lng});replayMarker.setTitle(fmtDate(p.at)+' · Precisión ±'+Math.round(p.accuracy)+' m')
+ }else{if(!replayMarker)replayMarker=L.circleMarker([p.lat,p.lng],{radius:9,color:'#fff',weight:3,fillColor:'#ffbf59',fillOpacity:1}).addTo(map);else replayMarker.setLatLng([p.lat,p.lng]);replayMarker.bindTooltip(fmtDate(p.at)+' · Precisión ±'+Math.round(p.accuracy)+' m',{direction:'top'}).openTooltip()}
+ mapPanTo([p.lat,p.lng]);$('replayTime').textContent=fmtDate(p.at);$('replayCounter').textContent=`${replayIndex+1} / ${selected.points.length}`;$('replaySlider').value=replayIndex}
+function stopReplay(){if(timerReplay){clearInterval(timerReplay);timerReplay=null}if($('playReplay'))$('playReplay').textContent='▶';}
+function toggleReplay(){if(timerReplay){stopReplay();return}if(!selected?.points.length)return;if(replayIndex>=selected.points.length-1)replayIndex=0;timerReplay=setInterval(()=>{if(!selected || replayIndex>=selected.points.length-1){stopReplay();return}showReplayPoint(replayIndex+1)},400);$('playReplay').textContent='Ⅱ'}
+function renderHistory(){$('historyList').innerHTML=routes.length?routes.slice().sort((a,b)=>b.createdAt-a.createdAt).map(r=>`<div class="history-item"><div><span class="status ${escapeHtml(r.status)}">${escapeHtml({ready:'Sin iniciar',recording:'En curso',paused:'Pausado',finished:'Finalizado'}[r.status])}</span><strong>${escapeHtml(r.project)}</strong><small>${escapeHtml(r.code)} · ${escapeHtml(fmtDate(r.createdAt))}<br>${r.findings.length} hallazgos · ${fmtDist(r.distance)} km</small></div><div class="history-actions"><button class="action" data-openroute="${escapeHtml(r.id)}">Abrir</button><button class="action danger" data-removeroute="${escapeHtml(r.id)}" title="Eliminar recorrido">×</button></div></div>`).join(''):'<div class="emptysmall">Todavía no hay recorridos guardados.</div>'}
+async function removeRoute(id){const r=routes.find(x=>x.id===id);if(!r)return;if(r.status==='recording'){toast('Primero pausa o finaliza esta ruta.',true);return}if(!confirm(`¿Quitar la copia local de ${r.code} con ${r.findings.length} hallazgos? Si ya se sincronizó, permanecerá en Supabase.`))return;await dbDelete(id);routes=routes.filter(x=>x.id!==id);if(selected?.id===id){selected=routes[0]||null;planVisible=selected?.plannedRouteVisible!==false;localStorage.setItem('recorredor-current',selected?.id||'');}renderHistory();refresh();renderMap();toast('Recorrido eliminado')}
+function downloadBlob(name,blob){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000)}
+function filename(ext){return (selected?.code||'recorrido')+'.'+ext}
+function exportJson(){downloadBlob(filename('json'),new Blob([JSON.stringify({application:'RECORREDOR-FO',version:1,exportedAt:new Date().toISOString(),route:selected},null,2)],{type:'application/json'}));toast('Respaldo JSON descargado')}
+function exportGeojson(){const features=[];const grouped={};selected.points.forEach(p=>{if(!grouped[p.segment])grouped[p.segment]=[];grouped[p.segment].push(p)});Object.entries(grouped).forEach(([s,pts])=>{if(pts.length<2)return;features.push({type:'Feature',properties:{tipo:'trazado',routeId:selected.code,segmento:+s,inicio:new Date(pts[0].at).toISOString(),fin:new Date(pts.at(-1).at).toISOString(),timestamps:pts.map(p=>new Date(p.at).toISOString())},geometry:{type:'LineString',coordinates:pts.map(p=>[p.lng,p.lat])}})});selected.findings.forEach(f=>features.push({type:'Feature',properties:{tipo:'hallazgo',id:f.number,titulo:f.title,elemento:f.type,criticidad:f.severity,estado:f.condition,descripcion:f.description,accion:f.action,fecha:new Date(f.at).toISOString(),origen:f.source||'',precision_gps_m:f.accuracy??null,numero_fotos:f.photos.length},geometry:{type:'Point',coordinates:[f.lng,f.lat]}}));if(selected.plannedRoute?.geojson?.features){selected.plannedRoute.geojson.features.forEach(f=>features.push({type:'Feature',properties:{...f.properties,tipo:'tramo_planificado',archivo_origen:selected.plannedRoute.name},geometry:f.geometry}));coverageGeoJSON(selected).features.forEach(f=>features.push(f));}const geo={type:'FeatureCollection',name:selected.code,features};downloadBlob(filename('geojson'),new Blob([JSON.stringify(geo,null,2)],{type:'application/geo+json'}));toast('GeoJSON descargado para GIS')}
+async function importJson(e){
+ const file=e.target.files?.[0];e.target.value='';if(!file)return;
+ if(selected?.status==='recording'){toast('Pausa el recorrido antes de restaurar un respaldo.',true);return}
+ if(file.size>85*1024*1024){toast('Archivo demasiado grande para importar en este navegador.',true);return}
+ try{
+  const raw=JSON.parse(await file.text()),data=raw.route||raw;
+  if(!data||typeof data.project!=='string'||!data.project.trim()||!Array.isArray(data.points)||!Array.isArray(data.findings)){throw new Error('El archivo no contiene un recorrido válido.')}
+  if(data.points.length>200000||data.findings.length>10000)throw new Error('El archivo excede el límite de registros admitidos.');
+  const points=data.points.filter(pt=>Number.isFinite(+pt.lat)&&Number.isFinite(+pt.lng)&&Math.abs(+pt.lat)<=90&&Math.abs(+pt.lng)<=180).map(pt=>({...pt,lat:+pt.lat,lng:+pt.lng,segment:Math.max(0,Math.floor(+pt.segment||0)),at:Number(pt.at)||Date.now()}));
+  const findings=data.findings.filter(f=>Number.isFinite(+f.lat)&&Number.isFinite(+f.lng)&&Math.abs(+f.lat)<=90&&Math.abs(+f.lng)<=180).map((f,i)=>({...f,id:typeof f.id==='string'?f.id:uid(),number:Number(f.number)||i+1,lat:+f.lat,lng:+f.lng,at:Number(f.at)||Date.now(),photos:Array.isArray(f.photos)?f.photos.filter(ph=>typeof ph.data==='string'&&/^data:image\/(jpeg|jpg|png|webp);base64,/i.test(ph.data)).slice(0,8):[],severity:severityLabel[f.severity]?f.severity:'media',type:String(f.type||'Otro hallazgo'),title:String(f.title||'Hallazgo importado'),description:String(f.description||''),condition:String(f.condition||'Pendiente'),action:String(f.action||'')}));
+  const newId=uid();const route={id:newId,code:String(data.code||'REC-IMPORTADO')+'-IMP',project:String(data.project),technician:String(data.technician||'Sin especificar'),city:String(data.city||'Sin especificar'),kind:String(data.kind||'Inspección'),createdAt:Number(data.createdAt)||Date.now(),startedAt:Number(data.startedAt)||null,endedAt:Number(data.endedAt)||null,activeMs:Math.max(0,Number(data.activeMs)||0),legStart:null,status:data.status==='finished'?'finished':'paused',segment:Math.max(0,...points.map(pt=>pt.segment))+1,distance:Math.max(0,Number(data.distance)||0),points,findings,events:Array.isArray(data.events)?data.events.slice(0,100000):[],lastGpsAt:Number(data.lastGpsAt)||null,plannedRoute:importPlannedRoute(data.plannedRoute),plannedRouteVisible:data.plannedRouteVisible!==false};
+  await dbPut(route);routes.unshift(route);selected=route;localStorage.setItem('recorredor-current',newId);queueCloudSync(1400);
+  closeModal('exportModal');refresh();renderMap();findBounds();toast('Respaldo restaurado como un nuevo recorrido.');
+ }catch(err){console.error(err);toast('No se pudo restaurar: '+(err.message||'archivo inválido'),true)}
+}
+function csvCell(s){return '"'+String(s??'').replace(/"/g,'""')+'"'}
+function exportCsv(){const rows=[['Codigo recorrido','Proyecto','Técnico','Ciudad','No. hallazgo','Fecha y hora','Tipo','Título','Criticidad','Estado','Latitud','Longitud','Precisión m','Origen ubicación','Descripción','Acción','Fotos'].map(csvCell).join(';')];selected.findings.forEach(f=>rows.push([selected.code,selected.project,selected.technician,selected.city,f.number,fmtDate(f.at),f.type,f.title,severityLabel[f.severity],f.condition,degrees(f.lat),degrees(f.lng),f.accuracy??'',f.source==='mira'?'Mira central':f.source==='mapa'?'Punto manual':'GPS',f.description,f.action,f.photos.length].map(csvCell).join(';')));downloadBlob(filename('csv'),new Blob(['\ufeff'+rows.join('\r\n')],{type:'text/csv;charset=utf-8'}));toast('CSV descargado')}
+function buildPdf(){if(!window.jspdf?.jsPDF){toast('No cargó la librería PDF. Revisa conexión a internet.',true);return}const r=selected;const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4',compress:true});const W=210,LM=16,RM=16,contentW=W-LM-RM;let y=0;const bg=(x,y,w,h,color)=>{doc.setFillColor(...color);doc.rect(x,y,w,h,'F')};const blue=[16,40,62],green=[0,153,133],grey=[94,112,131];const safe=(v)=>String(v??'').replace(/[\u{1F300}-\u{1FAFF}]/gu,'');
+function page(title,sub){doc.setFillColor(...blue);doc.rect(0,0,210,28,'F');doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(15);doc.text('RECORREDOR FO',LM,13);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text(safe(title),LM,20);doc.setTextColor(40,55,70);doc.setFontSize(9);doc.text(safe(sub||r.code),194,35,{align:'right'});y=42}
+function next(min=14){if(y+min>276){doc.addPage();page('Informe técnico de inspección',r.code)}}
+function textBlock(s,x,w,font=10,line=5){doc.setFont('helvetica','normal');doc.setFontSize(font);const lines=doc.splitTextToSize(safe(s||'—'),w);next(lines.length*line+4);doc.text(lines,x,y);y+=lines.length*line+4}
+function lineLabel(k,v){next(8);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(...grey);doc.text(safe(k),LM,y);doc.setTextColor(...blue);doc.setFont('helvetica','normal');doc.text(safe(v||'—'),70,y);y+=8}
+function heading(t){next(16);doc.setFillColor(232,245,242);doc.roundedRect(LM,y,contentW,10,2,2,'F');doc.setTextColor(12,104,94);doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text(safe(t).toUpperCase(),LM+4,y+6.7);doc.setTextColor(29,49,68);y+=16}
+page('REPORTE TÉCNICO DE RECORRIDO',r.code);
+doc.setTextColor(...blue);doc.setFont('helvetica','bold');doc.setFontSize(16);doc.text(doc.splitTextToSize(safe(r.project),contentW).slice(0,2),LM,y);y+=Math.min(2,doc.splitTextToSize(safe(r.project),contentW).length)*7+4;
+lineLabel('Código:',r.code);lineLabel('Técnico:',r.technician);lineLabel('Ciudad / zona:',r.city);lineLabel('Tipo:',r.kind);lineLabel('Inicio:',fmtDate(r.startedAt));lineLabel('Cierre:',r.endedAt?fmtDate(r.endedAt):'En curso / no finalizado');lineLabel('Estado:',{ready:'Sin iniciar',recording:'En ejecución',paused:'Pausado',finished:'Finalizado'}[r.status]);if(r.plannedRoute){lineLabel('Tramo planeado:',String(r.plannedRoute.name||'Tramo importado').slice(0,58));lineLabel('Long. planificada:',(r.plannedRoute.lengthMeters/1000).toFixed(2)+' km');lineLabel('Long. inspeccionada:',fmtDist(coverageOf(r).meters)+' km');lineLabel('Cobertura:',coverageOf(r).percent.toFixed(1)+' %');}
+heading('Indicadores del recorrido');const metrics=[['DISTANCIA',fmtDist(r.distance)+' km'],['TIEMPO ACTIVO',fmtDur(activeMs(r))],['HALLAZGOS',String(r.findings.length)],['COBERTURA',r.plannedRoute?.segments?coverageOf(r).percent.toFixed(1)+' %':'N/A']];metrics.forEach((m,i)=>{const x=LM+i*45;bg(x,y,42,22,[239,246,252]);doc.setTextColor(...grey);doc.setFontSize(7);doc.setFont('helvetica','bold');doc.text(m[0],x+4,y+7);doc.setTextColor(...blue);doc.setFontSize(13);doc.text(m[1],x+4,y+16)});y+=31;
+heading('Trazado geográfico esquemático');next(72);const X=LM+4,Y=y,WW=contentW-8,HH=55;bg(X,Y,WW,HH,[238,246,250]);const gps=r.points,plannedPts=routeCoordinates(r.plannedRoute),arr=[...gps,...r.findings,...plannedPts];if(arr.length){let latMin=Math.min(...arr.map(p=>p.lat)),latMax=Math.max(...arr.map(p=>p.lat)),lngMin=Math.min(...arr.map(p=>p.lng)),lngMax=Math.max(...arr.map(p=>p.lng));const latPad=Math.max((latMax-latMin)*.15,.0006),lngPad=Math.max((lngMax-lngMin)*.15,.0006);latMin-=latPad;latMax+=latPad;lngMin-=lngPad;lngMax+=lngPad;const scale=p=>[X+8+(p.lng-lngMin)/(lngMax-lngMin)*(WW-16),Y+7+(latMax-p.lat)/(latMax-latMin)*(HH-14)];const groups={};gps.forEach(p=>(groups[p.segment]??=[]).push(p));doc.setDrawColor(240,168,34);doc.setLineWidth(.6);routeLines(r.plannedRoute).forEach(line=>{for(let i=1;i<line.length;i++){const a=scale({lat:line[i-1][1],lng:line[i-1][0]}),b=scale({lat:line[i][1],lng:line[i][0]});doc.line(a[0],a[1],b[0],b[1])}});doc.setDrawColor(20,171,148);doc.setLineWidth(1.2);coverageOf(r).lines.forEach(line=>{for(let i=1;i<line.length;i++){const a=scale({lat:line[i-1][1],lng:line[i-1][0]}),b=scale({lat:line[i][1],lng:line[i][0]});doc.line(a[0],a[1],b[0],b[1])}});doc.setDrawColor(23,94,204);doc.setLineWidth(.45);Object.values(groups).forEach(pts=>{for(let i=1;i<pts.length;i++){const a=scale(pts[i-1]),b=scale(pts[i]);doc.line(a[0],a[1],b[0],b[1])}});r.findings.forEach(f=>{const a=scale(f);const cl=f.severity==='critica'?[235,77,96]:f.severity==='alta'?[243,156,51]:[93,122,157];doc.setFillColor(...cl);doc.circle(a[0],a[1],1.9,'F')});doc.setTextColor(...grey);doc.setFontSize(7);doc.text('Amarillo: previsto | Verde: inspeccionado | Azul: GPS real. Mapa esquematico.',X,Y+HH+5);}else {doc.setTextColor(...grey);doc.text('No se han capturado posiciones GPS.',X+10,Y+27)}y+=69;
+heading('Balance de criticidad');const severities=['critica','alta','media','baja'];textBlock(severities.map(k=>`${severityLabel[k]}: ${r.findings.filter(f=>f.severity===k).length}`).join('       '),LM,contentW,10,5);
+if(!r.findings.length){heading('Hallazgos');textBlock('No se documentaron hallazgos en este recorrido.',LM,contentW,10)}
+for(const f of [...r.findings].sort((a,b)=>a.at-b.at)){next(45);heading('Hallazgo #'+f.number+'  |  '+severityLabel[f.severity]);doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(...blue);const titleLines=doc.splitTextToSize(safe(f.title),contentW);next(titleLines.length*6+3);doc.text(titleLines,LM,y);y+=titleLines.length*6+5;doc.setTextColor(...blue);lineLabel('Tipo:',f.type);lineLabel('Fecha / hora:',fmtDate(f.at));lineLabel('Coordenadas:',degrees(f.lat)+', '+degrees(f.lng));lineLabel('Origen:',f.source==='mira'?'Mira central sobre mapa':f.source==='mapa'?'Marcación sobre mapa':'GPS');lineLabel('Estado:',f.condition);doc.setFont('helvetica','bold');doc.setFontSize(9);doc.text('Descripción técnica:',LM,y);y+=6;textBlock(f.description,LM,contentW,9,4.5);if(f.action){doc.setFont('helvetica','bold');doc.text('Acción recomendada:',LM,y);y+=6;textBlock(f.action,LM,contentW,9,4.5)}if(f.photos?.length){next(14);doc.setFont('helvetica','bold');doc.text(`Evidencia fotográfica (${f.photos.length}):`,LM,y);y+=7;for(const p of f.photos){next(66);try{const rw=(p.width||88)/(p.height||61);let iw=88,ih=iw/rw;if(ih>61){ih=61;iw=ih*rw}doc.addImage(p.data,'JPEG',LM,y,iw,ih,undefined,'FAST');doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...grey);doc.text(fmtDate(p.at),LM+92,y+8);y+=68}catch(err){textBlock('Imagen no disponible para incluir en PDF.',LM,contentW,8)}}}next(10);doc.setDrawColor(213,225,235);doc.line(LM,y,194,y);y+=9}
+const pages=doc.internal.getNumberOfPages();for(let i=1;i<=pages;i++){doc.setPage(i);doc.setTextColor(...grey);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.text('Reporte generado: '+fmtDate(Date.now()),LM,286);doc.text('Página '+i+' de '+pages,194,286,{align:'right'})}doc.save(filename('pdf'));toast('Reporte PDF generado')}
+function runExport(type){if(!selected){toast('Crea o abre un recorrido antes de exportar.',true);return}closeModal('exportModal');try{({pdf:buildPdf,json:exportJson,geojson:exportGeojson,csv:exportCsv})[type]?.()}catch(e){console.error(e);toast('No se pudo crear el archivo: '+e.message,true)}}
+
+// ===== V4 · tramo de inspección importado KMZ / KML / GeoJSON =====
+const PLAN_LIMIT_FILE=20*1024*1024,PLAN_LIMIT_FEATURES=4000,PLAN_LIMIT_VERTICES=90000;
+function planSafeText(v,max=180){return String(v??'').slice(0,max)}
+function planLonLat(lng,lat){const x=Number(lng),y=Number(lat);if(!Number.isFinite(x)||!Number.isFinite(y)||Math.abs(x)>180||Math.abs(y)>90)return null;return [x,y]}
+function cleanedLine(coords,ctx){if(!Array.isArray(coords))return [];const line=[];for(const v of coords){if(ctx.vertices>=PLAN_LIMIT_VERTICES)throw Error('Demasiados vértices (máximo 90.000). Simplifica el archivo en QGIS.');const c=Array.isArray(v)?planLonLat(v[0],v[1]):null;if(c){line.push(c);ctx.vertices++}}return line}
+function sanitizeGeometry(g,ctx){if(!g||typeof g.type!=='string')return null;
+ const t=g.type,c=g.coordinates;
+ if(t==='Point'){const p=Array.isArray(c)?planLonLat(c[0],c[1]):null;if(p)ctx.vertices++;return p?{type:t,coordinates:p}:null}
+ if(t==='MultiPoint'){const ps=cleanedLine(c,ctx);return ps.length?{type:t,coordinates:ps}:null}
+ if(t==='LineString'){const line=cleanedLine(c,ctx);return line.length>1?{type:t,coordinates:line}:null}
+ if(t==='MultiLineString'){const lines=(Array.isArray(c)?c:[]).map(l=>cleanedLine(l,ctx)).filter(l=>l.length>1);return lines.length?{type:t,coordinates:lines}:null}
+ if(t==='Polygon'){const rings=(Array.isArray(c)?c:[]).map(l=>cleanedLine(l,ctx)).filter(l=>l.length>=4);return rings.length?{type:t,coordinates:rings}:null}
+ if(t==='MultiPolygon'){const polys=(Array.isArray(c)?c:[]).map(poly=>(Array.isArray(poly)?poly:[]).map(l=>cleanedLine(l,ctx)).filter(l=>l.length>=4)).filter(p=>p.length);return polys.length?{type:t,coordinates:polys}:null}
+ if(t==='GeometryCollection'){const gs=(Array.isArray(g.geometries)?g.geometries:[]).map(x=>sanitizeGeometry(x,ctx)).filter(Boolean);return gs.length?{type:t,geometries:gs}:null}
+ return null;
+}
+function sanitizeGeoJSON(raw){if(!raw||typeof raw!=='object')throw Error('El documento no contiene geometrías válidas.');
+ const input=raw.type==='FeatureCollection'?raw.features:raw.type==='Feature'?[raw]:[{type:'Feature',properties:{},geometry:raw}];
+ if(!Array.isArray(input)||input.length>PLAN_LIMIT_FEATURES)throw Error('El tramo supera 4.000 elementos; separa o simplifica el archivo.');
+ const ctx={vertices:0};const features=[];
+ for(const f of input){const geometry=sanitizeGeometry(f.geometry,ctx);if(!geometry)continue;const props=f.properties&&typeof f.properties==='object'?f.properties:{};const safe={};for(const [k,v] of Object.entries(props).slice(0,12)){if(typeof v==='string'||typeof v==='number'||typeof v==='boolean')safe[planSafeText(k,50)]=planSafeText(v,200)}features.push({type:'Feature',properties:safe,geometry})}
+ if(!features.length)throw Error('El archivo no contiene puntos, líneas ni polígonos con coordenadas válidas.');return {type:'FeatureCollection',features};
+}
+function readKmlGeometry(xml){const parser=new DOMParser(),doc=parser.parseFromString(xml,'application/xml');if(doc.getElementsByTagName('parsererror').length)throw Error('El KML está dañado o contiene XML inválido.');
+ const out=[];const placemarks=Array.from(doc.getElementsByTagNameNS('*','Placemark'));
+ if(placemarks.length>PLAN_LIMIT_FEATURES)throw Error('El KML contiene demasiados elementos.');
+ const firstTag=(el,name)=>el.getElementsByTagNameNS('*',name)[0];
+ const coordinates=str=>String(str||'').trim().split(/\s+/).filter(Boolean).map(s=>s.split(',').map(Number)).filter(c=>Number.isFinite(c[0])&&Number.isFinite(c[1])).map(c=>[c[0],c[1]]);
+ const makeFeature=(g,props)=>out.push({type:'Feature',properties:props,geometry:g});
+ for(const pm of placemarks){const name=planSafeText(firstTag(pm,'name')?.textContent,150),props={name};let desc=firstTag(pm,'description')?.textContent;if(desc)props.description=planSafeText(desc.replace(/<[^>]*>/g,''),200);
+  for(const d of Array.from(pm.getElementsByTagNameNS('*','Data')).slice(0,10)){const k=planSafeText(d.getAttribute('name'),50),v=firstTag(d,'value')?.textContent?.trim();if(k&&v)props[k]=planSafeText(v,160)}
+  for(const d of Array.from(pm.getElementsByTagNameNS('*','SimpleData')).slice(0,10)){const k=planSafeText(d.getAttribute('name'),50),v=d.textContent?.trim();if(k&&v)props[k]=planSafeText(v,160)}
+  for(const el of Array.from(pm.getElementsByTagNameNS('*','LineString'))){const line=coordinates(firstTag(el,'coordinates')?.textContent);if(line.length>1)makeFeature({type:'LineString',coordinates:line},props)}
+  for(const el of Array.from(pm.getElementsByTagNameNS('*','Point'))){const coords=coordinates(firstTag(el,'coordinates')?.textContent);if(coords.length)makeFeature({type:'Point',coordinates:coords[0]},props)}
+  for(const el of Array.from(pm.getElementsByTagNameNS('*','Polygon'))){const outer=firstTag(el,'outerBoundaryIs'),outerLine=coordinates(outer?firstTag(outer,'coordinates')?.textContent:'');if(outerLine.length<4)continue;const rings=[outerLine];for(const inner of Array.from(el.getElementsByTagNameNS('*','innerBoundaryIs'))){const c=coordinates(firstTag(inner,'coordinates')?.textContent);if(c.length>=4)rings.push(c)}makeFeature({type:'Polygon',coordinates:rings},props)}
+  for(const el of Array.from(pm.getElementsByTagNameNS('*','Track'))){const cs=Array.from(el.getElementsByTagNameNS('*','coord')).map(n=>String(n.textContent||'').trim().split(/\s+/).map(Number)).filter(c=>Number.isFinite(c[0])&&Number.isFinite(c[1])).map(c=>[c[0],c[1]]);if(cs.length>1)makeFeature({type:'LineString',coordinates:cs},props)}
+ }
+ if(!out.length)throw Error('No se encontraron geometrías en el KML. Verifica que contenga líneas o puntos.');return {type:'FeatureCollection',features:out};
+}
+function routeLines(planned){if(!planned?.geojson?.features)return [];const out=[];function add(g){if(!g)return;const c=g.coordinates;if(g.type==='LineString')out.push(c);else if(g.type==='MultiLineString')out.push(...c);else if(g.type==='GeometryCollection')g.geometries?.forEach(add)}planned.geojson.features.forEach(f=>add(f.geometry));return out}
+function routeCoordinates(planned){if(!planned?.geojson?.features)return [];const out=[];const visit=(g)=>{if(!g)return;const c=g.coordinates;
+ const push=p=>{if(Array.isArray(p)&&Number.isFinite(p[0])&&Number.isFinite(p[1]))out.push({lat:p[1],lng:p[0]})};
+ if(g.type==='Point')push(c);else if(g.type==='MultiPoint'||g.type==='LineString')c.forEach(push);else if(g.type==='MultiLineString'||g.type==='Polygon')c.forEach(l=>l.forEach(push));else if(g.type==='MultiPolygon')c.forEach(poly=>poly.forEach(l=>l.forEach(push)));else if(g.type==='GeometryCollection')g.geometries?.forEach(visit)};
+ planned.geojson.features.forEach(f=>visit(f.geometry));return out;
+}
+function routeStats(geojson){const p={geojson};const lines=routeLines(p);let length=0;for(const l of lines)for(let i=1;i<l.length;i++)length+=distMeters({lat:l[i-1][1],lng:l[i-1][0]},{lat:l[i][1],lng:l[i][0]});return {lengthMeters:length,segments:lines.reduce((n,l)=>n+l.length-1,0),features:geojson.features.length,points:routeCoordinates(p).length}}
+function importPlannedRoute(raw){if(!raw)return null;try{const geojson=sanitizeGeoJSON(raw.geojson||raw);const st=routeStats(geojson);return {name:planSafeText(raw.name||'Tramo importado',130),importedAt:Number(raw.importedAt)||Date.now(),geojson,...st}}catch(e){console.warn('Tramo importado inválido',e);return null}}
+async function loadPlanFile(event){const file=event.target.files?.[0];event.target.value='';if(!file||!selected)return;if(selected.cloudReadOnly){toast('Recorrido descargado en modo consulta.',true);return}if(selected.status==='finished'){toast('No se puede editar un recorrido finalizado.',true);return}if(file.size>PLAN_LIMIT_FILE){toast('El archivo supera 20 MB. Simplifícalo antes de cargarlo.',true);return}
+ const route=selected,ext=file.name.split('.').at(-1).toLowerCase();if(!['kmz','kml','geojson','json'].includes(ext)){toast('Utiliza KMZ, KML o GeoJSON.',true);return}
+ $('loadPlanBtn').disabled=true;$('loadPlanBtn').textContent='Cargando…';
+ try{let raw;
+  if(ext==='kmz'){
+    if(typeof JSZip==='undefined')throw Error('No cargó el lector KMZ. Comprueba tu conexión a Internet.');
+    const zip=await JSZip.loadAsync(file);const kml=Object.values(zip.files).filter(f=>!f.dir&&/\.kml$/i.test(f.name)).sort((a,b)=>Number(/(^|\/)doc\.kml$/i.test(b.name))-Number(/(^|\/)doc\.kml$/i.test(a.name)))[0];if(!kml)throw Error('El archivo KMZ no contiene ningún documento KML.');
+    const xml=await kml.async('string');if(xml.length>22*1024*1024)throw Error('El KML comprimido ocupa más de 22 MB. Simplifícalo.');raw=readKmlGeometry(xml);
+  }else if(ext==='kml')raw=readKmlGeometry(await file.text());
+  else raw=JSON.parse(await file.text());
+  const geojson=sanitizeGeoJSON(raw),st=routeStats(geojson);
+  if(selected!==route)throw Error('Cambiaste de recorrido durante la carga. Vuelve a intentarlo.');
+  if(route.plannedRoute&&!confirm('¿Reemplazar el tramo planificado actual? No se borrarán hallazgos ni registros GPS.'))return;
+  route.plannedRoute={name:planSafeText(file.name,130),importedAt:Date.now(),geojson,...st};planVisible=true;route.plannedRouteVisible=true;eventAdd('planned','Tramo cargado: '+route.plannedRoute.name);await dbPut(route);queueCloudSync(1000);refresh();renderMap();fitPlannedRoute();updatePlanGuidance();toast('Tramo cargado: '+st.features+' elementos.');
+  if(!st.segments)toast('Archivo cargado. Contiene puntos o polígonos, pero no líneas para calcular distancia a la ruta.');
+ }catch(e){console.error('Importar tramo:',e);toast('No se pudo cargar el tramo: '+(e.message||'archivo inválido'),true)}finally{$('loadPlanBtn').disabled=false;$('loadPlanBtn').textContent='＋ Cargar tramo'}
+}
+function renderPlanPanel(){const p=selected?.plannedRoute;const has=!!p;$('planBadge').textContent=has?'✓ Tramo cargado':'Sin archivo';$('planStatus').innerHTML=has?`<div class="plan-name">${escapeHtml(p.name)}</div><span>Cargado ${escapeHtml(fmtDate(p.importedAt))} · ${planVisible?'Visible en el mapa':'Capa oculta'}</span>`:'Carga el KMZ, KML o GeoJSON que define el tramo a inspeccionar. Aparecerá en amarillo sobre el mapa.';
+ $('planMetrics').style.display=has?'flex':'none';if(has)$('planMetrics').innerHTML=`<span>Longitud de líneas: <b>${fmtDist(p.lengthMeters||0)} km</b></span><span>Elementos: <b>${p.features??p.geojson.features.length}</b></span>`;
+ $('fitPlanBtn').disabled=!has;$('togglePlanBtn').disabled=!has;$('removePlanBtn').disabled=!has||selected?.cloudReadOnly||selected?.status==='finished';$('loadPlanBtn').disabled=!selected||selected.cloudReadOnly||selected.status==='finished';$('togglePlanBtn').textContent=planVisible?'◉ Ocultar':'◯ Mostrar';updatePlanGuidance();
+}
+function fitPlannedRoute(){if(!map||!selected?.plannedRoute)return toast('Carga primero un tramo.',true);const pts=routeCoordinates(selected.plannedRoute);if(!pts.length)return toast('No hay coordenadas válidas en el tramo.',true);if(pts.length===1){mapSetView([pts[0].lat,pts[0].lng],17);return}
+ const bounds=L.latLngBounds(pts.map(p=>[p.lat,p.lng]));map.fitBounds(bounds.pad(.13),{maxZoom:18,padding:[28,28]});
+}
+function togglePlanVisibility(){if(!selected?.plannedRoute)return;planVisible=!planVisible;selected.plannedRouteVisible=planVisible;saveSoon();renderPlanPanel();renderPlanLayer();}
+function removePlannedRoute(){if(!selected?.plannedRoute||selected.cloudReadOnly)return;if(!confirm('¿Quitar el tramo planificado de este recorrido? El GPS, los hallazgos y las fotos no se modificarán.'))return;selected.plannedRoute=null;eventAdd('planned','Tramo planificado retirado');saveSoon(true);renderPlanPanel();renderPlanLayer();renderTimeline();toast('Tramo retirado; el recorrido GPS sigue intacto.');}
+function planPopup(f){const props=f.properties||{};const name=planSafeText(props.name||props.nombre||props.Name||'Elemento del tramo',110);const details=Object.entries(props).filter(([k,v])=>k!=='name'&&k!=='Name'&&k!=='nombre'&&v).slice(0,4).map(([k,v])=>`<div><b>${escapeHtml(k)}:</b> ${escapeHtml(planSafeText(v,100))}</div>`).join('');return `<b>${escapeHtml(name)}</b>${details?'<hr>'+details:''}`;}
+function renderPlanLayer(){if(!map)return;if(planLayer)planLayer.clearLayers();if(googleActive()){planGoogleOverlays.forEach(o=>o.setMap(null));planGoogleOverlays=[];}
+ const planned=selected?.plannedRoute;if(!planned||!planVisible)return;
+ const st={color:'#ffca62',weight:5,opacity:1};
+ if(googleActive())return; // Motor de RECORREDOR V4: Leaflet, como PDR Mapping.
+ const toLayer=(geo)=>L.geoJSON(geo,{style:f=>f.geometry.type.includes('Polygon')?{color:'#ffce72',weight:2,opacity:.85,fillColor:'#ffca62',fillOpacity:.1}:st,pointToLayer:(feature,latlng)=>L.circleMarker(latlng,{radius:6,color:'#fff',weight:2,fillColor:'#ffbf52',fillOpacity:1}),onEachFeature:(f,layer)=>{layer.bindPopup(planPopup(f));if(f.geometry.type==='Point')layer.bindTooltip(planSafeText(f.properties?.name||'',65),{direction:'top'});}});
+ // Dos pasadas: trazo de halo oscuro + línea visible punteada, y puntos por encima
+ for(const f of planned.geojson.features){if(f.geometry.type==='LineString'||f.geometry.type==='MultiLineString'){
+  const g=toLayer(f);g.setStyle({color:'#152237',weight:9,opacity:.86});g.addTo(planLayer);
+  const line=toLayer(f);line.setStyle({color:'#ffce69',weight:5,opacity:1,dashArray:'12 7',lineCap:'round'});line.addTo(planLayer);
+ }else toLayer(f).addTo(planLayer)}
+ // La cobertura es otra capa visual: verde para metros visitados, amarillo para pendientes.
+ const coverage=coverageOf(selected);
+ for(const line of coverage.lines){if(line.length>=2)L.polyline(line.map(c=>[c[1],c[0]]),{color:'#08ecab',weight:7,opacity:1,lineCap:'round',lineJoin:'round'}).addTo(planLayer)}
+ const lines=routeLines(planned).filter(l=>l.length>1);if(lines.length===1){const line=lines[0];const mk=(c,label,style)=>L.marker([c[1],c[0]],{icon:L.divIcon({className:'',html:`<div class="plan-endpoint ${style}">${label}</div>`,iconSize:[21,21],iconAnchor:[10,10]})}).addTo(planLayer);mk(line[0],'A','');mk(line.at(-1),'B','b')}
+}
+function distanceToPolylineMeters(pos,line){if(line.length<2)return Infinity;const latRad=pos.lat*Math.PI/180,scaleX=111320*Math.cos(latRad),scaleY=110574;let min=Infinity;
+ for(let i=1;i<line.length;i++){const a=line[i-1],b=line[i],ax=(a[0]-pos.lng)*scaleX,ay=(a[1]-pos.lat)*scaleY,bx=(b[0]-pos.lng)*scaleX,by=(b[1]-pos.lat)*scaleY,dx=bx-ax,dy=by-ay,den=dx*dx+dy*dy;const t=den?Math.max(0,Math.min(1,-(ax*dx+ay*dy)/den)):0,d=Math.hypot(ax+t*dx,ay+t*dy);if(d<min)min=d}
+ return min;
+}
+function updatePlanGuidance(){const el=$('planGuidance');if(!el)return;const p=selected?.plannedRoute;if(!p){el.className='plan-guidance none';el.textContent='📍 Carga el tramo y podrás consultar tu distancia al trazado.';return}if(!p.segments){el.className='plan-guidance none';el.textContent='El archivo contiene elementos geográficos, pero no una línea de ruta para calcular distancia.';return}if(!currentGps){el.className='plan-guidance none';el.textContent='⌖ Esperando señal GPS para calcular la distancia al tramo.';return}if(currentGps.accuracy>100){el.className='plan-guidance none';el.textContent='GPS impreciso (±'+Math.round(currentGps.accuracy)+' m). Espera mejor señal para verificar si estás sobre el tramo.';return}
+ let closest=Infinity;for(const line of routeLines(p))closest=Math.min(closest,distanceToPolylineMeters(currentGps,line));const rounded=Math.round(closest);
+ el.className='plan-guidance'+(closest>75?' far':'');el.textContent=closest>75?`⚠ Estás a unos ${rounded} m del tramo planificado. Comprueba tu ubicación.`:`✓ Estás aproximadamente a ${rounded} m de la ruta prevista.`;
+}
+
+// ===== V5 · cobertura real del tramo (muestreo geodésico + prueba contra traza GPS) =====
+// Una visita repetida a un segmento no aumenta el porcentaje. No se considera
+// inspeccionado un tramo por pasar cerca de un único punto GPS aislado.
+const COV_SAMPLE_M=12;
+const COV_MAX_SAMPLES=28000;
+let coverageCache={key:'',result:null};
+function coverageOf(r,force=false){
+ const plan=r?.plannedRoute;
+ if(!plan?.segments || !plan?.lengthMeters)return {percent:0,meters:0,total:plan?.lengthMeters||0,lines:[],reason:'Sin línea planificada'};
+ const tol=Math.max(10,Math.min(100,Number(r.coverageToleranceM)||30));
+ const points=(r.points||[]), last=points.at(-1);
+ const key=String(r.id)+'|'+String(plan.importedAt)+'|'+points.length+'|'+String(last?.at||0)+'|'+tol;
+ if(!force && coverageCache.key===key)return coverageCache.result;
+ const lines=routeLines(plan).filter(l=>l.length>1);
+ const reference=routeCoordinates(plan)[0]||{lat:4,lng:-74};
+ const latRef=reference.lat*Math.PI/180,cos=Math.max(.12,Math.cos(latRef));
+ const XY=c=>({x:Number(c[0])*111320*cos,y:Number(c[1])*110574});
+ const gpsXY=p=>({x:Number(p.lng)*111320*cos,y:Number(p.lat)*110574});
+ const step=Math.max(COV_SAMPLE_M,(plan.lengthMeters||1)/COV_MAX_SAMPLES);
+ const cell=Math.max(80,tol*3),grid=new Map();
+ const cellId=(ix,iy)=>`${ix}|${iy}`;
+ const addGrid=(seg)=>{
+  const pad=tol+3; const minx=Math.floor((Math.min(seg.a.x,seg.b.x)-pad)/cell),maxx=Math.floor((Math.max(seg.a.x,seg.b.x)+pad)/cell),miny=Math.floor((Math.min(seg.a.y,seg.b.y)-pad)/cell),maxy=Math.floor((Math.max(seg.a.y,seg.b.y)+pad)/cell);
+  // Nunca indexar saltos kilométricos en caso de GPS defectuoso.
+  if((maxx-minx+1)*(maxy-miny+1)>100)return;
+  for(let x=minx;x<=maxx;x++)for(let y=miny;y<=maxy;y++){const id=cellId(x,y);if(!grid.has(id))grid.set(id,[]);grid.get(id).push(seg)};
+ };
+ // Se usan pares GPS válidos contiguos en el MISMO segmento temporal.
+ // No se dibujan líneas de cobertura a través de pausas, túneles de señal o saltos.
+ for(let i=1;i<points.length;i++){
+  const a=points[i-1],b=points[i];
+  if(a.segment!==b.segment||Math.max(Number(a.accuracy)||999,Number(b.accuracy)||999)>60)continue;
+  const dt=(Number(b.at)-Number(a.at))/1000,dist=distMeters(a,b);
+  if(dt<=0||dt>180||dist>180||dist<1)continue;
+  addGrid({a:gpsXY(a),b:gpsXY(b)});
+ }
+ const sampleCovered=(p,s,planDir)=>{
+  const dx=s.b.x-s.a.x,dy=s.b.y-s.a.y,den=dx*dx+dy*dy;
+  if(den<4)return false;
+  // El GPS debe avanzar sensiblemente paralelo al cable; cruzarlo no inspecciona
+  // los metros a ambos lados de la intersección.
+  const len=Math.sqrt(den),plen=Math.hypot(planDir.x,planDir.y);
+  if(plen>1&&Math.abs(dx*planDir.x+dy*planDir.y)/(len*plen)<.5)return false;
+  const t=((p.x-s.a.x)*dx+(p.y-s.a.y)*dy)/den;
+  // Aceptar poco margen longitudinal fuera de los extremos GPS; el margen
+  // lateral sí corresponde a la tolerancia configurable (15 a 60 m).
+  const extension=Math.min(6,tol*.2)/len;
+  if(t< -extension||t>1+extension)return false;
+  const q=Math.max(0,Math.min(1,t));
+  return Math.hypot(p.x-(s.a.x+q*dx),p.y-(s.a.y+q*dy))<=tol;
+ };
+ const checkedSegments=[],sampledLines=[];let total=0,covered=0;
+ for(const line of lines){
+  const run=[];let current=[];
+  for(let i=1;i<line.length;i++){
+   const a=line[i-1],b=line[i],length=distMeters({lat:a[1],lng:a[0]},{lat:b[1],lng:b[0]});
+   if(!(length>0))continue;
+   const n=Math.max(1,Math.ceil(length/step)),ax=XY(a),bx=XY(b);
+   for(let k=0;k<n;k++){
+    const t=(k+.5)/n,p={x:ax.x+(bx.x-ax.x)*t,y:ax.y+(bx.y-ax.y)*t};
+    const nearby=grid.get(cellId(Math.floor(p.x/cell),Math.floor(p.y/cell)))||[];
+    const hit=nearby.some(seg=>sampleCovered(p,seg,{x:bx.x-ax.x,y:bx.y-ax.y}));
+    const left=[a[0]+(b[0]-a[0])*k/n,a[1]+(b[1]-a[1])*k/n];
+    const right=[a[0]+(b[0]-a[0])*(k+1)/n,a[1]+(b[1]-a[1])*(k+1)/n];
+    const w=length/n;total+=w;if(hit)covered+=w;
+    if(hit){if(!current.length)current.push(left);current.push(right)}
+    else if(current.length){if(current.length>=2)run.push(current);current=[]}
+   }
+  }
+  if(current.length>=2)run.push(current);
+  sampledLines.push(...run);
+ }
+ const pct=total?Math.max(0,Math.min(100,100*covered/total)):0;
+ const result={percent:Math.round(pct*100)/100,meters:Math.round(covered),total:Math.round(total),lines:sampledLines,tolerance:tol,
+   sampleStep:Math.round(step*10)/10,reason:points.length<2?'Se necesitan al menos dos puntos GPS conectados.':null};
+ coverageCache={key,result};return result;
+}
+function coverageGeoJSON(r){const c=coverageOf(r);return {type:'FeatureCollection',features:c.lines.map((line,i)=>({type:'Feature',properties:{tipo:'tramo_inspeccionado',segmento:i+1,recorrido:r.code,tolerancia_m:c.tolerance},geometry:{type:'LineString',coordinates:line}}))}}
+function updateCoverageUI(){const r=selected,p=r?.plannedRoute,c=coverageOf(r);
+ $('coveragePct').textContent=p?.segments?c.percent.toFixed(1)+' %':'— %';
+ $('coverageBar').style.width=p?.segments?c.percent+'%':'0%';
+ $('coverageMeters').textContent=p?.segments?`${fmtDist(c.meters)} / ${fmtDist(c.total)} km de red inspeccionada`:'Carga un tramo con líneas para medir cobertura';
+ $('coverageNote').textContent=p?.segments?`GPS contrastado con la red (margen ${c.tolerance} m; muestreo ≈${c.sampleStep} m). El paso repetido no suma.`:'Los puntos y polígonos sin trazado de línea no producen porcentaje.';
+ $('coverageTolerance').value=String(r?.coverageToleranceM||30);
+}
+function changeCoverageTolerance(e){if(!selected)return;selected.coverageToleranceM=Number(e.target.value)||30;coverageCache.key='';saveSoon(true);updateCoverageUI();renderPlanLayer();}
+
+// ===== V5 · Supabase Auth, sincronización y gestión de equipos =====
+const CLOUD_CONFIG_KEY='recorredor-fo-supabase-v5';
+let cloudClient=null,cloudUser=null,cloudTeam='',cloudTeams=[],cloudRunning=false,cloudAgain=false,cloudSyncTimer=null,cloudStatus='Local';
+function configCloud(){try{return JSON.parse(localStorage.getItem(CLOUD_CONFIG_KEY)||'{}')}catch(_){return {}}}
+function cloudConnected(){return !!(cloudClient&&cloudUser&&cloudTeam)}
+function cloudBadge(message){cloudStatus=message;$('cloudState').textContent=message;$('cloudSmall').textContent=cloudUser?`${cloudUser.email||'Sesión activa'} · ${cloudTeams.find(x=>x.id===cloudTeam)?.nombre||'Sin equipo'}`:'Sin sesión · datos locales';}
+function cloudError(error){const message=String(error?.message||error||'Error desconocido');console.error('Supabase RECORREDOR:',error);cloudBadge('⚠ Sin sincronizar');toast('Supabase: '+message.slice(0,155),true)}
+function cloudUUID(record,field='cloudId'){
+ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+ if(uuid.test(record[field]||''))return record[field];
+ record[field]=uuid.test(record.id||'')?record.id:crypto.randomUUID();return record[field];
+}
+async function cloudInit(){
+ const cfg=configCloud();cloudTeam=cfg.team||'';
+ if(!cfg.url||!cfg.key)return cloudBadge('Solo local · Configurar nube');
+ if(!window.supabase?.createClient){cloudBadge('Librería Supabase no disponible');return;}
+ try{
+  const u=new URL(cfg.url);if(u.protocol!=='https:'||!u.hostname.endsWith('.supabase.co'))throw Error('URL incorrecta: utiliza https://...supabase.co');
+  cloudClient=window.supabase.createClient(u.origin,cfg.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+  const {data,error}=await cloudClient.auth.getSession();if(error)throw error;
+  cloudUser=data.session?.user||null;
+  if(cloudUser)await cloudLoadTeams();else cloudBadge('Sin sesión · Iniciar sesión');
+  cloudClient.auth.onAuthStateChange((event,session)=>{cloudUser=session?.user||null;setTimeout(()=>{if(cloudUser)cloudLoadTeams().catch(cloudError);else{cloudTeams=[];cloudTeam='';cloudBadge('Sin sesión')}} ,0)});
+ }catch(e){cloudClient=null;cloudError(e)}
+}
+function cloudSettings(){
+ const c=configCloud();$('cloudUrl').value=c.url||'';$('cloudAnon').value=c.key||'';
+ $('cloudEmail').value=cloudUser?.email||'';$('cloudPass').value='';
+ $('cloudUserText').textContent=cloudUser?`Conectado como ${cloudUser.email}`:'Sin iniciar sesión';
+ $('cloudLogin').disabled=!cloudClient;$('cloudSignup').disabled=!cloudClient;
+ $('cloudLogout').disabled=!cloudUser;
+ $('cloudInviteBox').hidden=!cloudConnected();
+ cloudRenderTeams();openModal('cloudModal');
+}
+async function cloudSaveConfig(){
+ const url=$('cloudUrl').value.trim().replace(/\/+$/,''),key=$('cloudAnon').value.trim();
+ if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)||!key||key.toLowerCase().includes('service_role'))return toast('Introduce la URL de tu proyecto y la clave publicable/anon (NO service_role).',true);
+ localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify({url,key,team:cloudTeam}));
+ if(cloudClient){try{await cloudClient.auth.signOut()}catch(_){}}
+ cloudClient=null;cloudUser=null;cloudTeam='';await cloudInit();
+ cloudSettings();toast('Conexión configurada. Ingresa con una cuenta Supabase Auth.');
+}
+async function cloudAuth(mode){if(!cloudClient)return toast('Guarda primero los datos de conexión.',true);
+ const email=$('cloudEmail').value.trim(),password=$('cloudPass').value;
+ if(!email||!password)return toast('Ingresa correo y contraseña.',true);
+ try{
+  const res=mode==='signup'?await cloudClient.auth.signUp({email,password}):await cloudClient.auth.signInWithPassword({email,password});
+  if(res.error)throw res.error;
+  cloudUser=res.data.user||res.data.session?.user||null;
+  if(mode==='signup'&&!res.data.session){toast('Cuenta creada. Confirma el enlace enviado a tu correo y luego inicia sesión.');return}
+  await cloudLoadTeams();cloudSettings();toast('Sesión iniciada correctamente.');
+ }catch(e){cloudError(e)}finally{$('cloudPass').value=''}
+}
+async function cloudSignOut(){if(!cloudClient)return;await cloudClient.auth.signOut();cloudUser=null;cloudTeam='';cloudTeams=[];cloudBadge('Sin sesión');cloudSettings();toast('Sesión cerrada. Las copias locales permanecen.')}
+async function cloudLoadTeams(){
+ if(!cloudClient||!cloudUser)return;
+ const {data,error}=await cloudClient.from('rec_equipos').select('id,nombre,creado_por').order('nombre');if(error)throw error;
+ cloudTeams=data||[];
+ if(!cloudTeams.some(t=>t.id===cloudTeam))cloudTeam=cloudTeams[0]?.id||'';
+ const c=configCloud();localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify({...c,team:cloudTeam}));
+ cloudBadge(cloudTeam?'☁ Nube conectada':'Crea o solicita acceso a un equipo');cloudRenderTeams();
+ if(cloudConnected()){queueCloudSync(3000)}
+}
+function cloudRenderTeams(){const el=$('cloudTeamSelect');if(!el)return;el.replaceChildren(new Option('Selecciona equipo…',''));
+ cloudTeams.forEach(t=>el.add(new Option(t.nombre,t.id)));el.value=cloudTeam;
+ $('cloudTeamCreate').disabled=!cloudUser;$('cloudSyncAll').disabled=!cloudConnected();$('cloudDownload').disabled=!cloudConnected();$('cloudGeneral').disabled=!cloudConnected();
+ $('cloudInviteBox').hidden=!cloudConnected();$('cloudUserText').textContent=cloudUser?`Conectado como ${cloudUser.email}`:'Sin iniciar sesión';
+}
+async function cloudCreateTeam(){if(!cloudClient||!cloudUser)return toast('Primero inicia sesión.',true);
+ const name=$('cloudTeamName').value.trim();if(name.length<2)return toast('Escribe el nombre del equipo.',true);
+ const {data,error}=await cloudClient.from('rec_equipos').insert({nombre:name,creado_por:cloudUser.id}).select('id').single();if(error)return cloudError(error);
+ cloudTeam=data.id;await cloudLoadTeams();cloudSettings();$('cloudTeamName').value='';toast('Equipo creado. Ahora puedes agregar técnicos por correo.');
+}
+async function cloudAddMember(){if(!cloudConnected())return;
+ const email=$('cloudInviteEmail').value.trim(),role=$('cloudInviteRole').value;if(!email)return toast('Indica el correo de un usuario ya registrado.',true);
+ const {data,error}=await cloudClient.rpc('rec_agregar_miembro',{p_equipo:cloudTeam,p_correo:email,p_rol:role});
+ if(error)return cloudError(error);$('cloudInviteEmail').value='';toast(data||'Técnico agregado al equipo.');
+}
+function queueCloudSync(ms=1700){if(!cloudConnected()||!routes?.length)return;clearTimeout(cloudSyncTimer);cloudSyncTimer=setTimeout(()=>cloudSyncAll(false).catch(cloudError),ms)}
+function cloudAsDate(ms){return ms?new Date(Number(ms)).toISOString():null}
+function cloudDataFromRoute(r){
+ const coverage=coverageOf(r);
+ return {id:cloudUUID(r),equipo_id:r.teamId||cloudTeam,creado_por:r.cloudOwner||cloudUser.id,
+  codigo:r.code,proyecto:r.project,tecnico:r.technician,ciudad:r.city,tipo:r.kind||'',estado:r.status,
+  creado_en:cloudAsDate(r.createdAt),inicio:cloudAsDate(r.startedAt),fin:cloudAsDate(r.endedAt),
+  tiempo_activo_ms:Math.round(activeMs(r)),distancia_gps_m:r.distance||0,
+  tramo_nombre:r.plannedRoute?.name||null,tramo_geojson:r.plannedRoute?.geojson||null,
+  tramo_longitud_m:coverage.total||0,inspeccionado_m:coverage.meters||0,avance_pct:coverage.percent||0,
+  tolerancia_m:coverage.tolerance||r.coverageToleranceM||30,cobertura_geojson:coverageGeoJSON(r),
+  hallazgos_total:r.findings.length,
+  detalle:{events:r.events,segment:r.segment,lastGpsAt:r.lastGpsAt||null,plannedImportedAt:r.plannedRoute?.importedAt||null,plannedRouteVisible:r.plannedRouteVisible!==false}
+ };
+}
+async function cloudPhotoUpload(r,f,p){
+ if(p.path)return p.path;
+ if(!p.data||!p.data.startsWith('data:image/'))throw Error('Foto local no disponible para subir: '+(p.name||'foto'));
+ const key=`${r.teamId}/${cloudUUID(r)}/${cloudUUID(f)}/${cloudUUID(p)}.jpg`;
+ const data=Uint8Array.from(atob(p.data.split(',')[1]),ch=>ch.charCodeAt(0));
+ const {error}=await cloudClient.storage.from('recorredor-evidencias').upload(key,new Blob([data],{type:'image/jpeg'}),{contentType:'image/jpeg',upsert:false});
+ if(error && !/already exists|duplicate|409/i.test(error.message||''))throw error;
+ p.path=key;return key;
+}
+async function cloudSyncRoute(r){
+ const syncStartedAt=Date.now();
+ // El primer envío fija el equipo del recorrido para evitar mover registros entre equipos.
+ if(r.teamId && r.teamId!==cloudTeam)return;
+ r.teamId=cloudTeam;
+ const data=cloudDataFromRoute(r);
+ let result=await cloudClient.from('rec_recorridos').upsert(data,{onConflict:'id'});
+ if(result.error)throw result.error;
+ const start=Math.min(r.cloudUploadedPoints||0,r.points.length),chunk=350;
+ for(let i=start;i<r.points.length;i+=chunk){
+  const rows=r.points.slice(i,i+chunk).map((p,j)=>({recorrido_id:cloudUUID(r),secuencia:i+j,
+   segmento:p.segment||0,latitud:p.lat,longitud:p.lng,precision_m:p.accuracy||null,registrado_en:cloudAsDate(p.at)}));
+  const {error}=await cloudClient.from('rec_puntos').upsert(rows,{onConflict:'recorrido_id,secuencia'});if(error)throw error;
+  r.cloudUploadedPoints=Math.min(i+chunk,r.points.length);
+ }
+ const incoming=[];
+ for(const f of r.findings){
+  const photos=[];
+  for(const p of f.photos||[]){const path=await cloudPhotoUpload(r,f,p);
+   photos.push({id:cloudUUID(p),name:p.name||'foto.jpg',at:p.at||Date.now(),path,width:p.width||null,height:p.height||null})}
+  incoming.push({id:cloudUUID(f),recorrido_id:cloudUUID(r),numero:f.number||0,
+   registrado_en:cloudAsDate(f.at),latitud:f.lat,longitud:f.lng,precision_m:f.accuracy??null,
+   origen:f.source||null,tipo:f.type||'Otro',titulo:f.title||'Hallazgo',descripcion:f.description||'',
+   severidad:f.severity||'media',estado:f.condition||'Pendiente',accion:f.action||'',fotos:photos});
+ }
+ for(let i=0;i<incoming.length;i+=150){const {error}=await cloudClient.from('rec_hallazgos').upsert(incoming.slice(i,i+150),{onConflict:'id'});if(error)throw error}
+ // Eliminar hallazgos borrados LOCALMENTE, pero solo tras sincronizar toda la ruta.
+ const {data:oldFindings,error:readError}=await cloudClient.from('rec_hallazgos').select('id').eq('recorrido_id',cloudUUID(r));
+ if(readError)throw readError;
+ const present=new Set(incoming.map(f=>f.id));const removed=(oldFindings||[]).filter(f=>!present.has(f.id)).map(f=>f.id);
+ for(let i=0;i<removed.length;i+=150){const {error}=await cloudClient.from('rec_hallazgos').delete().in('id',removed.slice(i,i+150));if(error)throw error}
+ // Actualiza localmente los metadatos de las imágenes que ahora tienen ruta de almacenamiento.
+ r.lastCloudSync=syncStartedAt;if(db)await dbPut(r);
+ return true;
+}
+async function cloudSyncAll(manual=true){
+ if(!cloudConnected()){if(manual)toast('Configura Supabase, inicia sesión y elige un equipo.',true);return}
+ if(cloudRunning){cloudAgain=true;if(manual)toast('Sincronización ya en curso.');return}
+ cloudRunning=true;cloudBadge('↻ Sincronizando…');let ok=0;let failures=0;
+ try{
+  if(selected && db)await dbPut(selected);
+  const list=[...routes].filter(r=>!r.cloudReadOnly&&(!r.teamId||r.teamId===cloudTeam)&&(manual||!r.lastCloudSync||(r.localModifiedAt||0)>r.lastCloudSync));
+  for(const r of list){try{await cloudSyncRoute(r);ok++}catch(e){failures++;console.error('Error recorrido',r.code,e);cloudError(e)}}
+  cloudBadge(failures?`⚠ ${failures} sin enviar`:`✓ ${ok} recorrido(s) sincronizado(s)`);
+  if(manual)toast(failures?`${ok} enviados, ${failures} con error. Reintenta.`:`${ok} recorridos guardados en Supabase.`,!!failures);
+ }finally{cloudRunning=false;if(cloudAgain){cloudAgain=false;queueCloudSync(3500)}}
+}
+function cloudPhotoDataUrl(blob){return new Promise((resolve,reject)=>{const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=()=>reject(fr.error);fr.readAsDataURL(blob)})}
+async function cloudReadRemoteRoute(row){
+ let points=[];
+ for(let i=0;i<200000;i+=750){const {data,error}=await cloudClient.from('rec_puntos').select('*').eq('recorrido_id',row.id).order('secuencia').range(i,i+749);if(error)throw error;points.push(...data);if(data.length<750)break}
+ const {data:items,error}=await cloudClient.from('rec_hallazgos').select('*').eq('recorrido_id',row.id).order('numero');if(error)throw error;
+ const findings=[];
+ for(const f of items||[]){const photos=[];
+  for(const ph of f.fotos||[]){const {data:blob,error:err}=await cloudClient.storage.from('recorredor-evidencias').download(ph.path);
+   if(err){console.warn('Foto no descargada',ph.path,err.message);continue;}
+   photos.push({...ph,data:await cloudPhotoDataUrl(blob)});
+  }
+  findings.push({id:f.id,cloudId:f.id,number:f.numero,at:Date.parse(f.registrado_en),lat:f.latitud,lng:f.longitud,accuracy:f.precision_m,source:f.origen,
+   type:f.tipo,title:f.titulo,description:f.descripcion,severity:f.severidad,condition:f.estado,action:f.accion,photos});
+ }
+ const d=row.detalle||{},geo=row.tramo_geojson;
+ return {id:row.id,cloudId:row.id,cloudOwner:row.creado_por,teamId:row.equipo_id,cloudUploadedPoints:points.length,cloudReadOnly:true,
+  code:row.codigo,project:row.proyecto,technician:row.tecnico,city:row.ciudad,kind:row.tipo,
+  createdAt:Date.parse(row.creado_en),startedAt:row.inicio?Date.parse(row.inicio):null,endedAt:row.fin?Date.parse(row.fin):null,
+  activeMs:Number(row.tiempo_activo_ms)||0,legStart:null,status:row.estado==='recording'?'paused':row.estado,
+  segment:(Number(d.segment)||0)+1,distance:row.distancia_gps_m||0,
+  points:points.map(p=>({lat:p.latitud,lng:p.longitud,accuracy:p.precision_m,at:Date.parse(p.registrado_en),segment:p.segmento})),
+  findings,events:Array.isArray(d.events)?d.events:[],lastGpsAt:d.lastGpsAt||null,
+  plannedRoute:geo?importPlannedRoute({geojson:geo,name:row.tramo_nombre,importedAt:d.plannedImportedAt}):null,
+  plannedRouteVisible:d.plannedRouteVisible!==false,coverageToleranceM:row.tolerancia_m||30,lastCloudSync:Date.now()};
+}
+async function cloudDownloadRoutes(){if(!cloudConnected())return toast('Primero conecta Supabase y selecciona un equipo.',true);
+ if(selected?.status==='recording')return toast('Pausa la ruta activa antes de descargar recorridos.',true);
+ cloudBadge('↓ Descargando recorridos…');let added=0,seen=0;
+ try{
+  for(let i=0;i<3000;i+=300){const {data,error}=await cloudClient.from('rec_recorridos').select('*').eq('equipo_id',cloudTeam).order('creado_en',{ascending:false}).range(i,i+299);if(error)throw error;
+   for(const row of data){seen++;if(routes.some(r=>(r.cloudId||r.id)===row.id))continue;
+    const route=await cloudReadRemoteRoute(row);await dbPut(route);routes.push(route);added++}
+   if(data.length<300)break;
+  }
+  routes.sort((a,b)=>b.createdAt-a.createdAt);renderHistory();refresh();
+  cloudBadge(`✓ ${seen} recorridos del equipo`);toast(`${added} recorrido(s) nuevos descargados. Los locales no se sobrescribieron.`);
+ }catch(e){cloudError(e)}
+}
+
+// ===== V5 · reporte general geográfico por equipo =====
+let generalMap=null,generalBase=null,generalLayers=null,generalRows=[],generalVisible=[];
+function generalOpen(){if(!cloudConnected()){toast('Para el reporte general, inicia sesión en Supabase y selecciona un equipo.',true);cloudSettings();return}
+ openModal('generalModal');setTimeout(()=>{generalEnsureMap();generalLoad().catch(cloudError)},70);
+}
+function generalEnsureMap(){if(generalMap){generalMap.invalidateSize();return}if(typeof L==='undefined')return;
+ generalMap=L.map('generalMap',{zoomControl:true,preferCanvas:true}).setView([4.142,-73.6266],11);
+ generalBase=L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:20,attribution:'© OpenStreetMap © CARTO'}).addTo(generalMap);
+ generalLayers=L.layerGroup().addTo(generalMap);generalMap.invalidateSize();
+}
+async function generalLoad(){if(!cloudConnected())return;
+ $('generalInfo').textContent='Cargando recorridos del equipo…';generalRows=[];
+ for(let i=0;i<3000;i+=300){const {data,error}=await cloudClient.from('rec_recorridos')
+  .select('id,codigo,proyecto,tecnico,ciudad,estado,creado_en,inicio,fin,tramo_nombre,tramo_geojson,tramo_longitud_m,inspeccionado_m,avance_pct,tolerancia_m,cobertura_geojson,distancia_gps_m,hallazgos_total')
+  .eq('equipo_id',cloudTeam).order('creado_en',{ascending:false}).range(i,i+299);
+  if(error)throw error;generalRows.push(...data);if(data.length<300)break;
+ }
+ const cities=[...new Set(generalRows.map(r=>r.ciudad).filter(Boolean))].sort();const selectedCity=$('generalCity').value;
+ $('generalCity').replaceChildren(new Option('Todas las ciudades',''));cities.forEach(c=>$('generalCity').add(new Option(c,c)));
+ $('generalCity').value=cities.includes(selectedCity)?selectedCity:'';
+ generalRender();
+}
+function generalFilter(){
+ const city=$('generalCity').value,status=$('generalStatus').value,from=$('generalFrom').value,to=$('generalTo').value;
+ return generalRows.filter(r=>(!city||r.ciudad===city)&&(!status||r.estado===status)&&
+ (!from||r.creado_en.slice(0,10)>=from)&&(!to||r.creado_en.slice(0,10)<=to));
+}
+function generalRender(){generalVisible=generalFilter();const rows=generalVisible;
+ const total=rows.reduce((s,r)=>s+(Number(r.tramo_longitud_m)||0),0),checked=rows.reduce((s,r)=>s+(Number(r.inspeccionado_m)||0),0),pct=total?checked/total*100:0;
+ $('generalKpis').innerHTML=[['Recorridos',rows.length],['Red asignada',fmtDist(total)+' km'],['Red inspeccionada',fmtDist(checked)+' km'],['Cobertura global',pct.toFixed(1)+' %'],['Hallazgos',rows.reduce((s,r)=>s+(r.hallazgos_total||0),0)]].map(([k,v])=>`<div class="general-kpi"><small>${escapeHtml(k)}</small><b>${escapeHtml(v)}</b></div>`).join('');
+ $('generalInfo').textContent=`${rows.length} recorridos de ${cloudTeams.find(x=>x.id===cloudTeam)?.nombre||'equipo'} · Verde: inspeccionado · Amarillo: trazado previsto. ${rows.length>250?'Se dibujan los primeros 250 recorridos en el mapa para conservar el rendimiento.':''} ${generalRows.length>=3000?'Límite de 3.000 registros por consulta.':''}`;
+ $('generalList').innerHTML=rows.length?rows.map(r=>`<button class="general-item" data-general="${escapeHtml(r.id)}">
+  <span><b>${escapeHtml(r.codigo)} · ${escapeHtml(r.proyecto)}</b><small>${escapeHtml(r.ciudad)} · ${escapeHtml(r.tecnico)} · ${escapeHtml(fmtDate(r.inicio||r.creado_en))}</small></span>
+  <strong>${Number(r.avance_pct||0).toFixed(1)} %</strong></button>`).join(''):'<p class="tiny">No se encontraron recorridos para estos filtros.</p>';
+ if(!generalMap)return;generalLayers.clearLayers();const bounds=[];
+ for(const r of rows.slice(0,250)){
+  const plan=r.tramo_geojson?.features||[];
+  const plannedLines=routeLines({geojson:{type:'FeatureCollection',features:plan}});
+  for(const line of plannedLines){
+   if(!line?.length||line.length<2)continue;
+   const cut=Math.max(1,Math.ceil(line.length/2200));const display=line.filter((_,i)=>i%cut===0||i===line.length-1).map(c=>[c[1],c[0]]);
+   if(display.length<2)continue;L.polyline(display,{color:'#f8c75a',weight:4,opacity:.85}).addTo(generalLayers).bindPopup(`<b>${escapeHtml(r.codigo)}</b><br>${escapeHtml(r.proyecto)}<br>Avance: ${Number(r.avance_pct||0).toFixed(1)} %`);
+   display.forEach(p=>bounds.push(p));
+  }
+  for(const f of (r.cobertura_geojson?.features||[]).slice(0,4500)){
+   const line=f.geometry?.coordinates;if(!line||line.length<2)continue;
+   const cut=Math.max(1,Math.ceil(line.length/1300));const display=line.filter((_,i)=>i%cut===0||i===line.length-1).map(c=>[c[1],c[0]]);
+   L.polyline(display,{color:'#09d8a7',weight:6,opacity:1,lineCap:'round'}).addTo(generalLayers);
+  }
+ }
+ if(bounds.length){generalMap.fitBounds(L.latLngBounds(bounds).pad(.08),{maxZoom:15})}
+}
+function generalGo(id){const r=generalVisible.find(x=>x.id===id);if(!r||!generalMap)return;
+ const coords=routeCoordinates({geojson:r.tramo_geojson});if(!coords.length)return toast('Ese recorrido no tiene tramo geográfico.',true);
+ if(coords.length===1)generalMap.setView([coords[0].lat,coords[0].lng],16);
+ else generalMap.fitBounds(L.latLngBounds(coords.map(p=>[p.lat,p.lng])).pad(.1),{maxZoom:17});
+ toast(`${r.codigo}: ${Number(r.avance_pct||0).toFixed(1)} % inspeccionado`);
+}
+function generalExportCsv(){const headings=['Código','Proyecto','Técnico','Ciudad','Estado','Inicio','Tramo planificado km','Tramo inspeccionado km','Avance %','Hallazgos'];
+ const rows=[headings,...generalVisible.map(r=>[r.codigo,r.proyecto,r.tecnico,r.ciudad,r.estado,r.inicio||r.creado_en,fmtDist(r.tramo_longitud_m||0),fmtDist(r.inspeccionado_m||0),Number(r.avance_pct||0).toFixed(2),r.hallazgos_total||0])];
+ downloadBlob('RECORREDOR_general_'+new Date().toISOString().slice(0,10)+'.csv',new Blob(['\ufeff'+rows.map(row=>row.map(csvCell).join(';')).join('\r\n')],{type:'text/csv;charset=utf-8'}));
+}
+function generalPdf(){if(!window.jspdf?.jsPDF)return toast('La librería PDF no está disponible.',true);
+ const rows=generalVisible,doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'mm',format:'a4',compress:true}),w=297,h=210;
+ const fmt=s=>String(s??'').normalize('NFKD').replace(/[^\x20-\x7eáéíóúñüÁÉÍÓÚÑÜ]/g,'').slice(0,100);
+ doc.setFillColor(12,42,64);doc.rect(0,0,w,24,'F');doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(15);doc.text('RECORREDOR FO · REPORTE GENERAL',12,14);
+ doc.setFontSize(9);doc.text(new Date().toLocaleDateString('es-CO'),285,14,{align:'right'});
+ doc.setTextColor(20,50,70);doc.setFontSize(10);const ptotal=rows.reduce((s,r)=>s+Number(r.tramo_longitud_m||0),0),pcov=rows.reduce((s,r)=>s+Number(r.inspeccionado_m||0),0);
+ doc.text(`Recorridos: ${rows.length}     Asignado: ${fmtDist(ptotal)} km     Inspeccionado: ${fmtDist(pcov)} km     Cobertura: ${ptotal?(pcov/ptotal*100).toFixed(1):'0.0'} %`,12,33);
+ const X=12,Y=39,W=273,H=135;doc.setFillColor(240,247,249);doc.rect(X,Y,W,H,'F');
+ const all=[];rows.slice(0,250).forEach(r=>routeLines({geojson:r.tramo_geojson}).forEach(line=>line.forEach(c=>all.push(c))));
+ if(all.length){let a=Infinity,b=-Infinity,c=Infinity,d=-Infinity;for(const p of all){a=Math.min(a,p[0]);b=Math.max(b,p[0]);c=Math.min(c,p[1]);d=Math.max(d,p[1])}
+ const padX=Math.max((b-a)*.08,.0001),padY=Math.max((d-c)*.08,.0001);a-=padX;b+=padX;c-=padY;d+=padY;
+ const conv=p=>[X+5+(p[0]-a)/(b-a)*(W-10),Y+5+(d-p[1])/(d-c)*(H-10)];
+ function drawLine(line){if(line.length<2)return;const stride=Math.max(1,Math.ceil(line.length/2200));const limited=line.filter((_,i)=>i%stride===0||i===line.length-1);
+  for(let i=1;i<limited.length;i++){const p=conv(limited[i-1]),q=conv(limited[i]);doc.line(p[0],p[1],q[0],q[1])}}
+ doc.setDrawColor(242,179,49);doc.setLineWidth(.35);rows.slice(0,250).forEach(r=>routeLines({geojson:r.tramo_geojson}).forEach(drawLine));
+ doc.setDrawColor(0,169,131);doc.setLineWidth(.65);rows.slice(0,250).forEach(r=>(r.cobertura_geojson?.features||[]).forEach(f=>drawLine(f.geometry?.coordinates||[])));
+ }else{doc.setFontSize(11);doc.text('Sin trazados geograficos para este filtro.',X+10,Y+H/2)}
+ doc.setDrawColor(242,179,49);doc.setLineWidth(1.8);doc.line(14,183,24,183);doc.setDrawColor(0,169,131);doc.line(100,183,110,183);doc.setFontSize(9);doc.setTextColor(40,60,70);doc.text('Pendiente / planificado',27,184);doc.text('Inspeccionado',113,184);
+ doc.setFontSize(8);doc.text('Mapa esquematico sin imagen satelital. Geometria del KMZ / GeoJSON.',12,199);
+ const chunkSize=34;for(let n=0;n<rows.length;n+=chunkSize){doc.addPage();doc.setFillColor(12,42,64);doc.rect(0,0,w,22,'F');doc.setTextColor(255,255,255);doc.setFontSize(12);doc.text('DETALLE DE RECORRIDOS',12,14);doc.setTextColor(20,50,70);doc.setFontSize(8);let y=31;
+ doc.text('Código',12,y);doc.text('Proyecto',54,y);doc.text('Ciudad',127,y);doc.text('Técnico',170,y);doc.text('Avance',235,y);doc.text('Hallazgos',267,y);y+=6;
+ for(const r of rows.slice(n,n+chunkSize)){doc.text(fmt(r.codigo).slice(0,21),12,y);doc.text(fmt(r.proyecto).slice(0,39),54,y);doc.text(fmt(r.ciudad).slice(0,22),127,y);doc.text(fmt(r.tecnico).slice(0,28),170,y);doc.text(Number(r.avance_pct||0).toFixed(1)+' %',235,y);doc.text(String(r.hallazgos_total||0),267,y);y+=4.9}
+ }
+ doc.save('RECORREDOR_general_'+new Date().toISOString().slice(0,10)+'.pdf');toast('Reporte general PDF descargado (mapa esquemático).');
+}
+
+
+function attachEvents(){
+ $('coverageTolerance').onchange=changeCoverageTolerance;
+ $('generalTopBtn').onclick=generalOpen;
+ $('cloudConfigBtn').onclick=cloudSettings;
+ $('cloudSendBtn').onclick=()=>cloudSyncAll(true);
+ $('cloudSave').onclick=cloudSaveConfig;
+ $('cloudLogin').onclick=()=>cloudAuth('login');
+ $('cloudSignup').onclick=()=>cloudAuth('signup');
+ $('cloudLogout').onclick=cloudSignOut;
+ $('cloudTeamCreate').onclick=cloudCreateTeam;
+ $('cloudInviteBtn').onclick=cloudAddMember;
+ $('cloudTeamSelect').onchange=e=>{cloudTeam=e.target.value;const c=configCloud();localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify({...c,team:cloudTeam}));cloudBadge(cloudTeam?'☁ Nube conectada':'Sin equipo');cloudRenderTeams()};
+ $('cloudSyncAll').onclick=()=>cloudSyncAll(true);
+ $('cloudDownload').onclick=cloudDownloadRoutes;
+ $('cloudGeneral').onclick=()=>{closeModal('cloudModal');generalOpen()};
+ for(const id of ['generalCity','generalStatus','generalFrom','generalTo'])$(id).addEventListener('change',generalRender);
+ $('generalList').onclick=e=>{const btn=e.target.closest('[data-general]');if(btn)generalGo(btn.dataset.general)};
+ $('generalRefresh').onclick=()=>generalLoad().catch(cloudError);
+ $('generalCsv').onclick=generalExportCsv;
+ $('generalPdf').onclick=generalPdf;
+ $('loadPlanBtn').onclick=()=>{if(!selected)return newRouteModal();$('planFileInput').click()};$('planFileInput').onchange=loadPlanFile;$('fitPlanBtn').onclick=fitPlannedRoute;$('mapPlanBtn').onclick=()=>selected?.plannedRoute?fitPlannedRoute():$('loadPlanBtn').click();$('togglePlanBtn').onclick=togglePlanVisibility;$('removePlanBtn').onclick=removePlannedRoute;$('newBtn').onclick=newRouteModal;$('startBtn').onclick=startRoute;$('pauseBtn').onclick=pauseRoute;$('finishBtn').onclick=finishRoute;$('historyBtn').onclick=()=>{renderHistory();openModal('historyModal')};$('historyNewBtn').onclick=newRouteModal;$('exportBtn').onclick=()=>selected?openModal('exportModal'):toast('Primero crea un recorrido.',true);$('locateBtn').onclick=locate;$('fitBtn').onclick=findBounds;$('layerBtn').onclick=changeLayer;$('mapProviderChip').onclick=changeLayer;$('mapSettingsForm').onsubmit=saveMapSettings;$('pickBtn').onclick=togglePick;$('aimCancel').onclick=cancelAim;$('aimGps').onclick=aimToGps;$('aimConfirm').onclick=confirmAim;$('adjustFindingPoint').onclick=()=>beginAim(true);$('addBtn').onclick=blankFinding;$('sideAddBtn').onclick=blankFinding;$('routeForm').onsubmit=createRoute;$('findingForm').onsubmit=saveFinding;$('deleteFindingBtn').onclick=deleteFinding;$('cameraBtn').onclick=()=>$('cameraInput').click();$('galleryBtn').onclick=()=>$('galleryInput').click();$('cameraInput').onchange=e=>handlePhotos(e.target.files);$('galleryInput').onchange=e=>handlePhotos(e.target.files);$('photoGrid').onclick=e=>{const id=e.target.closest('[data-delphoto]')?.dataset.delphoto;if(id){formPhotos=formPhotos.filter(x=>x.id!==id);paintPhotos()}};$('filterbar').onclick=e=>{if(e.target.dataset.filter)selectFilter(e.target.dataset.filter)};$('findingList').onclick=e=>{const edit=e.target.closest('[data-edit]')?.dataset.edit,goto=e.target.closest('[data-goto]')?.dataset.goto;if(edit)openFinding(edit);else if(goto){e.preventDefault();gotoFinding(goto)}};$('historyList').onclick=e=>{const id=e.target.closest('[data-openroute]')?.dataset.openroute,rem=e.target.closest('[data-removeroute]')?.dataset.removeroute;if(id){const r=routes.find(r=>r.id===id);if(r)changeRoute(r)}else if(rem)removeRoute(rem)};document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id)}));document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>runExport(b.dataset.export));$('importBtn').onclick=()=>$('importInput').click();$('importInput').onchange=importJson;window.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.overlay.show').forEach(o=>closeModal(o.id));if(placement)cancelAim()}});window.addEventListener('online',()=>{if(cloudConnected())queueCloudSync(1000);else if(configCloud().url)cloudInit().catch(cloudError)});window.addEventListener('offline',()=>{if(cloudClient)cloudBadge('📴 Sin conexión · guardado local')});window.addEventListener('pagehide',()=>{if(selected)persist().catch(console.error)});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&selected)persist().catch(console.error)});}
+async function boot(){attachEvents();createMap();try{db=await dbOpen();routes=await dbAll();routes.sort((a,b)=>b.createdAt-a.createdAt);const saved=localStorage.getItem('recorredor-current');selected=routes.find(x=>x.id===saved)||routes[0]||null;planVisible=selected?.plannedRouteVisible!==false;const interrupted=routes.filter(r=>r.status==='recording');for(const r of interrupted){const from=r.legStart||r.startedAt||Date.now();const until=Math.max(from,Math.min(Date.now(),r.lastGpsAt||from));r.activeMs=(r.activeMs||0)+(until-from);r.legStart=null;r.segment=(r.segment||0)+1;r.status='paused';r.events.push({at:Date.now(),type:'pause',message:'Sesión recuperada: GPS interrumpido al cerrar la página'});await dbPut(r)}if(interrupted.length)toast('Se recuperó una ruta interrumpida. Reanúdala para continuar.');}catch(e){console.error(e);toast('No se pudo acceder al almacenamiento local. Prueba con otro navegador.',true);$('saveLabel').textContent='Almacenamiento no disponible';}
+refresh();renderMap();cloudInit().catch(cloudError);if(selected?.points.length||selected?.findings.length)findBounds();else if(selected?.plannedRoute)fitPlannedRoute();setInterval(()=>{$('topClock').textContent=new Date().toLocaleTimeString('es-CO',{hour12:false});if(selected?.status==='recording'){$('statTime').textContent=fmtDur(activeMs(selected))}},1000);$('topClock').textContent=fmtTime(Date.now());}
+window.addEventListener('DOMContentLoaded',boot);
+</script>
+</body>
+</html>
