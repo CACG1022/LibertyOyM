@@ -206,6 +206,14 @@ html,body{width:100%;height:100%;overflow:hidden!important;overscroll-behavior:n
 }
 @media(max-width:360px){#findingModal #findingForm > .modalfoot{gap:6px}#findingModal #deleteFindingBtn:not([hidden]){font-size:10px}}
 
+
+/* V10 · asignaciones remotas de supervisión */
+.assigntech-list{display:grid;gap:10px}.assigntech-card{border:1px solid #456c82;background:#122e41;border-radius:13px;padding:12px;display:grid;gap:7px}
+.assigntech-card.active{border-color:#24d6a8}.assigntech-card strong{font-size:13px;color:#f3f9ff}.assigntech-card small{color:#abc6d8;font-size:10px;line-height:1.45}
+.assigntech-card .btns{display:flex;gap:7px;flex-wrap:wrap}.assigntech-card button{background:#1d465b;border:1px solid #48758c;border-radius:9px;padding:9px;color:white;font-weight:800;font-size:11px}
+.assigntech-card button.main{background:#1a947d;border-color:#23d3a9;color:#fff}.assigntech-notice{padding:9px 11px;border-radius:11px;background:#263c35;border:1px solid #557c63;color:#c4fce5;font-size:11px;line-height:1.45;margin-bottom:10px}
+.assigntech-warning{background:#4b311b;border-color:#c38c4d;color:#ffe2ae}
+.assigntech-fab{display:none}
 </style>
 </head>
 <body>
@@ -241,8 +249,8 @@ html,body{width:100%;height:100%;overflow:hidden!important;overscroll-behavior:n
  <div class="plan-key"><span><i style="background:#ffc965"></i>Pendiente</span><span><i style="background:#24f3bf"></i>Inspeccionado</span></div>
 </section>
 <div class="sectionline"><strong>Indicadores en vivo</strong><span class="tiny" id="saveLabel">Guardado local</span></div><div class="kpis"><div class="kpi accent"><small>Distancia recorrida</small><strong id="statDistance">0.00 <em>km</em></strong></div><div class="kpi"><small>Tiempo activo</small><strong id="statTime">00:00</strong></div><div class="kpi"><small>Hallazgos</small><strong id="statFindings">0</strong></div><div class="kpi"><small>Puntos GPS</small><strong id="statPoints">0</strong></div></div><div class="gps-details"><span>PRECISIÓN GPS <b id="gpsAccuracy">—</b></span><span>VELOCIDAD <b id="gpsSpeed">—</b></span></div>
-<div class="sectionline"><strong>SUPABASE / EQUIPO</strong><span class="tiny">Sincronización</span></div>
-<div class="cloud-status"><b id="cloudState">Solo local</b><small id="cloudSmall">Sin sesión · datos locales</small></div>
+<div class="sectionline"><strong>SUPABASE / EQUIPO</strong><span class="tiny">Envío automático + manual</span></div>
+<div class="cloud-status"><b id="cloudState">Solo local</b><small id="cloudSmall">Sin sesión · datos locales</small><small>El equipo debe estar seleccionado. Al guardar se sincroniza automáticamente; también puedes tocar «Enviar» para forzar el envío.</small></div>
 <div class="cloud-top"><button class="action" id="cloudConfigBtn" type="button">⚙ Configurar</button><button class="action primary" type="button" id="cloudSendBtn">☁ Enviar</button></div>
 <div class="sectionline"><strong>Registro de actividad</strong><span class="tiny">Últimos eventos</span></div><div class="timeline" id="timeline"><div class="emptysmall">Los eventos del recorrido aparecerán aquí.</div></div>
 <div class="quick"><span class="overline">Consejo de campo</span><p>Mantén la pantalla activa durante el recorrido. La captura GPS de esta versión web puede interrumpirse cuando el celular se bloquea o la aplicación pasa a segundo plano.</p></div></aside>
@@ -254,6 +262,7 @@ html,body{width:100%;height:100%;overflow:hidden!important;overscroll-behavior:n
  <button class="menu-link" type="button" data-menu-action="route"><i>▣</i> Mi recorrido <span class="trail">KPIs y controles</span></button>
  <button class="menu-link" type="button" data-menu-action="findings"><i>⌖</i> Hallazgos <span class="trail" id="menuFindCount">0</span></button>
  <button class="menu-link highlight" type="button" data-menu-action="new"><i>＋</i> Nuevo recorrido</button>
+ <button class="menu-link highlight" type="button" data-menu-action="assignments"><i>▤</i> Mis tramos asignados <span class="trail" id="assignedMenuCount">0</span></button>
  <button class="menu-link" type="button" data-menu-action="loadPlan"><i>⇧</i> Cargar KMZ / GeoJSON</button>
  <button class="menu-link" type="button" data-menu-action="fitPlan"><i>◇</i> Ver tramo asignado</button>
  <div class="menu-group-label">Grabación y posición</div>
@@ -265,7 +274,7 @@ html,body{width:100%;height:100%;overflow:hidden!important;overscroll-behavior:n
  <button class="menu-link" type="button" data-menu-action="map"><i>▧</i> Mapa base híbrido</button>
  <button class="menu-link" type="button" data-menu-action="history"><i>▤</i> Historial de recorridos</button>
  <button class="menu-link" type="button" data-menu-action="reports"><i>⇩</i> Reporte técnico</button>
- <button class="menu-link" type="button" data-menu-action="general"><i>◫</i> Reporte general con mapa</button>
+ <button class="menu-link" type="button" data-menu-action="general"><i>◫</i> Visor del supervisor · mapa general</button>
  <button class="menu-link" type="button" data-menu-action="cloud"><i>☁</i> Supabase / Sincronización</button>
 </div><div id="aimReticle" class="aim-reticle" aria-hidden="true"><div class="aim-ring"></div></div><div id="aimInfo" class="aim-info" aria-live="off"><b>⌖ MIRA · UBICACIÓN DEL HALLAZGO</b><span id="aimCoords">Moviendo mapa…</span><small>Desplaza y acerca el mapa: el centro de la mira roja define las coordenadas del hallazgo.</small></div><div class="aim-actions" id="aimActions"><button type="button" id="aimCancel" class="aim-cancel">✕ Cancelar</button><button type="button" id="aimGps">◎ Mi GPS</button><button type="button" id="aimConfirm" class="aim-confirm">✓ Confirmar ubicación</button></div><div class="mapbanner"><b id="mapBannerTitle">Mapa de inspección de fibra óptica</b><p id="mapBannerText">Inicia tu recorrido para trazar la ruta. Marca hallazgos con la mira central y confirma su ubicación.</p></div><div class="mapactions"><button class="mapbtn" title="Mi ubicación" id="locateBtn">⌖</button><button class="mapbtn" title="Ver todo el recorrido" id="fitBtn">⤢</button><button class="mapbtn" title="Centrar en tramo planificado" id="mapPlanBtn">♢</button><button class="mapbtn" title="Cambiar mapa base" id="layerBtn">▧</button><button class="mapbtn" title="Marcar hallazgo con la mira central" id="pickBtn">⊕</button></div><button type="button" class="map-provider-chip" id="mapProviderChip" title="Elegir mapa base">Cargando mapa…</button><div class="mapbottom">
 <span class="coordinatelabel" id="coordsLabel">⌖ Esperando coordenadas GPS</span>
@@ -281,7 +290,7 @@ html,body{width:100%;height:100%;overflow:hidden!important;overscroll-behavior:n
 </div></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <!-- Modal de nuevo recorrido -->
-<div class="overlay" id="routeModal" role="dialog" aria-modal="true" aria-labelledby="routeModalTitle"><div class="modal"><div class="modalheader"><div><div class="overline">Registro de inspección</div><h2 id="routeModalTitle">Nuevo recorrido</h2></div><button class="smallbtn modalclose" data-close="routeModal" aria-label="Cerrar">×</button></div><form id="routeForm"><div class="modalbody"><div class="formgrid"><div class="field full"><label for="newProject">Proyecto, tramo o red *</label><input id="newProject" maxlength="110" required placeholder="Ej. Red FO Villavicencio — Anillo Norte" /></div><div class="field"><label for="newTechnician">Técnico recorredor *</label><input id="newTechnician" maxlength="100" required placeholder="Nombre completo" /></div><div class="field"><label for="newCity">Ciudad / zona *</label><input id="newCity" maxlength="100" required placeholder="Villavicencio" /></div><div class="field full"><label for="newKind">Tipo de recorrido</label><select id="newKind"><option>Inspección preventiva</option><option>Verificación de avería</option><option>Inspección correctiva</option><option>Auditoría de red</option><option>Otro</option></select></div></div><p class="labelhint">El recorrido se guarda primero en este dispositivo. Si configuraste Supabase y perteneces a un equipo, se sincronizará con el servidor.</p></div><div class="modalfoot"><button type="button" class="action" data-close="routeModal">Cancelar</button><button type="submit" class="action primary">Crear recorrido</button></div></form></div></div>
+<div class="overlay" id="routeModal" role="dialog" aria-modal="true" aria-labelledby="routeModalTitle"><div class="modal"><div class="modalheader"><div><div class="overline">Registro de inspección</div><h2 id="routeModalTitle">Nuevo recorrido</h2></div><button class="smallbtn modalclose" data-close="routeModal" aria-label="Cerrar">×</button></div><form id="routeForm"><div class="modalbody"><div class="formgrid"><div class="field full"><label for="newProject">Proyecto, tramo o red *</label><input id="newProject" maxlength="110" required placeholder="Ej. Red FO Villavicencio — Anillo Norte" /></div><div class="field"><label for="newTechnician">Técnico recorredor *</label><input id="newTechnician" maxlength="100" required placeholder="Nombre completo" /></div><div class="field"><label for="newCity">Ciudad / zona *</label><input id="newCity" maxlength="100" required placeholder="Villavicencio" /></div><div class="field full"><label for="newKind">Tipo de recorrido</label><select id="newKind"><option>Inspección preventiva</option><option>Verificación de avería</option><option>Inspección correctiva</option><option>Auditoría de red</option><option>Otro</option></select></div></div><p class="labelhint">El recorrido se guarda primero en este dispositivo. Con una cuenta y equipo O&M activo, los datos se envían automáticamente a Supabase; también puedes usar ☁ Enviar.</p></div><div class="modalfoot"><button type="button" class="action" data-close="routeModal">Cancelar</button><button type="submit" class="action primary">Crear recorrido</button></div></form></div></div>
 <!-- Selector de cartografía: misma capa híbrida Leaflet usada en PDR-APP, con alternativa satelital -->
 <div class="overlay" id="mapSettingsModal" role="dialog" aria-modal="true" aria-labelledby="mapSettingsTitle">
   <div class="modal">
@@ -308,6 +317,7 @@ html,body{width:100%;height:100%;overflow:hidden!important;overscroll-behavior:n
 <!-- Modal de hallazgo -->
 <div class="overlay" id="findingModal" role="dialog" aria-modal="true" aria-labelledby="findingModalTitle"><div class="modal wide"><div class="modalheader"><div><div class="overline">Hallazgo georreferenciado</div><h2 id="findingModalTitle">Registrar hallazgo</h2></div><button class="smallbtn modalclose" data-close="findingModal" aria-label="Cerrar">×</button></div><form id="findingForm"><div class="modalbody"><div id="findingGeo" class="geobox"><span id="findingGeoDetails">⌖ Punto por asignar</span><button class="geo-mira-btn" type="button" id="adjustFindingPoint">⌖ Ajustar con mira</button></div><div class="formgrid"><div class="field"><label for="fType">Elemento / tipo *</label><select id="fType" required><option value="">Selecciona...</option><option>Cable FO bajo o descolgado</option><option>Cable FO roto / cortado</option><option>Vegetación sobre red</option><option>Poste en mal estado</option><option>Cámara / recámara</option><option>Caja NAP / CTO</option><option>Mufla / empalme</option><option>Reserva de fibra</option><option>Marquillado / identificación</option><option>Riesgo eléctrico</option><option>Interferencia / obra civil</option><option>Otro hallazgo</option></select></div><div class="field"><label for="fSeverity">Criticidad *</label><select id="fSeverity" required><option value="media">Media</option><option value="baja">Baja</option><option value="alta">Alta</option><option value="critica">Crítica</option></select></div><div class="field full"><label for="fTitle">Descripción corta *</label><input id="fTitle" required maxlength="140" placeholder="Ej. Cable ADSS con flecha excesiva en vano" /></div><div class="field full"><label for="fDescription">Detalle del hallazgo *</label><textarea id="fDescription" required maxlength="3000" placeholder="Describe el estado del elemento, afectación, referencia del punto y observaciones técnicas."></textarea></div><div class="field"><label for="fCondition">Estado de atención</label><select id="fCondition"><option>Pendiente</option><option>En seguimiento</option><option>Corregido en campo</option></select></div><div class="field"><label for="fAction">Acción recomendada</label><input id="fAction" maxlength="220" placeholder="Ej. Reponer herrajes y tensionar vano" /></div><div class="field full"><label>Evidencia fotográfica * (mínimo una foto)</label><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="action" id="cameraBtn">📷 Tomar foto</button><button type="button" class="action" id="galleryBtn">▧ Galería</button><span class="tiny" style="align-self:center">Hasta 8 fotos por hallazgo</span></div><input id="cameraInput" type="file" accept="image/*" capture="environment" hidden /><input id="galleryInput" type="file" accept="image/*" multiple hidden /><div class="photos" id="photoGrid"></div></div></div><p class="labelhint">Las imágenes se reducen de tamaño para ahorrar espacio. Se almacenan temporalmente en este navegador.</p></div><div class="modalfoot"><button type="button" class="action danger" style="margin-right:auto" id="deleteFindingBtn" hidden>Eliminar</button><button type="button" class="action" data-close="findingModal">Cancelar</button><button type="submit" class="action primary" id="saveFindingBtn" aria-label="Guardar hallazgo">✓ Guardar hallazgo</button></div></form></div></div>
 <!-- Modal historial -->
+<div class="overlay" id="assignedTramosModal" role="dialog" aria-modal="true" aria-labelledby="assignedTramosTitle"><div class="modal wide"><div class="modalheader"><div><div class="overline">Asignados desde Supervisor · Supabase Liberty O&M</div><h2 id="assignedTramosTitle">Mis tramos por recorrer</h2></div><button class="smallbtn modalclose" data-close="assignedTramosModal" aria-label="Cerrar">×</button></div><div class="modalbody"><div id="assignedTramosInfo" class="assigntech-notice">Inicia sesión y elige el equipo O&M para recibir tus tramos.</div><div class="assigntech-list" id="assignedTramosList"></div></div><div class="modalfoot"><button class="action" id="assignedRefresh">↻ Consultar asignaciones</button><button class="action primary" data-close="assignedTramosModal">Volver al mapa</button></div></div></div>
 <div class="overlay" id="historyModal" role="dialog" aria-modal="true" aria-labelledby="historyTitle"><div class="modal"><div class="modalheader"><div><div class="overline">Guardados en este dispositivo</div><h2 id="historyTitle">Historial de recorridos</h2></div><button class="smallbtn modalclose" data-close="historyModal" aria-label="Cerrar">×</button></div><div class="modalbody" id="historyList"></div><div class="modalfoot"><button class="action primary" id="historyNewBtn">＋ Nuevo recorrido</button></div></div></div>
 <!-- Modal exportación -->
 <div class="overlay" id="exportModal" role="dialog" aria-modal="true" aria-labelledby="exportTitle"><div class="modal"><div class="modalheader"><div><div class="overline">Entregables de inspección</div><h2 id="exportTitle">Generar reportes</h2></div><button class="smallbtn modalclose" data-close="exportModal" aria-label="Cerrar">×</button></div><div class="modalbody"><p style="color:#aac0d4;margin:0 0 16px;line-height:1.5">Exporta evidencias, coordenadas, tiempo, recorrido y hallazgos registrados.</p><div class="export-grid"><button class="exportopt" data-export="pdf"><span class="symbol">▣</span><b>Reporte técnico PDF</b><small>Resumen, trazado GPS, hallazgos y fotografías.</small></button><button class="exportopt" data-export="geojson"><span class="symbol">⌖</span><b>Ruta y puntos GeoJSON</b><small>Compatible con QGIS y herramientas GIS.</small></button><button class="exportopt" data-export="csv"><span class="symbol">▤</span><b>Hallazgos CSV</b><small>Listado para Excel, con fecha y coordenadas.</small></button><button class="exportopt" data-export="json"><span class="symbol">⇩</span><b>Respaldo JSON</b><small>Registro completo, incluyendo fotografías.</small></button><button class="exportopt" id="importBtn" type="button"><span class="symbol">↥</span><b>Restaurar respaldo JSON</b><small>Importar otro recorrido guardado previamente.</small></button><input type="file" id="importInput" accept=".json,application/json" hidden /></div><div class="notice" style="margin-top:15px">ℹ Los datos se guardan localmente. Con Supabase configurado y sesión iniciada, se pueden sincronizar y consultar desde el reporte general. Antes de limpiar el navegador, comprueba la sincronización.</div></div><div class="modalfoot"><button class="action" data-close="exportModal">Cerrar</button></div></div></div>
@@ -333,8 +343,8 @@ html,body{width:100%;height:100%;overflow:hidden!important;overscroll-behavior:n
   <div class="cloud-group"><h3>3. Equipo O&M</h3><div class="cloud-grids"><div class="field full"><label>Equipo al que se enviarán tus recorridos</label><select id="cloudTeamSelect"><option value="">Sin equipo</option></select></div><div class="field"><label>Nuevo equipo (solo supervisor)</label><input id="cloudTeamName" placeholder="Ej. O&M Villavicencio" /></div><div class="field" style="align-self:end"><button type="button" class="action" id="cloudTeamCreate">＋ Crear equipo</button></div></div>
    <div id="cloudInviteBox" hidden><p class="tiny">El técnico primero debe registrarse con su correo. Un administrador del equipo puede agregarlo:</p><div class="cloud-grids"><div class="field"><label>Correo de técnico registrado</label><input id="cloudInviteEmail" type="email" /></div><div class="field"><label>Rol</label><select id="cloudInviteRole"><option value="tecnico">Técnico</option><option value="admin">Administrador</option></select></div></div><button class="action" type="button" id="cloudInviteBtn">Agregar al equipo</button></div>
   </div>
-  <div class="cloud-group"><h3>4. Sincronización</h3><p class="tiny">Solo los integrantes del mismo equipo pueden visualizar el consolidado. Cada técnico edita sus recorridos; el administrador también puede editarlos.</p>
-   <div class="cloud-settings"><button class="action primary" type="button" id="cloudSyncAll">☁ Sincronizar ahora</button><button class="action" type="button" id="cloudDownload">↓ Descargar recorridos del equipo</button><button class="action" type="button" id="cloudGeneral">▤ Reporte general</button></div>
+  <div class="cloud-group"><h3>4. Sincronización</h3><p class="tiny">Los registros y fotos se guardan primero en el dispositivo. Con sesión y equipo activo, cada cambio se envía automáticamente. «Sincronizar ahora» permite reintentar. El visor del supervisor utiliza la misma cuenta y equipo, sin pedir URL ni clave.</p>
+   <div class="cloud-settings"><button class="action primary" type="button" id="cloudSyncAll">☁ Sincronizar ahora</button><button class="action" type="button" id="cloudDownload">↓ Descargar recorridos del equipo</button><button class="action" type="button" id="cloudGeneral">▤ Abrir visor supervisor</button></div>
   </div>
  </div><div class="modalfoot"><button type="button" class="action" data-close="cloudModal">Cerrar</button></div></div>
 </div>
@@ -517,6 +527,7 @@ function handleQuickMenuAction(action){closeQuickMenu();
  case 'findings':toggleFieldPanel('findings');break;
  case 'new':newRouteModal();break;
  case 'loadPlan':$('loadPlanBtn').click();break;
+ case 'assignments':openAssignedTramos();break;
  case 'fitPlan':$('mapPlanBtn').click();break;
  case 'start':$('startBtn').click();break;
  case 'pause':$('pauseBtn').click();break;
@@ -703,6 +714,7 @@ async function loadPlanFile(event){const file=event.target.files?.[0];event.targ
   else raw=JSON.parse(await file.text());
   const geojson=sanitizeGeoJSON(raw),st=routeStats(geojson);
   if(selected!==route)throw Error('Cambiaste de recorrido durante la carga. Vuelve a intentarlo.');
+  if(route.assignedId){toast('Este tramo fue asignado desde el supervisor. Pide que actualicen el archivo en el visor.',true);return;}
   if(route.plannedRoute&&!confirm('¿Reemplazar el tramo planificado actual? No se borrarán hallazgos ni registros GPS.'))return;
   route.plannedRoute={name:planSafeText(file.name,130),importedAt:Date.now(),geojson,...st};planVisible=true;route.plannedRouteVisible=true;eventAdd('planned','Tramo cargado: '+route.plannedRoute.name);await dbPut(route);queueCloudSync(1000);refresh();renderMap();fitPlannedRoute();updatePlanGuidance();toast('Tramo cargado: '+st.features+' elementos.');
   if(!st.segments)toast('Archivo cargado. Contiene puntos o polígonos, pero no líneas para calcular distancia a la ruta.');
@@ -710,13 +722,13 @@ async function loadPlanFile(event){const file=event.target.files?.[0];event.targ
 }
 function renderPlanPanel(){const p=selected?.plannedRoute;const has=!!p;$('planBadge').textContent=has?'✓ Tramo cargado':'Sin archivo';$('planStatus').innerHTML=has?`<div class="plan-name">${escapeHtml(p.name)}</div><span>Cargado ${escapeHtml(fmtDate(p.importedAt))} · ${planVisible?'Visible en el mapa':'Capa oculta'}</span>`:'Carga el KMZ, KML o GeoJSON que define el tramo a inspeccionar. Aparecerá en amarillo sobre el mapa.';
  $('planMetrics').style.display=has?'flex':'none';if(has)$('planMetrics').innerHTML=`<span>Longitud de líneas: <b>${fmtDist(p.lengthMeters||0)} km</b></span><span>Elementos: <b>${p.features??p.geojson.features.length}</b></span>`;
- $('fitPlanBtn').disabled=!has;$('togglePlanBtn').disabled=!has;$('removePlanBtn').disabled=!has||selected?.cloudReadOnly||selected?.status==='finished';$('loadPlanBtn').disabled=!selected||selected.cloudReadOnly||selected.status==='finished';$('togglePlanBtn').textContent=planVisible?'◉ Ocultar':'◯ Mostrar';updatePlanGuidance();
+ $('fitPlanBtn').disabled=!has;$('togglePlanBtn').disabled=!has;$('removePlanBtn').disabled=!has||selected?.cloudReadOnly||selected?.status==='finished'||!!selected?.assignedId;$('loadPlanBtn').disabled=!selected||selected.cloudReadOnly||selected.status==='finished'||!!selected?.assignedId;$('togglePlanBtn').textContent=planVisible?'◉ Ocultar':'◯ Mostrar';updatePlanGuidance();
 }
 function fitPlannedRoute(){if(!map||!selected?.plannedRoute)return toast('Carga primero un tramo.',true);const pts=routeCoordinates(selected.plannedRoute);if(!pts.length)return toast('No hay coordenadas válidas en el tramo.',true);if(pts.length===1){mapSetView([pts[0].lat,pts[0].lng],17);return}
  const bounds=L.latLngBounds(pts.map(p=>[p.lat,p.lng]));map.fitBounds(bounds.pad(.13),{maxZoom:18,padding:[28,28]});
 }
 function togglePlanVisibility(){if(!selected?.plannedRoute)return;planVisible=!planVisible;selected.plannedRouteVisible=planVisible;saveSoon();renderPlanPanel();renderPlanLayer();}
-function removePlannedRoute(){if(!selected?.plannedRoute||selected.cloudReadOnly)return;if(!confirm('¿Quitar el tramo planificado de este recorrido? El GPS, los hallazgos y las fotos no se modificarán.'))return;selected.plannedRoute=null;eventAdd('planned','Tramo planificado retirado');saveSoon(true);renderPlanPanel();renderPlanLayer();renderTimeline();toast('Tramo retirado; el recorrido GPS sigue intacto.');}
+function removePlannedRoute(){if(!selected?.plannedRoute||selected.cloudReadOnly)return;if(selected.assignedId)return toast('El tramo fue asignado por el supervisor. No puedes eliminarlo aquí.',true);if(!confirm('¿Quitar el tramo planificado de este recorrido? El GPS, los hallazgos y las fotos no se modificarán.'))return;selected.plannedRoute=null;eventAdd('planned','Tramo planificado retirado');saveSoon(true);renderPlanPanel();renderPlanLayer();renderTimeline();toast('Tramo retirado; el recorrido GPS sigue intacto.');}
 function planPopup(f){const props=f.properties||{};const name=planSafeText(props.name||props.nombre||props.Name||'Elemento del tramo',110);const details=Object.entries(props).filter(([k,v])=>k!=='name'&&k!=='Name'&&k!=='nombre'&&v).slice(0,4).map(([k,v])=>`<div><b>${escapeHtml(k)}:</b> ${escapeHtml(planSafeText(v,100))}</div>`).join('');return `<b>${escapeHtml(name)}</b>${details?'<hr>'+details:''}`;}
 function renderPlanLayer(){if(!map)return;if(planLayer)planLayer.clearLayers();if(googleActive()){planGoogleOverlays.forEach(o=>o.setMap(null));planGoogleOverlays=[];}
  const planned=selected?.plannedRoute;if(!planned||!planVisible)return;
@@ -834,6 +846,7 @@ function changeCoverageTolerance(e){if(!selected)return;selected.coverageToleran
 const CLOUD_DEFAULT_URL="https://lvwmpwnzavqdspdfvceb.supabase.co";
 const CLOUD_DEFAULT_ANON="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2d21wd256YXZxZHNwZGZ2Y2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxOTg3MzYsImV4cCI6MjA5MTc3NDczNn0.u6g4OCm4kl-LEmyIf9VWwf43cdqYbik7Y60rdKQ8npI";
 const CLOUD_CONFIG_KEY='recorredor-fo-supabase-liberty-v9';
+let assignedFromCloud=[],assignedCheckBusy=false,assignedLastCheck=0;
 let cloudClient=null,cloudUser=null,cloudTeam='',cloudTeams=[],cloudRunning=false,cloudAgain=false,cloudSyncTimer=null,cloudStatus='Local';
 function configCloud(){
  // La fuente es la base de Instalaciones FO. Los ajustes anteriores de PDR no se heredan.
@@ -842,7 +855,7 @@ function configCloud(){
 }
 function cloudConnected(){return !!(cloudClient&&cloudUser&&cloudTeam)}
 function cloudBadge(message){cloudStatus=message;$('cloudState').textContent=message;$('cloudSmall').textContent=cloudUser?`${cloudUser.email||'Sesión activa'} · ${cloudTeams.find(x=>x.id===cloudTeam)?.nombre||'Sin equipo'}`:'Sin sesión · datos locales';}
-function cloudError(error){const message=String(error?.message||error||'Error desconocido');console.error('Supabase RECORREDOR:',error);cloudBadge('⚠ Sin sincronizar');toast('Supabase: '+message.slice(0,155),true)}
+function cloudError(error){const message=String(error?.message||error||'Error desconocido');console.error('Supabase RECORREDOR:',error);cloudBadge('⚠ Sin sincronizar · abrir Supabase / Equipo');toast('Supabase: '+message.slice(0,155),true)}
 function cloudUUID(record,field='cloudId'){
  const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
  if(uuid.test(record[field]||''))return record[field];
@@ -894,9 +907,69 @@ async function cloudLoadTeams(){
  cloudTeams=data||[];
  if(!cloudTeams.some(t=>t.id===cloudTeam))cloudTeam=cloudTeams[0]?.id||'';
  const c=configCloud();localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify({team:cloudTeam,override:c.override,...(c.override?{url:c.url,key:c.key}:{})}));
- cloudBadge(cloudTeam?'☁ Nube conectada':'Crea o solicita acceso a un equipo');cloudRenderTeams();
- if(cloudConnected()){queueCloudSync(3000)}
+ cloudBadge(cloudTeam?'☁ Sesión activa · equipo '+(cloudTeams.find(x=>x.id===cloudTeam)?.nombre||'O&M'):'⚠ Sesión activa, pero sin equipo: crea uno o pide acceso');cloudRenderTeams();
+ if(cloudConnected()){queueCloudSync(3000);cloudLoadAssignments().catch(cloudAssignmentError)}
 }
+
+// ===== V10 · RECIBIR ASIGNACIONES DESDE SUPERVISOR =====
+function cloudAssignmentError(e){console.error('Tramos asignados:',e);const el=$('assignedTramosInfo');if(el){el.className='assigntech-notice assigntech-warning';el.textContent='No se pudieron consultar asignaciones: '+String(e?.message||e)+'. Comprueba que el supervisor ejecutó recorredor_asignaciones.sql.'}}
+function assignedLocalRoute(id){return routes.find(r=>r.assignedId===id&&!r.cloudReadOnly)||routes.find(r=>r.assignedId===id)}
+function assignmentVersionAvailable(route,a){return !!(route&&Number(route.assignedVersion||0)<Number(a.version||0))}
+function assignedRouteReadOnly(route){return route?.cloudReadOnly}
+function renderAssignedTramos(){
+ const info=$('assignedTramosInfo'),list=$('assignedTramosList'),badge=$('assignedMenuCount');
+ if(badge)badge.textContent=String(assignedFromCloud.length);
+ if(!info||!list)return;
+ if(!cloudConnected()){info.className='assigntech-notice';info.textContent='Entra a «Supabase / Equipo» con tu cuenta de técnico para recibir los tramos asignados.';list.innerHTML='';return}
+ info.className='assigntech-notice';info.textContent=assignedFromCloud.length?`✓ ${assignedFromCloud.length} tramo(s) asignado(s) a tu usuario · actualizados desde Supabase. Selecciona «Abrir mapa» para orientarte.`:'Tu supervisor aún no te asignó tramos activos. La aplicación los consultará automáticamente.';
+ list.innerHTML=assignedFromCloud.map(a=>{
+  const local=assignedLocalRoute(a.id),v=assignmentVersionAvailable(local,a),isActive=!!(selected&&selected.assignedId===a.id);
+  return `<div class="assigntech-card ${isActive?'active':''}"><strong>${escapeHtml(a.nombre)}</strong><small>👷 ${escapeHtml(cloudUser?.email||'')} · ${escapeHtml(a.proyecto)} · ${escapeHtml(a.ciudad)} · ${(Number(a.longitud_m||0)/1000).toFixed(2)} km</small>${a.observaciones?`<small>Indicaciones: ${escapeHtml(a.observaciones)}</small>`:''}<small>${local?'Estado: '+escapeHtml(local.status||'ready'):'Nuevo tramo'} · ${v?'⚠ Supervisor modificó este tramo':'Versión actual '+a.version}</small><div class="btns"><button class="main" data-assigned-open="${escapeHtml(a.id)}">⌖ Abrir mapa</button>${v?`<button data-assigned-update="${escapeHtml(a.id)}">↻ Aplicar actualización</button>`:''}</div></div>`
+ }).join('')||'<div class="emptysmall">Sin tramos asignados.</div>';
+}
+async function cloudLoadAssignments(manual=false){
+ if(!cloudConnected()||assignedCheckBusy)return;assignedCheckBusy=true;
+ try{
+  const {data,error}=await cloudClient.from('rec_tramos_asignados').select('id,equipo_id,tecnico_id,nombre,proyecto,ciudad,observaciones,archivo_nombre,geojson,longitud_m,estado,version,actualizada_en').eq('equipo_id',cloudTeam).eq('tecnico_id',cloudUser.id).eq('estado','activa').order('actualizada_en',{ascending:false}).limit(500);
+  if(error)throw error;
+  assignedFromCloud=data||[];assignedLastCheck=Date.now();let created=0;
+  for(const a of assignedFromCloud){
+   if(assignedLocalRoute(a.id))continue;
+   // Si el mismo usuario ya comenzó el tramo en otro dispositivo, recuperar una copia de consulta en lugar de duplicarlo.
+   const {data:remote,error:er}=await cloudClient.from('rec_recorridos').select('*').eq('tramo_asignado_id',a.id).eq('creado_por',cloudUser.id).order('creado_en',{ascending:false}).limit(1);
+   if(er)throw er;
+   if(remote?.length){const restored=await cloudReadRemoteRoute(remote[0]);restored.assignedVersion=a.version;await dbPut(restored);routes.push(restored);continue}
+   const planned=importPlannedRoute({geojson:a.geojson,name:a.nombre,importedAt:Date.parse(a.actualizada_en)||Date.now()});
+   if(!planned)continue;
+   const now=Date.now(),r={id:uid(),teamId:cloudTeam,cloudOwner:cloudUser.id,assignedId:a.id,assignedVersion:a.version,
+    coverageToleranceM:30,code:'REC-'+new Date(now).toISOString().slice(0,10).replaceAll('-','')+'-'+Math.random().toString(36).slice(2,6).toUpperCase(),
+    project:a.proyecto,technician:cloudUser.email||'Técnico',city:a.ciudad,kind:'Inspección de tramo asignado',createdAt:now,startedAt:null,endedAt:null,activeMs:0,legStart:null,status:'ready',segment:0,distance:0,points:[],findings:[],events:[{at:now,type:'planned',message:'Tramo asignado desde supervisor: '+a.nombre}],plannedRoute:planned,plannedRouteVisible:true};
+   await dbPut(r);routes.unshift(r);created++;if(!selected||selected.cloudReadOnly){selected=r;planVisible=true;localStorage.setItem('recorredor-current',r.id)}
+  }
+  routes.sort((a,b)=>b.createdAt-a.createdAt);
+  renderHistory();refresh();renderMap();renderAssignedTramos();
+  if(created){queueCloudSync(2300);if(manual)toast(`${created} nuevo(s) tramo(s) recibidos desde Supervisión.`)}
+  else if(manual)toast('Asignaciones consultadas correctamente.');
+ }catch(e){cloudAssignmentError(e);if(manual)toast('No fue posible consultar las asignaciones.',true)}finally{assignedCheckBusy=false}
+}
+function openAssignedTramos(){renderAssignedTramos();openModal('assignedTramosModal');if(cloudConnected())cloudLoadAssignments().catch(cloudAssignmentError)}
+function openAssignedRoute(id){const a=assignedFromCloud.find(t=>t.id===id),r=assignedLocalRoute(id);if(!r){toast('El tramo aún se está preparando. Pulsa Actualizar.',true);return}
+ if(selected?.status==='recording'&&selected!==r)return toast('Pausa el recorrido actual antes de cambiar de tramo.',true);
+ if(r.cloudReadOnly)toast('Esta ruta se inició en otro dispositivo. Aquí puedes consultarla, pero no grabar nuevos puntos.');
+ changeRoute(r);closeModal('assignedTramosModal');closeFieldPanels();if(r.plannedRoute)fitPlannedRoute();
+ if(a&&assignmentVersionAvailable(r,a))toast('Supervisor actualizó este tramo. Revisa «Mis tramos asignados» antes de continuar.',true);
+}
+async function updateAssignedRoute(id){const a=assignedFromCloud.find(t=>t.id===id),r=assignedLocalRoute(id);if(!a||!r||r.cloudReadOnly)return toast('No se puede actualizar esta copia. Usa el celular original.',true);
+ if(r.status==='recording')return toast('Primero pausa el recorrido para actualizar el trazado.',true);
+ const started=(r.points||[]).length||r.status!=='ready'||(r.findings||[]).length;
+ if(started&&!confirm('El supervisor cambió la asignación. ¿Actualizar el trazado? El GPS, hallazgos y fotos anteriores seguirán intactos, pero la cobertura se recalculará con la nueva ruta.'))return;
+ const planned=importPlannedRoute({geojson:a.geojson,name:a.nombre,importedAt:Date.parse(a.actualizada_en)||Date.now()});if(!planned)return toast('El archivo del supervisor no es válido.',true);
+ r.plannedRoute=planned;r.assignedVersion=a.version;r.project=a.proyecto;r.city=a.ciudad;r.plannedRouteVisible=true;r.localModifiedAt=Date.now();
+ r.events||=[];r.events.push({at:Date.now(),type:'planned',message:'Trazado actualizado por asignación de supervisor'});
+ await dbPut(r);if(selected===r){planVisible=true;coverageCache.key='';refresh();renderMap();fitPlannedRoute()}
+ renderAssignedTramos();queueCloudSync(1000);toast('Tramo actualizado. Los hallazgos y las fotografías fueron conservados.');
+}
+
 function cloudRenderTeams(){const el=$('cloudTeamSelect');if(!el)return;el.replaceChildren(new Option('Selecciona equipo…',''));
  cloudTeams.forEach(t=>el.add(new Option(t.nombre,t.id)));el.value=cloudTeam;
  $('cloudTeamCreate').disabled=!cloudUser;$('cloudSyncAll').disabled=!cloudConnected();$('cloudDownload').disabled=!cloudConnected();$('cloudGeneral').disabled=!cloudConnected();
@@ -912,7 +985,7 @@ async function cloudAddMember(){if(!cloudConnected())return;
  const {data,error}=await cloudClient.rpc('rec_agregar_miembro',{p_equipo:cloudTeam,p_correo:email,p_rol:role});
  if(error)return cloudError(error);$('cloudInviteEmail').value='';toast(data||'Técnico agregado al equipo.');
 }
-function queueCloudSync(ms=1700){if(!cloudConnected()||!routes?.length)return;clearTimeout(cloudSyncTimer);cloudSyncTimer=setTimeout(()=>cloudSyncAll(false).catch(cloudError),ms)}
+function queueCloudSync(ms=1700){if(!routes?.length)return;if(!cloudConnected()){if(cloudUser&&!cloudTeam)cloudBadge('⚠ Sin equipo: pendiente de enviar');else if(!cloudUser)cloudBadge('💾 Guardado local · iniciar sesión para enviar');return}cloudBadge('⏳ Cambios pendientes de enviar');clearTimeout(cloudSyncTimer);cloudSyncTimer=setTimeout(()=>cloudSyncAll(false).catch(cloudError),ms)}
 function cloudAsDate(ms){return ms?new Date(Number(ms)).toISOString():null}
 function cloudDataFromRoute(r){
  const coverage=coverageOf(r);
@@ -920,7 +993,7 @@ function cloudDataFromRoute(r){
   codigo:r.code,proyecto:r.project,tecnico:r.technician,ciudad:r.city,tipo:r.kind||'',estado:r.status,
   creado_en:cloudAsDate(r.createdAt),inicio:cloudAsDate(r.startedAt),fin:cloudAsDate(r.endedAt),
   tiempo_activo_ms:Math.round(activeMs(r)),distancia_gps_m:r.distance||0,
-  tramo_nombre:r.plannedRoute?.name||null,tramo_geojson:r.plannedRoute?.geojson||null,
+  tramo_asignado_id:r.assignedId||null,tramo_nombre:r.plannedRoute?.name||null,tramo_geojson:r.plannedRoute?.geojson||null,
   tramo_longitud_m:coverage.total||0,inspeccionado_m:coverage.meters||0,avance_pct:coverage.percent||0,
   tolerancia_m:coverage.tolerance||r.coverageToleranceM||30,cobertura_geojson:coverageGeoJSON(r),
   hallazgos_total:r.findings.length,
@@ -940,6 +1013,13 @@ async function cloudSyncRoute(r){
  const syncStartedAt=Date.now();
  // El primer envío fija el equipo del recorrido para evitar mover registros entre equipos.
  if(r.teamId && r.teamId!==cloudTeam)return;
+ if(r.assignedId&&!assignedFromCloud.some(t=>t.id===r.assignedId)){
+  // Una asignación archivada o transferida conserva el recorrido, pero no puede seguir enviándose como asignada.
+  // Los recorridos históricos ya sincronizados no se eliminan.
+  const {data:a,error:ae}=await cloudClient.from('rec_tramos_asignados').select('id,estado,tecnico_id').eq('id',r.assignedId).maybeSingle();
+  if(ae)throw ae;
+  if(!a||a.estado!=='activa'||a.tecnico_id!==cloudUser.id)throw Error('Esta asignación fue archivada o reasignada. Contacta al supervisor antes de continuar sincronizando.');
+ }
  r.teamId=cloudTeam;
  const data=cloudDataFromRoute(r);
  let result=await cloudClient.from('rec_recorridos').upsert(data,{onConflict:'id'});
@@ -1010,7 +1090,7 @@ async function cloudReadRemoteRoute(row){
    type:f.tipo,title:f.titulo,description:f.descripcion,severity:f.severidad,condition:f.estado,action:f.accion,photos});
  }
  const d=row.detalle||{},geo=row.tramo_geojson;
- return {id:row.id,cloudId:row.id,cloudOwner:row.creado_por,teamId:row.equipo_id,cloudUploadedPoints:points.length,cloudReadOnly:true,
+ return {id:row.id,cloudId:row.id,cloudOwner:row.creado_por,teamId:row.equipo_id,assignedId:row.tramo_asignado_id||null,cloudUploadedPoints:points.length,cloudReadOnly:true,
   code:row.codigo,project:row.proyecto,technician:row.tecnico,city:row.ciudad,kind:row.tipo,
   createdAt:Date.parse(row.creado_en),startedAt:row.inicio?Date.parse(row.inicio):null,endedAt:row.fin?Date.parse(row.fin):null,
   activeMs:Number(row.tiempo_activo_ms)||0,legStart:null,status:row.estado==='recording'?'paused':row.estado,
@@ -1022,6 +1102,7 @@ async function cloudReadRemoteRoute(row){
 }
 async function cloudDownloadRoutes(){if(!cloudConnected())return toast('Primero conecta Supabase y selecciona un equipo.',true);
  if(selected?.status==='recording')return toast('Pausa la ruta activa antes de descargar recorridos.',true);
+ await cloudLoadAssignments().catch(cloudAssignmentError);
  cloudBadge('↓ Descargando recorridos…');let added=0,seen=0;
  try{
   for(let i=0;i<3000;i+=300){const {data,error}=await cloudClient.from('rec_recorridos').select('*').eq('equipo_id',cloudTeam).order('creado_en',{ascending:false}).range(i,i+299);if(error)throw error;
@@ -1130,7 +1211,7 @@ function attachEvents(){
  $('gpsFollowFab').onclick=toggleGpsFollow;
  document.addEventListener('click',e=>{if(!$('mapQuickMenu').contains(e.target)&&!$('mapMenuFab').contains(e.target))closeQuickMenu()});
  $('coverageTolerance').onchange=changeCoverageTolerance;
- $('generalTopBtn').onclick=generalOpen;
+ $('generalTopBtn').onclick=()=>{window.location.href='recorredor_supervisor.html'};
  $('cloudConfigBtn').onclick=cloudSettings;
  $('cloudSendBtn').onclick=()=>cloudSyncAll(true);
  $('cloudSave').onclick=cloudSaveConfig;
@@ -1139,18 +1220,21 @@ function attachEvents(){
  $('cloudLogout').onclick=cloudSignOut;
  $('cloudTeamCreate').onclick=cloudCreateTeam;
  $('cloudInviteBtn').onclick=cloudAddMember;
- $('cloudTeamSelect').onchange=e=>{cloudTeam=e.target.value;const c=configCloud();localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify({team:cloudTeam,override:c.override,...(c.override?{url:c.url,key:c.key}:{})}));cloudBadge(cloudTeam?'☁ Nube conectada':'Sin equipo');cloudRenderTeams()};
+ $('cloudTeamSelect').onchange=e=>{cloudTeam=e.target.value;assignedFromCloud=[];renderAssignedTramos();const c=configCloud();localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify({team:cloudTeam,override:c.override,...(c.override?{url:c.url,key:c.key}:{})}));cloudBadge(cloudTeam?'☁ Nube conectada':'Sin equipo');cloudRenderTeams()};
  $('cloudSyncAll').onclick=()=>cloudSyncAll(true);
  $('cloudDownload').onclick=cloudDownloadRoutes;
- $('cloudGeneral').onclick=()=>{closeModal('cloudModal');generalOpen()};
+ $('assignedRefresh').onclick=()=>cloudLoadAssignments(true).catch(cloudAssignmentError);
+ $('assignedTramosList').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.assignedOpen)openAssignedRoute(b.dataset.assignedOpen);else if(b.dataset.assignedUpdate)updateAssignedRoute(b.dataset.assignedUpdate)};
+ $('cloudGeneral').onclick=()=>{window.location.href='recorredor_supervisor.html'};
  for(const id of ['generalCity','generalStatus','generalFrom','generalTo'])$(id).addEventListener('change',generalRender);
  $('generalList').onclick=e=>{const btn=e.target.closest('[data-general]');if(btn)generalGo(btn.dataset.general)};
  $('generalRefresh').onclick=()=>generalLoad().catch(cloudError);
  $('generalCsv').onclick=generalExportCsv;
  $('generalPdf').onclick=generalPdf;
- $('loadPlanBtn').onclick=()=>{if(!selected)return newRouteModal();$('planFileInput').click()};$('planFileInput').onchange=loadPlanFile;$('fitPlanBtn').onclick=fitPlannedRoute;$('mapPlanBtn').onclick=()=>selected?.plannedRoute?fitPlannedRoute():$('loadPlanBtn').click();$('togglePlanBtn').onclick=togglePlanVisibility;$('removePlanBtn').onclick=removePlannedRoute;$('newBtn').onclick=newRouteModal;$('startBtn').onclick=startRoute;$('pauseBtn').onclick=pauseRoute;$('finishBtn').onclick=finishRoute;$('historyBtn').onclick=()=>{renderHistory();openModal('historyModal')};$('historyNewBtn').onclick=newRouteModal;$('exportBtn').onclick=()=>selected?openModal('exportModal'):toast('Primero crea un recorrido.',true);$('locateBtn').onclick=locate;$('fitBtn').onclick=findBounds;$('layerBtn').onclick=changeLayer;$('mapProviderChip').onclick=changeLayer;$('mapSettingsForm').onsubmit=saveMapSettings;$('pickBtn').onclick=togglePick;$('aimCancel').onclick=cancelAim;$('aimGps').onclick=aimToGps;$('aimConfirm').onclick=confirmAim;$('adjustFindingPoint').onclick=()=>beginAim(true);$('addBtn').onclick=blankFinding;$('sideAddBtn').onclick=blankFinding;$('routeForm').onsubmit=createRoute;$('findingForm').onsubmit=saveFinding;$('deleteFindingBtn').onclick=deleteFinding;$('cameraBtn').onclick=()=>$('cameraInput').click();$('galleryBtn').onclick=()=>$('galleryInput').click();$('cameraInput').onchange=e=>handlePhotos(e.target.files);$('galleryInput').onchange=e=>handlePhotos(e.target.files);$('photoGrid').onclick=e=>{const id=e.target.closest('[data-delphoto]')?.dataset.delphoto;if(id){formPhotos=formPhotos.filter(x=>x.id!==id);paintPhotos()}};$('filterbar').onclick=e=>{if(e.target.dataset.filter)selectFilter(e.target.dataset.filter)};$('findingList').onclick=e=>{const edit=e.target.closest('[data-edit]')?.dataset.edit,goto=e.target.closest('[data-goto]')?.dataset.goto;if(edit)openFinding(edit);else if(goto){e.preventDefault();gotoFinding(goto)}};$('historyList').onclick=e=>{const id=e.target.closest('[data-openroute]')?.dataset.openroute,rem=e.target.closest('[data-removeroute]')?.dataset.removeroute;if(id){const r=routes.find(r=>r.id===id);if(r)changeRoute(r)}else if(rem)removeRoute(rem)};document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id)}));document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>runExport(b.dataset.export));$('importBtn').onclick=()=>$('importInput').click();$('importInput').onchange=importJson;window.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.overlay.show').forEach(o=>closeModal(o.id));if(placement)cancelAim();closeFieldPanels();closeQuickMenu()}});window.addEventListener('online',()=>{if(cloudConnected())queueCloudSync(1000);else if(configCloud().url)cloudInit().catch(cloudError)});window.addEventListener('offline',()=>{if(cloudClient)cloudBadge('📴 Sin conexión · guardado local')});window.addEventListener('pagehide',()=>{if(selected)persist().catch(console.error)});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&selected)persist().catch(console.error)});}
+ $('loadPlanBtn').onclick=()=>{if(!selected)return newRouteModal();$('planFileInput').click()};$('planFileInput').onchange=loadPlanFile;$('fitPlanBtn').onclick=fitPlannedRoute;$('mapPlanBtn').onclick=()=>selected?.plannedRoute?fitPlannedRoute():$('loadPlanBtn').click();$('togglePlanBtn').onclick=togglePlanVisibility;$('removePlanBtn').onclick=removePlannedRoute;$('newBtn').onclick=newRouteModal;$('startBtn').onclick=startRoute;$('pauseBtn').onclick=pauseRoute;$('finishBtn').onclick=finishRoute;$('historyBtn').onclick=()=>{renderHistory();openModal('historyModal')};$('historyNewBtn').onclick=newRouteModal;$('exportBtn').onclick=()=>selected?openModal('exportModal'):toast('Primero crea un recorrido.',true);$('locateBtn').onclick=locate;$('fitBtn').onclick=findBounds;$('layerBtn').onclick=changeLayer;$('mapProviderChip').onclick=changeLayer;$('mapSettingsForm').onsubmit=saveMapSettings;$('pickBtn').onclick=togglePick;$('aimCancel').onclick=cancelAim;$('aimGps').onclick=aimToGps;$('aimConfirm').onclick=confirmAim;$('adjustFindingPoint').onclick=()=>beginAim(true);$('addBtn').onclick=blankFinding;$('sideAddBtn').onclick=blankFinding;$('routeForm').onsubmit=createRoute;$('findingForm').onsubmit=saveFinding;$('deleteFindingBtn').onclick=deleteFinding;$('cameraBtn').onclick=()=>$('cameraInput').click();$('galleryBtn').onclick=()=>$('galleryInput').click();$('cameraInput').onchange=e=>handlePhotos(e.target.files);$('galleryInput').onchange=e=>handlePhotos(e.target.files);$('photoGrid').onclick=e=>{const id=e.target.closest('[data-delphoto]')?.dataset.delphoto;if(id){formPhotos=formPhotos.filter(x=>x.id!==id);paintPhotos()}};$('filterbar').onclick=e=>{if(e.target.dataset.filter)selectFilter(e.target.dataset.filter)};$('findingList').onclick=e=>{const edit=e.target.closest('[data-edit]')?.dataset.edit,goto=e.target.closest('[data-goto]')?.dataset.goto;if(edit)openFinding(edit);else if(goto){e.preventDefault();gotoFinding(goto)}};$('historyList').onclick=e=>{const id=e.target.closest('[data-openroute]')?.dataset.openroute,rem=e.target.closest('[data-removeroute]')?.dataset.removeroute;if(id){const r=routes.find(r=>r.id===id);if(r)changeRoute(r)}else if(rem)removeRoute(rem)};document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id)}));document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>runExport(b.dataset.export));$('importBtn').onclick=()=>$('importInput').click();$('importInput').onchange=importJson;window.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.overlay.show').forEach(o=>closeModal(o.id));if(placement)cancelAim();closeFieldPanels();closeQuickMenu()}});window.addEventListener('online',()=>{if(cloudConnected()){queueCloudSync(1000);cloudLoadAssignments().catch(cloudAssignmentError)}else if(configCloud().url)cloudInit().catch(cloudError)});window.addEventListener('offline',()=>{if(cloudClient)cloudBadge('📴 Sin conexión · guardado local')});window.addEventListener('pagehide',()=>{if(selected)persist().catch(console.error)});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&selected)persist().catch(console.error);else if(document.visibilityState==='visible'&&cloudConnected())cloudLoadAssignments().catch(cloudAssignmentError)});}
 async function boot(){attachEvents();createMap();try{db=await dbOpen();routes=await dbAll();routes.sort((a,b)=>b.createdAt-a.createdAt);const saved=localStorage.getItem('recorredor-current');selected=routes.find(x=>x.id===saved)||routes[0]||null;planVisible=selected?.plannedRouteVisible!==false;const interrupted=routes.filter(r=>r.status==='recording');for(const r of interrupted){const from=r.legStart||r.startedAt||Date.now();const until=Math.max(from,Math.min(Date.now(),r.lastGpsAt||from));r.activeMs=(r.activeMs||0)+(until-from);r.legStart=null;r.segment=(r.segment||0)+1;r.status='paused';r.events.push({at:Date.now(),type:'pause',message:'Sesión recuperada: GPS interrumpido al cerrar la página'});await dbPut(r)}if(interrupted.length)toast('Se recuperó una ruta interrumpida. Reanúdala para continuar.');}catch(e){console.error(e);toast('No se pudo acceder al almacenamiento local. Prueba con otro navegador.',true);$('saveLabel').textContent='Almacenamiento no disponible';}
 refresh();renderMap();updateGpsFollowIndicator();gpsAutoLaunch();cloudInit().catch(cloudError);if(selected?.points.length||selected?.findings.length)findBounds();else if(selected?.plannedRoute)fitPlannedRoute();setInterval(()=>{$('topClock').textContent=new Date().toLocaleTimeString('es-CO',{hour12:false});if(selected?.status==='recording'){$('statTime').textContent=fmtDur(activeMs(selected));refreshMapHud()}},1000);$('topClock').textContent=fmtTime(Date.now());}
+setInterval(()=>{if(!document.hidden&&cloudConnected()&&Date.now()-assignedLastCheck>45000)cloudLoadAssignments().catch(cloudAssignmentError)},45000);
 window.addEventListener('DOMContentLoaded',boot);
 </script>
 </body>
