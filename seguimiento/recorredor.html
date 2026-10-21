@@ -775,8 +775,8 @@ function coverageOf(r,force=false){
  const plan=r?.plannedRoute;
  if(!plan?.segments || !plan?.lengthMeters)return {percent:0,meters:0,total:plan?.lengthMeters||0,lines:[],reason:'Sin línea planificada'};
  const tol=Math.max(10,Math.min(100,Number(r.coverageToleranceM)||30));
- const points=(r.points||[]), last=points.at(-1);
- const key=String(r.id)+'|'+String(plan.importedAt)+'|'+points.length+'|'+String(last?.at||0)+'|'+tol;
+ const points=[...(r.inheritedGpsPoints||[]),...(r.points||[])], last=points.at(-1);
+ const key=String(r.id)+'|'+String(plan.importedAt)+'|'+points.length+'|'+String(last?.at||0)+'|'+(r.inheritedGpsPoints?.length||0)+'|'+tol;
  if(!force && coverageCache.key===key)return coverageCache.result;
  const lines=routeLines(plan).filter(l=>l.length>1);
  const reference=routeCoordinates(plan)[0]||{lat:4,lng:-74};
@@ -978,8 +978,17 @@ function renderAssignedTramos(){
  info.className='assigntech-notice';info.textContent=assignedFromCloud.filter(a=>{const r=assignedLocalRoute(a.id);return !r||r.status!=='finished'}).length?`Tramos vigentes asignados a tu usuario. Solo se muestran los pendientes o en ejecución.`:'No tienes tramos pendientes o activos asignados. Solicita uno al supervisor.';
  list.innerHTML=assignedFromCloud.filter(a=>{const r=assignedLocalRoute(a.id);return !r||r.status!=='finished'}).map(a=>{
   const local=assignedLocalRoute(a.id),v=assignmentVersionAvailable(local,a),isActive=!!(selected&&selected.assignedId===a.id);
-  return `<div class="assigntech-card ${isActive?'active':''}"><strong>${escapeHtml(a.nombre)}</strong><small>👷 ${escapeHtml(cloudUser?.email||'')} · ${escapeHtml(a.proyecto)} · ${escapeHtml(a.ciudad)} · ${(Number(a.longitud_m||0)/1000).toFixed(2)} km</small>${a.observaciones?`<small>Indicaciones: ${escapeHtml(a.observaciones)}</small>`:''}<small>${local?'Estado: '+escapeHtml(local.status||'ready'):'Nuevo tramo'} · ${v?'⚠ Supervisor modificó este tramo':'Versión actual '+a.version}</small><div class="btns"><button class="main" data-assigned-open="${escapeHtml(a.id)}">⌖ Abrir mapa</button>${v?`<button data-assigned-update="${escapeHtml(a.id)}">↻ Aplicar actualización</button>`:''}</div></div>`
+  return `<div class="assigntech-card ${isActive?'active':''}"><strong>${escapeHtml(a.nombre)}</strong><small>👷 ${escapeHtml(cloudUser?.email||'')} · ${escapeHtml(a.proyecto)} · ${escapeHtml(a.ciudad)} · ${(Number(a.longitud_m||0)/1000).toFixed(2)} km</small>${a.observaciones?`<small>Indicaciones: ${escapeHtml(a.observaciones)}</small>`:''}<small>${local?'Estado: '+escapeHtml(local.status||'ready'):'Nuevo tramo'} · ${local?.inheritedGpsPoints?.length?'✓ Avance anterior incorporado · ':''}${v?'⚠ Supervisor modificó este tramo':'Versión actual '+a.version}</small><div class="btns"><button class="main" data-assigned-open="${escapeHtml(a.id)}">⌖ Abrir mapa</button>${v?`<button data-assigned-update="${escapeHtml(a.id)}">↻ Aplicar actualización</button>`:''}</div></div>`
  }).join('')||'<div class="emptysmall">Sin tramos asignados.</div>';
+}
+// Continuación de una asignación: traer GPS histórico validado por RPC de solo lectura.
+// Son puntos de COBERTURA; NO son parte del recorrido nuevo y nunca se vuelven a subir.
+async function cloudLoadPriorCoverage(assignmentId){
+ const {data,error}=await cloudClient.rpc('rec_avance_previo_asignacion',{p_tramo:assignmentId});
+ if(error)throw Error('No se pudo recuperar el avance del técnico anterior. Ejecuta recorredor_reasignacion.sql: '+(error.message||error));
+ const arr=Array.isArray(data)?data:[];
+ return arr.map(p=>({lat:Number(p.latitud),lng:Number(p.longitud),at:Date.parse(p.registrado_en),accuracy:Number(p.precision_m??30),segment:'prev-'+String(p.recorrido_id)+'-'+String(p.segmento)}))
+   .filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng)&&Number.isFinite(p.at));
 }
 async function cloudLoadAssignments(manual=false){
  if(!cloudConnected()||assignedCheckBusy)return;assignedCheckBusy=true;
@@ -988,16 +997,17 @@ async function cloudLoadAssignments(manual=false){
   if(error)throw error;
   assignedFromCloud=data||[];assignedLastCheck=Date.now();let created=0;
   for(const a of assignedFromCloud){
-   if(assignedLocalRoute(a.id))continue;
+   if(assignedLocalRoute(a.id)){const existing=assignedLocalRoute(a.id);if(!existing.cloudReadOnly){const historical=await cloudLoadPriorCoverage(a.id);existing.inheritedGpsPoints=historical;coverageCache.key='';await dbPut(existing);}continue;}
    // Si el mismo usuario ya comenzó el tramo en otro dispositivo, recuperar una copia de consulta en lugar de duplicarlo.
    const {data:remote,error:er}=await cloudClient.from('rec_recorridos').select('*').eq('tramo_asignado_id',a.id).eq('creado_por',cloudUser.id).order('creado_en',{ascending:false}).limit(1);
    if(er)throw er;
    if(remote?.length && remote[0].estado!=='cancelado' && remote[0].estado!=='cancelada' && remote[0].estado!=='finished' && remote[0].estado!=='finalizado' && !remote[0].finalizado_en){const restored=await cloudReadRemoteRoute(remote[0]);restored.assignedVersion=a.version;await dbPut(restored);routes.push(restored);continue}
+   const inheritedGps=await cloudLoadPriorCoverage(a.id);
    const planned=importPlannedRoute({geojson:a.geojson,name:a.nombre,importedAt:Date.parse(a.actualizada_en)||Date.now()});
    if(!planned)continue;
    const now=Date.now(),r={id:uid(),teamId:cloudTeam,cloudOwner:cloudUser.id,assignedId:a.id,assignedVersion:a.version,
     coverageToleranceM:30,code:'REC-'+new Date(now).toISOString().slice(0,10).replaceAll('-','')+'-'+Math.random().toString(36).slice(2,6).toUpperCase(),
-    project:a.proyecto,technician:cloudUser.email||'Técnico',city:a.ciudad,kind:'Inspección de tramo asignado',createdAt:now,startedAt:null,endedAt:null,activeMs:0,legStart:null,status:'ready',segment:0,distance:0,points:[],findings:[],events:[{at:now,type:'planned',message:'Tramo asignado desde supervisor: '+a.nombre}],plannedRoute:planned,plannedRouteVisible:true};
+    inheritedGpsPoints:inheritedGps,project:a.proyecto,technician:cloudUser.email||'Técnico',city:a.ciudad,kind:'Inspección de tramo asignado',createdAt:now,startedAt:null,endedAt:null,activeMs:0,legStart:null,status:'ready',segment:0,distance:0,points:[],findings:[],events:[{at:now,type:'planned',message:'Tramo asignado desde supervisor: '+a.nombre}],plannedRoute:planned,plannedRouteVisible:true};
    await dbPut(r);routes.unshift(r);created++;if(!selected||selected.cloudReadOnly){selected=r;planVisible=true;localStorage.setItem('recorredor-current',r.id)}
   }
   routes.sort((a,b)=>b.createdAt-a.createdAt);
