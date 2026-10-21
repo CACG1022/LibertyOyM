@@ -554,10 +554,10 @@ function handleQuickMenuAction(action){closeQuickMenu();
 function newRouteModal(){openAssignedTramos();return;if(selected?.status==='recording'){toast('Pausa o finaliza el recorrido antes de crear otro.',true);return}closeModal('historyModal');openModal('routeModal');setTimeout(()=>$('newProject').focus(),120)}
 async function createRoute(e){e.preventDefault();toast('Los recorridos solo pueden asignarse desde el supervisor.',true);return;const proj=$('newProject').value.trim(),tech=$('newTechnician').value.trim(),city=$('newCity').value.trim();if(!proj||!tech||!city)return;const now=Date.now();const r={id:uid(),teamId:cloudConnected()?cloudTeam:null,coverageToleranceM:30,code:'REC-'+new Date(now).toISOString().slice(0,10).replaceAll('-','')+'-'+Math.random().toString(36).slice(2,6).toUpperCase(),project:proj,technician:tech,city,kind:$('newKind').value,createdAt:now,startedAt:null,endedAt:null,activeMs:0,legStart:null,status:'ready',segment:0,distance:0,points:[],findings:[],events:[],plannedRoute:null};routes.unshift(r);selected=r;planVisible=true;localStorage.setItem('recorredor-current',r.id);await dbPut(r);queueCloudSync(1000);$('routeForm').reset();closeModal('routeModal');refresh();renderMap();toast('Recorrido creado. Pulsa «Iniciar ruta» para comenzar.')}
 function eventAdd(type,message){selected?.events.push({at:Date.now(),type,message})}
-function startRoute(){if(selected?.cloudReadOnly){toast('Recorrido recuperado en modo consulta.',true);return}if(!selected){openAssignedTramos();toast('Selecciona un tramo asignado por tu supervisor.',true);return}if(selected.status==='finished'){toast('Este recorrido está finalizado. Consulta tus otros tramos asignados.',true);return}if(selected.status==='recording')return;if(!('geolocation' in navigator)||!window.isSecureContext){toast('El recorrido necesita GPS y una conexión HTTPS para funcionar.',true);return}if(selected.status==='ready'){selected.startedAt=Date.now();selected.events=[];eventAdd('start','Recorrido iniciado')}else{selected.segment++;eventAdd('resume','Recorrido reanudado')}selected.status='recording';selected.legStart=Date.now();gpsFollowEnabled=true;gpsFollowFirstFix=true;startGpsWatch();updateGpsFollowIndicator();saveSoon(true);refresh();toast('Grabación del recorrido activada')}
+function startRoute(){if(selected?.cloudReadOnly){toast('Recorrido recuperado en modo consulta.',true);return}if(!routeIsAssignedActive(selected)){openAssignedTramos();toast('No tienes un tramo vigente asignado para inspeccionar.',true);return}if(selected.status==='finished'){toast('Este recorrido está finalizado. Consulta tus otros tramos asignados.',true);return}if(selected.status==='recording')return;if(!('geolocation' in navigator)||!window.isSecureContext){toast('El recorrido necesita GPS y una conexión HTTPS para funcionar.',true);return}if(selected.status==='ready'){selected.startedAt=Date.now();selected.events=[];eventAdd('start','Recorrido iniciado')}else{selected.segment++;eventAdd('resume','Recorrido reanudado')}selected.status='recording';selected.legStart=Date.now();gpsFollowEnabled=true;gpsFollowFirstFix=true;startGpsWatch();updateGpsFollowIndicator();saveSoon(true);refresh();toast('Grabación del recorrido activada')}
 function pauseRoute(){if(selected?.status!=='recording')return;selected.activeMs+=Math.max(0,Date.now()-selected.legStart);selected.legStart=null;selected.status='paused';eventAdd('pause','Recorrido pausado');saveSoon(true);refresh();toast('Grabación pausada')}
 function finishRoute(){if(!selected||!['recording','paused'].includes(selected.status))return;if(!confirm('¿Finalizar este recorrido? Se conservarán los hallazgos y el trazado, pero no se podrá reanudar.'))return;if(selected.status==='recording')selected.activeMs+=Math.max(0,Date.now()-selected.legStart);selected.legStart=null;selected.endedAt=Date.now();selected.status='finished';eventAdd('finish','Recorrido finalizado');saveSoon(true);refresh();toast('Recorrido finalizado. Ya puedes generar el reporte.')}
-function changeRoute(r){if(selected?.status==='recording'){toast('Pausa el recorrido en curso antes de cambiar de ruta.',true);return}stopReplay();selected=r;planVisible=r.plannedRouteVisible!==false;localStorage.setItem('recorredor-current',selected.id);closeModal('historyModal');refresh();renderMap();findBounds();}
+function changeRoute(r){if(!routeIsAssignedActive(r)){toast('Este tramo ya no está asignado, fue finalizado o retirado.',true);return}if(selected?.status==='recording'){toast('Pausa el recorrido en curso antes de cambiar de ruta.',true);return}stopReplay();selected=r;planVisible=r.plannedRouteVisible!==false;localStorage.setItem('recorredor-current',selected.id);closeModal('historyModal');refresh();renderMap();findBounds();}
 function mapCenterCoords(){if(!map)return null;if(googleActive()){const c=map.getCenter();return c?{lat:c.lat(),lng:c.lng()}:null}const c=map.getCenter?.();return c?{lat:c.lat,lng:c.lng}:null}
 function updateAimCoords(){if(!placement||!map)return;const c=mapCenterCoords();if(!c)return;$('aimCoords').textContent=`${Number(c.lat).toFixed(7)}, ${Number(c.lng).toFixed(7)}`}
 function updateFindingGeo(){if(!pickedPoint)return;const origin=pickedPoint.source==='mira'||pickedPoint.source==='mapa'?'Mira central · punto elegido sobre mapa':`GPS${pickedPoint.accuracy!=null?' ±'+Math.round(pickedPoint.accuracy)+' m':''}`;$('findingGeoDetails').innerHTML=`<b>⌖ ${degrees(pickedPoint.lat)}, ${degrees(pickedPoint.lng)}</b><small>${escapeHtml(origin)}</small>`}
@@ -626,7 +626,7 @@ function showReplayPoint(i){if(!selected?.points.length||!map)return;replayIndex
  mapPanTo([p.lat,p.lng]);$('replayTime').textContent=fmtDate(p.at);$('replayCounter').textContent=`${replayIndex+1} / ${selected.points.length}`;$('replaySlider').value=replayIndex}
 function stopReplay(){if(timerReplay){clearInterval(timerReplay);timerReplay=null}if($('playReplay'))$('playReplay').textContent='▶';}
 function toggleReplay(){if(timerReplay){stopReplay();return}if(!selected?.points.length)return;if(replayIndex>=selected.points.length-1)replayIndex=0;timerReplay=setInterval(()=>{if(!selected || replayIndex>=selected.points.length-1){stopReplay();return}showReplayPoint(replayIndex+1)},400);$('playReplay').textContent='Ⅱ'}
-function renderHistory(){$('historyList').innerHTML=routes.length?routes.slice().sort((a,b)=>b.createdAt-a.createdAt).map(r=>`<div class="history-item"><div><span class="status ${escapeHtml(r.status)}">${escapeHtml({ready:'Sin iniciar',recording:'En curso',paused:'Pausado',finished:'Finalizado'}[r.status])}</span><strong>${escapeHtml(r.project)}</strong><small>${escapeHtml(r.code)} · ${escapeHtml(fmtDate(r.createdAt))}<br>${r.findings.length} hallazgos · ${fmtDist(r.distance)} km</small></div><div class="history-actions"><button class="action" data-openroute="${escapeHtml(r.id)}">Abrir</button><button class="action danger" data-removeroute="${escapeHtml(r.id)}" title="Eliminar recorrido">×</button></div></div>`).join(''):'<div class="emptysmall">Todavía no hay recorridos guardados.</div>'}
+function renderHistory(){$('historyList').innerHTML=visibleAssignedRoutes().length?visibleAssignedRoutes().slice().sort((a,b)=>b.createdAt-a.createdAt).map(r=>`<div class="history-item"><div><span class="status ${escapeHtml(r.status)}">${escapeHtml({ready:'Sin iniciar',recording:'En curso',paused:'Pausado',finished:'Finalizado'}[r.status])}</span><strong>${escapeHtml(r.project)}</strong><small>${escapeHtml(r.code)} · ${escapeHtml(fmtDate(r.createdAt))}<br>${r.findings.length} hallazgos · ${fmtDist(r.distance)} km</small></div><div class="history-actions"><button class="action" data-openroute="${escapeHtml(r.id)}">Abrir</button><button class="action danger" data-removeroute="${escapeHtml(r.id)}" title="Eliminar recorrido">×</button></div></div>`).join(''):'<div class="emptysmall">No tienes recorridos activos asignados. Solicita un tramo al supervisor.</div>'}
 async function removeRoute(id){const r=routes.find(x=>x.id===id);if(!r)return;if(r.status==='recording'){toast('Primero pausa o finaliza esta ruta.',true);return}if(!confirm(`¿Quitar la copia local de ${r.code} con ${r.findings.length} hallazgos? Si ya se envió, permanecerá en la base de datos.`))return;await dbDelete(id);routes=routes.filter(x=>x.id!==id);if(selected?.id===id){selected=routes[0]||null;planVisible=selected?.plannedRouteVisible!==false;localStorage.setItem('recorredor-current',selected?.id||'');}renderHistory();refresh();renderMap();toast('Recorrido eliminado')}
 function downloadBlob(name,blob){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),30000)}
 function filename(ext){return (selected?.code||'recorrido')+'.'+ext}
@@ -899,7 +899,7 @@ async function cloudInit(){
   const {data,error}=await cloudClient.auth.getSession();if(error)throw error;
   cloudUser=data.session?.user||null;
   if(cloudUser)await cloudLoadTeams();else cloudBadge('Sin sesión · Iniciar sesión');recUpdateGate();
-  cloudClient.auth.onAuthStateChange((event,session)=>{cloudUser=session?.user||null;setTimeout(()=>{if(cloudUser)cloudLoadTeams().catch(cloudError);else{cloudTeams=[];cloudTeam='';cloudBadge('Sin sesión');recUpdateGate()}} ,0)});
+  cloudClient.auth.onAuthStateChange((event,session)=>{cloudUser=session?.user||null;setTimeout(()=>{if(cloudUser)cloudLoadTeams().catch(cloudError);else{cloudTeams=[];cloudTeam='';assignedFromCloud=[];reconcileAssignedRoutes();cloudBadge('Sin sesión');recUpdateGate()}} ,0)});
  }catch(e){cloudClient=null;cloudError(e)}
 }
 function cloudSettings(){
@@ -929,19 +929,44 @@ async function cloudAuth(mode){if(!cloudClient)return toast('La base de datos no
   await cloudLoadTeams();recUpdateGate();cloudSettings();toast('Sesión iniciada correctamente.');
  }catch(e){cloudError(e)}finally{$('cloudPass').value=''}
 }
-async function cloudSignOut(){if(!cloudClient)return;await cloudClient.auth.signOut();cloudUser=null;cloudTeam='';cloudTeams=[];cloudBadge('Sin sesión');recUpdateGate();document.getElementById('recProfilePanel')?.classList.remove('active');document.getElementById('cloudModal')?.classList.remove('show');toast('Sesión cerrada. Las copias locales permanecen.')}
+async function cloudSignOut(){if(!cloudClient)return;await cloudClient.auth.signOut();cloudUser=null;cloudTeam='';cloudTeams=[];assignedFromCloud=[];reconcileAssignedRoutes();cloudBadge('Sin sesión');recUpdateGate();document.getElementById('recProfilePanel')?.classList.remove('active');document.getElementById('cloudModal')?.classList.remove('show');toast('Sesión cerrada. Las copias locales permanecen.')}
 async function cloudLoadTeams(){
  if(!cloudClient||!cloudUser)return;
  const {data,error}=await cloudClient.from('rec_equipos').select('id,nombre,creado_por').order('nombre');if(error)throw error;
  cloudTeams=data||[];
- if(!cloudTeams.some(t=>t.id===cloudTeam))cloudTeam=cloudTeams[0]?.id||'';
+ if(!cloudTeams.some(t=>t.id===cloudTeam))cloudTeam=cloudTeams[0]?.id||'';assignedFromCloud=[];reconcileAssignedRoutes();
  const c=configCloud();localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify({team:cloudTeam,override:c.override,...(c.override?{url:c.url,key:c.key}:{})}));
  cloudBadge(cloudTeam?'☁ Sesión activa · equipo '+(cloudTeams.find(x=>x.id===cloudTeam)?.nombre||'O&M'):'⚠ Sesión activa, pero sin equipo: crea uno o pide acceso');cloudRenderTeams();
- if(cloudConnected()){queueCloudSync(3000);cloudLoadAssignments().catch(cloudAssignmentError)}
+ if(cloudConnected()){await cloudLoadAssignments();queueCloudSync(3000)}
 }
 
 // ===== V10 · RECIBIR ASIGNACIONES DESDE SUPERVISOR =====
 function cloudAssignmentError(e){console.error('Tramos asignados:',e);const el=$('assignedTramosInfo');if(el){el.className='assigntech-notice assigntech-warning';el.textContent='No se pudieron consultar tus tramos: '+String(e?.message||e)+'. Consulta con el supervisor si persiste el problema.'}}
+// V13: Solo son operativos los recorridos de asignaciones vigentes, del usuario y equipo actuales.
+// Conservamos copias locales ocultas como respaldo, pero no las reactivamos ni sincronizamos.
+function routeIsAssignedActive(r){
+ return !!(r && cloudConnected() && r.assignedId && r.status!=='finished' &&
+  assignedFromCloud.some(a=>a.id===r.assignedId && a.tecnico_id===cloudUser.id && a.equipo_id===cloudTeam && a.estado==='activa') &&
+  (!r.cloudOwner || r.cloudOwner===cloudUser.id) && (!r.teamId || r.teamId===cloudTeam));
+}
+function visibleAssignedRoutes(){return routes.filter(routeIsAssignedActive)}
+function reconcileAssignedRoutes(){
+ const valid=visibleAssignedRoutes();
+ if(!routeIsAssignedActive(selected)){
+  if(selected?.status==='recording'){
+   // Una asignación retirada no autoriza grabación adicional.
+   selected.activeMs=(selected.activeMs||0)+Math.max(0,Date.now()-(selected.legStart||Date.now()));
+   selected.legStart=null;selected.status='paused';selected.localModifiedAt=Date.now();
+   if(db)dbPut(selected).catch(console.error);
+  }
+  selected=valid[0]||null;
+  if(selected)localStorage.setItem('recorredor-current',selected.id);
+  else localStorage.removeItem('recorredor-current');
+  planVisible=selected?.plannedRouteVisible!==false;
+  coverageCache.key='';
+ }
+ renderHistory();refresh();renderMap();
+}
 function assignedLocalRoute(id){return routes.find(r=>r.assignedId===id&&!r.cloudReadOnly)||routes.find(r=>r.assignedId===id)}
 function assignmentVersionAvailable(route,a){return !!(route&&Number(route.assignedVersion||0)<Number(a.version||0))}
 function assignedRouteReadOnly(route){return route?.cloudReadOnly}
@@ -950,8 +975,8 @@ function renderAssignedTramos(){
  if(badge)badge.textContent=String(assignedFromCloud.length);
  if(!info||!list)return;
  if(!cloudConnected()){info.className='assigntech-notice';info.textContent='Inicia sesión para recibir los tramos asignados por tu supervisor.';list.innerHTML='';return}
- info.className='assigntech-notice';info.textContent=assignedFromCloud.length?`✓ ${assignedFromCloud.length} tramo(s) asignado(s) a tu usuario · actualizados desde la base de datos. Selecciona «Abrir mapa» para orientarte.`:'Tu supervisor aún no te asignó tramos activos. La aplicación los consultará automáticamente.';
- list.innerHTML=assignedFromCloud.map(a=>{
+ info.className='assigntech-notice';info.textContent=assignedFromCloud.filter(a=>{const r=assignedLocalRoute(a.id);return !r||r.status!=='finished'}).length?`Tramos vigentes asignados a tu usuario. Solo se muestran los pendientes o en ejecución.`:'No tienes tramos pendientes o activos asignados. Solicita uno al supervisor.';
+ list.innerHTML=assignedFromCloud.filter(a=>{const r=assignedLocalRoute(a.id);return !r||r.status!=='finished'}).map(a=>{
   const local=assignedLocalRoute(a.id),v=assignmentVersionAvailable(local,a),isActive=!!(selected&&selected.assignedId===a.id);
   return `<div class="assigntech-card ${isActive?'active':''}"><strong>${escapeHtml(a.nombre)}</strong><small>👷 ${escapeHtml(cloudUser?.email||'')} · ${escapeHtml(a.proyecto)} · ${escapeHtml(a.ciudad)} · ${(Number(a.longitud_m||0)/1000).toFixed(2)} km</small>${a.observaciones?`<small>Indicaciones: ${escapeHtml(a.observaciones)}</small>`:''}<small>${local?'Estado: '+escapeHtml(local.status||'ready'):'Nuevo tramo'} · ${v?'⚠ Supervisor modificó este tramo':'Versión actual '+a.version}</small><div class="btns"><button class="main" data-assigned-open="${escapeHtml(a.id)}">⌖ Abrir mapa</button>${v?`<button data-assigned-update="${escapeHtml(a.id)}">↻ Aplicar actualización</button>`:''}</div></div>`
  }).join('')||'<div class="emptysmall">Sin tramos asignados.</div>';
@@ -967,7 +992,7 @@ async function cloudLoadAssignments(manual=false){
    // Si el mismo usuario ya comenzó el tramo en otro dispositivo, recuperar una copia de consulta en lugar de duplicarlo.
    const {data:remote,error:er}=await cloudClient.from('rec_recorridos').select('*').eq('tramo_asignado_id',a.id).eq('creado_por',cloudUser.id).order('creado_en',{ascending:false}).limit(1);
    if(er)throw er;
-   if(remote?.length){const restored=await cloudReadRemoteRoute(remote[0]);restored.assignedVersion=a.version;await dbPut(restored);routes.push(restored);continue}
+   if(remote?.length && remote[0].estado!=='cancelado' && remote[0].estado!=='cancelada' && remote[0].estado!=='finished' && remote[0].estado!=='finalizado' && !remote[0].finalizado_en){const restored=await cloudReadRemoteRoute(remote[0]);restored.assignedVersion=a.version;await dbPut(restored);routes.push(restored);continue}
    const planned=importPlannedRoute({geojson:a.geojson,name:a.nombre,importedAt:Date.parse(a.actualizada_en)||Date.now()});
    if(!planned)continue;
    const now=Date.now(),r={id:uid(),teamId:cloudTeam,cloudOwner:cloudUser.id,assignedId:a.id,assignedVersion:a.version,
@@ -976,7 +1001,7 @@ async function cloudLoadAssignments(manual=false){
    await dbPut(r);routes.unshift(r);created++;if(!selected||selected.cloudReadOnly){selected=r;planVisible=true;localStorage.setItem('recorredor-current',r.id)}
   }
   routes.sort((a,b)=>b.createdAt-a.createdAt);
-  renderHistory();refresh();renderMap();renderAssignedTramos();
+  reconcileAssignedRoutes();renderAssignedTramos();
   if(created){queueCloudSync(2300);if(manual)toast(`${created} nuevo(s) tramo(s) recibidos desde Supervisión.`)}
   else if(manual)toast('Asignaciones consultadas correctamente.');
  }catch(e){cloudAssignmentError(e);if(manual)toast('No fue posible consultar las asignaciones.',true)}finally{assignedCheckBusy=false}
@@ -1098,7 +1123,7 @@ async function cloudSyncAll(manual=true){
  cloudRunning=true;cloudBadge('↻ Sincronizando…');let ok=0;let failures=0;
  try{
   if(selected && db)await dbPut(selected);
-  const list=[...routes].filter(r=>!r.cloudReadOnly&&(!r.teamId||r.teamId===cloudTeam)&&(manual||!r.lastCloudSync||(r.localModifiedAt||0)>r.lastCloudSync));
+  const list=visibleAssignedRoutes().filter(r=>!r.cloudReadOnly&&(manual||!r.lastCloudSync||(r.localModifiedAt||0)>r.lastCloudSync));
   for(const r of list){try{await cloudSyncRoute(r);ok++}catch(e){failures++;console.error('Error recorrido',r.code,e);cloudError(e)}}
   cloudBadge(failures?`⚠ ${failures} sin enviar`:`✓ ${ok} recorrido(s) sincronizado(s)`);
   if(manual)toast(failures?`${ok} enviados, ${failures} con error. Reintenta.`:`${ok} recorridos enviados a la base de datos.`,!!failures);
@@ -1249,7 +1274,7 @@ function attachEvents(){
  $('cloudLogout').onclick=cloudSignOut;
  $('cloudTeamCreate').onclick=()=>toast('La gestión de equipos corresponde al supervisor.',true);
  $('cloudInviteBtn').onclick=()=>toast('La gestión de usuarios corresponde al supervisor.',true);
- $('cloudTeamSelect').onchange=e=>{cloudTeam=e.target.value;assignedFromCloud=[];renderAssignedTramos();const c=configCloud();localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify({team:cloudTeam,override:c.override,...(c.override?{url:c.url,key:c.key}:{})}));cloudBadge(cloudTeam?'☁ Nube conectada':'Sin equipo');cloudRenderTeams()};
+ $('cloudTeamSelect').onchange=e=>{cloudTeam=e.target.value;assignedFromCloud=[];reconcileAssignedRoutes();renderAssignedTramos();const c=configCloud();localStorage.setItem(CLOUD_CONFIG_KEY,JSON.stringify({team:cloudTeam,override:c.override,...(c.override?{url:c.url,key:c.key}:{})}));cloudBadge(cloudTeam?'☁ Nube conectada':'Sin equipo');cloudRenderTeams()};
  $('cloudSyncAll').onclick=()=>cloudSyncAll(true);
  $('cloudDownload').onclick=cloudDownloadRoutes;
  $('assignedRefresh').onclick=()=>cloudLoadAssignments(true).catch(cloudAssignmentError);
@@ -1261,7 +1286,7 @@ function attachEvents(){
  $('generalCsv').onclick=generalExportCsv;
  $('generalPdf').onclick=generalPdf;
  $('loadPlanBtn').onclick=openAssignedTramos;$('planFileInput').onchange=loadPlanFile;$('fitPlanBtn').onclick=fitPlannedRoute;$('mapPlanBtn').onclick=()=>selected?.plannedRoute?fitPlannedRoute():openAssignedTramos();$('togglePlanBtn').onclick=togglePlanVisibility;$('removePlanBtn').onclick=removePlannedRoute;$('newBtn').onclick=openAssignedTramos;$('startBtn').onclick=startRoute;$('pauseBtn').onclick=pauseRoute;$('finishBtn').onclick=finishRoute;$('historyBtn').onclick=()=>{renderHistory();openModal('historyModal')};$('historyNewBtn').onclick=()=>{closeModal('historyModal');openAssignedTramos()};$('exportBtn').onclick=()=>selected?openModal('exportModal'):toast('Primero crea un recorrido.',true);$('locateBtn').onclick=locate;$('fitBtn').onclick=findBounds;$('layerBtn').onclick=changeLayer;$('mapProviderChip').onclick=changeLayer;$('mapSettingsForm').onsubmit=saveMapSettings;$('pickBtn').onclick=togglePick;$('aimCancel').onclick=cancelAim;$('aimGps').onclick=aimToGps;$('aimConfirm').onclick=confirmAim;$('adjustFindingPoint').onclick=()=>beginAim(true);$('addBtn').onclick=blankFinding;$('sideAddBtn').onclick=blankFinding;$('routeForm').onsubmit=createRoute;$('findingForm').onsubmit=saveFinding;$('deleteFindingBtn').onclick=deleteFinding;$('cameraBtn').onclick=()=>$('cameraInput').click();$('galleryBtn').onclick=()=>$('galleryInput').click();$('cameraInput').onchange=e=>handlePhotos(e.target.files);$('galleryInput').onchange=e=>handlePhotos(e.target.files);$('photoGrid').onclick=e=>{const id=e.target.closest('[data-delphoto]')?.dataset.delphoto;if(id){formPhotos=formPhotos.filter(x=>x.id!==id);paintPhotos()}};$('filterbar').onclick=e=>{if(e.target.dataset.filter)selectFilter(e.target.dataset.filter)};$('findingList').onclick=e=>{const edit=e.target.closest('[data-edit]')?.dataset.edit,goto=e.target.closest('[data-goto]')?.dataset.goto;if(edit)openFinding(edit);else if(goto){e.preventDefault();gotoFinding(goto)}};$('historyList').onclick=e=>{const id=e.target.closest('[data-openroute]')?.dataset.openroute,rem=e.target.closest('[data-removeroute]')?.dataset.removeroute;if(id){const r=routes.find(r=>r.id===id);if(r)changeRoute(r)}else if(rem)toast('Solicita al supervisor que gestione los recorridos.',true)};document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id)}));document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>runExport(b.dataset.export));$('importBtn').onclick=()=>$('importInput').click();$('importInput').onchange=importJson;window.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.overlay.show').forEach(o=>closeModal(o.id));if(placement)cancelAim();closeFieldPanels();closeQuickMenu()}});window.addEventListener('online',()=>{if(cloudConnected()){queueCloudSync(1000);cloudLoadAssignments().catch(cloudAssignmentError)}else if(configCloud().url)cloudInit().catch(cloudError)});window.addEventListener('offline',()=>{if(cloudClient)cloudBadge('📴 Sin conexión · guardado local')});window.addEventListener('pagehide',()=>{if(selected)persist().catch(console.error)});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&selected)persist().catch(console.error);else if(document.visibilityState==='visible'&&cloudConnected())cloudLoadAssignments().catch(cloudAssignmentError)});}
-async function boot(){attachEvents();createMap();try{db=await dbOpen();routes=await dbAll();routes.sort((a,b)=>b.createdAt-a.createdAt);const saved=localStorage.getItem('recorredor-current');selected=routes.find(x=>x.id===saved)||routes[0]||null;planVisible=selected?.plannedRouteVisible!==false;const interrupted=routes.filter(r=>r.status==='recording');for(const r of interrupted){const from=r.legStart||r.startedAt||Date.now();const until=Math.max(from,Math.min(Date.now(),r.lastGpsAt||from));r.activeMs=(r.activeMs||0)+(until-from);r.legStart=null;r.segment=(r.segment||0)+1;r.status='paused';r.events.push({at:Date.now(),type:'pause',message:'Sesión recuperada: GPS interrumpido al cerrar la página'});await dbPut(r)}if(interrupted.length)toast('Se recuperó una ruta interrumpida. Reanúdala para continuar.');}catch(e){console.error(e);toast('No se pudo acceder al almacenamiento local. Prueba con otro navegador.',true);$('saveLabel').textContent='Almacenamiento no disponible';}
+async function boot(){attachEvents();createMap();try{db=await dbOpen();routes=await dbAll();routes.sort((a,b)=>b.createdAt-a.createdAt);const saved=localStorage.getItem('recorredor-current');selected=null; /* Validar asignación antes de mostrar una ruta local. */planVisible=selected?.plannedRouteVisible!==false;const interrupted=routes.filter(r=>r.status==='recording');for(const r of interrupted){const from=r.legStart||r.startedAt||Date.now();const until=Math.max(from,Math.min(Date.now(),r.lastGpsAt||from));r.activeMs=(r.activeMs||0)+(until-from);r.legStart=null;r.segment=(r.segment||0)+1;r.status='paused';r.events.push({at:Date.now(),type:'pause',message:'Sesión recuperada: GPS interrumpido al cerrar la página'});await dbPut(r)}if(interrupted.length)toast('Se recuperó una ruta interrumpida. Reanúdala para continuar.');}catch(e){console.error(e);toast('No se pudo acceder al almacenamiento local. Prueba con otro navegador.',true);$('saveLabel').textContent='Almacenamiento no disponible';}
 refresh();renderMap();updateGpsFollowIndicator();gpsAutoLaunch();cloudInit().catch(cloudError);recWireProfile();if(selected?.points.length||selected?.findings.length)findBounds();else if(selected?.plannedRoute)fitPlannedRoute();setInterval(()=>{$('topClock').textContent=new Date().toLocaleTimeString('es-CO',{hour12:false});if(selected?.status==='recording'){$('statTime').textContent=fmtDur(activeMs(selected));refreshMapHud()}},1000);$('topClock').textContent=fmtTime(Date.now());}
 setInterval(()=>{if(!document.hidden&&cloudConnected()&&Date.now()-assignedLastCheck>45000)cloudLoadAssignments().catch(cloudAssignmentError)},45000);
 window.addEventListener('DOMContentLoaded',boot);
