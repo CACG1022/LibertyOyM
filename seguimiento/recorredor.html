@@ -1040,7 +1040,7 @@ function renderAssignedTramos(){
  info.className='assigntech-notice';info.textContent=assignedFromCloud.filter(a=>{const r=assignedLocalRoute(a.id);return !r||r.status!=='finished'}).length?`Tramos vigentes asignados a tu usuario. Solo se muestran los pendientes o en ejecución.`:'No tienes tramos pendientes o activos asignados. Solicita uno al supervisor.';
  list.innerHTML=assignedFromCloud.filter(a=>{const r=assignedLocalRoute(a.id);return !r||r.status!=='finished'}).map(a=>{
   const local=assignedLocalRoute(a.id),v=assignmentVersionAvailable(local,a),isActive=!!(selected&&selected.assignedId===a.id);
-  return `<div class="assigntech-card ${isActive?'active':''}"><strong>${escapeHtml(a.nombre)}</strong><small>👷 ${escapeHtml(cloudUser?.email||'')} · ${escapeHtml(a.proyecto)} · ${escapeHtml(a.ciudad)} · ${(Number(a.longitud_m||0)/1000).toFixed(2)} km</small>${a.observaciones?`<small>Indicaciones: ${escapeHtml(a.observaciones)}</small>`:''}<small>${local?'Estado: '+escapeHtml(local.status||'ready'):'Nuevo tramo'} · ${local?.inheritedGpsPoints?.length?'✓ Avance anterior incorporado · ':''}${v?'⚠ Supervisor modificó este tramo':'Versión actual '+a.version}</small><div class="btns"><button class="main" data-assigned-open="${escapeHtml(a.id)}">⌖ Abrir mapa</button>${v?`<button data-assigned-update="${escapeHtml(a.id)}">↻ Aplicar actualización</button>`:''}</div></div>`
+  return `<div class="assigntech-card ${isActive?'active':''}"><strong>${escapeHtml(a.nombre)}</strong><small>👷 ${escapeHtml(cloudUser?.email||'')} · ${escapeHtml(a.proyecto)} · ${escapeHtml(a.ciudad)} · ${(Number(a.longitud_m||0)/1000).toFixed(2)} km</small>${a.observaciones?`<small>Indicaciones: ${escapeHtml(a.observaciones)}</small>`:''}<small>${local?'Estado: '+escapeHtml(local.status||'ready'):'Nuevo tramo'} · ${local?.inheritedGpsPoints?.length?'✓ Avance anterior incorporado · ':''}${v?'⚠ Supervisor modificó este tramo':'Versión actual '+a.version}</small><div class="btns"><button class="main" data-assigned-open="${escapeHtml(a.id)}">⌖ Abrir mapa</button></div></div>`
  }).join('')||'<div class="emptysmall">Sin tramos asignados.</div>';
 }
 // Continuación de una asignación: traer GPS histórico validado por RPC de solo lectura.
@@ -1061,19 +1061,37 @@ async function cloudLoadAssignments(manual=false){
   for(const a of assignedFromCloud){
    if(assignedLocalRoute(a.id)){
     const existing=assignedLocalRoute(a.id);
+    if(existing.cloudReadOnly&&assignmentVersionAvailable(existing,a)){
+     // Recuperada de otro dispositivo: crear jornada nueva sin alterar el historial de solo lectura.
+     const otherRecording=selected?.status==='recording'&&selected.assignedId!==a.id;
+     if(!otherRecording){
+      const plan=importPlannedRoute({geojson:a.geojson,name:a.nombre,importedAt:Date.parse(a.actualizada_en)||Date.now()});
+      if(plan){
+       const historical=await cloudLoadPriorCoverage(a.id),now=Date.now();
+       const next={id:uid(),teamId:cloudTeam,cloudOwner:cloudUser.id,assignedId:a.id,assignedVersion:a.version,
+        coverageToleranceM:existing.coverageToleranceM||30,code:'REC-'+new Date(now).toISOString().slice(0,10).replaceAll('-','')+'-'+Math.random().toString(36).slice(2,6).toUpperCase(),
+        inheritedGpsPoints:historical,project:a.proyecto,technician:cloudUser.email||'Técnico',city:a.ciudad,
+        kind:'Continuación automática de tramo',createdAt:now,startedAt:null,endedAt:null,activeMs:0,legStart:null,
+        status:'ready',segment:0,distance:0,points:[],findings:[],
+        events:[{at:now,type:'planned',message:'Nueva jornada automática: trazado actualizado; historial anterior conservado'}],
+        plannedRoute:plan,plannedRouteVisible:true,localModifiedAt:now};
+       await dbPut(next);routes.unshift(next);if(selected===existing){selected=next;planVisible=true;localStorage.setItem('recorredor-current',next.id);coverageCache.key='';refresh();renderMap();}
+       created++;toast('Nuevo trazado recibido. Nueva jornada lista; avance anterior conservado.');
+      }
+     }
+    }
     if(!existing.cloudReadOnly){
      const historical=await cloudLoadPriorCoverage(a.id);existing.inheritedGpsPoints=historical;coverageCache.key='';
      if(assignmentVersionAvailable(existing,a)){
-      const untouched=existing.status==='ready'&&!existing.startedAt&&!(existing.points||[]).length&&!(existing.findings||[]).length;
-      if(untouched){
-       const newPlan=importPlannedRoute({geojson:a.geojson,name:a.nombre,importedAt:Date.parse(a.actualizada_en)||Date.now()});
-       if(newPlan){existing.plannedRoute=newPlan;existing.assignedVersion=a.version;existing.project=a.proyecto;existing.city=a.ciudad;existing.plannedRouteVisible=true;
-        existing.localModifiedAt=Date.now();if(selected===existing){planVisible=true;coverageCache.key='';renderMap();fitPlannedRoute()}
-        if(manual)toast('Tramo pendiente actualizado automáticamente desde Supervisión.');}
-      }else if(!existing.updateNoticeVersion || existing.updateNoticeVersion!==String(a.version)+'-'+assignmentGeometrySignature(a.geojson)){
-       existing.updateNoticeVersion=String(a.version)+'-'+assignmentGeometrySignature(a.geojson);
-       toast('Tu supervisor modificó el trazado. Abre «Mis tramos asignados» y pulsa «Aplicar actualización».',true);
-      }
+      const newPlan=importPlannedRoute({geojson:a.geojson,name:a.nombre,importedAt:Date.parse(a.actualizada_en)||Date.now()});
+      if(newPlan){
+       // Cambiar solo el trazado planificado: nunca tocar GPS, hallazgos, fotos ni el estado de grabación.
+       existing.plannedRoute=newPlan;existing.assignedVersion=a.version;existing.project=a.proyecto;
+       existing.city=a.ciudad;existing.plannedRouteVisible=true;existing.localModifiedAt=Date.now();
+       existing.events||=[];existing.events.push({at:Date.now(),type:'planned',message:'Trazado actualizado automáticamente por Supervisión'});
+       if(selected===existing){planVisible=true;coverageCache.key='';refresh();renderMap();}
+       toast('Nuevo trazado recibido automáticamente. Se conservaron tus GPS y hallazgos.');
+      }else{toast('El supervisor publicó un trazado que no se pudo interpretar.',true)}
      }
      await dbPut(existing);
     }
@@ -1082,7 +1100,7 @@ async function cloudLoadAssignments(manual=false){
    // Si el mismo usuario ya comenzó el tramo en otro dispositivo, recuperar una copia de consulta en lugar de duplicarlo.
    const {data:remote,error:er}=await cloudClient.from('rec_recorridos').select('*').eq('tramo_asignado_id',a.id).eq('creado_por',cloudUser.id).order('creado_en',{ascending:false}).limit(1);
    if(er)throw er;
-   if(remote?.length && remote[0].estado!=='cancelado' && remote[0].estado!=='cancelada' && remote[0].estado!=='finished' && remote[0].estado!=='finalizado' && !remote[0].finalizado_en){const restored=await cloudReadRemoteRoute(remote[0]);restored.assignedVersion=a.version;await dbPut(restored);routes.push(restored);continue}
+   if(remote?.length && remote[0].estado!=='cancelado' && remote[0].estado!=='cancelada' && remote[0].estado!=='finished' && remote[0].estado!=='finalizado' && !remote[0].finalizado_en){const restored=await cloudReadRemoteRoute(remote[0]);await dbPut(restored);routes.push(restored);continue}
    const inheritedGps=await cloudLoadPriorCoverage(a.id);
    const planned=importPlannedRoute({geojson:a.geojson,name:a.nombre,importedAt:Date.parse(a.actualizada_en)||Date.now()});
    if(!planned)continue;
@@ -1102,9 +1120,38 @@ function openAssignedRoute(id){const a=assignedFromCloud.find(t=>t.id===id),r=as
  if(selected?.status==='recording'&&selected!==r)return toast('Pausa el recorrido actual antes de cambiar de tramo.',true);
  if(r.cloudReadOnly)toast('Esta ruta se inició en otro dispositivo. Aquí puedes consultarla, pero no grabar nuevos puntos.');
  changeRoute(r);closeModal('assignedTramosModal');closeFieldPanels();if(r.plannedRoute)fitPlannedRoute();
- if(a&&assignmentVersionAvailable(r,a))toast('Supervisor actualizó este tramo. Revisa «Mis tramos asignados» antes de continuar.',true);
+ if(a&&assignmentVersionAvailable(r,a))toast('Se detectó un cambio pendiente; se recibirá automáticamente al sincronizar.',true);
 }
-async function updateAssignedRoute(id){const a=assignedFromCloud.find(t=>t.id===id),r=assignedLocalRoute(id);if(!a||!r||r.cloudReadOnly)return toast('No se puede actualizar esta copia. Usa el celular original.',true);
+async function updateAssignedRoute(id){const a=assignedFromCloud.find(t=>t.id===id),r=assignedLocalRoute(id);
+ if(!a||!r)return toast('No se encontró un tramo activo. Actualiza las asignaciones.',true);
+ // Una copia recuperada de la nube es histórica y no se debe sobrescribir.
+ // Se crea una NUEVA jornada editable sobre la misma asignación, heredando
+ // únicamente la cobertura GPS previa; los hallazgos siguen en su jornada original.
+ if(r.cloudReadOnly){
+  if(selected?.status==='recording')return toast('Primero pausa el recorrido activo.',true);
+  const ok=confirm('Este recorrido se recuperó en modo consulta. ¿Crear una nueva jornada editable con el trazado actualizado y el avance ya inspeccionado? Los GPS, hallazgos y fotos anteriores quedarán intactos en la base de datos.');
+  if(!ok)return;
+  let historical;
+  try{historical=await cloudLoadPriorCoverage(a.id)}catch(e){return toast('No se pudo recuperar el avance anterior: '+(e.message||e),true)}
+  const plan=importPlannedRoute({geojson:a.geojson,name:a.nombre,importedAt:Date.parse(a.actualizada_en)||Date.now()});
+  if(!plan)return toast('El trazado del supervisor no es válido.',true);
+  const now=Date.now();
+  const next={id:uid(),teamId:cloudTeam,cloudOwner:cloudUser.id,assignedId:a.id,assignedVersion:a.version,
+   coverageToleranceM:r.coverageToleranceM||30,
+   code:'REC-'+new Date(now).toISOString().slice(0,10).replaceAll('-','')+'-'+Math.random().toString(36).slice(2,6).toUpperCase(),
+   inheritedGpsPoints:historical,project:a.proyecto,technician:cloudUser.email||'Técnico',city:a.ciudad,
+   kind:'Continuación de tramo asignado',createdAt:now,startedAt:null,endedAt:null,
+   activeMs:0,legStart:null,status:'ready',segment:0,distance:0,points:[],findings:[],
+   events:[{at:now,type:'planned',message:'Nueva jornada sobre trazado actualizado; historial anterior conservado'}],
+   plannedRoute:plan,plannedRouteVisible:true,localModifiedAt:now};
+  try{await dbPut(next)}catch(e){return toast('No se pudo guardar la nueva jornada en el celular: '+(e.message||e),true)}
+  routes.unshift(next);selected=next;planVisible=true;coverageCache.key='';
+  localStorage.setItem('recorredor-current',next.id);
+  renderAssignedTramos();refresh();renderMap();fitPlannedRoute();closeModal('assignedTramosModal');
+  queueCloudSync(1000);
+  toast('Nueva jornada creada con el trazado actualizado y la cobertura previa. Pulsa Iniciar ruta para continuar.');return;
+ }
+
  if(r.status==='recording')return toast('Primero pausa el recorrido para actualizar el trazado.',true);
  const started=(r.points||[]).length||r.status!=='ready'||(r.findings||[]).length;
  if(started&&!confirm('El supervisor cambió la asignación. ¿Actualizar el trazado? El GPS, hallazgos y fotos anteriores seguirán intactos, pero la cobertura se recalculará con la nueva ruta.'))return;
@@ -1402,7 +1449,6 @@ window.addEventListener('DOMContentLoaded',boot);
 </script>
 </body>
 </html>
-
 
 
 
