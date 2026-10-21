@@ -1064,15 +1064,33 @@ function cloudDataFromRoute(r){
   detalle:{events:r.events,segment:r.segment,lastGpsAt:r.lastGpsAt||null,plannedImportedAt:r.plannedRoute?.importedAt||null,plannedRouteVisible:r.plannedRouteVisible!==false}
  };
 }
+// Webhook de produccion n8n para guardar las evidencias en Google Drive.
+const REC_FOTOS_N8N_WEBHOOK = 'https://ftth-n8n2.pzveh5.easypanel.host/webhook/recorredor-fo-subir-foto';
 async function cloudPhotoUpload(r,f,p){
- if(p.path)return p.path;
- if(!p.data||!p.data.startsWith('data:image/'))throw Error('Foto local no disponible para subir: '+(p.name||'foto'));
- const key=`${r.teamId}/${cloudUUID(r)}/${cloudUUID(f)}/${cloudUUID(p)}.jpg`;
- const data=Uint8Array.from(atob(p.data.split(',')[1]),ch=>ch.charCodeAt(0));
- const {error}=await cloudClient.storage.from('recorredor-evidencias').upload(key,new Blob([data],{type:'image/jpeg'}),{contentType:'image/jpeg',upsert:false});
- if(error && !/already exists|duplicate|409/i.test(error.message||''))throw error;
- p.path=key;return key;
+ if(p.driveFileId && p.driveName)return {provider:'drive',driveFileId:p.driveFileId,name:p.driveName,webViewLink:p.driveViewUrl||`https://drive.google.com/file/d/${encodeURIComponent(p.driveFileId)}/view`,id:cloudUUID(p)};
+ // Los registros antiguos que se almacenaron en Supabase Storage siguen siendo visibles.
+ if(p.path)return {provider:'supabase',path:p.path,id:cloudUUID(p)};
+ if(!p.data||!/^data:image\/(jpeg|jpg|png|webp);base64,/i.test(p.data))throw Error('No se encontró la fotografía local para enviarla.');
+ if(!REC_FOTOS_N8N_WEBHOOK){
+   throw Error('El envío de fotografías a Drive todavía no está habilitado: falta configurar la URL de producción de n8n. La foto permanece guardada en el dispositivo.');
+ }
+ const {data:auth}=await cloudClient.auth.getSession();
+ const token=auth?.session?.access_token;
+ if(!token)throw Error('Inicia sesión antes de enviar fotografías.');
+ const payload={
+  version:1,photoId:cloudUUID(p),findingId:cloudUUID(f),routeId:cloudUUID(r),teamId:r.teamId||cloudTeam,
+  filename:`${cloudUUID(r)}_${cloudUUID(f)}_${cloudUUID(p)}.jpg`,
+  mimeType:'image/jpeg',imageBase64:p.data.split(',')[1],
+  technician:cloudUser?.email||'',takenAt:new Date(p.at||Date.now()).toISOString()
+ };
+ const response=await fetch(REC_FOTOS_N8N_WEBHOOK,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify(payload)});
+ let result={};try{result=await response.json()}catch{}
+ if(!response.ok||result.ok!==true||!result.fileId)throw Error(result.error||`n8n no confirmó el guardado de la foto (${response.status})`);
+ p.driveFileId=String(result.fileId);p.driveName=String(result.name||payload.filename);
+ p.driveViewUrl=String(result.webViewLink||`https://drive.google.com/file/d/${encodeURIComponent(p.driveFileId)}/view`);
+ return {provider:'drive',driveFileId:p.driveFileId,name:p.driveName,webViewLink:p.driveViewUrl,id:cloudUUID(p)};
 }
+
 async function cloudSyncRoute(r){
  const syncStartedAt=Date.now();
  // El primer envío fija el equipo del recorrido para evitar mover registros entre equipos.
@@ -1098,8 +1116,8 @@ async function cloudSyncRoute(r){
  const incoming=[];
  for(const f of r.findings){
   const photos=[];
-  for(const p of f.photos||[]){const path=await cloudPhotoUpload(r,f,p);
-   photos.push({id:cloudUUID(p),name:p.name||'foto.jpg',at:p.at||Date.now(),path,width:p.width||null,height:p.height||null})}
+  for(const p of f.photos||[]){const ref=await cloudPhotoUpload(r,f,p);
+   photos.push({id:cloudUUID(p),name:p.name||'foto.jpg',at:p.at||Date.now(),...ref,width:p.width||null,height:p.height||null})}
   incoming.push({id:cloudUUID(f),recorrido_id:cloudUUID(r),numero:f.number||0,
    registrado_en:cloudAsDate(f.at),latitud:f.lat,longitud:f.lng,precision_m:f.accuracy??null,
    origen:f.source||null,tipo:f.type||'Otro',titulo:f.title||'Hallazgo',descripcion:f.description||'',
@@ -1146,7 +1164,7 @@ async function cloudReadRemoteRoute(row){
  const {data:items,error}=await cloudClient.from('rec_hallazgos').select('*').eq('recorrido_id',row.id).order('numero');if(error)throw error;
  const findings=[];
  for(const f of items||[]){const photos=[];
-  for(const ph of f.fotos||[]){const {data:blob,error:err}=await cloudClient.storage.from('recorredor-evidencias').download(ph.path);
+  for(const ph of f.fotos||[]){if(ph.provider==='drive'||ph.driveFileId){photos.push({...ph});continue;}if(!ph.path)continue;const {data:blob,error:err}=await cloudClient.storage.from('recorredor-evidencias').download(ph.path);
    if(err){console.warn('Foto no descargada',ph.path,err.message);continue;}
    photos.push({...ph,data:await cloudPhotoDataUrl(blob)});
   }
