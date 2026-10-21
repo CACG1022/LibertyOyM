@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>RECORREDOR FO · Centro de Supervisión</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--bg:#071321;--surface:#101f33;--panel:#142840;--input:#0c1b30;--line:#36536d;--text:#eaf7ff;--muted:#98b3c7;--cyan:#44dbe9;--green:#29dcad;--yellow:#ffc45f;--red:#ff6979;--shadow:0 15px 44px #0008}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,'Segoe UI',system-ui,Arial,sans-serif}button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.55;cursor:not-allowed}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--cyan);outline-offset:1px}
+.top{height:62px;display:flex;align-items:center;gap:12px;padding:10px 16px;background:#101e31;border-bottom:1px solid var(--line);position:relative;z-index:1010}.logo{width:39px;height:39px;border-radius:12px;background:linear-gradient(135deg,#2dddad,#528dfb);color:#062438;display:grid;place-items:center;font-size:22px;font-weight:1000}.brand{font-weight:900;letter-spacing:.3px;white-space:nowrap}.brand small{display:block;color:#94b3cc;font-size:10px;font-weight:600;letter-spacing:1px;margin-top:2px}.spacer{flex:1}.chip{border:1px solid #405a71;border-radius:99px;background:#1a3146;padding:7px 10px;font-size:11px;color:#cdeaf5;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.chip.good{border-color:#28876f;color:#79f7d5}.chip.warn{border-color:#956a39;color:#ffe4b0}.btn{border:1px solid #436079;border-radius:10px;background:#223d55;color:#e9f6ff;padding:10px 13px;font-size:12px;font-weight:800;min-height:38px}.btn:hover{filter:brightness(1.13)}.btn.primary{background:linear-gradient(120deg,#24d9b2,#13b995);color:#062c2a;border-color:#30f5c5}.btn.ghost{background:transparent}.btn.warn{background:#542e2e;color:#ffe0da;border-color:#875353}.btn.danger{background:#68272f;color:#ffe3e5;border-color:#e06576}.btn.danger:hover{background:#873541}.hide-sm{display:inline}
+.main{display:grid;grid-template-columns:320px minmax(320px,1fr) 340px;grid-template-rows:auto minmax(0,1fr);height:calc(100dvh - 62px)}.topstats{grid-column:1/-1;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;padding:12px 13px;border-bottom:1px solid #304b64}.stat{border-radius:13px;border:1px solid #36516b;background:linear-gradient(155deg,#182d45,#102237);padding:11px 13px;min-width:0}.stat small{color:#9ebad0;display:block;letter-spacing:.4px;font-size:10px;font-weight:700}.stat strong{display:block;font-size:23px;font-weight:900;line-height:1.15;margin:6px 0 1px;color:#eafaff}.stat.accent strong{color:var(--green)}.stat small:last-child{font-size:9px;opacity:.85}.panel{overflow:auto;min-height:0;border-right:1px solid #304b64;background:#112035;padding:15px}.panel.right{border-right:0;border-left:1px solid #304b64}.heading{font-size:17px;font-weight:900;margin:2px 0 12px}.eyebrow{font-size:9px;letter-spacing:1.7px;font-weight:900;color:#84afce;text-transform:uppercase}.filters{display:grid;grid-template-columns:1fr 1fr;gap:7px}.filters input,.filters select,.form input,.form select{color:var(--text);background:var(--input);border:1px solid #395770;border-radius:9px;padding:10px;width:100%;min-width:0;font-size:12px;outline:0}.filters .wide{grid-column:1/-1}.form{display:grid;gap:8px}.form label{display:grid;gap:5px;color:#accedd;font-size:11px;font-weight:750}.form .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hint{font-size:11px;line-height:1.5;color:var(--muted)}.listheader{display:flex;gap:7px;justify-content:space-between;align-items:center;margin:16px 0 8px}.listheader strong{font-size:12px}.list{display:grid;gap:8px}.route{display:block;text-align:left;width:100%;padding:11px;border:1px solid #34516a;border-radius:13px;background:#172e46;color:var(--text);transition:.14s}.route:hover{border-color:#4f9eac}.route.active{border-color:var(--green);box-shadow:inset 3px 0 var(--green),0 0 0 1px #26d5ad33}.routehead{display:flex;gap:8px;justify-content:space-between;align-items:start}.routehead b{font-size:12px}.routehead strong{color:#4bebc8;font-size:15px}.route small{color:#a3b9c9;font-size:10px;display:block;margin-top:5px}.progress{background:#33495d;height:6px;border-radius:99px;overflow:hidden;margin-top:10px}.progress i{height:100%;display:block;background:#2ce3b6}.mapzone{position:relative;background:#092034;overflow:hidden}#map{height:100%;width:100%;min-height:300px}.maptools{position:absolute;top:12px;right:13px;z-index:600;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100% - 75px)}.maptools .btn{background:#102339ef;box-shadow:var(--shadow);padding:8px 11px}.legend{position:absolute;bottom:18px;left:12px;z-index:500;display:flex;gap:12px;flex-wrap:wrap;border:1px solid #405d74;border-radius:11px;background:#0c2135ed;padding:9px 12px;font-size:10px;box-shadow:var(--shadow)}.legend i{display:inline-block;width:19px;height:4px;vertical-align:3px;margin-right:5px;border-radius:3px}.legend .dot{height:10px;width:10px;vertical-align:0;border-radius:100%}.map-overlay{position:absolute;inset:0;display:grid;place-items:center;background:#081b30cf;color:#d1e9f4;z-index:450;padding:15px;text-align:center}.map-overlay[hidden]{display:none}.sec{padding:14px 0;border-bottom:1px solid #34516b}.sec:first-of-type{padding-top:3px}.sec h3{font-size:13px;margin:0 0 10px;color:#d0ecfa}.info-pairs{display:grid;grid-template-columns:1fr 1fr;gap:9px}.info-pairs div{padding:8px;border-radius:9px;background:#1a314a;min-width:0}.info-pairs small{display:block;font-size:9px;color:#9aafc5}.info-pairs b{font-size:12px;overflow-wrap:anywhere}.find-card{width:100%;text-align:left;background:#182e46;border:1px solid #365675;border-radius:11px;color:var(--text);padding:10px;margin:0 0 7px}.find-card.selected{border-color:#38d9b4}.find-card b{font-size:11px}.find-card small{display:block;color:#b6c8d9;font-size:10px;margin-top:4px}.severity{font-size:9px;border-radius:100px;padding:3px 6px;border:1px solid #536d80;color:#dfeaf5}.severity.critica{color:#ff98a1;border-color:#dd5a6c}.severity.alta{color:#ffc784;border-color:#a97738}.severity.media{color:#e9df8e}.photo-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.photo-list a{position:relative;min-width:0;display:block}.photo-list img{width:100%;height:120px;object-fit:cover;border:1px solid #44647c;border-radius:9px}.photo-list span{display:block;color:#a5c1d2;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.empty{padding:22px 12px;color:#a8bbcd;text-align:center;border:1px dashed #4a6278;border-radius:12px;font-size:12px;line-height:1.5}.notice{padding:12px;background:#302b24;border-left:3px solid #ffc068;border-radius:8px;color:#ffe8bd;font-size:12px;line-height:1.45;margin:10px 0}.statusline{font-size:10px;color:#96b8c7;padding:10px 0}.authcover{position:fixed;inset:0;z-index:1500;background:#07101df5;display:flex;align-items:center;justify-content:center;padding:18px}.authcover[hidden]{display:none!important}.authcard{width:min(470px,100%);max-height:95dvh;overflow:auto;border-radius:20px;background:#13263c;border:1px solid #45627b;box-shadow:0 24px 80px #000b;padding:23px}.authcard{position:relative;padding-top:27px}.authclose{position:absolute;right:13px;top:12px;display:grid;place-items:center;width:39px;height:39px;padding:0;border:1px solid #42647c;border-radius:10px;background:#25425b;color:#e9faff;font-size:27px;line-height:1;z-index:3}.authclose:hover{background:#315a73}.authclose.noshow{display:none!important}#enterTeam{min-height:42px;background:linear-gradient(135deg,#19d8b1,#17b29e);color:#06302a;font-weight:900}#panelAccessHint{margin:10px 0 0;color:#bdd2e0}.authcard h2{margin:5px 0 8px;font-size:23px}.authcard .form{margin-top:15px}.err{color:#ffb7b7;font-size:12px;min-height:0;white-space:pre-wrap}.success{color:#8ef8d5;font-size:12px}.managepanel{margin-top:14px;border:1px solid #44647a;border-radius:11px;background:#132a43;padding:12px}.managepanel .form{margin-top:10px}.leaflet-container{background:#0c2537}.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:#132b45;color:#e9faff}.leaflet-popup-content{font-size:12px}.leaflet-popup a{color:#65efcc}.leaflet-control-attribution{font-size:9px}.tag{font-size:9px;color:#ffd69a;font-weight:900}.footeractions{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0}.noshow{display:none!important}
+@media(max-width:1250px){.main{grid-template-columns:280px minmax(310px,1fr) 300px}.stat strong{font-size:19px}}@media(max-width:1020px){.main{grid-template-columns:285px minmax(290px,1fr);grid-template-rows:auto minmax(380px,1fr) auto;height:auto;min-height:calc(100dvh - 62px)}.panel.right{grid-column:1/-1;border-left:0;border-top:1px solid #304b64;max-height:none}.mapzone{min-height:440px}.topstats{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:680px){.top{gap:7px;padding:8px}.brand{font-size:12px}.brand small{font-size:8px}.logo{width:32px;height:32px;font-size:17px}.chip{font-size:9px;max-width:105px}.hide-sm{display:none}.top .btn{font-size:10px;padding:7px}.main{display:flex;flex-direction:column;min-height:calc(100dvh - 62px)}.topstats{order:1;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:8px}.stat{padding:8px}.stat strong{font-size:17px}.stat small{font-size:8px}.mapzone{order:2;height:57dvh;min-height:340px;flex:0 0 auto}.panel{order:3;max-height:none;border-right:0;border-top:1px solid #304b64}.panel.right{order:4}.legend{bottom:6px;font-size:9px;gap:6px;padding:6px}.maptools .btn{padding:7px;font-size:10px}.authcard{padding:16px}}
+
+/* V12 · eliminación completa controlada */
+.purge-status{padding:11px;border:1px solid #a35c69;border-left:4px solid #ff6979;border-radius:9px;background:#341f2c;color:#ffe8eb;font-size:11px;line-height:1.5;margin:10px 0;overflow-wrap:anywhere}
+.purge-status[hidden]{display:none}
+/* V11 · administración de recorridos individuales */
+.routebox{border:1px solid #33536c;border-radius:13px;background:#12283e;padding:4px;margin-bottom:9px}
+.routebox .route{display:block;width:100%;border:0!important;margin:0!important;padding:9px;text-align:left;background:transparent!important;border-radius:10px}
+.routebox:has(.route.active){border-color:#23d7ac;box-shadow:inset 3px 0 #23d7ac}
+.routeactions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:0 7px 8px}
+.routeactions button{font-size:10px;padding:6px 9px;min-height:29px;border-radius:8px}
+.routebox.cancelled{border-color:#836a76;opacity:.86}
+.routebox.cancelled .routehead strong{color:#f8a8b0}
+.rec-route-checkbox{display:flex;align-items:center;gap:7px;font-size:11px;color:#bdcfdf;margin:10px 0 7px}
+.rec-route-checkbox input{accent-color:#22d7ac}
+.routecancelnote{margin-bottom:10px;font-size:10px;line-height:1.4;color:#a4c6d5}
+/* V10 · tramos asignados desde supervisión */
+.assignment-bar{padding:12px 0;border-top:1px solid #304961;border-bottom:1px solid #304961;margin:8px 0 12px}
+.assignment-bar-head{display:flex;justify-content:space-between;align-items:center;gap:7px;margin-bottom:8px}.assignment-bar-head b{font-size:12px;color:#b8f8ed}
+.assignment-scroll{max-height:212px;overflow:auto;display:grid;gap:7px}
+.assignment-item{padding:9px 10px;border:1px solid #3e5b75;border-radius:11px;background:#152a40;display:grid;gap:6px}
+.assignment-item.isarchived{opacity:.66}.assignment-item strong{font-size:12px;overflow-wrap:anywhere}.assignment-item small{font-size:10px;color:#9dbbd0}
+.assignment-buttons{display:flex;gap:5px;flex-wrap:wrap}.assignment-buttons .btn{font-size:10px;padding:6px 8px;min-height:29px}
+.assignment-help{font-size:10px;color:#b8cce0;margin:5px 0 8px;line-height:1.45}
+.assignment-dialog{position:fixed;inset:0;z-index:1500;background:#020914cc;display:none;align-items:center;justify-content:center;padding:12px}
+.assignment-dialog.open{display:flex}.assignment-card{background:#142840;border:1px solid #547891;border-radius:19px;width:min(650px,98vw);max-height:94dvh;display:flex;flex-direction:column;box-shadow:0 24px 70px #0009;overflow:hidden}
+.assignment-card header{display:flex;align-items:center;justify-content:space-between;padding:15px 17px;border-bottom:1px solid #3c5b74}
+.assignment-card header h2{font-size:17px;margin:0}.assignment-form{padding:14px 17px;overflow:auto;display:grid;gap:10px}
+.assignment-form label{font-size:11px;font-weight:800;color:#b7d6e6;display:grid;gap:5px}.assignment-form input,.assignment-form select,.assignment-form textarea{width:100%;padding:10px;border-radius:10px;background:#0b192c;color:#fff;border:1px solid #466782}
+.assignment-form textarea{min-height:65px;resize:vertical}.assignment-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}.assignment-file{border:1px dashed #62958e;padding:11px;border-radius:10px;background:#102e3c}
+.assignment-dialog footer{display:flex;align-items:center;gap:8px;justify-content:flex-end;padding:13px 17px;border-top:1px solid #3c5b74}
+#assignmentMessage{font-size:11px;color:#f5d18a;min-height:15px}
+@media(max-width:650px){.assignment-cols{grid-template-columns:1fr}.assignment-card{max-height:95dvh}}
+
+/* Conversor de cartografía (local, no se envía a Supabase) */
+.converter-backdrop{position:fixed;inset:0;z-index:1900;background:#030d18d9;display:none;align-items:center;justify-content:center;padding:16px}
+.converter-backdrop.show{display:flex}.converter-card{width:min(690px,100%);max-height:95dvh;overflow:auto;background:#142840;border:1px solid #4e718b;border-radius:18px;padding:20px;box-shadow:0 20px 70px #000b}
+.converter-card header{display:flex;align-items:center;justify-content:space-between;gap:10px}.converter-card h2{font-size:19px;margin:0}.converter-card input[type=file]{display:block;margin:16px 0;width:100%;max-width:100%;color:#eaf7ff;background:#0c1b30;border:1px solid #45627b;padding:12px;border-radius:10px}
+.converter-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}.converter-status{margin-top:12px;color:#a9d4e9;font-size:12px;line-height:1.5;white-space:pre-wrap}.converter-note{font-size:11px;color:#a5c5d5;line-height:1.5}
+@media(max-width:680px){#openConverterBtn{padding:7px;font-size:10px}.converter-card{padding:15px}}
+</style>
+<style id="supProfileStyles">.sup-prof-cover{position:fixed;inset:0;z-index:1700;background:#06101bd9;display:none;align-items:center;justify-content:center;padding:15px}.sup-prof-cover.active{display:flex}.sup-prof-card{width:min(470px,100%);border-radius:16px;border:1px solid #4b6d81;background:#162c43;color:#eaffff;padding:22px;box-shadow:0 15px 55px #000b}.sup-prof-card h2{margin:0 0 15px}.sup-prof-line{padding:10px;border:1px solid #365670;background:#102238;border-radius:10px;margin:8px 0;font-size:12px;overflow-wrap:anywhere}.sup-prof-line b{display:block;font-size:10px;color:#9dbfd4;margin-bottom:4px}.sup-prof-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:17px}</style></head>
+<body>
+<header class="top"><div class="logo">R</div><div class="brand">RECORREDOR FO <small>Centro de supervisión O&M</small></div><span class="chip warn" id="cloudStatus">Conectando...</span><div class="spacer"></div><button class="btn ghost" id="techLink" title="Volver al módulo de campo">↗ <span class="hide-sm">Técnico</span></button><button class="btn" id="openConverterBtn" type="button" title="Convertir KML o KMZ a GeoJSON">⇄ Convertir KMZ/KML</button><button class="btn primary" id="assignMainBtn" title="Asignar tramo a un técnico">＋ Asignar tramo</button><button class="btn primary" id="refreshBtn">↻ <span class="hide-sm">Actualizar</span></button><button class="btn" id="supProfileBtn" type="button">♙ Mi perfil</button><button class="btn" id="userBtn">☰ <span class="hide-sm">Equipo / Sesión</span></button></header>
+<div class="main">
+ <div class="topstats" id="stats"><div class="stat"><small>Recorridos</small><strong>—</strong></div></div>
+ <aside class="panel"><div class="eyebrow">Supervisión de planta externa</div><h2 class="heading">Tramos y recorridos</h2><div class="assignment-bar">
+   <div class="assignment-bar-head"><b>Tramos asignados <span id="assignmentCount">0</span></b><button class="btn primary" id="assignSideBtn">＋ Nuevo</button></div>
+   <div class="assignment-help">Cargar GeoJSON/KMZ, asignar a técnicos y consultar tramos aún sin iniciar.</div>
+   <label class="hint"><input id="showArchivedAssignments" type="checkbox" style="width:auto"/> Mostrar asignaciones canceladas</label><div class="assignment-help">Para borrar un tramo de Supabase: <b>Cancelar</b> → activar «Mostrar asignaciones canceladas» → <b>Eliminar de la base</b>. Solo si no tiene inspección GPS ni hallazgos.</div>
+   <div class="assignment-scroll" id="assignmentList"><div class="hint">Selecciona tu equipo para cargar asignaciones.</div></div>
+  </div><div class="filters"><input class="wide" id="search" placeholder="Buscar proyecto, técnico o código"/><select id="cityFilter" aria-label="Filtrar ciudad"><option value="">Todas las ciudades</option></select><select id="techFilter" aria-label="Filtrar técnico"><option value="">Todos los técnicos</option></select><select id="statusFilter" aria-label="Filtrar estado"><option value="">Todos los estados</option><option value="ready">Sin iniciar</option><option value="recording">En recorrido</option><option value="paused">Pausado</option><option value="finished">Finalizado</option></select><select id="severityFilter" aria-label="Filtrar criticidad"><option value="">Toda criticidad</option><option value="critica">Crítica</option><option value="alta">Alta</option><option value="media">Media</option><option value="baja">Baja</option></select><label class="hint">Desde<input type="date" id="dateFrom"/></label><label class="hint">Hasta<input type="date" id="dateTo"/></label></div><label class="rec-route-checkbox"><input type="checkbox" id="showCancelledRoutes"/> Mostrar recorridos cancelados</label><div class="routecancelnote">«Cancelar» conserva el historial. «Eliminar definitivamente» borra GPS, hallazgos y fotografías de Supabase (solo administrador; requiere confirmación).</div><div id="purgeStatus" class="purge-status" role="status" aria-live="polite" hidden></div><div class="listheader"><strong id="listCount">Recorridos</strong><button class="btn ghost" id="clearFilter" type="button">Limpiar</button></div><div class="list" id="routeList"><div class="empty">Inicia sesión para consultar los recorridos.</div></div><div class="footeractions"><button class="btn" id="csvRoutes">↓ Recorridos CSV</button><button class="btn" id="csvFindings">↓ Hallazgos CSV</button><button class="btn primary" id="pdfReport">▣ PDF general</button></div><div class="hint">Los datos se actualizan automáticamente cada 30 segundos mientras esta página esté activa.</div></aside>
+ <section class="mapzone"><div id="map"></div><div class="maptools"><button class="btn" id="mapProvider">◩ Satélite híbrido</button><button class="btn" id="fitAll">⌗ Ver todos</button><button class="btn" id="toggleGps">⋯ GPS: ON</button></div><div class="legend"><span><i style="background:#ffcb6e"></i>Pendiente</span><span><i style="background:#29ddb1"></i>Inspeccionado</span><span><i style="background:#47aaff"></i>Recorrido GPS</span><span><i class="dot" style="background:#ff6f79"></i>Hallazgo</span></div><div id="mapOverlay" class="map-overlay">Conéctate y selecciona tu equipo para consultar los tramos.</div></section>
+ <aside class="panel right" id="detail"><div class="eyebrow">Detalle de supervisión</div><h2 class="heading">Avances y hallazgos</h2><div class="empty">Selecciona un recorrido en el listado o un hallazgo sobre el mapa para ver su información, GPS y fotografías.</div></aside>
+</div>
+<div class="assignment-dialog" id="assignmentDialog" role="dialog" aria-modal="true" aria-label="Asignar tramo">
+ <div class="assignment-card">
+  <header><h2 id="assignmentTitle">Asignar tramo a técnico</h2><button type="button" class="btn" id="closeAssignment">× Cerrar</button></header>
+  <form id="assignmentForm" class="assignment-form">
+   <div class="assignment-cols"><label>Nombre del tramo *<input id="assignmentName" required maxlength="160" placeholder="Ej. Cable troncal Norte"/></label><label>Técnico asignado *<select id="assignmentTech" required></select></label></div>
+   <div class="assignment-cols"><label>Proyecto / red *<input id="assignmentProject" required maxlength="160" placeholder="Ej. O&M Villavicencio"/></label><label>Ciudad *<input id="assignmentCity" required maxlength="100" placeholder="Villavicencio"/></label></div>
+   <label>Indicaciones para el técnico<textarea id="assignmentNotes" maxlength="2500" placeholder="Puntos que debe verificar, prioridades, acceso y observaciones"></textarea></label>
+   <div class="assignment-file"><label>Archivo GeoJSON, KML o KMZ <input id="assignmentFile" type="file" accept=".geojson,.json,.kml,.kmz,application/geo+json"/></label><div class="hint" id="assignmentFileStatus">Selecciona el archivo del tramo. Al editar, puedes conservar el trazado actual.</div></div>
+   <div id="assignmentMessage" role="status"></div>
+   <footer style="padding:0;border:0"><button type="button" class="btn" id="cancelAssignment">Cancelar</button><button class="btn primary" id="saveAssignment" type="submit">✓ Guardar y asignar</button></footer>
+  </form>
+ </div>
+</div>
+
+<div id="converterDialog" class="converter-backdrop" role="dialog" aria-modal="true" aria-labelledby="converterTitle">
+ <div class="converter-card">
+  <header><h2 id="converterTitle">⇄ Convertir KML / KMZ a GeoJSON</h2><button class="btn" id="closeConverterBtn" type="button">× Cerrar</button></header>
+  <p class="converter-note">Convierte archivos de Google Earth directamente en tu navegador. No requiere iniciar sesión ni carga los datos a Supabase. Admite líneas, puntos y polígonos (incluidas geometrías múltiples).</p>
+  <label for="converterFile" class="hint">Selecciona archivo .kml o .kmz</label>
+  <input id="converterFile" type="file" accept=".kml,.kmz,application/vnd.google-earth.kml+xml,application/vnd.google-earth.kmz"/>
+  <div id="converterStatus" class="converter-status" role="status" aria-live="polite">Selecciona un archivo para convertirlo.</div>
+  <div class="converter-actions">
+   <button class="btn primary" id="converterDownloadBtn" type="button" disabled>↓ Descargar GeoJSON</button>
+   <button class="btn" id="converterPreviewBtn" type="button" disabled>⌖ Ver en el mapa</button>
+   <button class="btn ghost" id="converterClearBtn" type="button">Limpiar</button>
+  </div>
+  <p class="converter-note">La vista previa es temporal y no modifica asignaciones o recorridos. Los modelos 3D, fotografías incrustadas y estilos KML no se exportan; se conserva la geometría y los atributos principales.</p>
+ </div>
+</div>
+<div class="sup-prof-cover" id="supProfCover"><div class="sup-prof-card"><h2>Mi perfil · Supervisor</h2><div class="sup-prof-line"><b>USUARIO / CORREO</b><span id="supProfEmail">—</span></div><div class="sup-prof-line"><b>EQUIPO ACTIVO</b><span id="supProfTeam">—</span></div><div class="sup-prof-line"><b>ROL</b><span id="supProfRole">—</span></div><div class="sup-prof-line"><b>ID DE USUARIO</b><span id="supProfId">—</span></div><div class="sup-prof-actions"><button class="btn" id="supProfClose">Cerrar</button><button class="btn" id="supProfManage">Administrar equipo</button><button class="btn danger" id="supProfLogout">Cerrar sesión</button></div></div></div>
+<div class="authcover" id="authCover"><div class="authcard" role="dialog" aria-modal="true" aria-labelledby="authTitle"><button type="button" id="closeAuthBtn" class="authclose noshow" aria-label="Cerrar configuración y abrir el visor" title="Volver al visor">×</button><div class="eyebrow">Acceso seguro · Liberty O&M</div><h2 id="authTitle">Iniciar sesión</h2><p class="hint" id="authExplain">Utiliza la cuenta de Supabase del proyecto O&M. Tu sesión se conserva en este navegador.</p><div class="notice noshow" id="authNotice"></div><form class="form" id="loginForm"><label>Correo electrónico<input type="email" id="email" autocomplete="username" required/></label><label>Contraseña<input type="password" id="password" autocomplete="current-password" required/></label><button type="submit" class="btn primary" id="loginBtn">Entrar</button></form><div id="authError" class="err" role="alert"></div><div id="teamSection" class="noshow"><h3 class="heading" style="margin-top:14px">Equipo O&M</h3><label class="hint">Elige un equipo del cual seas supervisor (rol administrador)<select id="teamSelect" style="width:100%;padding:10px;border:1px solid #45627b;border-radius:9px;background:#0c1b30;color:#fff;margin-top:8px"></select></label><div class="footeractions"><button class="btn primary" id="enterTeam" type="button">✓ Abrir panel principal</button><button class="btn" id="switchAccount" type="button">Cambiar usuario</button></div><div class="managepanel"><b style="font-size:12px">Crear equipo para comenzar</b><p class="hint">Si todavía no existe un equipo, créalo aquí. Serás su administrador.</p><form class="form" id="createTeamForm"><label>Nombre del nuevo equipo<input id="newTeamName" placeholder="Ej. O&M Villavicencio" minlength="2"/></label><button class="btn" type="submit">＋ Crear equipo</button></form></div><div class="managepanel"><b style="font-size:12px">Agregar técnico o supervisor</b><p class="hint">Primero debe existir una cuenta de Supabase Auth para ese correo.</p><form class="form" id="addMemberForm"><label>Correo del usuario<input type="email" id="memberEmail" placeholder="tecnico@empresa.com"/></label><label>Rol<select id="memberRole"><option value="tecnico">Técnico</option><option value="admin">Supervisor / Administrador</option></select></label><button class="btn" type="submit">Agregar al equipo seleccionado</button></form></div><div id="teamMsg" class="statusline"></div><p class="hint" id="panelAccessHint">Después de seleccionar un equipo, pulsa «Abrir panel principal». También puedes cerrar esta ventana con × si ya tienes acceso.</p></div></div></div>
+<script>
+'use strict';
+// Misma URL y clave PÚBLICA anon que seguimiento/app.js / Instalaciones FO.
+// La seguridad real se controla mediante Auth y RLS de Supabase.
+const PROJECT_URL='https://lvwmpwnzavqdspdfvceb.supabase.co';
+const PUBLIC_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx2d21wd256YXZxZHNwZGZ2Y2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxOTg3MzYsImV4cCI6MjA5MTc3NDczNn0.u6g4OCm4kl-LEmyIf9VWwf43cdqYbik7Y60rdKQ8npI';
+const $=id=>document.getElementById(id),esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let assignedTramos=[],teamMembers=[],assignedMapLayer=null,editingAssignmentId=null,pendingAssignmentGeometry=null,pendingAssignmentFile="",assignmentsLoaded=false;
+let sb=null,user=null,teams=[],team='',rows=[],findings=[],visible=[],chosen='',chosenFinding='',map,planLayer,coveredLayer,gpsLayer,markerLayer,hybridLayer,esriLayer,labelsLayer,baseMode='google',showGps=true,loading=false,detailNonce=0,detailPoints=[],lastRefresh=0,initialized=false,abortNonce=0;
+const statusName={ready:'Sin iniciar',recording:'En recorrido',paused:'En pausa',finished:'Finalizado'},money=n=>(Number(n)||0).toLocaleString('es-CO',{maximumFractionDigits:2});
+const fmtDate=s=>s?new Date(s).toLocaleString('es-CO',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}):'—';
+const fmtKm=m=>((Number(m)||0)/1000).toLocaleString('es-CO',{minimumFractionDigits:2,maximumFractionDigits:2});
+function status(msg,kind=''){const s=$('cloudStatus');s.textContent=msg;s.className='chip '+kind}
+function errorMessage(err){return String(err?.message||err||'Error desconocido').slice(0,500)}
+function showError(err){const message=errorMessage(err);console.error(err);status('⚠ Error de consulta','warn');$('authError').textContent=message;return message}
+function paintMap(){map=L.map('map',{zoomControl:true,preferCanvas:true}).setView([4.142,-73.635],12);
+ hybridLayer=L.tileLayer('https://{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3'],maxNativeZoom:20,maxZoom:22,attribution:'Google',crossOrigin:false});
+ esriLayer=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxNativeZoom:19,maxZoom:22,attribution:'Esri World Imagery'});
+ labelsLayer=L.tileLayer('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:22,attribution:'CARTO'});
+ hybridLayer.addTo(map);planLayer=L.layerGroup().addTo(map);assignedMapLayer=L.layerGroup().addTo(map);coveredLayer=L.layerGroup().addTo(map);gpsLayer=L.layerGroup().addTo(map);markerLayer=L.layerGroup().addTo(map);
+ let tileErrors=0;hybridLayer.on('tileerror',()=>{if(baseMode==='google'&&++tileErrors>=5)swapBase('esri',true)});
+}
+function swapBase(mode,automatic=false){if(mode===baseMode&&!automatic)return;for(const l of [hybridLayer,esriLayer,labelsLayer])if(map.hasLayer(l))map.removeLayer(l);baseMode=mode;if(mode==='google'){hybridLayer.addTo(map);$('mapProvider').textContent='◩ Google híbrido'}else{esriLayer.addTo(map);labelsLayer.addTo(map);$('mapProvider').textContent='◩ Satélite Esri + nombres'}for(const l of [planLayer,assignedMapLayer,coveredLayer,gpsLayer,markerLayer])l.bringToFront?.();if(automatic)status('Satélite alternativo activo','warn')}
+function tieneAccesoSupervisor(id){return !!(user&&id&&teams.some(t=>t.id===id&&t.rol==='admin'))}
+function actualizarCerrarAcceso(){
+ const posible=$('teamSelect')?.value||team;
+ $('closeAuthBtn')?.classList.toggle('noshow',!tieneAccesoSupervisor(posible));
+}
+function openAuth(message=''){
+ if(message){$('authNotice').textContent=message;$('authNotice').classList.remove('noshow')}
+ else $('authNotice').classList.add('noshow');
+ actualizarCerrarAcceso();$('authCover').hidden=false;
+}
+function hideAuth(){ $('authCover').hidden=true;try{map?.invalidateSize?.()}catch(_){} }
+async function cerrarAccesoAutorizado(){
+ const id=$('teamSelect')?.value||team;
+ if(!tieneAccesoSupervisor(id)){
+   $('teamMsg').textContent='Selecciona un equipo con rol Supervisor/Administrador para acceder al panel.';
+   actualizarCerrarAcceso();return;
+ }
+ // Mismo flujo que el botón Abrir panel: nunca se abre sin autorización.
+ await enterTeam();
+}
+function teamRoles(){return teams.filter(t=>t.rol==='admin')}
+async function loadTeams(){if(!user)return;const {data,error}=await sb.from('rec_miembros').select('equipo_id,rol,rec_equipos(id,nombre)');if(error)throw error;teams=(data||[]).filter(r=>r.rec_equipos).map(r=>({id:r.equipo_id,rol:r.rol,nombre:r.rec_equipos.nombre}));
+ const previous=team;let saved='';try{saved=localStorage.getItem('rec_supervisor_equipo_'+user.id)||''}catch(_){}team=teams.some(t=>t.id===previous&&t.rol==='admin')?previous:(teams.some(t=>t.id===saved&&t.rol==='admin')?saved:(teamRoles()[0]?.id||''));const sel=$('teamSelect');sel.innerHTML='<option value="">Selecciona equipo autorizado...</option>'+teams.map(t=>`<option value="${esc(t.id)}" ${t.rol!=='admin'?'disabled':''}>${esc(t.nombre)} (${t.rol==='admin'?'Supervisor':'Técnico'})</option>`).join('');sel.value=team||'';
+ $('teamSection').classList.remove('noshow');$('loginForm').classList.add('noshow');$('authTitle').textContent='Sesión activa';$('authExplain').textContent='Conectado como '+user.email+'. Selecciona tu equipo de supervisión.';if(!teams.length)$('teamMsg').textContent='No tienes equipos asignados. Crea uno aquí o pide al administrador que te agregue.';else if(!teamRoles().length)$('teamMsg').textContent='Tu cuenta es técnico, no supervisor. Solicita rol Administrador en un equipo.';else $('teamMsg').textContent='Equipo disponible. Pulsa «Abrir panel principal» o «×» para continuar.';actualizarCerrarAcceso();
+}
+async function ensureSession(){const {data,error}=await sb.auth.getSession();if(error)throw error;user=data.session?.user||null;if(!user){team='';actualizarCerrarAcceso();openAuth();$('loginForm').classList.remove('noshow');$('teamSection').classList.add('noshow');$('authTitle').textContent='Iniciar sesión';$('authExplain').textContent='Inicia sesión con la cuenta de Supabase de Liberty O&M. No necesitas URL ni clave API.';status('Sin sesión','warn');return false}await loadTeams();if(team){hideAuth();status('● '+(teams.find(t=>t.id===team)?.nombre||'Equipo'),'good');return true}openAuth();status('Falta equipo supervisor','warn');return false}
+async function initAuth(){if(!window.supabase?.createClient)throw Error('No se pudo cargar Supabase JS. Comprueba la conexión a internet.');sb=window.supabase.createClient(PROJECT_URL,PUBLIC_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});const ok=await ensureSession();sb.auth.onAuthStateChange((event,session)=>{const incoming=session?.user?.id||null;if(event==='SIGNED_OUT'){user=null;team='';rows=[];findings=[];render();openAuth('Tu sesión terminó. Entra de nuevo.');status('Sesión cerrada','warn')}else if(event==='SIGNED_IN'&&incoming&&incoming!==user?.id){setTimeout(async()=>{try{user=session.user;const ready=await ensureSession();if(ready)await refresh()}catch(e){showError(e);openAuth('Error verificando equipo: '+errorMessage(e))}},0)}});if(ok)await refresh()}
+async function signIn(e){e.preventDefault();$('loginBtn').disabled=true;$('authError').textContent='';try{const email=$('email').value.trim(),password=$('password').value;const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;if(!data.session)throw Error('Sesión no establecida. Confirma el correo si es necesario.');user=data.session.user;const ready=await ensureSession();$('password').value='';if(ready)await refresh()}catch(e){showError(e)}finally{$('loginBtn').disabled=false}}
+async function signOut(){await sb.auth.signOut();user=null;team='';rows=[];findings=[];chosen='';$('loginForm').classList.remove('noshow');$('teamSection').classList.add('noshow');$('email').value='';$('password').value='';openAuth();render()}
+async function createTeam(e){e.preventDefault();const nombre=$('newTeamName').value.trim();if(nombre.length<2){$('teamMsg').textContent='Escribe el nombre del equipo.';return}try{const {data,error}=await sb.from('rec_equipos').insert({nombre,creado_por:user.id}).select('id').single();if(error)throw error;team=data.id;await loadTeams();$('teamSelect').value=team;$('newTeamName').value='';$('teamMsg').textContent='Equipo creado correctamente. Abriendo el visor…';actualizarCerrarAcceso();if(tieneAccesoSupervisor(team))await enterTeam();else $('teamMsg').textContent='Equipo creado, pero tu membresía como supervisor todavía no aparece. Pulsa «Abrir panel principal» en unos segundos o actualiza la página.'}catch(e){$('teamMsg').textContent='Error: '+errorMessage(e)}}
+async function addMember(e){e.preventDefault();const id=$('teamSelect').value||team;if(!id){$('teamMsg').textContent='Selecciona primero un equipo.';return}try{const {data,error}=await sb.rpc('rec_agregar_miembro',{p_equipo:id,p_correo:$('memberEmail').value.trim(),p_rol:$('memberRole').value});if(error)throw error;$('teamMsg').textContent=(data||'Usuario agregado')+'. Para regresar al mapa pulsa «Abrir panel principal» o ×.';$('memberEmail').value='';actualizarCerrarAcceso()}catch(e){$('teamMsg').textContent='Error: '+errorMessage(e)}}
+async function enterTeam(){
+ const btn=$('enterTeam');const choice=$('teamSelect')?.value||team;
+ if(!tieneAccesoSupervisor(choice)){
+  $('teamMsg').textContent='Necesitas un equipo autorizado con rol Supervisor/Administrador.';
+  actualizarCerrarAcceso();return false;
+ }
+ if(btn)btn.disabled=true;
+ const changed=team!==choice;
+ team=choice;
+ if(changed){chosen='';chosenFinding='';detailPoints=[];assignedTramos=[];teamMembers=[]}
+ try{localStorage.setItem('rec_supervisor_equipo_'+user.id,team)}catch(_){}
+ // Cerrar el panel ANTES de realizar consultas: nunca dejar el acceso encima del mapa
+ $('authError').textContent='';hideAuth();
+ status('● '+(teams.find(t=>t.id===team)?.nombre||'Equipo'),'good');
+ try{await refresh()}catch(err){showError(err)}
+ try{map?.invalidateSize?.()}catch(_){}
+ if(btn)btn.disabled=false;
+ return true;
+}
+async function pageAll(table,cols,query,max=3500){let out=[];for(let off=0;off<max;off+=400){let q=sb.from(table).select(cols);q=query(q);const {data,error}=await q.range(off,off+399);if(error)throw error;out.push(...(data||[]));if((data||[]).length<400)break;}return out}
+async function refresh(){if(!user||!team||loading||document.hidden)return;loading=true;status('↻ Actualizando…');const old=chosen;try{await loadAssignmentsSupervisor();rows=await pageAll('rec_recorridos','id,equipo_id,tramo_asignado_id,codigo,proyecto,tecnico,ciudad,estado,creado_en,inicio,fin,modificado_en,distancia_gps_m,tramo_nombre,tramo_geojson,tramo_longitud_m,inspeccionado_m,avance_pct,cobertura_geojson,hallazgos_total,tiempo_activo_ms,cancelado_en,cancelado_por,motivo_cancelacion,purga_en,detalle',q=>q.eq('equipo_id',team).order('creado_en',{ascending:false}));
+ findings=[];for(let i=0;i<rows.length;i+=130){const ids=rows.slice(i,i+130).map(r=>r.id);if(!ids.length)continue;const group=await pageAll('rec_hallazgos','id,recorrido_id,numero,registrado_en,latitud,longitud,tipo,titulo,descripcion,severidad,estado,accion,fotos,origen',q=>q.in('recorrido_id',ids).order('registrado_en',{ascending:false}),3000);findings.push(...group)}
+ lastRefresh=Date.now();renderAssignmentList();refreshOptions();filterAll({fit:!old});if(old&&rows.some(r=>r.id===old)){await selectRoute(old,{fit:false,fetchGps:false})}else{chosen='';chosenFinding='';renderDetail()}status('● '+(teams.find(t=>t.id===team)?.nombre||'Equipo'),'good');$('mapOverlay').hidden=true;
+ }catch(e){const message=showError(e);$('mapOverlay').hidden=false;$('mapOverlay').textContent='No se pudieron cargar los datos: '+message+'\n\nConfirma que ejecutaste el SQL de RECORREDOR en Liberty O&M y que tu usuario pertenece a un equipo.'}finally{loading=false}}
+function refreshOptions(){const preserve=(id,values,text)=>{const sel=$(id),prev=sel.value;sel.innerHTML=`<option value="">${esc(text)}</option>`+values.filter(Boolean).sort((a,b)=>String(a).localeCompare(String(b),'es')).map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');sel.value=values.includes(prev)?prev:''};preserve('cityFilter',[...new Set(rows.map(r=>r.ciudad))],'Todas las ciudades');preserve('techFilter',[...new Set(rows.map(r=>r.tecnico))],'Todos los técnicos')}
+function filterAll({fit=false}={}){const q=$('search').value.trim().toLocaleLowerCase(),city=$('cityFilter').value,tech=$('techFilter').value,s=$('statusFilter').value,severity=$('severityFilter').value,from=$('dateFrom').value,to=$('dateTo').value;
+ visible=rows.filter(r=>(!r.cancelado_en||$('showCancelledRoutes').checked)&&(!q||[r.codigo,r.proyecto,r.tecnico,r.ciudad,r.tramo_nombre].some(x=>String(x||'').toLocaleLowerCase().includes(q)))&&(!city||r.ciudad===city)&&(!tech||r.tecnico===tech)&&(!s||r.estado===s)&&(!from||String(r.creado_en||'').slice(0,10)>=from)&&(!to||String(r.creado_en||'').slice(0,10)<=to)&&(!severity||findings.some(f=>f.recorrido_id===r.id&&f.severidad===severity)));
+ renderStats();renderRoutes();renderMap({fit});renderDetail()}
+function renderStats(){const reportables=visible.filter(r=>!r.cancelado_en);const total=reportables.reduce((s,r)=>s+Number(r.tramo_longitud_m||0),0),ins=reportables.reduce((s,r)=>s+Number(r.inspeccionado_m||0),0),count=reportables.reduce((s,r)=>s+findings.filter(f=>f.recorrido_id===r.id).length,0),critical=reportables.reduce((s,r)=>s+findings.filter(f=>f.recorrido_id===r.id&&['critica','alta'].includes(f.severidad)).length,0),pct=total?100*ins/total:0;
+ $('stats').innerHTML=[["Recorridos",reportables.length],["Red asignada",fmtKm(total)+' km'],["Red inspeccionada",fmtKm(ins)+' km'],["Cobertura",pct.toFixed(1)+' %'],["Hallazgos",count],["Críticos / Altos",critical]].map(([k,v],i)=>`<div class="stat ${i===3?'accent':''}"><small>${esc(k)}</small><strong>${esc(v)}</strong></div>`).join('')}
+function renderRoutes(){
+ $('listCount').textContent=`Recorridos (${visible.length})`;
+ const l=$('routeList');
+ l.innerHTML=visible.length?visible.map(r=>{
+  const cancelado=!!r.cancelado_en;
+  const vacio=r.estado==='ready'&&!r.inicio&&!r.fin&&!Number(r.tiempo_activo_ms||0)&&!Number(r.distancia_gps_m||0)&&!Number(r.inspeccionado_m||0)&&!Number(r.hallazgos_total||0)&&!findings.some(f=>f.recorrido_id===r.id);
+  return `<div class="routebox ${cancelado?'cancelled':''}">
+   <button type="button" class="route ${r.id===chosen?'active':''}" data-route="${esc(r.id)}"><div class="routehead"><b>${esc(r.proyecto)}</b><strong>${Number(r.avance_pct||0).toFixed(1)}%</strong></div><small>${esc(r.codigo)} · ${esc(r.tecnico)} · ${esc(r.ciudad)}</small><small>${cancelado?'⛔ Cancelado · ':''}${esc(statusName[r.estado]||r.estado)} · ${esc(fmtDate(r.modificado_en||r.creado_en))}</small><div class="progress"><i style="width:${Math.max(0,Math.min(100,Number(r.avance_pct||0)))}%"></i></div></button>
+   <div class="routeactions">${cancelado
+    ? `${!r.purga_en?`<button type="button" class="btn ghost" data-restore-route="${esc(r.id)}">↶ Restaurar</button>`:''}${vacio&&!r.purga_en?`<button type="button" class="btn warn" data-delete-route="${esc(r.id)}">Borrar vacío</button>`:''}<button type="button" class="btn danger" data-purge-route="${esc(r.id)}">${r.purga_en?'↻ Reintentar eliminación':'🗑 Eliminar definitivamente'}</button>`
+    : `<button type="button" class="btn" data-cancel-route="${esc(r.id)}">✕ Cancelar recorrido</button><button type="button" class="btn danger" data-purge-route="${esc(r.id)}">🗑 Eliminar definitivamente</button>`}</div>
+  </div>`;
+ }).join(''):'<div class="empty">No hay recorridos con los filtros seleccionados. Comprueba también que los técnicos hayan sincronizado.</div>';
+}
+function geoLines(geo){const out=[];const crawl=(g)=>{if(!g)return;switch(g.type){case 'FeatureCollection':(g.features||[]).forEach(crawl);break;case 'Feature':crawl(g.geometry);break;case 'GeometryCollection':(g.geometries||[]).forEach(crawl);break;case 'LineString':if((g.coordinates||[]).length>=2)out.push(g.coordinates);break;case 'MultiLineString':(g.coordinates||[]).forEach(l=>{if(l.length>=2)out.push(l)});break;case 'Polygon':(g.coordinates||[]).forEach(l=>{if(l.length>=2)out.push(l)});break;case 'MultiPolygon':(g.coordinates||[]).flat().forEach(l=>{if(l.length>=2)out.push(l)});break;}};crawl(geo);return out}
+function routeBounds(r){const xy=geoLines(r.tramo_geojson).flat().map(c=>[c[1],c[0]]).filter(c=>Number.isFinite(c[0])&&Number.isFinite(c[1]));return xy}
+function renderMap({fit=false}={}){if(!map)return;[planLayer,assignedMapLayer,coveredLayer,gpsLayer,markerLayer].forEach(l=>l.clearLayers());const ids=new Set(visible.map(r=>r.id)),bounds=[];
+ for(const r of visible.slice(0,280)){const active=r.id===chosen;for(const line of geoLines(r.tramo_geojson).slice(0,1500)){const coords=line.map(c=>[c[1],c[0]]);if(coords.length<2)continue;const lay=L.polyline(coords,{color:r.cancelado_en?'#a59cad':'#ffc45f',dashArray:r.cancelado_en?'7 6':null,weight:active?6:3,opacity:active?1:.65}).addTo(planLayer);lay.on('click',()=>selectRoute(r.id));if(fit)bounds.push(...coords)}for(const line of geoLines(r.cobertura_geojson).slice(0,4000)){const coords=line.map(c=>[c[1],c[0]]);if(coords.length>1)L.polyline(coords,{color:r.cancelado_en?'#a59cad':'#23dfac',weight:active?7:5,opacity:active?1:.84}).addTo(coveredLayer).on('click',()=>selectRoute(r.id))}}
+ if(showGps&&chosen&&detailPoints.length>1){const legs=new Map();for(const p of detailPoints){const k=p.segmento??0;if(!legs.has(k))legs.set(k,[]);legs.get(k).push([p.latitud,p.longitud])}for(const leg of legs.values())if(leg.length>1)L.polyline(leg,{color:'#409fff',weight:3,opacity:.96}).addTo(gpsLayer)}
+ for(const f of findings.slice(0,4000)){if(!ids.has(f.recorrido_id))continue;if($('severityFilter').value&&f.severidad!==$('severityFilter').value)continue;const col=f.severidad==='critica'?'#ff526c':f.severidad==='alta'?'#ffa357':f.severidad==='media'?'#ffdc76':'#90e6c3';const m=L.circleMarker([f.latitud,f.longitud],{radius:f.id===chosenFinding?10:7,color:'#fff',weight:2,fillColor:col,fillOpacity:.95}).addTo(markerLayer);m.bindPopup(`<b>Hallazgo #${esc(f.numero)} · ${esc(f.titulo)}</b><br>${esc(f.tipo)} · ${esc(f.severidad)}<br><small>${esc(fmtDate(f.registrado_en))}</small>`);m.on('click',()=>selectFinding(f.id))}
+ drawAssignmentsOnMap(fit,bounds);if(fit&&bounds.length){map.fitBounds(L.latLngBounds(bounds).pad(.1),{maxZoom:16})}map.invalidateSize()}
+async function selectRoute(id,{fit=true,fetchGps=true}={}){if(!rows.some(r=>r.id===id))return;const old=chosen;chosen=id;chosenFinding='';if(old!==id){detailPoints=[];fetchGps=true}renderRoutes();renderDetail();renderMap({fit:false});const xy=routeBounds(rows.find(r=>r.id===id));if(fit){if(xy.length>1)map.fitBounds(L.latLngBounds(xy).pad(.18),{maxZoom:17});else if(xy.length)map.setView(xy[0],17)}if(fetchGps&&showGps)await loadGps(id)}
+async function loadGps(id){const task=++detailNonce;try{const pts=await pageAll('rec_puntos','latitud,longitud,segmento,registrado_en,secuencia,precision_m',q=>q.eq('recorrido_id',id).order('secuencia',{ascending:true}),60000);if(task!==detailNonce||chosen!==id)return;detailPoints=pts;renderMap({fit:false});renderDetail()}catch(e){console.warn('No se pudieron leer puntos GPS',e)}}
+function selectFinding(id){const f=findings.find(f=>f.id===id);if(!f)return;const previous=chosen;if(previous!==f.recorrido_id){chosen=f.recorrido_id;detailPoints=[];loadGps(chosen)}chosenFinding=id;renderRoutes();renderDetail();renderMap({fit:false});map.setView([f.latitud,f.longitud],Math.max(16,map.getZoom()));}
+function renderDetail(){const r=rows.find(r=>r.id===chosen),wrap=$('detail');if(!r){wrap.innerHTML='<div class="eyebrow">Detalle de supervisión</div><h2 class="heading">Avances y hallazgos</h2><div class="empty">Selecciona un recorrido del listado o un hallazgo sobre el mapa.</div>';return}const fs=findings.filter(f=>f.recorrido_id===r.id).sort((a,b)=>a.numero-b.numero);const pct=Number(r.avance_pct||0),d=wrap;d.innerHTML=`<div class="eyebrow">Inspección seleccionada</div><h2 class="heading">${esc(r.proyecto)}</h2><div class="hint">${esc(r.codigo)} · ${esc(r.tecnico)}</div>${r.cancelado_en?`<div class="sec" style="border-color:#bd777e;color:#ffd7db">⛔ Recorrido cancelado el ${esc(fmtDate(r.cancelado_en))}<div class="hint">Motivo: ${esc(r.motivo_cancelacion||'No registrado')}</div></div>`:''}<div class="sec" style="display:flex;gap:6px;flex-wrap:wrap">${r.purga_en?'':`<button class="btn ${r.cancelado_en?'ghost':'danger'}" type="button" data-${r.cancelado_en?'restore-route':'cancel-route'}="${esc(r.id)}">${r.cancelado_en?'↶ Restaurar recorrido':'✕ Cancelar recorrido'}</button>`}<button type="button" class="btn danger" data-purge-route="${esc(r.id)}">${r.purga_en?'↻ Reintentar eliminación total':'🗑 Eliminar definitivamente'}</button></div>${r.purga_en?`<div class="notice">⚠ Eliminación definitiva iniciada. Para completar la operación vuelve a pulsar «Reintentar eliminación total». No puedes restaurar este recorrido.</div>`:''}<div class="sec"><h3>Cobertura del tramo</h3><div class="stat accent"><small>Red inspeccionada</small><strong>${pct.toFixed(1)} %</strong><div class="progress"><i style="width:${Math.max(0,Math.min(100,pct))}%"></i></div></div><div class="info-pairs" style="margin-top:9px"><div><small>Planificado</small><b>${fmtKm(r.tramo_longitud_m)} km</b></div><div><small>Verificado</small><b>${fmtKm(r.inspeccionado_m)} km</b></div><div><small>GPS recorrido</small><b>${fmtKm(r.distancia_gps_m)} km</b></div><div><small>Puntos GPS cargados</small><b>${detailPoints.length||'—'}</b></div><div><small>Estado</small><b>${r.cancelado_en?'Cancelado':esc(statusName[r.estado]||r.estado)}</b></div><div><small>Ciudad</small><b>${esc(r.ciudad)}</b></div></div></div><div class="sec"><h3>Fechas y actividad</h3><div class="info-pairs"><div><small>Inicio</small><b>${esc(fmtDate(r.inicio))}</b></div><div><small>Fin</small><b>${esc(fmtDate(r.fin))}</b></div><div><small>Última sincronización</small><b>${esc(fmtDate(r.modificado_en))}</b></div><div><small>Tiempo activo</small><b>${(Number(r.tiempo_activo_ms||0)/60000).toFixed(0)} min</b></div></div></div><div class="sec"><h3>Hallazgos (${fs.length})</h3><div id="detailFindings">${fs.length?fs.map(f=>`<button class="find-card ${f.id===chosenFinding?'selected':''}" type="button" data-finding="${esc(f.id)}"><span class="severity ${esc(f.severidad)}">${esc(f.severidad)}</span> <b>#${f.numero} · ${esc(f.titulo)}</b><small>${esc(f.tipo)} · ${esc(f.estado||'Pendiente')}</small></button>`).join(''):'<div class="empty">Sin hallazgos registrados en Supabase.</div>'}</div></div><div id="findingDetail"></div>`;
+ if(chosenFinding){const f=findings.find(x=>x.id===chosenFinding);if(f)renderFindingDetails(f)}}
+async function renderFindingDetails(f){const target=$('findingDetail');if(!target)return;target.innerHTML=`<div class="sec"><h3>Hallazgo #${esc(f.numero)}</h3><p><b>${esc(f.titulo)}</b></p><p class="hint">${esc(f.descripcion)}</p><div class="info-pairs"><div><small>Coordenadas</small><b>${Number(f.latitud).toFixed(6)}, ${Number(f.longitud).toFixed(6)}</b></div><div><small>Fecha y hora</small><b>${esc(fmtDate(f.registrado_en))}</b></div><div><small>Origen</small><b>${esc(f.origen||'GPS')}</b></div><div><small>Criticidad</small><b>${esc(f.severidad)}</b></div><div><small>Estado</small><b>${esc(f.estado)}</b></div><div><small>Acción</small><b>${esc(f.accion||'—')}</b></div></div><h3 style="margin-top:15px">Registro fotográfico (${(f.fotos||[]).length})</h3><div class="photo-list" id="photoList"><p class="hint">Solicitando fotografías privadas…</p></div></div>`;
+ const photos=f.fotos||[];const div=$('photoList');if(!photos.length){div.innerHTML='<div class="hint">Sin fotos.</div>';return}div.innerHTML='';for(const ph of photos){if(chosenFinding!==f.id)break;if(!ph.path)continue;const {data,error}=await sb.storage.from('recorredor-evidencias').createSignedUrl(ph.path,600);if(chosenFinding!==f.id)break;if(error){const p=document.createElement('div');p.className='hint';p.textContent='No se pudo leer '+(ph.name||'foto')+': '+error.message;div.append(p);continue}const a=document.createElement('a');a.href=data.signedUrl;a.target='_blank';a.rel='noopener noreferrer';const img=document.createElement('img');img.src=data.signedUrl;img.alt='Evidencia del hallazgo';img.loading='lazy';const cap=document.createElement('span');cap.textContent=ph.name||'Evidencia';a.append(img,cap);div.append(a)}}
+function fileCsv(name,headers,data){const cell=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const lines=[headers,...data].map(r=>r.map(cell).join(';')).join('\r\n');const blob=new Blob(['\ufeff'+lines],{type:'text/csv;charset=utf-8'});const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=name;document.body.append(link);link.click();setTimeout(()=>{URL.revokeObjectURL(link.href);link.remove()},500)}
+function routesCsv(){fileCsv('RECORREDOR_tramos_'+new Date().toISOString().slice(0,10)+'.csv',['Código','Proyecto','Técnico','Ciudad','Estado','Inicio','Última actualización','Planificado_m','Inspeccionado_m','Avance_%','GPS_m','Hallazgos'],visible.filter(r=>!r.cancelado_en).map(r=>[r.codigo,r.proyecto,r.tecnico,r.ciudad,statusName[r.estado]||r.estado,r.inicio,r.modificado_en,r.tramo_longitud_m,r.inspeccionado_m,r.avance_pct,r.distancia_gps_m,findings.filter(f=>f.recorrido_id===r.id).length]))}
+function findingsCsv(){const ids=new Set(visible.filter(r=>!r.cancelado_en).map(r=>r.id));fileCsv('RECORREDOR_hallazgos_'+new Date().toISOString().slice(0,10)+'.csv',['Código','Proyecto','Técnico','Número','Fecha','Tipo','Título','Descripción','Severidad','Estado','Acción','Latitud','Longitud','Fotos'],findings.filter(f=>ids.has(f.recorrido_id)).map(f=>{const r=rows.find(r=>r.id===f.recorrido_id);return[r?.codigo,r?.proyecto,r?.tecnico,f.numero,f.registrado_en,f.tipo,f.titulo,f.descripcion,f.severidad,f.estado,f.accion,f.latitud,f.longitud,(f.fotos||[]).length]}))}
+function pdfReport(){const JS=window.jspdf?.jsPDF;if(!JS){alert('Librería PDF no disponible');return}const doc=new JS({orientation:'landscape',unit:'mm',format:'a4',compress:true}),D=rows.filter(r=>!r.cancelado_en&&visible.some(v=>v.id===r.id));const h=210,w=297,txt=s=>String(s??'').replace(/[^\x20-\x7eáéíóúñüÁÉÍÓÚÑÜ]/g,'').slice(0,75);doc.setFillColor(9,34,53);doc.rect(0,0,w,25,'F');doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(15);doc.text('RECORREDOR FO · REPORTE GENERAL',12,15);doc.setTextColor(22,52,71);doc.setFontSize(9);const total=D.reduce((s,r)=>s+Number(r.tramo_longitud_m||0),0),done=D.reduce((s,r)=>s+Number(r.inspeccionado_m||0),0);doc.text(`Recorridos: ${D.length}  |  Asignado: ${fmtKm(total)} km  |  Inspeccionado: ${fmtKm(done)} km  |  Avance: ${total?(100*done/total).toFixed(1):0}%`,12,35);
+ const bb=D.flatMap(r=>geoLines(r.tramo_geojson).flat()).filter(c=>Number.isFinite(c[0])&&Number.isFinite(c[1]));const X=12,Y=41,W=273,H=120;doc.setFillColor(238,245,249);doc.rect(X,Y,W,H,'F');if(bb.length){let lo=Math.min(...bb.map(c=>c[0])),hi=Math.max(...bb.map(c=>c[0])),bo=Math.min(...bb.map(c=>c[1])),top=Math.max(...bb.map(c=>c[1]));const spanX=Math.max(hi-lo,.00002),spanY=Math.max(top-bo,.00002),scale=Math.min((W-14)/spanX,(H-14)/spanY);const ofx=X+(W-spanX*scale)/2,ofy=Y+(H-spanY*scale)/2;const proj=c=>[ofx+(c[0]-lo)*scale,ofy+(top-c[1])*scale];const draw=(lines,col,width)=>{doc.setDrawColor(...col);doc.setLineWidth(width);for(const l of lines){for(let i=1;i<l.length;i++){const a=proj(l[i-1]),b=proj(l[i]);doc.line(a[0],a[1],b[0],b[1])}}};D.slice(0,200).forEach(r=>draw(geoLines(r.tramo_geojson),[235,173,68],.50));D.slice(0,200).forEach(r=>draw(geoLines(r.cobertura_geojson),[15,172,121],.95));}
+ doc.setFontSize(8);doc.setTextColor(62,81,100);doc.text('Mapa esquemático vectorial: amarillo = pendiente, verde = inspeccionado. No incluye imagen satelital.',12,166);doc.text(`Generado: ${new Date().toLocaleString('es-CO')}`,285,166,{align:'right'});let yy=175;doc.setFont('helvetica','bold');doc.text('RECORRIDO',12,yy);doc.text('TÉCNICO',104,yy);doc.text('AVANCE',201,yy);doc.text('HALLAZGOS',247,yy);doc.setFont('helvetica','normal');for(const r of D){yy+=6;if(yy>199){doc.addPage();yy=22}doc.text(txt(r.codigo+' · '+r.proyecto),12,yy);doc.text(txt(r.tecnico),104,yy);doc.text((Number(r.avance_pct)||0).toFixed(1)+' %',201,yy);doc.text(String(findings.filter(f=>f.recorrido_id===r.id).length),247,yy)}doc.save('RECORREDOR_reporte_general_'+new Date().toISOString().slice(0,10)+'.pdf')}
+
+// ===== V10: asignaciones centralizadas =====
+const assignedEscape=esc;
+function assignmentMessage(msg,error=false){const e=$('assignmentMessage');if(e){e.textContent=msg;e.style.color=error?'#ff9aa9':'#9ce9cd'}}
+async function loadTeamMembers(){
+ const {data,error}=await sb.rpc('rec_listar_miembros',{p_equipo:team});if(error)throw error;
+ teamMembers=data||[];return teamMembers;
+}
+async function loadAssignmentsSupervisor(){
+ if(!team)return;
+ const {data,error}=await sb.from('rec_tramos_asignados').select('id,equipo_id,tecnico_id,nombre,proyecto,ciudad,observaciones,archivo_nombre,geojson,longitud_m,estado,version,creada_en,actualizada_en').eq('equipo_id',team).order('actualizada_en',{ascending:false}).limit(1500);
+ if(error){$('assignmentList').innerHTML='<p class="hint">No se pudieron cargar asignaciones. Ejecuta recorredor_asignaciones.sql en Liberty O&M: '+esc(error.message)+'</p>';assignedTramos=[];assignmentsLoaded=false;return}
+ assignedTramos=data||[];assignmentsLoaded=true;
+ try{await loadTeamMembers()}catch(e){console.warn('Miembros:',e);teamMembers=[]}
+ renderAssignmentList();
+}
+function assignmentTechName(id){const t=teamMembers.find(m=>m.usuario_id===id);return t?.correo||'Técnico '+String(id).slice(0,8)}
+function renderAssignmentList(){
+ const archived=$('showArchivedAssignments').checked;
+ const all=assignedTramos.filter(t=>archived||t.estado==='activa');
+ $('assignmentCount').textContent='('+assignedTramos.filter(t=>t.estado==='activa').length+')';
+ $('assignmentList').innerHTML=all.length?all.map(t=>{
+  const inspected=rows.filter(r=>r.tramo_asignado_id===t.id);
+  const maxPct=inspected.length?Math.max(...inspected.map(r=>Number(r.avance_pct)||0)):0;
+  return `<div class="assignment-item ${t.estado==='archivada'?'isarchived':''}"><strong>${esc(t.nombre)}</strong><small>${esc(t.proyecto)} · ${esc(t.ciudad)}</small><small>👷 ${esc(assignmentTechName(t.tecnico_id))} · ${fmtKm(t.longitud_m)} km · ${t.estado==='activa'?'Asignado':'Cancelado'} · ${maxPct.toFixed(1)}% inspeccionado</small><div class="assignment-buttons"><button class="btn" data-assignment-view="${esc(t.id)}">⌖ Ver</button><button class="btn" data-assignment-edit="${esc(t.id)}">✎ Editar</button><button class="btn" data-assignment-archive="${esc(t.id)}">${t.estado==='activa'?'✕ Cancelar':'↶ Restaurar'}</button>${t.estado==='archivada'?`<button class="btn danger" data-assignment-purge="${esc(t.id)}" title="Borrar permanentemente de Supabase solo si no tiene trabajo de campo">▣ Eliminar de la base</button>`:''}</div></div>`
+ }).join(''):'<div class="hint">No hay tramos asignados. Pulsa «+ Nuevo» para cargar un GeoJSON y asignarlo.</div>';
+}
+function drawAssignmentsOnMap(fit,bounds){
+ if(!assignedMapLayer)return;
+ for(const t of assignedTramos.filter(a=>a.estado==='activa')){
+  // Si ya hay recorrido para la asignación, su línea planificada se dibuja arriba.
+  if(visible.some(r=>r.tramo_asignado_id===t.id))continue;
+  for(const line of geoLines(t.geojson).slice(0,1000)){
+   const coords=line.map(c=>[Number(c[1]),Number(c[0])]).filter(c=>Number.isFinite(c[0])&&Number.isFinite(c[1]));if(coords.length<2)continue;
+   const pl=L.polyline(coords,{color:'#a8a4ff',weight:3,opacity:.86,dashArray:'8 7'}).addTo(assignedMapLayer);
+   pl.bindTooltip(esc(t.nombre)+' · '+esc(assignmentTechName(t.tecnico_id)));
+   pl.on('click',()=>focusAssignment(t.id));if(fit)bounds.push(...coords);
+  }
+ }
+}
+function focusAssignment(id){
+ const t=assignedTramos.find(x=>x.id===id);if(!t||!map)return;
+ const xy=geoLines(t.geojson).flat().map(c=>[Number(c[1]),Number(c[0])]).filter(c=>Number.isFinite(c[0])&&Number.isFinite(c[1]));
+ if(xy.length>1)map.fitBounds(L.latLngBounds(xy).pad(.14),{maxZoom:18});else if(xy.length)map.setView(xy[0],17);
+ const rs=rows.find(r=>r.tramo_asignado_id===id);if(rs)selectRoute(rs.id,{fit:false});
+}
+function normalizeAssignmentGeojson(raw){
+ const features=raw?.type==='FeatureCollection'?raw.features:raw?.type==='Feature'?[raw]:raw?.type? [{type:'Feature',properties:{},geometry:raw}]:null;
+ if(!Array.isArray(features)||features.length>4000)throw Error('GeoJSON inválido o contiene más de 4.000 elementos.');
+ let vertices=0;const clean=[];
+ function validPair(p){if(!Array.isArray(p)||p.length<2)return false;const [x,y]=p.map(Number);if(!Number.isFinite(x)||!Number.isFinite(y)||Math.abs(x)>180||Math.abs(y)>90)return false;vertices++;if(vertices>120000)throw Error('Demasiadas coordenadas. Simplifica el archivo.');return true}
+ function geometry(g){if(!g)return null;const t=g.type,c=g.coordinates;if(t==='LineString'&&Array.isArray(c)&&c.length>1&&c.every(validPair))return{type:t,coordinates:c.map(p=>p.slice(0,2).map(Number))};
+ if(t==='MultiLineString'&&Array.isArray(c)){const lines=c.map(l=>geometry({type:'LineString',coordinates:l})).filter(Boolean).map(x=>x.coordinates);return lines.length?{type:t,coordinates:lines}:null}
+ if(t==='Point'&&validPair(c))return{type:t,coordinates:c.slice(0,2).map(Number)};
+ if(t==='Polygon'&&Array.isArray(c)){const rings=c.filter(l=>l.length>=4&&l.every(validPair)).map(l=>l.map(p=>p.slice(0,2).map(Number)));return rings.length?{type:t,coordinates:rings}:null}
+ return null}
+ for(const f of features){const g=geometry(f.geometry);if(!g)continue;const props={};for(const [k,v]of Object.entries(f.properties||{}).slice(0,10))if(['string','number','boolean'].includes(typeof v))props[String(k).slice(0,60)]=String(v).slice(0,200);clean.push({type:'Feature',properties:props,geometry:g})}
+ if(!clean.length||!clean.some(f=>['LineString','MultiLineString'].includes(f.geometry.type)))throw Error('El archivo debe contener al menos una línea (LineString) de fibra óptica.');
+ return{type:'FeatureCollection',features:clean};
+}
+function parseAssignmentKml(kmlText){
+ const xml=new DOMParser().parseFromString(kmlText,'application/xml');if(xml.querySelector('parsererror'))throw Error('KML inválido.');const fs=[];
+ const coords=t=>String(t||'').trim().split(/\s+/).map(v=>v.split(',').map(Number)).filter(p=>p.length>=2&&Number.isFinite(p[0])&&Number.isFinite(p[1])).map(p=>p.slice(0,2));
+ for(const pm of [...xml.getElementsByTagName('Placemark')]){
+  const name=pm.getElementsByTagName('name')[0]?.textContent||'';
+  for(const g of [...pm.getElementsByTagName('LineString')]){const c=coords(g.getElementsByTagName('coordinates')[0]?.textContent);if(c.length>1)fs.push({type:'Feature',properties:{name},geometry:{type:'LineString',coordinates:c}})}
+  for(const g of [...pm.getElementsByTagName('Point')]){const c=coords(g.getElementsByTagName('coordinates')[0]?.textContent);if(c.length)fs.push({type:'Feature',properties:{name},geometry:{type:'Point',coordinates:c[0]}})}
+ }
+ return{type:'FeatureCollection',features:fs};
+}
+async function assignmentReadFile(file){
+ if(file.size>15*1024*1024)throw Error('Archivo mayor a 15 MB. Simplifica el tramo.');
+ const ext=file.name.split('.').pop().toLowerCase();let data;
+ if(ext==='geojson'||ext==='json')data=JSON.parse(await file.text());
+ else if(ext==='kml')data=parseAssignmentKml(await file.text());
+ else if(ext==='kmz'){
+  if(!window.JSZip)throw Error('La librería KMZ no está disponible');const zip=await JSZip.loadAsync(file);const f=Object.values(zip.files).find(f=>!f.dir&&/\.kml$/i.test(f.name));if(!f)throw Error('KMZ sin archivo KML');data=parseAssignmentKml(await f.async('string'));
+ }else throw Error('Solo se admiten GeoJSON, KML o KMZ.');
+ return normalizeAssignmentGeojson(data);
+}
+function geoLineLengthMeters(geo){
+ let meters=0;for(const l of geoLines(geo))for(let i=1;i<l.length;i++){
+ const a=l[i-1],b=l[i],r=Math.PI/180,p1=a[1]*r,p2=b[1]*r,dp=(b[1]-a[1])*r,dl=(b[0]-a[0])*r;
+ const x=Math.sin(dp/2)**2+Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;meters+=6371000*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+ }return meters;
+}
+async function openAssignmentEditor(id=null){
+ if(!tieneAccesoSupervisor(team)){openAuth('Primero selecciona un equipo autorizado.');return}
+ if(!teamMembers.length){try{await loadTeamMembers()}catch(e){alert('No fue posible listar miembros. Ejecuta el SQL adicional: '+errorMessage(e));return}}
+ const a=assignedTramos.find(t=>t.id===id);editingAssignmentId=a?.id||null;
+ $('assignmentTitle').textContent=a?'Editar / reasignar tramo':'Asignar tramo a técnico';
+ $('assignmentTech').innerHTML='<option value="">Seleccionar técnico...</option>'+teamMembers.map(m=>`<option value="${esc(m.usuario_id)}">${esc(m.correo)} · ${m.rol==='admin'?'Supervisor':'Técnico'}</option>`).join('');
+ $('assignmentTech').value=a?.tecnico_id||'';$('assignmentName').value=a?.nombre||'';$('assignmentProject').value=a?.proyecto||'';$('assignmentCity').value=a?.ciudad||'';
+ $('assignmentNotes').value=a?.observaciones||'';$('assignmentFile').value='';pendingAssignmentGeometry=null;pendingAssignmentFile='';
+ $('assignmentFileStatus').textContent=a?`Trazado existente: ${a.archivo_nombre||a.nombre}. Déjalo vacío para conservarlo.`:'Carga el trazado que recibirá el técnico.';
+ assignmentMessage('');$('assignmentDialog').classList.add('open');
+}
+function closeAssignmentEditor(){$('assignmentDialog').classList.remove('open');editingAssignmentId=null;pendingAssignmentGeometry=null;pendingAssignmentFile=''}
+async function saveAssignment(e){e.preventDefault();const btn=$('saveAssignment');btn.disabled=true;
+ try{
+  if(!tieneAccesoSupervisor(team))throw Error('No hay acceso supervisor al equipo');
+  const name=$('assignmentName').value.trim(),proyecto=$('assignmentProject').value.trim(),ciudad=$('assignmentCity').value.trim(),tecnico=$('assignmentTech').value;
+  if(!name||!proyecto||!ciudad||!tecnico)throw Error('Completa nombre, proyecto, ciudad y técnico.');
+  const old=assignedTramos.find(a=>a.id===editingAssignmentId);
+  if(!old&&!pendingAssignmentGeometry)throw Error('Debes cargar el GeoJSON/KMZ antes de asignar.');
+  if(old&&(old.tecnico_id!==tecnico||pendingAssignmentGeometry)){
+   const active=rows.filter(r=>r.tramo_asignado_id===old.id&&r.estado!=='finished');
+   if(active.length&&!confirm('Este tramo tiene recorridos en progreso. El cambio se notificará al técnico; los GPS/hallazgos existentes NO se borrarán. ¿Continuar?'))return;
+  }
+  const json=pendingAssignmentGeometry||old?.geojson;
+  const record={nombre:name,proyecto,ciudad,tecnico_id:tecnico,observaciones:$('assignmentNotes').value.trim(),geojson:json,longitud_m:geoLineLengthMeters(json),archivo_nombre:pendingAssignmentFile||old?.archivo_nombre||''};
+  assignmentMessage('Guardando asignación en Supabase...');
+  const res=old?await sb.from('rec_tramos_asignados').update(record).eq('id',old.id).eq('equipo_id',team).select('id').single():await sb.from('rec_tramos_asignados').insert({...record,equipo_id:team,creado_por:user.id}).select('id').single();
+  if(res.error)throw res.error;
+  closeAssignmentEditor();await refresh();status('✓ Tramo asignado','good');
+ }catch(err){assignmentMessage('Error: '+errorMessage(err),true)}finally{btn.disabled=false}
+}
+async function archiveAssignment(id){const a=assignedTramos.find(t=>t.id===id);if(!a)return;
+ const archive=a.estado==='activa';if(!confirm(archive?`¿Cancelar la asignación «${a.nombre}»? Se ocultará al técnico, pero permanecerá en Supabase. Para borrarla de la base usa después «Mostrar asignaciones canceladas».`:`¿Restaurar «${a.nombre}» para que vuelva a mostrarse al técnico?`))return;
+ const {error}=await sb.from('rec_tramos_asignados').update({estado:archive?'archivada':'activa'}).eq('id',id).eq('equipo_id',team);
+ if(error){alert('No se pudo actualizar: '+error.message);return}await refresh();
+}
+async function purgeCancelledAssignment(id){
+ const a=assignedTramos.find(t=>t.id===id);
+ if(!a||!team||!tieneAccesoSupervisor(team))return;
+ if(a.estado!=='archivada'){alert('Primero cancela la asignación. Después podrás eliminarla de la base.');return}
+ const accepted=prompt(`ELIMINACIÓN DEFINITIVA DE SUPABASE\n\nTramo: ${a.nombre}\n\nSolo se eliminará si NO existen puntos GPS, hallazgos, fotos ni una inspección iniciada. Si existe evidencia, el sistema impedirá el borrado y el tramo permanecerá cancelado.\n\nEscribe ELIMINAR para confirmar:`);
+ if(accepted!=='ELIMINAR')return;
+ const btn=$('assignmentList').querySelector('[data-assignment-purge="'+id+'"]');if(btn){btn.disabled=true;btn.textContent='Eliminando…'}
+ try{
+  const {data,error}=await sb.rpc('rec_eliminar_tramo_cancelado',{p_tramo:id});
+  if(error)throw error;
+  await refresh();
+  alert(`Asignación eliminada definitivamente de Supabase.${data?.recorridos_vacios_eliminados?` También se eliminaron ${data.recorridos_vacios_eliminados} recorrido(s) vacío(s).`:''} Los demás recorridos y hallazgos no se modificaron.`);
+ }catch(err){
+  const msg=errorMessage(err);
+  alert('No se pudo eliminar la asignación. '+msg+( /rec_eliminar_tramo_cancelado|Could not find the function|PGRST202/i.test(msg)?' Ejecuta el archivo recorredor_eliminar_cancelados.sql en el Supabase de Liberty O&M.':''));
+ }finally{if(btn&&btn.isConnected){btn.disabled=false;btn.textContent='▣ Eliminar de la base'}}
+}
+// Eliminación total V12: fotografías primero por la API oficial Storage;
+// luego RPC transaccional elimina puntos, hallazgos y recorrido.
+const purgingRoutes=new Set();
+function purgeNotice(message,visible=true){
+ const e=$('purgeStatus');if(!e)return;
+ e.hidden=!visible;e.textContent=message;
+}
+async function purgarRecorridoCompleto(id){
+ if(purgingRoutes.has(id))return;
+ const r=rows.find(x=>x.id===id);
+ if(!r){alert('Este recorrido ya no está disponible. Actualiza el visor.');return}
+ const me=teams.find(t=>t.id===team);
+ if(!user||!team||me?.rol!=='admin'){
+  alert('Solo un supervisor/administrador autorizado puede eliminar definitivamente recorridos de este equipo.');return;
+ }
+ const n=findings.filter(f=>f.recorrido_id===id).length;
+ const resumen=`${r.proyecto} (${r.codigo})\nTécnico: ${r.tecnico}\nEstado: ${r.estado}\nHallazgos: ${n}\nGPS: ${Number(r.distancia_gps_m||0).toFixed(0)} m registrados`;
+ if(!confirm(`ELIMINACIÓN IRREVERSIBLE DE SUPABASE\n\n${resumen}\n\nSe eliminarán TODOS los puntos GPS, hallazgos y fotografías del recorrido. La asignación original, si existe, se conservará.\n\n¿Continuar?`))return;
+ const palabra=prompt(`Última confirmación para ${r.codigo}:\n\nEscribe exactamente ELIMINAR para borrar permanentemente este recorrido y sus evidencias.`);
+ if(palabra!=='ELIMINAR')return;
+ purgingRoutes.add(id);
+ const triggers=[...document.querySelectorAll('[data-purge-route]')].filter(b=>b.dataset.purgeRoute===id);
+ triggers.forEach(b=>{b.disabled=true;b.textContent='Eliminando…'});
+ try{
+  purgeNotice('Preparando eliminación segura. Validando permiso de administrador…');
+  const {data:prep,error:pError}=await sb.rpc('rec_preparar_borrado_total',{p_recorrido:id});
+  if(pError)throw pError;
+  if(!prep?.ok||!Array.isArray(prep.archivos))throw Error('Supabase no pudo preparar la eliminación ni obtener las fotografías.');
+  const photos=prep.archivos;
+  for(let i=0;i<photos.length;i+=100){
+   const batch=photos.slice(i,i+100);
+   purgeNotice(`Eliminando fotografías ${i+1}–${i+batch.length} de ${photos.length} en Supabase Storage… No cierres esta ventana.`);
+   const {error}=await sb.storage.from('recorredor-evidencias').remove(batch);
+   if(error)throw Error('No se pudieron eliminar todas las fotografías: '+errorMessage(error));
+  }
+  purgeNotice('Fotografías procesadas. Verificando Storage y eliminando los datos GPS y hallazgos…');
+  const {data:done,error:dError}=await sb.rpc('rec_finalizar_borrado_total',{p_recorrido:id});
+  if(dError)throw dError;
+  if(!done?.ok||!done?.recorrido_eliminado)throw Error('La base no confirmó la eliminación del recorrido.');
+  purgeNotice(`Eliminación completada: ${photos.length} fotografía(s), ${done.puntos_eliminados||0} punto(s) GPS y ${done.hallazgos_eliminados||0} hallazgo(s).`,true);
+  chosen='';chosenFinding='';detailPoints=[];
+  $('showCancelledRoutes').checked=false;
+  await refresh();
+  alert(`El recorrido ${r.codigo} fue eliminado definitivamente de Supabase.\n\nFotografías procesadas: ${photos.length}\nPuntos GPS: ${done.puntos_eliminados||0}\nHallazgos: ${done.hallazgos_eliminados||0}\n\nLa aplicación del técnico puede conservar una copia local, pero el servidor bloqueará que vuelva a sincronizarse el mismo ID.`);
+  status('Recorrido eliminado definitivamente','good');
+ }catch(e){
+  const msg=errorMessage(e);
+  purgeNotice('Eliminación NO completada: '+msg+'\nLos registros de Supabase se conservan hasta verificar el borrado de todas las fotos. Puedes pulsar «Reintentar eliminación» sobre el recorrido.',true);
+  alert('No se completó la eliminación definitiva de '+r.codigo+': '+msg+'\n\nSi falta la función o sale PGRST202, ejecuta recorredor_eliminacion_total.sql en Liberty O&M. Si falló el almacenamiento de fotografías, corrige el error y vuelve a pulsar «Reintentar eliminación».');
+  $('showCancelledRoutes').checked=true;
+  await refresh().catch(()=>{});
+ }finally{
+  purgingRoutes.delete(id);
+  for(const b of triggers)if(b.isConnected){b.disabled=false;b.textContent='🗑 Eliminar definitivamente'}
+ }
+}
+async function administrarRecorrido(id,accion){
+ const r=rows.find(x=>x.id===id);
+ if(!r){alert('El recorrido ya no está en la lista. Actualiza el visor.');return}
+ const cancelar=accion==='cancelar',restaurar=accion==='restaurar',borrar=accion==='eliminar';
+ let motivo='';
+ if(cancelar){
+  motivo=prompt(`Cancelar recorrido ${r.proyecto} (${r.codigo})\n\nEl recorrido dejará de contar en los KPIs y reportes, pero sus GPS, hallazgos y fotografías se conservarán.\n\nEscribe el motivo de cancelación:`,'Tramo cancelado por supervisión');
+  if(motivo===null)return;
+  motivo=motivo.trim();
+  if(motivo.length<5){alert('Indica un motivo de al menos 5 caracteres.');return}
+  if(!confirm('¿Confirmas la cancelación de este recorrido? El técnico deberá dejar de trabajar en él.'))return;
+ }else if(restaurar){
+  if(!confirm(`¿Restaurar el recorrido ${r.codigo} y volver a incluirlo en los reportes?`))return;
+ }else if(borrar){
+  if(!r.cancelado_en){alert('Primero cancela el recorrido.');return}
+  const txt=prompt(`ELIMINACIÓN DEFINITIVA\n\n${r.proyecto} · ${r.codigo}\n\nSolo funciona con recorridos que nunca se iniciaron y no tengan puntos GPS, hallazgos ni fotografías.\n\nEscribe ELIMINAR para confirmar:`);
+  if(txt!=='ELIMINAR')return;
+ }else return;
+ const boton=document.querySelector(`[data-${accion==='cancelar'?'cancel-route':accion==='restaurar'?'restore-route':'delete-route'}="${id}"]`);
+ if(boton)boton.disabled=true;
+ try{
+  const {data,error}=await sb.rpc('rec_administrar_recorrido',{p_recorrido:id,p_accion:accion,p_motivo:motivo||null});
+  if(error)throw error;
+  if(!data?.ok)throw Error('La operación no fue confirmada por la base de datos.');
+  if(borrar||cancelar){chosen='';chosenFinding='';detailPoints=[]}
+  if(restaurar||borrar)$('showCancelledRoutes').checked=true;
+  await refresh();
+  status(borrar?'Recorrido eliminado':cancelar?'Recorrido cancelado':'Recorrido restaurado','good');
+ }catch(e){
+  const msg=errorMessage(e);
+  alert('No se pudo '+(borrar?'eliminar':cancelar?'cancelar':'restaurar')+' el recorrido: '+msg+(/rec_administrar_recorrido|PGRST202|Could not find the function/i.test(msg)?' Ejecuta recorredor_cancelar_recorridos.sql en Liberty O&M.':''));
+ }finally{if(boton)boton.disabled=false}
+}
+function initAssignmentEvents(){
+ $('assignMainBtn').onclick=()=>openAssignmentEditor();$('assignSideBtn').onclick=()=>openAssignmentEditor();
+ $('closeAssignment').onclick=closeAssignmentEditor;$('cancelAssignment').onclick=closeAssignmentEditor;
+ $('assignmentForm').onsubmit=saveAssignment;
+ $('assignmentDialog').onclick=e=>{if(e.target===$('assignmentDialog'))closeAssignmentEditor()};
+ $('assignmentFile').onchange=async e=>{const f=e.target.files?.[0];pendingAssignmentGeometry=null;pendingAssignmentFile='';if(!f)return;
+  $('assignmentFileStatus').textContent='Leyendo y validando archivo...';try{pendingAssignmentGeometry=await assignmentReadFile(f);pendingAssignmentFile=f.name;$('assignmentFileStatus').textContent=`✓ ${f.name} · ${pendingAssignmentGeometry.features.length} elementos · ${fmtKm(geoLineLengthMeters(pendingAssignmentGeometry))} km`;assignmentMessage('Archivo válido. Guarda para asignarlo.')}
+  catch(err){$('assignmentFileStatus').textContent='⚠ '+errorMessage(err);assignmentMessage('Error: '+errorMessage(err),true)}
+ };
+ $('showArchivedAssignments').onchange=renderAssignmentList;
+ $('assignmentList').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.assignmentView)focusAssignment(b.dataset.assignmentView);else if(b.dataset.assignmentEdit)openAssignmentEditor(b.dataset.assignmentEdit);else if(b.dataset.assignmentArchive)archiveAssignment(b.dataset.assignmentArchive);else if(b.dataset.assignmentPurge)purgeCancelledAssignment(b.dataset.assignmentPurge)};
+}
+
+
+// Conversor GIS independiente del sistema de asignaciones y de Supabase.
+let convertedGeojson=null,convertedFilename='tramo.geojson',converterMapLayer=null;
+function converterNodes(xml,parent,tag){return [...parent.getElementsByTagNameNS('*',tag)];}
+function converterDirect(parent,tag){return [...parent.children].filter(x=>x.localName===tag);}
+function converterValue(parent,tag){const el=converterDirect(parent,tag)[0];return el?el.textContent.trim():'';}
+function converterCoords(txt){return String(txt||'').trim().split(/\s+/).map(s=>s.split(',').map(Number)).filter(a=>a.length>=2&&Number.isFinite(a[0])&&Number.isFinite(a[1])&&Math.abs(a[0])<=180&&Math.abs(a[1])<=90).map(a=>a.slice(0,2));}
+function converterGeometry(el){
+ const type=el.localName;
+ if(type==='Point'){const p=converterCoords(converterValue(el,'coordinates'))[0];return p?{type,coordinates:p}:null;}
+ if(type==='LineString'||type==='LinearRing'){const v=converterCoords(converterValue(el,'coordinates'));return v.length>=2?{type:'LineString',coordinates:v}:null;}
+ if(type==='Polygon'){
+  const rings=[];
+  for(const boundary of [...el.children].filter(x=>['outerBoundaryIs','innerBoundaryIs'].includes(x.localName))){
+   const ring=converterNodes(null,boundary,'LinearRing')[0];if(!ring)continue;
+   let pts=converterCoords(converterValue(ring,'coordinates'));if(pts.length<3)continue;
+   if(pts[0][0]!==pts.at(-1)[0]||pts[0][1]!==pts.at(-1)[1])pts.push([...pts[0]]);
+   if(pts.length>=4)rings.push(pts);
+  }
+  return rings.length?{type:'Polygon',coordinates:rings}:null;
+ }
+ if(type==='MultiGeometry'){
+  const geoms=[...el.children].map(converterGeometry).filter(Boolean);
+  return geoms.length?{type:'GeometryCollection',geometries:geoms}:null;
+ }
+ return null;
+}
+function convertKmlToGeojson(text){
+ const xml=new DOMParser().parseFromString(text,'application/xml');
+ if(xml.getElementsByTagName('parsererror').length)throw Error('El KML contiene XML inválido.');
+ const placemarks=[...xml.getElementsByTagNameNS('*','Placemark')];const features=[];
+ for(const pm of placemarks){
+  const properties={};const name=converterValue(pm,'name'),description=converterValue(pm,'description');
+  if(name)properties.name=name;if(description)properties.description=description;
+  for(const d of converterNodes(xml,pm,'Data')){let n=d.getAttribute('name');let v=converterDirect(d,'value')[0]?.textContent?.trim();if(n&&v)properties[n.slice(0,100)]=v.slice(0,3000);}
+  for(const d of converterNodes(xml,pm,'SimpleData')){let n=d.getAttribute('name');let v=d.textContent.trim();if(n&&v)properties[n.slice(0,100)]=v.slice(0,3000);}
+  for(const el of pm.children){if(!['Point','LineString','Polygon','MultiGeometry'].includes(el.localName))continue;const geometry=converterGeometry(el);if(geometry)features.push({type:'Feature',properties:{...properties},geometry});}
+ }
+ if(!features.length)throw Error('No se encontraron puntos, líneas o polígonos válidos en el KML.');
+ return{type:'FeatureCollection',features};
+}
+function converterStats(g){const counts={Point:0,LineString:0,Polygon:0,GeometryCollection:0};const visit=x=>{if(!x)return;if(x.type==='GeometryCollection'){(x.geometries||[]).forEach(visit)}else counts[x.type]=(counts[x.type]||0)+1};g.features.forEach(f=>visit(f.geometry));return counts;}
+function converterStatus(t,isError=false){const el=$('converterStatus');el.textContent=t;el.style.color=isError?'#ff9da8':'#9eeedb';}
+function clearConverter(){convertedGeojson=null;$('converterFile').value='';$('converterDownloadBtn').disabled=true;$('converterPreviewBtn').disabled=true;converterStatus('Selecciona un archivo para convertirlo.');if(converterMapLayer){converterMapLayer.remove();converterMapLayer=null;}}
+async function readConverterFile(file){
+ if(file.size>40*1024*1024)throw Error('El archivo excede 40 MB.');
+ const ext=file.name.split('.').pop().toLowerCase();let content;
+ if(ext==='kml')content=await file.text();
+ else if(ext==='kmz'){
+  if(typeof JSZip==='undefined')throw Error('No se pudo cargar el lector KMZ. Comprueba tu conexión a Internet.');
+  const zip=await JSZip.loadAsync(file);const entries=Object.values(zip.files).filter(f=>!f.dir&&/\.kml$/i.test(f.name));
+  if(!entries.length)throw Error('El KMZ no contiene ningún archivo KML.');
+  entries.sort((a,b)=>(/doc\.kml$/i.test(b.name)?1:0)-(/doc\.kml$/i.test(a.name)?1:0));
+  content=await entries[0].async('string');
+ } else throw Error('Selecciona un archivo .kml o .kmz.');
+ return convertKmlToGeojson(content);
+}
+function previewConverter(){
+ if(!convertedGeojson)return;
+ try{
+  if(converterMapLayer)converterMapLayer.remove();
+  converterMapLayer=L.geoJSON(convertedGeojson,{style:()=>({color:'#c98cff',weight:5,opacity:.95,fillOpacity:.2}),pointToLayer:(f,ll)=>L.circleMarker(ll,{radius:6,color:'#c98cff',fillColor:'#c98cff',fillOpacity:.9})}).addTo(map);
+  const bounds=converterMapLayer.getBounds();if(bounds.isValid())map.fitBounds(bounds.pad(.12),{maxZoom:18});
+  $('converterDialog').classList.remove('show');setTimeout(()=>map.invalidateSize(),100);
+  status('Vista previa GeoJSON · no guardada','good');
+ }catch(e){converterStatus('Error mostrando mapa: '+errorMessage(e),true)}
+}
+function initConverter(){
+ $('openConverterBtn').onclick=()=>{$('converterDialog').classList.add('show')};
+ $('closeConverterBtn').onclick=()=>{$('converterDialog').classList.remove('show')};
+ $('converterDialog').addEventListener('click',e=>{if(e.target===$('converterDialog'))$('converterDialog').classList.remove('show')});
+ $('converterClearBtn').onclick=clearConverter;
+ $('converterFile').onchange=async e=>{
+  const file=e.target.files?.[0];convertedGeojson=null;$('converterDownloadBtn').disabled=true;$('converterPreviewBtn').disabled=true;if(!file)return;
+  converterStatus('Convirtiendo '+file.name+'…');
+  try{const result=await readConverterFile(file);convertedGeojson=result;convertedFilename=file.name.replace(/\.(kmz|kml)$/i,'')+'.geojson';const c=converterStats(result);converterStatus('✓ Archivo convertido: '+result.features.length+' elementos · '+c.Point+' puntos · '+c.LineString+' líneas · '+c.Polygon+' polígonos.');$('converterDownloadBtn').disabled=false;$('converterPreviewBtn').disabled=false}
+  catch(err){converterStatus('Error: '+errorMessage(err),true)}
+ };
+ $('converterDownloadBtn').onclick=()=>{if(!convertedGeojson)return;const blob=new Blob([JSON.stringify(convertedGeojson,null,2)],{type:'application/geo+json;charset=utf-8'});const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=convertedFilename;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)};
+ $('converterPreviewBtn').onclick=previewConverter;
+}
+
+
+function supOpenProfile(){
+ if(!user){openAuth();return}
+ const t=teams.find(x=>x.id===team);
+ const role=t?.rol==='admin'?'Supervisor / Administrador':t?.rol==='tecnico'?'Técnico':(t?.rol||'Sin equipo');
+ $('supProfEmail').textContent=user.email||'—';$('supProfTeam').textContent=t?.nombre||'Sin equipo';$('supProfRole').textContent=role;$('supProfId').textContent=user.id;$('supProfCover').classList.add('active');
+}
+function wire(){paintMap();$('supProfileBtn').onclick=supOpenProfile;$('supProfClose').onclick=()=>$('supProfCover').classList.remove('active');$('supProfManage').onclick=()=>{$('supProfCover').classList.remove('active');openAuth()};$('supProfLogout').onclick=async()=>{$('supProfCover').classList.remove('active');await signOut()};$('supProfCover').onclick=e=>{if(e.target===$('supProfCover'))$('supProfCover').classList.remove('active')};initConverter();$('techLink').onclick=()=>location.href='recorredor.html';initAssignmentEvents();$('userBtn').onclick=async()=>{await loadTeams().catch(showError);openAuth()};$('refreshBtn').onclick=refresh;$('loginForm').onsubmit=signIn;$('switchAccount').onclick=signOut;$('createTeamForm').onsubmit=createTeam;$('addMemberForm').onsubmit=addMember;$('enterTeam').onclick=enterTeam;$('closeAuthBtn').onclick=cerrarAccesoAutorizado;$('teamSelect').onchange=e=>{actualizarCerrarAcceso();$('teamMsg').textContent=tieneAccesoSupervisor(e.target.value)?'Equipo seleccionado. Pulsa «Abrir panel principal».':'Selecciona un equipo con rol supervisor.'};$('authCover').addEventListener('click',e=>{if(e.target===$('authCover'))cerrarAccesoAutorizado()});document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('authCover').hidden){cerrarAccesoAutorizado()}});$('routeList').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.purgeRoute)purgarRecorridoCompleto(b.dataset.purgeRoute);else if(b.dataset.cancelRoute)administrarRecorrido(b.dataset.cancelRoute,'cancelar');else if(b.dataset.restoreRoute)administrarRecorrido(b.dataset.restoreRoute,'restaurar');else if(b.dataset.deleteRoute)administrarRecorrido(b.dataset.deleteRoute,'eliminar');else if(b.dataset.route)selectRoute(b.dataset.route)};$('detail').onclick=e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.purgeRoute)purgarRecorridoCompleto(b.dataset.purgeRoute);else if(b.dataset.cancelRoute)administrarRecorrido(b.dataset.cancelRoute,'cancelar');else if(b.dataset.restoreRoute)administrarRecorrido(b.dataset.restoreRoute,'restaurar');else if(b.dataset.finding)selectFinding(b.dataset.finding)};$('mapProvider').onclick=()=>swapBase(baseMode==='google'?'esri':'google');$('fitAll').onclick=()=>renderMap({fit:true});$('toggleGps').onclick=async()=>{showGps=!showGps;$('toggleGps').textContent='⋯ GPS: '+(showGps?'ON':'OFF');if(showGps&&chosen)await loadGps(chosen);else renderMap({fit:false})};for(const id of ['search','cityFilter','techFilter','statusFilter','severityFilter','dateFrom','dateTo','showCancelledRoutes'])$(id).addEventListener(id==='search'?'input':'change',()=>filterAll({fit:true}));$('clearFilter').onclick=()=>{for(const id of ['search','cityFilter','techFilter','statusFilter','severityFilter','dateFrom','dateTo'])$(id).value='';$('showCancelledRoutes').checked=false;filterAll({fit:true})};$('csvRoutes').onclick=routesCsv;$('csvFindings').onclick=findingsCsv;$('pdfReport').onclick=pdfReport;document.addEventListener('visibilitychange',()=>{if(!document.hidden&&user&&team)refresh()});setInterval(()=>{if(!document.hidden&&user&&team&&Date.now()-lastRefresh>=28000)refresh()},30000)}
+async function main(){wire();try{await initAuth()}catch(e){showError(e);openAuth('No se pudo iniciar la conexión: '+errorMessage(e))}}
+main();
+</script>
+</body>
+</html>
