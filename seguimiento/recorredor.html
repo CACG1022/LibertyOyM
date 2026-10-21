@@ -1009,7 +1009,28 @@ function reconcileAssignedRoutes(){
  renderHistory();refresh();renderMap();
 }
 function assignedLocalRoute(id){return routes.find(r=>r.assignedId===id&&!r.cloudReadOnly)||routes.find(r=>r.assignedId===id)}
-function assignmentVersionAvailable(route,a){return !!(route&&Number(route.assignedVersion||0)<Number(a.version||0))}
+function assignmentGeometrySignature(g){
+ try {
+  const obj=typeof g==='string'?JSON.parse(g):g;
+  if(!obj)return '';
+  const out=[];
+  const walk=x=>{
+   if(!x||typeof x!=='object')return;
+   if(x.type==='FeatureCollection'){(x.features||[]).forEach(walk);return}
+   if(x.type==='Feature'){walk(x.geometry);return}
+   if(x.type==='GeometryCollection'){(x.geometries||[]).forEach(walk);return}
+   if(x.coordinates)out.push(JSON.stringify([x.type,x.coordinates]));
+  };
+  walk(obj);return out.sort().join('|');
+ }catch{return ''}
+}
+function assignmentVersionAvailable(route,a){
+ if(!route||!a)return false;
+ if(Number(route.assignedVersion||0)<Number(a.version||0))return true;
+ const remote=assignmentGeometrySignature(a.geojson);
+ const local=assignmentGeometrySignature(route.plannedRoute?.geojson);
+ return !!(remote&&local&&remote!==local);
+}
 function assignedRouteReadOnly(route){return route?.cloudReadOnly}
 function renderAssignedTramos(){
  const info=$('assignedTramosInfo'),list=$('assignedTramosList'),badge=$('assignedMenuCount');
@@ -1038,7 +1059,26 @@ async function cloudLoadAssignments(manual=false){
   if(error)throw error;
   assignedFromCloud=data||[];assignedLastCheck=Date.now();let created=0;
   for(const a of assignedFromCloud){
-   if(assignedLocalRoute(a.id)){const existing=assignedLocalRoute(a.id);if(!existing.cloudReadOnly){const historical=await cloudLoadPriorCoverage(a.id);existing.inheritedGpsPoints=historical;coverageCache.key='';await dbPut(existing);}continue;}
+   if(assignedLocalRoute(a.id)){
+    const existing=assignedLocalRoute(a.id);
+    if(!existing.cloudReadOnly){
+     const historical=await cloudLoadPriorCoverage(a.id);existing.inheritedGpsPoints=historical;coverageCache.key='';
+     if(assignmentVersionAvailable(existing,a)){
+      const untouched=existing.status==='ready'&&!existing.startedAt&&!(existing.points||[]).length&&!(existing.findings||[]).length;
+      if(untouched){
+       const newPlan=importPlannedRoute({geojson:a.geojson,name:a.nombre,importedAt:Date.parse(a.actualizada_en)||Date.now()});
+       if(newPlan){existing.plannedRoute=newPlan;existing.assignedVersion=a.version;existing.project=a.proyecto;existing.city=a.ciudad;existing.plannedRouteVisible=true;
+        existing.localModifiedAt=Date.now();if(selected===existing){planVisible=true;coverageCache.key='';renderMap();fitPlannedRoute()}
+        if(manual)toast('Tramo pendiente actualizado automáticamente desde Supervisión.');}
+      }else if(!existing.updateNoticeVersion || existing.updateNoticeVersion!==String(a.version)+'-'+assignmentGeometrySignature(a.geojson)){
+       existing.updateNoticeVersion=String(a.version)+'-'+assignmentGeometrySignature(a.geojson);
+       toast('Tu supervisor modificó el trazado. Abre «Mis tramos asignados» y pulsa «Aplicar actualización».',true);
+      }
+     }
+     await dbPut(existing);
+    }
+    continue;
+   }
    // Si el mismo usuario ya comenzó el tramo en otro dispositivo, recuperar una copia de consulta en lugar de duplicarlo.
    const {data:remote,error:er}=await cloudClient.from('rec_recorridos').select('*').eq('tramo_asignado_id',a.id).eq('creado_por',cloudUser.id).order('creado_en',{ascending:false}).limit(1);
    if(er)throw er;
@@ -1362,6 +1402,7 @@ window.addEventListener('DOMContentLoaded',boot);
 </script>
 </body>
 </html>
+
 
 
 
