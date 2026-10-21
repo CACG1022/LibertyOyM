@@ -538,16 +538,16 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     overflow-y:auto !important;
   }
 
-  .page:not(.sidebar-hidden) .sidebar{
+  body:not(.sidebar-collapsed) .sidebar{
     transform:translateX(0) !important;
   }
 
-  .page.sidebar-hidden .sidebar{
+  body.sidebar-collapsed .sidebar{
     transform:translateX(-100%) !important;
   }
 
-  .page.sidebar-hidden,
-  .page:not(.sidebar-hidden){
+  body.sidebar-collapsed .page,
+  body:not(.sidebar-collapsed) .page{
     grid-template-columns:1fr !important;
   }
 
@@ -1055,46 +1055,6 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 @media(max-width:900px){.et-body{grid-template-columns:1fr;padding:10px}.et-search{grid-column:1}.et-dialog{max-height:100vh}.et-overlay{padding:0}.et-dialog{border-radius:0;height:100vh}.et-heading{padding:12px}.et-heading h2{font-size:17px}}
 @media(max-width:520px){.et-searchbar{flex-direction:column;align-items:stretch}.et-searchbar .et-button{width:100%}.et-two,.et-three{grid-template-columns:1fr 1fr}.et-actions .et-button{flex:1}.et-body .et-card{padding:12px}}
 </style>
-<style id="estiloBarraLateralCompartida">
-/* Barra lateral centralizada: solo se carga desde GitHub Pages. */
-.page { grid-template-columns:240px minmax(0,1fr); }
-.page > .sidebar { padding:0 !important; overflow:hidden !important; }
-.page > .sidebar > iframe { display:block; width:100%; height:100vh; border:0; }
-@media (max-width:768px) {
-  .page > .sidebar {
-    height:100dvh !important;
-    overflow:hidden !important;
-    opacity:1;
-  }
-  .page > .sidebar > iframe { height:100dvh; }
-  .page:not(.sidebar-hidden) > .sidebar {
-    opacity:1 !important;
-    transform:translateX(0) !important;
-    pointer-events:auto !important;
-  }
-  .page.sidebar-hidden > .sidebar {
-    opacity:0 !important;
-    transform:translateX(-100%) !important;
-    pointer-events:none !important;
-  }
-  .page .sidebar-toggle-tab {
-    position:fixed !important;
-    top:12px !important;
-    left:min(265px, 82vw) !important;
-    transform:none !important;
-    width:42px !important;
-    height:46px !important;
-    border-radius:0 12px 12px 0 !important;
-    z-index:1200 !important;
-    transition:left .25s ease !important;
-  }
-  .page.sidebar-hidden .sidebar-toggle-tab {
-    left:12px !important;
-    border-radius:12px !important;
-    border-left:1px solid var(--border) !important;
-  }
-}
-</style>
 </head>
 <body>
 <div id="root"></div>
@@ -1500,20 +1460,30 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 <script>
 const N8N_WEBHOOK_MATERIALES_URL = 'https://ftth-n8n2.pzveh5.easypanel.host/webhook/d9151e2f-0083-4bb7-89df-b5e2153b6cfd';
 function renderShell(){
-  // El menú se administra exclusivamente en seguimiento/barra_lateral.html.
-  // El parámetro de versión evita reutilizar una copia antigua del navegador.
-  const sidebarUrl = 'https://cacg1022.github.io/LibertyOyM/seguimiento/barra_lateral.html'
-    + '?page=materiales.html&v=' + Date.now();
+  const email = localStorage.getItem('user_email') || '';
   document.getElementById('root').innerHTML = `
   <div class="page">
-    <aside class="sidebar" ondblclick="toggleSidebar()" style="padding:0;overflow:hidden;" aria-label="Barra lateral Nodo O&amp;M">
-      <iframe
-        id="sidebarFrame"
-        src="${sidebarUrl}"
-        title="Barra lateral Nodo O&amp;M"
-        loading="eager"
-        style="display:block;width:100%;height:100vh;border:0;background:#08142a;"
-      ></iframe>
+    <aside class="sidebar" ondblclick="toggleSidebar()">
+      <div class="brand">Nodo O&M</div>
+      <div class="subbrand">Control y seguimiento</div>
+      <nav class="nav">
+        <a href="index.html">Inicio</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="fallas.html">Tickets / Fallas</a>
+        <a href="mantenimientos.html">Mantenimientos</a>
+        <a href="instalaciones.html">Instalaciones</a>
+        <a href="factibilidades.html">Factibilidades</a>
+        <a href="traslados.html">Traslados</a>
+        <a href="materiales.html" class="active">Materiales</a>
+        <a href="liquidaciones.html">Liquidaciones</a>
+        <a href="gastos.html">Gastos</a>
+        <a href="tareas.html">Tareas y Alertas</a>
+        <a href="reportes.html">Reportes</a>
+      </nav>
+      <div class="session-box">
+        <small>Sesión<br>${email || 'Sin iniciar'}</small>
+        <button class="btn secondary" style="width:100%" onclick="safeLogout()">Cerrar sesión</button>
+      </div>
     </aside>
     <button id="sidebarToggleTab" class="sidebar-toggle-tab" title="Ocultar / mostrar barra lateral" onclick="toggleSidebar()">‹</button>
     <main class="main">
@@ -1631,8 +1601,7 @@ function restoreSidebarState(){
   const page = document.querySelector('.page');
   const tab = document.getElementById('sidebarToggleTab');
   if(!page) return;
-  const hidden = localStorage.getItem('om_sidebar_hidden') === '1'
-    || (window.innerWidth <= 768 && !localStorage.getItem('materiales_sidebar_user_set'));
+  const hidden = localStorage.getItem('om_sidebar_hidden') === '1';
   page.classList.toggle('sidebar-hidden', hidden);
   if(tab) tab.textContent = hidden ? '›' : '‹';
 }
@@ -2910,10 +2879,15 @@ function actualizarBodegasOrigenDisponibles(tr){
   }
   const codigo=normalizarCodigoSap(tr.querySelector('.line-sap')?.value || '');
   const anterior=select.value;
-  const inventario=codigo ? calcularInventarioDesdeStockSap().find(r=>normalizarCodigoSap(r.codigo_sap)===codigo) : null;
-  const disponibles=bodegas.filter(b=>inventario && Number(inventario[bodegaKeyInventario(b.nombre)] || 0)>0.000001);
+  const inventario=codigo ? (resumen||[]).find(r=>normalizarCodigoSap(r.codigo_sap)===codigo) : null;
+  const disponibleBodega=b=>currentMovimientoId
+    ? saldoFisicoDisponibleAntesDeEdicion(codigo,b.nombre)
+    : Number(inventario?.[bodegaKeyInventario(b.nombre)]||0);
+  // Una bodega puede quedar en cero tras el consumo original. Al editar,
+  // debe seguir apareciendo porque el saldo anterior sí estaba disponible.
+  const disponibles=bodegas.filter(b=>inventario && disponibleBodega(b)>0.000001);
   select.innerHTML='<option value="">Selecciona bodega con stock</option>'+disponibles.map(b=>
-    `<option value="${esc(b.id)}">${esc(b.nombre)} (${Number(inventario[bodegaKeyInventario(b.nombre)]).toLocaleString('es-CO')})</option>`
+    `<option value="${esc(b.id)}">${esc(b.nombre)} (${disponibleBodega(b).toLocaleString('es-CO',{maximumFractionDigits:2})})</option>`
   ).join('');
   if(disponibles.some(b=>String(b.id)===String(anterior))) select.value=anterior;
   else if(disponibles.length===1) select.value=String(disponibles[0].id);
@@ -3319,6 +3293,42 @@ function movimientoPerteneceActaActual(r){
   return false;
 }
 
+// Al editar una acta, el inventario físico actual ya contiene el efecto del
+// movimiento ORIGINAL. Como las líneas originales se excluyen del libro WBS
+// mientras se edita, también se debe revertir temporalmente su efecto en el
+// saldo físico usado SOLO por el selector/validador del formulario.
+// No escribe ningún ajuste en Supabase ni altera el resumen del dashboard.
+function saldoFisicoDisponibleAntesDeEdicion(sap,bodega){
+  const saldoActual=saldoFisicoGestorWbs(sap,bodega);
+  if(!currentMovimientoId) return saldoActual;
+
+  const codigo=normalizarCodigoSap(sap);
+  const bodegaClave=bodegaKeyInventario(bodega);
+  let efectoOriginal=0;
+  (movimientos||[]).forEach(m=>{
+    if(!movimientoPerteneceActaActual(m)) return;
+    if(normalizarCodigoSap(m.codigo_sap)!==codigo) return;
+    if(String(m.estado||'').toUpperCase()==='ANULADO') return;
+    if(!movimientoAplicaParaInventario(m)) return;
+    const cantidad=Number(m.cantidad||0);
+    if(!Number.isFinite(cantidad) || cantidad<=0) return;
+    const tipo=String(m.tipo_movimiento||'').toUpperCase();
+    const origen=m.origen_nombre || m.bodega_origen_stock || '';
+    const destino=m.destino_nombre || '';
+    const esOrigen=Boolean(origen) && bodegaKeyInventario(origen)===bodegaClave;
+    const esDestino=Boolean(destino) && bodegaKeyInventario(destino)===bodegaClave;
+    if(['SALIDA','CONSUMO_INSTALACION','CONSUMO_MTO_CORRECTIVO',
+        'CONSUMO_MTO_PREVENTIVO','AJUSTE_NEGATIVO','TRANSFERENCIA'].includes(tipo) && esOrigen){
+      efectoOriginal-=cantidad;
+    }
+    if(['ENTRADA','AJUSTE_POSITIVO','TRANSFERENCIA'].includes(tipo) && esDestino){
+      efectoOriginal+=cantidad;
+    }
+  });
+  // Inventario anterior = inventario actual - efecto del acta anterior.
+  return Math.max(0,saldoActual-efectoOriginal);
+}
+
 function obtenerStockSapBasePorWbs(codigoSap, bodegaStock){
   const codigo=normalizarCodigoSap(codigoSap);
   const stock=normalizarTextoInventario(bodegaStock);
@@ -3692,6 +3702,8 @@ function getMaterialLineItems(){
         throw new Error(`Debes seleccionar el WBS del código SAP ${item.codigo_sap}.`);
       }
 
+      // En edición este saldo incluye las unidades del movimiento anterior,
+      // que serán reemplazadas por la nueva cantidad al guardar el acta.
       const saldo=getSaldoWbsSeleccionado(
         item.codigo_sap,
         item.bodega_origen_nombre,
@@ -4127,7 +4139,9 @@ function saldosConciliadosGestorWbs(sap,bodega){
   // libro de movimientos CON SIGNO. No usar saldos parciales positivos
   // ni Math.max() para fusionar WBS: eso resucita unidades que ya salieron
   // del WBS de origen al reclasificarlas hacia otro WBS.
-  const fisico=saldoFisicoGestorWbs(sap,bodega);
+  // Si se está editando, usar el saldo previo al acta anterior; el historial
+  // WBS ya excluye esa acta en el recorrido de movimientos de más abajo.
+  const fisico=saldoFisicoDisponibleAntesDeEdicion(sap,bodega);
   if(fisico<=0.000001) return [];
 
   const codigo=normalizarCodigoSap(sap);
@@ -5626,15 +5640,11 @@ document.addEventListener('keydown', function(e){
 
 (function(){
   function aplicarSidebarMovil(){
-    if(localStorage.getItem('materiales_sidebar_user_set')) return;
-    const page = document.querySelector('.page');
-    if(!page) return;
-    const hidden = localStorage.getItem('om_sidebar_hidden') === '1'
-      || window.innerWidth <= 768;
-    page.classList.toggle('sidebar-hidden', hidden);
-    const tab = document.getElementById('sidebarToggleTab');
-    if(tab) tab.textContent = hidden ? '›' : '‹';
+    if(window.innerWidth <= 768 && !localStorage.getItem('materiales_sidebar_user_set')){
+      document.body.classList.add('sidebar-collapsed');
+    }
   }
+  aplicarSidebarMovil();
   window.addEventListener('resize', aplicarSidebarMovil);
 })();
 
