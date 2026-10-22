@@ -5847,14 +5847,16 @@ async function descargarFAL024(){
     const sheetData = sheetXml.getElementsByTagName('sheetData')[0];
     if(!sheetData) throw new Error('La hoja Formato no contiene una tabla editable.');
 
-    // Limpiar solo las dos columnas solicitadas, conservando estilos, bordes y todo el formato.
+    // Limpiar las columnas que diligencia este módulo antes de completar el formato.
+    // Se conservan los estilos, bordes, fórmulas y las demás columnas de la plantilla oficial.
     for(let rowNumber = 19; rowNumber <= 38; rowNumber++){
       const row = fal024EnsureRow(sheetXml, sheetData, rowNumber);
-      fal024ClearCell(fal024EnsureCell(sheetXml, row, `B${rowNumber}`));
-      fal024ClearCell(fal024EnsureCell(sheetXml, row, `C${rowNumber}`));
+      ['B', 'C', 'N', 'O', 'W'].forEach(col => {
+        fal024ClearCell(fal024EnsureCell(sheetXml, row, `${col}${rowNumber}`));
+      });
     }
 
-    // Diligenciar Código SAP, Cantidad y No de Serial.
+    // Diligenciar cada material en su propia fila, incluso si el SAP se repite con otro WBS.
     items.forEach((item, index) => {
       const rowNumber = 19 + index;
       const row = fal024EnsureRow(sheetXml, sheetData, rowNumber);
@@ -5873,11 +5875,27 @@ async function descargarFAL024(){
         item.cantidad
       );
 
+      // Columna N: Storage Location Origen (bodega origen física seleccionada
+      // para esta línea; respaldo con la ubicación SAP cuando esté disponible).
+      fal024SetInlineText(
+        sheetXml,
+        fal024EnsureCell(sheetXml, row, `N${rowNumber}`),
+        item.bodega_origen_nombre || item.bodega_origen_stock || ''
+      );
+
       // Columna O: No de Serial, tomado del campo Cod serial del formulario.
       fal024SetInlineText(
         sheetXml,
         fal024EnsureCell(sheetXml, row, `O${rowNumber}`),
         item.codigo_serial || item.cod_serial || ''
+      );
+
+      // Columna W: No WBS/Proyecto, respetando el WBS de cada material.
+      // Si el movimiento no tiene WBS asignado, la casilla queda vacía.
+      fal024SetInlineText(
+        sheetXml,
+        fal024EnsureCell(sheetXml, row, `W${rowNumber}`),
+        item.wbs && item.wbs !== 'SIN WBS' && item.wbs !== 'SIN_WBS' ? item.wbs : ''
       );
     });
 
