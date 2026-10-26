@@ -524,6 +524,42 @@ function refreshMapHud(){
  $('menuRouteState').textContent=state;
  $('menuFindCount').textContent=String((r?.findings||[]).length);
 }
+// Reanudacion de GPS tras bloqueo/minimizacion. Nunca se inventan coordenadas.
+const GPS_GAP_MS=90000;
+let gpsLastVisibilityHiddenAt=0,gpsResumeBusy=false,gpsResumeGeneration=0;
+function registerGpsGapIfNeeded(t){
+ if(!selected||selected.status!=='recording')return;
+ const previous=selected.points?.at(-1);
+ if(!previous||!Number.isFinite(previous.at))return;
+ const delta=t-previous.at;
+ if(delta<GPS_GAP_MS)return;
+ // Separa el dibujo y el calculo de distancias para no conectar dos ubicaciones no medidas.
+ if(selected._gpsGapBoundaryAt===previous.at)return;
+ selected._gpsGapBoundaryAt=previous.at;
+ selected.segment=(Number(selected.segment)||0)+1;
+ const minutes=Math.round(delta/60000);
+ eventAdd('gps_gap','GPS interrumpido durante aproximadamente '+minutes+' min; tramo intermedio sin datos.');
+ $('mapBannerText').textContent='GPS recuperado. Hay un intervalo sin posiciones de '+minutes+' min; no se dibuja una ruta estimada.';
+ saveSoon(true);
+}
+function resumeGpsAfterVisibility(){
+ if(document.visibilityState!=='visible'||gpsResumeBusy||!navigator.geolocation)return;
+ const generation=++gpsResumeGeneration;
+ gpsResumeBusy=true;
+ // Android puede dejar watchPosition vivo pero suspendido: crear una suscripcion nueva.
+ if(watchId!==null){try{navigator.geolocation.clearWatch(watchId)}catch(_){}watchId=null;}
+ startGpsWatch();
+ navigator.geolocation.getCurrentPosition(pos=>{
+  if(generation!==gpsResumeGeneration)return;
+  gpsResumeBusy=false;
+  recordGps(pos);
+ },err=>{
+  if(generation!==gpsResumeGeneration)return;
+  gpsResumeBusy=false;
+  gpsError(err);
+ },{enableHighAccuracy:true,maximumAge:0,timeout:22000});
+ // No reconstruir trayectoria ausente: el GPS web no expone historial de ubicaciones del sistema.
+}
 function recordGps(pos){currentGps={lat:pos.coords.latitude,lng:pos.coords.longitude,accuracy:pos.coords.accuracy||0,speed:pos.coords.speed,timestamp:pos.timestamp||Date.now()};setGpsStatus(`GPS ±${Math.round(currentGps.accuracy)} m`,currentGps.accuracy<=60);$('gpsAccuracy').textContent=`±${Math.round(currentGps.accuracy)} m`;$('gpsSpeed').textContent=Number.isFinite(currentGps.speed)?`${(currentGps.speed*3.6).toFixed(1)} km/h`:'—';$('coordsLabel').textContent=`⌖ ${degrees(currentGps.lat)}, ${degrees(currentGps.lng)}`;updateGpsMarker(currentGps,false);updatePlanGuidance();
  if(gpsFollowEnabled&&!placement&&map){
    if(gpsFollowFirstFix){mapSetView([currentGps.lat,currentGps.lng],Math.max(mapZoom(),17));gpsFollowFirstFix=false}
@@ -531,8 +567,10 @@ function recordGps(pos){currentGps={lat:pos.coords.latitude,lng:pos.coords.longi
  }
  updateGpsFollowIndicator();
 if(!selected || selected.status!=='recording')return;
+if(Date.now()-currentGps.timestamp>30000)return; // No registrar ubicaciones en cache despues del bloqueo.
 if(currentGps.accuracy>60){$('mapBannerText').textContent='Señal GPS imprecisa (> 60 m). Punto descartado para proteger el trazado.';return}
-const last=selected.points.at(-1);const now=Date.now();let d=last?distMeters(last,currentGps):0;
+const now=Math.min(Date.now(),Number(currentGps.timestamp)||Date.now());registerGpsGapIfNeeded(now);
+const last=selected.points.at(-1);let d=last?distMeters(last,currentGps):0;
 if(last && last.segment===selected.segment){const dt=(now-last.at)/1000;if(d>Math.max(90,dt*32+Math.max(currentGps.accuracy,last.accuracy)*1.7)){return;}if(d<4&&dt<25)return;}
 if(last && last.segment!==selected.segment)d=0;
 const p={lat:currentGps.lat,lng:currentGps.lng,accuracy:currentGps.accuracy,at:now,segment:selected.segment};selected.points.push(p);
@@ -1456,7 +1494,17 @@ function attachEvents(){
  $('generalRefresh').onclick=()=>generalLoad().catch(cloudError);
  $('generalCsv').onclick=generalExportCsv;
  $('generalPdf').onclick=generalPdf;
- $('loadPlanBtn').onclick=openAssignedTramos;$('planFileInput').onchange=loadPlanFile;$('fitPlanBtn').onclick=fitPlannedRoute;$('mapPlanBtn').onclick=()=>selected?.plannedRoute?fitPlannedRoute():openAssignedTramos();$('togglePlanBtn').onclick=togglePlanVisibility;$('removePlanBtn').onclick=removePlannedRoute;$('newBtn').onclick=openAssignedTramos;$('startBtn').onclick=startRoute;$('pauseBtn').onclick=pauseRoute;$('finishBtn').onclick=finishRoute;$('historyBtn').onclick=()=>{renderHistory();openModal('historyModal')};$('historyNewBtn').onclick=()=>{closeModal('historyModal');openAssignedTramos()};$('exportBtn').onclick=()=>selected?openModal('exportModal'):toast('Primero crea un recorrido.',true);$('locateBtn').onclick=locate;$('fitBtn').onclick=findBounds;$('layerBtn').onclick=changeLayer;$('mapProviderChip').onclick=changeLayer;$('mapSettingsForm').onsubmit=saveMapSettings;$('pickBtn').onclick=togglePick;$('aimCancel').onclick=cancelAim;$('aimGps').onclick=aimToGps;$('aimConfirm').onclick=confirmAim;$('adjustFindingPoint').onclick=()=>beginAim(true);$('addBtn').onclick=blankFinding;$('sideAddBtn').onclick=blankFinding;$('routeForm').onsubmit=createRoute;$('findingForm').onsubmit=saveFinding;$('deleteFindingBtn').onclick=deleteFinding;$('cameraBtn').onclick=()=>$('cameraInput').click();$('galleryBtn').onclick=()=>$('galleryInput').click();$('cameraInput').onchange=e=>handlePhotos(e.target.files);$('galleryInput').onchange=e=>handlePhotos(e.target.files);$('photoGrid').onclick=e=>{const id=e.target.closest('[data-delphoto]')?.dataset.delphoto;if(id){formPhotos=formPhotos.filter(x=>x.id!==id);paintPhotos()}};$('filterbar').onclick=e=>{if(e.target.dataset.filter)selectFilter(e.target.dataset.filter)};$('findingList').onclick=e=>{const edit=e.target.closest('[data-edit]')?.dataset.edit,goto=e.target.closest('[data-goto]')?.dataset.goto;if(edit)openFinding(edit);else if(goto){e.preventDefault();gotoFinding(goto)}};$('historyList').onclick=e=>{const id=e.target.closest('[data-openroute]')?.dataset.openroute,rem=e.target.closest('[data-removeroute]')?.dataset.removeroute;if(id){const r=routes.find(r=>r.id===id);if(r)changeRoute(r)}else if(rem)toast('Solicita al supervisor que gestione los recorridos.',true)};document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id)}));document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>runExport(b.dataset.export));$('importBtn').onclick=()=>$('importInput').click();$('importInput').onchange=importJson;window.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.overlay.show').forEach(o=>closeModal(o.id));if(placement)cancelAim();closeFieldPanels();closeQuickMenu()}});window.addEventListener('online',()=>{if(cloudConnected()){queueCloudSync(1000);cloudLoadAssignments().catch(cloudAssignmentError)}else if(configCloud().url)cloudInit().catch(cloudError)});window.addEventListener('offline',()=>{if(cloudClient)cloudBadge('📴 Sin conexión · guardado local')});window.addEventListener('pagehide',()=>{if(selected)persist().catch(console.error)});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'&&selected)persist().catch(console.error);else if(document.visibilityState==='visible'&&cloudConnected())cloudLoadAssignments().catch(cloudAssignmentError)});}
+ $('loadPlanBtn').onclick=openAssignedTramos;$('planFileInput').onchange=loadPlanFile;$('fitPlanBtn').onclick=fitPlannedRoute;$('mapPlanBtn').onclick=()=>selected?.plannedRoute?fitPlannedRoute():openAssignedTramos();$('togglePlanBtn').onclick=togglePlanVisibility;$('removePlanBtn').onclick=removePlannedRoute;$('newBtn').onclick=openAssignedTramos;$('startBtn').onclick=startRoute;$('pauseBtn').onclick=pauseRoute;$('finishBtn').onclick=finishRoute;$('historyBtn').onclick=()=>{renderHistory();openModal('historyModal')};$('historyNewBtn').onclick=()=>{closeModal('historyModal');openAssignedTramos()};$('exportBtn').onclick=()=>selected?openModal('exportModal'):toast('Primero crea un recorrido.',true);$('locateBtn').onclick=locate;$('fitBtn').onclick=findBounds;$('layerBtn').onclick=changeLayer;$('mapProviderChip').onclick=changeLayer;$('mapSettingsForm').onsubmit=saveMapSettings;$('pickBtn').onclick=togglePick;$('aimCancel').onclick=cancelAim;$('aimGps').onclick=aimToGps;$('aimConfirm').onclick=confirmAim;$('adjustFindingPoint').onclick=()=>beginAim(true);$('addBtn').onclick=blankFinding;$('sideAddBtn').onclick=blankFinding;$('routeForm').onsubmit=createRoute;$('findingForm').onsubmit=saveFinding;$('deleteFindingBtn').onclick=deleteFinding;$('cameraBtn').onclick=()=>$('cameraInput').click();$('galleryBtn').onclick=()=>$('galleryInput').click();$('cameraInput').onchange=e=>handlePhotos(e.target.files);$('galleryInput').onchange=e=>handlePhotos(e.target.files);$('photoGrid').onclick=e=>{const id=e.target.closest('[data-delphoto]')?.dataset.delphoto;if(id){formPhotos=formPhotos.filter(x=>x.id!==id);paintPhotos()}};$('filterbar').onclick=e=>{if(e.target.dataset.filter)selectFilter(e.target.dataset.filter)};$('findingList').onclick=e=>{const edit=e.target.closest('[data-edit]')?.dataset.edit,goto=e.target.closest('[data-goto]')?.dataset.goto;if(edit)openFinding(edit);else if(goto){e.preventDefault();gotoFinding(goto)}};$('historyList').onclick=e=>{const id=e.target.closest('[data-openroute]')?.dataset.openroute,rem=e.target.closest('[data-removeroute]')?.dataset.removeroute;if(id){const r=routes.find(r=>r.id===id);if(r)changeRoute(r)}else if(rem)toast('Solicita al supervisor que gestione los recorridos.',true)};document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>closeModal(b.dataset.close));document.querySelectorAll('.overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)closeModal(o.id)}));document.querySelectorAll('[data-export]').forEach(b=>b.onclick=()=>runExport(b.dataset.export));$('importBtn').onclick=()=>$('importInput').click();$('importInput').onchange=importJson;window.addEventListener('keydown',e=>{if(e.key==='Escape'){document.querySelectorAll('.overlay.show').forEach(o=>closeModal(o.id));if(placement)cancelAim();closeFieldPanels();closeQuickMenu()}});window.addEventListener('online',()=>{if(cloudConnected()){queueCloudSync(1000);cloudLoadAssignments().catch(cloudAssignmentError)}else if(configCloud().url)cloudInit().catch(cloudError)});window.addEventListener('offline',()=>{if(cloudClient)cloudBadge('📴 Sin conexión · guardado local')});window.addEventListener('pagehide',()=>{if(selected)persist().catch(console.error)});document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState==='hidden'){
+  gpsLastVisibilityHiddenAt=Date.now();
+  if(selected)persist().catch(console.error);
+ }else if(document.visibilityState==='visible'){
+  resumeGpsAfterVisibility();
+  if(cloudConnected())cloudLoadAssignments().catch(cloudAssignmentError);
+ }
+});
+window.addEventListener('pageshow',e=>{if(e.persisted)resumeGpsAfterVisibility()});
+window.addEventListener('focus',()=>{if(document.visibilityState==='visible' && gpsLastVisibilityHiddenAt && Date.now()-gpsLastVisibilityHiddenAt>15000){gpsLastVisibilityHiddenAt=0;resumeGpsAfterVisibility()}});}
 async function boot(){attachEvents();createMap();try{db=await dbOpen();routes=await dbAll();routes.sort((a,b)=>b.createdAt-a.createdAt);const saved=localStorage.getItem('recorredor-current');selected=null; /* Validar asignación antes de mostrar una ruta local. */planVisible=selected?.plannedRouteVisible!==false;const interrupted=routes.filter(r=>r.status==='recording');for(const r of interrupted){const from=r.legStart||r.startedAt||Date.now();const until=Math.max(from,Math.min(Date.now(),r.lastGpsAt||from));r.activeMs=(r.activeMs||0)+(until-from);r.legStart=null;r.segment=(r.segment||0)+1;r.status='paused';r.events.push({at:Date.now(),type:'pause',message:'Sesión recuperada: GPS interrumpido al cerrar la página'});await dbPut(r)}if(interrupted.length)toast('Se recuperó una ruta interrumpida. Reanúdala para continuar.');}catch(e){console.error(e);toast('No se pudo acceder al almacenamiento local. Prueba con otro navegador.',true);$('saveLabel').textContent='Almacenamiento no disponible';}
 refresh();renderMap();updateGpsFollowIndicator();gpsAutoLaunch();cloudInit().catch(cloudError);recWireProfile();if(selected?.points.length||selected?.findings.length)findBounds();else if(selected?.plannedRoute)fitPlannedRoute();setInterval(()=>{$('topClock').textContent=new Date().toLocaleTimeString('es-CO',{hour12:false});if(selected?.status==='recording'){$('statTime').textContent=fmtDur(activeMs(selected));refreshMapHud()}},1000);$('topClock').textContent=fmtTime(Date.now());}
 setInterval(()=>{if(!document.hidden&&cloudConnected()&&Date.now()-assignedLastCheck>45000)cloudLoadAssignments().catch(cloudAssignmentError)},45000);
@@ -1464,4 +1512,3 @@ window.addEventListener('DOMContentLoaded',boot);
 </script>
 </body>
 </html>
-
