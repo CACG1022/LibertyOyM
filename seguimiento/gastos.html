@@ -437,6 +437,25 @@
     .badge.legalizado{color:#bbf7d0;background:rgba(34,197,94,.11);border-color:rgba(34,197,94,.32)}
     .badge.pendiente-legalizar{color:#fde68a;background:rgba(245,158,11,.11);border-color:rgba(245,158,11,.32)}
     .download-status{font-size:12px;color:#bfdbfe;margin-left:8px;align-self:center}
+    /* Legalización individual y por lote */
+    .legalizado-row td{background:#273140 !important;}
+    .legalizado-row:hover td{background:#303b4b !important;}
+    .legalizado-row{box-shadow:inset 5px 0 0 #94a3b8 !important;}
+    .legalizado-row .etiqueta-chip{opacity:.68;filter:grayscale(.8)}
+    .legalizado-row .badge.legalizado{background:rgba(148,163,184,.18);border-color:#94a3b8;color:#e2e8f0}
+    .gasto-row-selected td{outline:1px solid rgba(56,189,248,.22);outline-offset:-1px}
+    .gasto-checkbox{width:17px;height:17px;min-width:17px;accent-color:#38bdf8;cursor:pointer}
+    .gasto-estado-select{width:100%;min-width:145px;max-width:185px;padding:7px 8px;font-size:11px;font-weight:800;border-radius:10px;white-space:normal}
+    .gasto-estado-select.estado-legalizado{color:#e2e8f0;border-color:#64748b;background:#334155}
+    .gasto-estado-select.estado-pendiente{color:#fde68a;border-color:#a16207;background:#292617}
+    .gasto-estado-select:disabled{opacity:.55;cursor:not-allowed}
+    .batch-legalizacion{display:none;flex-wrap:wrap;align-items:center;gap:10px;padding:12px 14px;margin:-5px 0 14px;background:#15243a;border:1px solid #315373;border-radius:14px}
+    .batch-legalizacion.visible{display:flex}
+    .batch-legalizacion select{width:auto;min-width:215px;padding:9px 10px}
+    .batch-legalizacion .batch-count{font-weight:800;color:#bae6fd}
+    .batch-legalizacion .batch-hint{color:#94a3b8;font-size:12px}
+    @media(max-width:600px){.batch-legalizacion select{min-width:100%;width:100%}}
+
 
     .actions{
       display:flex;
@@ -1084,11 +1103,23 @@
       </div>
     </section>
 
+    <section class="batch-legalizacion" id="barraLegalizacionMasiva" aria-live="polite">
+      <span class="batch-count" id="contadorSeleccionados">0 seleccionados</span>
+      <select id="estadoMasivo" aria-label="Nuevo estado para gastos seleccionados">
+        <option value="LEGALIZADO">LEGALIZADO</option>
+        <option value="PENDIENTE POR LEGALIZAR">PENDIENTE POR LEGALIZAR</option>
+      </select>
+      <button class="btn primary" type="button" id="btnAplicarEstadoMasivo" onclick="aplicarEstadoMasivo()"><i data-lucide="check-check"></i> Aplicar estado</button>
+      <button class="btn ghost" type="button" onclick="limpiarSeleccionGastos()">Deseleccionar</button>
+      <span class="batch-hint">Solo se modifican los gastos marcados, aunque haya otros filtros activos.</span>
+    </section>
+
     <section class="card">
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
+              <th style="width:35px;cursor:default" title="Seleccionar gastos visibles"><input type="checkbox" id="seleccionarTodosGastos" class="gasto-checkbox" aria-label="Seleccionar todos los gastos visibles" onchange="seleccionarTodosGastosVisibles(this.checked)"></th>
               <th onclick="ordenarPor('fecha')">Fecha</th>
               <th onclick="ordenarPor('usuario_email')">Usuario</th>
               <th onclick="ordenarPor('valor')">Valor</th>
@@ -1103,7 +1134,7 @@
             </tr>
           </thead>
           <tbody id="tbodyGastos">
-            <tr><td colspan="11" class="empty">Cargando gastos...</td></tr>
+            <tr><td colspan="12" class="empty">Cargando gastos...</td></tr>
           </tbody>
         </table>
       </div>
@@ -1557,6 +1588,8 @@
   let movimientosCaja = [];
   let etiquetasGastos = [];
   let gastosFiltrados = [];
+  const gastosSeleccionados = new Set();
+  let guardandoEstadoLegalizacion = false;
   let movimientosFiltrados = [];
   let sortKey = "fecha";
   let sortAsc = false;
@@ -3330,6 +3363,9 @@
       return 0;
     });
 
+    // No mantener selecciones que ya no están visibles tras cambiar los filtros.
+    const visibles = new Set(gastosFiltrados.map(g => String(g.id)));
+    for(const id of gastosSeleccionados){ if(!visibles.has(id)) gastosSeleccionados.delete(id); }
     renderTabla();
     renderMovimientos();
     renderEtiquetasPanel();
@@ -3364,47 +3400,189 @@
     return `<span class="badge ${clase}">${label}</span>`;
   }
 
+  function puedeCambiarEstadoGasto(g){
+    return !!g && (esCamiloAutorizado() || registroEsDelUsuarioActual(g));
+  }
+
+  function actualizarBarraLegalizacion(){
+    const elegibles = gastosFiltrados.filter(g => puedeCambiarEstadoGasto(g));
+    const seleccionadosVisibles = elegibles.filter(g => gastosSeleccionados.has(String(g.id)));
+    const barra = $("barraLegalizacionMasiva");
+    if(barra) barra.classList.toggle("visible", seleccionadosVisibles.length > 0);
+    if($("contadorSeleccionados")) $("contadorSeleccionados").textContent = `${seleccionadosVisibles.length} seleccionado(s)`;
+    const checkTodos = $("seleccionarTodosGastos");
+    if(checkTodos){
+      checkTodos.checked = elegibles.length > 0 && seleccionadosVisibles.length === elegibles.length;
+      checkTodos.indeterminate = seleccionadosVisibles.length > 0 && seleccionadosVisibles.length < elegibles.length;
+      checkTodos.disabled = guardandoEstadoLegalizacion || elegibles.length === 0;
+    }
+    const btn = $("btnAplicarEstadoMasivo");
+    if(btn) btn.disabled = guardandoEstadoLegalizacion || seleccionadosVisibles.length === 0;
+    if($("estadoMasivo")) $("estadoMasivo").disabled = guardandoEstadoLegalizacion;
+  }
+
+  function seleccionarGasto(id, checked){
+    id = String(id);
+    const gasto = gastosFiltrados.find(g => String(g.id) === id);
+    if(!puedeCambiarEstadoGasto(gasto)) return;
+    if(checked) gastosSeleccionados.add(id);
+    else gastosSeleccionados.delete(id);
+    const fila = Array.from($("tbodyGastos").rows).find(tr => tr.dataset.gastoId === id);
+    if(fila) fila.classList.toggle("gasto-row-selected", checked);
+    actualizarBarraLegalizacion();
+  }
+
+  function seleccionarTodosGastosVisibles(checked){
+    for(const g of gastosFiltrados){
+      if(!puedeCambiarEstadoGasto(g)) continue;
+      if(checked) gastosSeleccionados.add(String(g.id));
+      else gastosSeleccionados.delete(String(g.id));
+    }
+    renderTabla();
+  }
+
+  function limpiarSeleccionGastos(){
+    gastosSeleccionados.clear();
+    renderTabla();
+  }
+
+  // La función RPC usa POST a Supabase. No se envían PATCH masivos desde el navegador.
+  // Requiere ejecutar el SQL gastos_rpc_legalizacion.sql en Supabase una sola vez.
+  async function guardarEstadosLegalizacionRPC(ids, estado){
+    if(!["LEGALIZADO", "PENDIENTE POR LEGALIZAR"].includes(estado)){
+      throw new Error("Estado de legalización inválido.");
+    }
+    const idsUnicos = [...new Set(ids.map(id => String(id)).filter(Boolean))];
+    const confirmados = new Set();
+    for(let i = 0; i < idsUnicos.length; i += 100){
+      const lote = idsUnicos.slice(i, i + 100);
+      let result;
+      try{
+        result = await supabaseClient.rpc("gastos_actualizar_legalizacion", {
+          p_ids: lote,
+          p_estado: estado
+        });
+      }catch(err){
+        err.idsConfirmados = [...confirmados];
+        throw err;
+      }
+      if(result.error){
+        const e = result.error;
+        const msg = e.code === "PGRST202" || /function.*not found|schema cache/i.test(e.message || "")
+          ? "Falta instalar la función RPC en Supabase. Ejecuta el archivo gastos_rpc_legalizacion.sql y vuelve a intentar."
+          : (e.message || "Supabase rechazó la actualización.");
+        const error = new Error(msg);
+        error.idsConfirmados = [...confirmados];
+        throw error;
+      }
+      for(const r of result.data || []){
+        if(r.estado_legalizacion === estado) confirmados.add(String(r.id));
+      }
+    }
+    return confirmados;
+  }
+
+  async function cambiarEstadoDesdeFila(id, estado, control){
+    if(!["LEGALIZADO", "PENDIENTE POR LEGALIZAR"].includes(estado)) return;
+    const gasto = gastos.find(g => String(g.id) === String(id));
+    if(!puedeCambiarEstadoGasto(gasto) || guardandoEstadoLegalizacion){
+      if(control) control.value = estadoLegalizacionLabel(gasto?.estado_legalizacion);
+      toast("No tienes permisos para cambiar el estado de este gasto.");
+      return;
+    }
+    const estadoAnterior = estadoLegalizacionLabel(gasto.estado_legalizacion);
+    if(estadoAnterior === estado) return;
+    guardandoEstadoLegalizacion = true;
+    if(control) control.disabled = true;
+    try{
+      const confirmados = await guardarEstadosLegalizacionRPC([id], estado);
+      if(!confirmados.has(String(id))){
+        throw new Error("No se actualizó este registro. Verifica que seas propietario o usuario autorizado.");
+      }
+      gasto.estado_legalizacion = estado;
+      toast(`Gasto actualizado a ${estado}.`);
+      aplicarFiltros();
+    }catch(err){
+      console.error("Error cambiando legalización:", err);
+      if(control) control.value = estadoAnterior;
+      toast("No se guardó el estado: " + (err.message || err) +
+        (err.message === "Failed to fetch" ? ". Verifica el acceso de red a Supabase." : ""));
+    }finally{
+      guardandoEstadoLegalizacion = false;
+      if(control && control.isConnected) control.disabled = false;
+      actualizarBarraLegalizacion();
+    }
+  }
+
+  async function aplicarEstadoMasivo(){
+    if(guardandoEstadoLegalizacion) return;
+    const estado = $("estadoMasivo")?.value || "";
+    if(!["LEGALIZADO", "PENDIENTE POR LEGALIZAR"].includes(estado)) return;
+    const seleccionados = gastosFiltrados.filter(g => gastosSeleccionados.has(String(g.id)) && puedeCambiarEstadoGasto(g));
+    if(!seleccionados.length){toast("Selecciona al menos un gasto.");return;}
+    if(!confirm(`¿Cambiar ${seleccionados.length} gasto(s) a ${estado}?`)) return;
+    guardandoEstadoLegalizacion = true;
+    actualizarBarraLegalizacion();
+    const ids = seleccionados.map(g => String(g.id));
+    try{
+      const confirmados = await guardarEstadosLegalizacionRPC(ids, estado);
+      for(const id of confirmados) gastosSeleccionados.delete(id);
+      if(confirmados.size !== ids.length){
+        alert(`Se actualizaron ${confirmados.size} de ${ids.length} gastos. Los restantes no fueron autorizados o no existen en Supabase.`);
+      }else{
+        toast(`${confirmados.size} gasto(s) actualizados a ${estado}.`);
+      }
+    }catch(err){
+      console.error("Error legalizando gastos:", err);
+      const exitosos = err.idsConfirmados || [];
+      exitosos.forEach(id => gastosSeleccionados.delete(id));
+      alert(`Se actualizaron ${exitosos.length} de ${ids.length} gastos.\n\n${err.message || err}\n\nSi persiste Failed to fetch, verifica si el equipo o red permite solicitudes POST a Supabase.`);
+    }finally{
+      // Volver a leer los valores reales, incluidos cambios parciales.
+      try { await cargarTodo(); } catch(e) { console.error("Error recargando gastos",e); }
+      guardandoEstadoLegalizacion = false;
+      actualizarBarraLegalizacion();
+    }
+  }
+
   function renderTabla(){
     const tbody = $("tbodyGastos");
-
     if(!gastosFiltrados.length){
-      tbody.innerHTML = `<tr><td colspan="11" class="empty">No hay registros para los filtros seleccionados.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="12" class="empty">No hay registros para los filtros seleccionados.</td></tr>`;
+      actualizarBarraLegalizacion();
       return;
     }
 
     tbody.innerHTML = gastosFiltrados.map(g => {
       const etiqueta = getEtiquetaById(g.etiqueta_id);
-      const rowStyle = etiqueta ? ` style="background:${hexToRgba(etiqueta.color, .13)}; box-shadow:inset 5px 0 0 ${colorHexSeguro(etiqueta.color)}"` : "";
+      const legalizado = estadoLegalizacionLabel(g.estado_legalizacion) === "LEGALIZADO";
+      const rowStyle = !legalizado && etiqueta
+        ? ` style="background:${hexToRgba(etiqueta.color, .13)}; box-shadow:inset 5px 0 0 ${colorHexSeguro(etiqueta.color)}"` : "";
+      const editableEstado = puedeCambiarEstadoGasto(g);
+      const seleccionada = gastosSeleccionados.has(String(g.id));
       return `
-      <tr${rowStyle}>
+      <tr data-gasto-id="${escHTML(g.id)}" class="${legalizado?'legalizado-row ':''}${seleccionada?'gasto-row-selected':''}"${rowStyle}>
+        <td><input class="gasto-checkbox" type="checkbox" aria-label="Seleccionar gasto ${escHTML(g.numero_factura || g.fecha || '')}" ${seleccionada?'checked':''} ${!editableEstado?'disabled title="Sin permiso para cambiar estado"':''} onchange='seleccionarGasto("${g.id}",this.checked)'></td>
         <td>${g.fecha || ""}</td>
-        <td>
-          <b>${escHTML(g.usuario_nombre || "")}</b><br>
-          <span class="small">${escHTML(g.usuario_email || "")}</span>
-        </td>
+        <td><b>${escHTML(g.usuario_nombre || "")}</b><br><span class="small">${escHTML(g.usuario_email || "")}</span></td>
         <td><b>${formatCOP(g.valor)}</b></td>
         <td>${escHTML(g.numero_factura || "")}</td>
         <td>${badgeMetodo(g.metodo_pago)}</td>
         <td>${escHTML(g.tipo_gasto || "")}</td>
         <td>${badgeEtiqueta(g.etiqueta_id)}</td>
-        <td>${badgeEstadoLegalizacion(g.estado_legalizacion)}</td>
+        <td><select class="gasto-estado-select ${legalizado?'estado-legalizado':'estado-pendiente'}" aria-label="Estado de legalización" ${!editableEstado?'disabled title="Sin permiso"':''} onchange='cambiarEstadoDesdeFila("${g.id}",this.value,this)'>
+          <option value="PENDIENTE POR LEGALIZAR" ${!legalizado?'selected':''}>PENDIENTE POR LEGALIZAR</option>
+          <option value="LEGALIZADO" ${legalizado?'selected':''}>LEGALIZADO</option>
+        </select></td>
         <td>${escHTML(g.descripcion || "")}</td>
-        <td>
-          ${g.factura_drive_url ? `<a href="${g.factura_drive_url}" target="_blank" class="btn ghost" style="padding:8px 10px"><i data-lucide="external-link"></i> Ver</a>` : `<span class="small">Sin soporte</span>`}
-        </td>
-        <td>
-          <div class="actions">
-            <button class="icon-btn" title="Editar" onclick='editarGasto("${g.id}")'><i data-lucide="pencil"></i></button>
-            ${puedeEliminarRegistro(g)
-              ? `<button class="icon-btn" title="Eliminar" onclick='eliminarGasto("${g.id}")'><i data-lucide="trash-2"></i></button>`
-              : `<span class="small">No puedes eliminar</span>`
-            }
-          </div>
-        </td>
-      </tr>
-    `;
+        <td>${g.factura_drive_url ? `<a href="${escHTML(g.factura_drive_url)}" target="_blank" rel="noopener noreferrer" class="btn ghost" style="padding:8px 10px"><i data-lucide="external-link"></i> Ver</a>` : `<span class="small">Sin soporte</span>`}</td>
+        <td><div class="actions">
+          <button class="icon-btn" title="Editar" onclick='editarGasto("${g.id}")'><i data-lucide="pencil"></i></button>
+          ${puedeEliminarRegistro(g) ? `<button class="icon-btn" title="Eliminar" onclick='eliminarGasto("${g.id}")'><i data-lucide="trash-2"></i></button>` : `<span class="small">No puedes eliminar</span>`}
+        </div></td>
+      </tr>`;
     }).join("");
-
+    actualizarBarraLegalizacion();
     lucide.createIcons();
   }
 
@@ -4202,6 +4380,19 @@
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
