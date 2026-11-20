@@ -7,6 +7,9 @@
   <link rel="stylesheet" href="styles.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.4/jspdf.plugin.autotable.min.js"></script>
   <script src="app.js"></script>
   <style>
     :root{--border:rgba(255,255,255,.10);--text:#eef4ff;--muted:#9ab0d0;--shadow:0 18px 40px rgba(0,0,0,.28)}
@@ -447,6 +450,115 @@
 }
 </style>
 
+
+<style>
+/* ===== Entrega técnica / pruebas de servicio ===== */
+.delivery-tech-btn{
+  background:linear-gradient(135deg,#0f766e,#0891b2);
+  border:1px solid rgba(255,255,255,.14);
+  color:#fff;cursor:pointer;
+}
+.delivery-tech-btn:hover{filter:brightness(1.08)}
+.actions-grid{max-width:210px}
+
+.et-modal{width:min(1450px,100%)!important;padding:0!important;overflow:hidden!important}
+.et-shell{display:grid;grid-template-rows:auto auto 1fr auto;max-height:94vh;min-height:680px}
+.et-head{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:14px;background:linear-gradient(135deg,#071a33,#0b2238)}
+.et-head-title{font-size:20px;font-weight:900;margin-bottom:4px}.et-head-sub{font-size:12px;color:#9ab0d0}
+.et-client-strip{display:grid;grid-template-columns:repeat(5,minmax(120px,1fr));gap:8px;padding:12px 18px;border-bottom:1px solid var(--border);background:rgba(255,255,255,.02)}
+.et-mini{padding:9px 10px;border:1px solid rgba(147,197,253,.14);border-radius:11px;background:rgba(255,255,255,.025)}
+.et-mini .l{font-size:9px;text-transform:uppercase;color:#8fb1da;font-weight:800}.et-mini .v{font-size:12px;font-weight:800;margin-top:3px;word-break:break-word}
+.et-body{overflow:auto;padding:18px 20px}
+.et-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px;background:#08152c}
+.et-footer-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.et-stepper{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.et-step{padding:10px;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.025);cursor:pointer}
+.et-step.active{border-color:#38bdf8;background:rgba(14,165,233,.13)}.et-step.done{border-color:#22c55e;background:rgba(34,197,94,.09)}
+.et-step .n{display:inline-flex;width:22px;height:22px;border-radius:7px;align-items:center;justify-content:center;background:rgba(96,165,250,.18);font-size:10px;font-weight:900;margin-right:7px}
+.et-panel{display:none}.et-panel.active{display:block}
+.et-section{border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px;background:rgba(255,255,255,.025)}
+.et-section h4{margin:0 0 10px;font-size:14px;color:#dbeafe}
+.et-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.et-field label{display:block;font-size:11px;color:#b9d6ff;margin-bottom:5px}.et-field input,.et-field select,.et-field textarea{width:100%;padding:10px 11px;border:1px solid var(--border);border-radius:10px;background:#0c1830;color:#fff}.et-field textarea{min-height:80px;resize:vertical}
+.et-tests-select{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:8px}
+.et-check{display:flex;gap:8px;align-items:flex-start;padding:10px;border:1px solid var(--border);border-radius:11px;background:rgba(255,255,255,.02);font-size:11px}
+.et-check input{margin-top:2px}.et-check b{display:block;font-size:11px}.et-check small{display:block;color:#8fa8ca;margin-top:2px}
+.et-agent{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px;border:1px dashed rgba(56,189,248,.32);border-radius:12px;background:rgba(14,165,233,.05);margin-top:10px}
+.et-agent-dot{width:9px;height:9px;border-radius:50%;background:#64748b}.et-agent-dot.ok{background:#22c55e}.et-agent-dot.bad{background:#ef4444}.et-agent-status{font-size:11px;color:#bfdbfe}
+.et-test-card{border:1px solid var(--border);border-radius:15px;margin-bottom:10px;background:linear-gradient(180deg,rgba(37,99,235,.05),rgba(255,255,255,.015));overflow:hidden}
+.et-test-head{display:flex;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
+.et-test-title{font-size:13px;font-weight:900}.et-test-desc{font-size:10px;color:#93a9c7;margin-top:3px}
+.et-status{padding:5px 8px;border-radius:999px;font-size:9px;font-weight:900;height:max-content;border:1px solid var(--border)}
+.et-status.PENDIENTE{color:#fde68a;background:rgba(245,158,11,.14)}.et-status.APROBADA{color:#bbf7d0;background:rgba(34,197,94,.14)}.et-status.FALLIDA{color:#fecaca;background:rgba(239,68,68,.14)}.et-status.EJECUTADA{color:#bae6fd;background:rgba(14,165,233,.14)}
+.et-test-body{padding:12px 14px}.et-test-actions{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}
+.et-output{white-space:pre-wrap;max-height:230px;overflow:auto;background:#050b16;border:1px solid rgba(255,255,255,.09);padding:10px;border-radius:10px;font-family:Consolas,monospace;font-size:10px;color:#c7e6ff}
+.et-evidence-previews{display:grid;grid-template-columns:repeat(4,minmax(100px,1fr));gap:8px;margin-top:8px}
+.et-evidence-previews img{width:100%;height:130px;object-fit:cover;border-radius:10px;border:1px solid var(--border)}
+.et-preview-item{position:relative}
+.et-remove-thumb{position:absolute;top:6px;right:6px;border:1px solid rgba(239,68,68,.6);background:rgba(127,29,29,.88);color:#fff;border-radius:999px;width:24px;height:24px;font-size:14px;font-weight:900;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.et-remove-thumb:hover{background:rgba(220,38,38,.96)}
+.et-photo-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.et-photo-card{border:1px solid var(--border);border-radius:15px;padding:12px;background:rgba(255,255,255,.02)}
+.et-photo-card h5{margin:0 0 5px;font-size:12px}.et-photo-card p{margin:0 0 8px;font-size:10px;color:#9ab0d0}
+.et-review-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px}
+.et-review-kpi{padding:12px;border:1px solid rgba(96,165,250,.22);border-radius:13px;background:rgba(37,99,235,.06)}
+.et-review-kpi .v{font-size:23px;font-weight:900}.et-review-kpi .l{font-size:9px;color:#9ab0d0;margin-top:3px}
+.et-summary-table{width:100%;border-collapse:collapse;min-width:720px}.et-summary-table th,.et-summary-table td{padding:9px;border-bottom:1px solid rgba(255,255,255,.07);font-size:11px;text-align:left}.et-summary-table th{color:#93c5fd}
+.et-progress{height:8px;border-radius:999px;background:#14233d;overflow:hidden;margin-top:6px}.et-progress span{display:block;height:100%;background:linear-gradient(90deg,#2563eb,#22c55e);width:0}
+.et-msg{font-size:11px}.et-msg.ok{color:#86efac}.et-msg.err{color:#fecaca}
+.et-hidden{display:none!important}
+.et-link{color:#7dd3fc;text-decoration:none;font-weight:800}
+@media(max-width:1000px){.et-grid{grid-template-columns:repeat(2,1fr)}.et-tests-select{grid-template-columns:repeat(2,1fr)}.et-client-strip{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:700px){
+  .et-shell{min-height:calc(100dvh - 12px);max-height:calc(100dvh - 12px)}
+  .et-head{padding:12px}.et-client-strip{padding:8px;grid-template-columns:1fr 1fr}.et-body{padding:10px}
+  .et-stepper{grid-template-columns:1fr 1fr}.et-grid,.et-tests-select,.et-photo-grid{grid-template-columns:1fr}
+  .et-review-kpis{grid-template-columns:1fr 1fr}.et-evidence-previews{grid-template-columns:1fr 1fr}
+  .et-footer{padding:8px;align-items:flex-start;flex-direction:column}.et-footer-actions{width:100%}.et-footer-actions button{flex:1}
+}
+</style>
+
+
+<style>
+/* ===== Corrección guardado Entrega Técnica v1.5 ===== */
+.et-footer{position:relative!important;z-index:40!important;min-height:68px!important;overflow:hidden!important}
+.et-footer>div:first-child{min-width:0!important;overflow:hidden!important}
+.et-footer-actions{flex:0 0 auto!important;white-space:nowrap!important}
+.et-msg{display:block!important;max-width:100%!important;max-height:32px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important;line-height:16px!important;word-break:normal!important}
+.et-msg[title]{cursor:help}
+@media(max-width:700px){.et-footer{position:sticky!important;bottom:0!important;background:#08152c!important}.et-footer-actions{display:grid!important;grid-template-columns:repeat(3,1fr)!important;width:100%!important}.et-msg{white-space:normal!important;max-height:36px!important}}
+</style>
+
+
+<style>
+/* ===== Pegado de imágenes desde portapapeles ===== */
+.et-paste-zone{
+  margin-top:7px;
+  min-height:42px;
+  padding:10px 12px;
+  border:1px dashed rgba(56,189,248,.55);
+  border-radius:10px;
+  background:rgba(14,165,233,.055);
+  color:#bfdbfe;
+  font-size:10px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  cursor:text;
+  outline:none;
+  transition:.16s ease;
+}
+.et-paste-zone:hover,
+.et-paste-zone:focus{
+  border-color:#38bdf8;
+  background:rgba(14,165,233,.12);
+  box-shadow:0 0 0 2px rgba(56,189,248,.10);
+}
+.et-paste-zone .et-paste-icon{font-size:15px;line-height:1}
+.et-paste-zone .et-paste-main{font-weight:800;color:#e0f2fe}
+.et-paste-zone .et-paste-sub{color:#89a7cc;margin-left:3px}
+</style>
+
 </head>
 <body>
 <div id="root"></div>
@@ -781,6 +893,121 @@
   </div>
 </div>
 
+
+
+<div id="entregaTecnicaModal" class="modal-backdrop">
+  <div class="modal et-modal">
+    <div class="et-shell">
+      <div class="et-head">
+        <div>
+          <div class="et-head-title">Entrega técnica y pruebas del servicio</div>
+          <div class="et-head-sub">Asistente de validación, evidencias y acta técnica de entrega.</div>
+        </div>
+        <button type="button" class="close-btn" onclick="cerrarEntregaTecnica()">✕</button>
+      </div>
+
+      <div id="etClientStrip" class="et-client-strip"></div>
+
+      <div class="et-body">
+        <div class="et-stepper">
+          <div class="et-step active" data-et-step="1" onclick="irPasoEntrega(1)"><span class="n">1</span> Configuración</div>
+          <div class="et-step" data-et-step="2" onclick="irPasoEntrega(2)"><span class="n">2</span> Fotografías</div>
+          <div class="et-step" data-et-step="3" onclick="irPasoEntrega(3)"><span class="n">3</span> Pruebas</div>
+          <div class="et-step" data-et-step="4" onclick="irPasoEntrega(4)"><span class="n">4</span> Cierre / PDF</div>
+        </div>
+
+        <section id="etPanel1" class="et-panel active">
+          <div class="et-section">
+            <h4>Perfil del servicio</h4>
+            <div class="et-grid">
+              <div class="et-field"><label>Tipo de servicio</label>
+                <select id="etTipoServicio" onchange="aplicarPerfilEntregaTecnica(true)">
+                  <option value="CAPA2">Capa 2</option><option value="MPLS">MPLS</option><option value="BGP">BGP</option><option value="INTERNET">Internet</option><option value="PERSONALIZADO">Personalizado</option>
+                </select>
+              </div>
+              <div class="et-field"><label>Capacidad (Mbps)</label><input id="etCapacidad" type="number" min="0" step="0.01" oninput="actualizarRecomendacionRFC()"></div>
+              <div class="et-field"><label>Destino/IP para ping de servicio</label><input id="etPingServicioDestino" placeholder="IP remota, PE, CE o destino acordado"></div>
+              <div class="et-field"><label>Técnico responsable</label><input id="etTecnico"></div>
+            </div>
+            <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <label class="et-check" style="padding:8px 10px"><input id="etRequiereRFC" type="checkbox" onchange="sincronizarSeleccionRFC()"><span><b>RFC requerida</b><small id="etRfcHint">Activar cuando el servicio lo requiera.</small></span></label>
+            </div>
+          </div>
+
+          <div class="et-section">
+            <h4>Pruebas requeridas</h4>
+            <div class="muted-note" style="margin-bottom:9px">El perfil selecciona un plan sugerido, pero puedes activar o desactivar pruebas individualmente.</div>
+            <div id="etTestsSelector" class="et-tests-select"></div>
+          </div>
+
+          <div class="et-section">
+            <h4>Agente de pruebas en el computador</h4>
+            <div class="muted-note">Ejecuta automáticamente ipconfig, ping y tracert mediante CMD, corrige la codificación y adjunta una evidencia visual del resultado. También intenta capturas web con Microsoft Edge.</div>
+            <div class="et-agent">
+              <span id="etAgentDot" class="et-agent-dot"></span>
+              <span id="etAgentStatus" class="et-agent-status">Agente no verificado.</span>
+              <button type="button" class="small-btn" onclick="verificarAgenteEntrega()">Verificar agente</button>
+              <div class="et-field" style="min-width:280px;flex:1"><input id="etAgentUrl" value="http://127.0.0.1:8765" onchange="guardarUrlAgente()"></div>
+            </div>
+            <div class="muted-note" style="margin-top:8px"></div>
+          </div>
+        </section>
+
+        <section id="etPanel2" class="et-panel">
+          <div class="et-section">
+            <h4>Potencia óptica</h4>
+            <div class="et-grid">
+              <div class="et-field"><label>Potencia RX recibida (dBm)</label><input id="etPotenciaRx" type="number" step="0.01" placeholder="-15.64"></div>
+              <div class="et-field"><label>Longitud de onda (nm)</label><select id="etLongitudOnda"><option value="1490">1490</option><option value="1550">1550</option><option value="1310">1310</option><option value="1625">1625</option></select></div>
+              <div class="et-field"><label>Observaciones de entrega</label><textarea id="etObservacionesEntrega" placeholder="Observaciones finales del servicio"></textarea></div>
+            </div>
+          </div>
+          <div id="etPhotosContainer" class="et-photo-grid"></div>
+        </section>
+
+        <section id="etPanel3" class="et-panel">
+          <div id="etTestsContainer"></div>
+        </section>
+
+        <section id="etPanel4" class="et-panel">
+          <div class="et-review-kpis">
+            <div class="et-review-kpi"><div id="etRevReq" class="v">0</div><div class="l">Pruebas requeridas</div></div>
+            <div class="et-review-kpi"><div id="etRevOk" class="v">0</div><div class="l">Completadas</div></div>
+            <div class="et-review-kpi"><div id="etRevPhotos" class="v">0</div><div class="l">Evidencias físicas</div></div>
+            <div class="et-review-kpi"><div id="etRevPct" class="v">0%</div><div class="l">Avance total</div></div>
+          </div>
+          <div class="et-section">
+            <h4>Resumen de pruebas</h4>
+            <div style="overflow:auto"><table class="et-summary-table"><thead><tr><th>Prueba</th><th>Estado</th><th>Resultado</th><th>Evidencia</th></tr></thead><tbody id="etReviewBody"></tbody></table></div>
+          </div>
+          <div class="et-section">
+            <h4>Generación del acta</h4>
+            <div class="muted-note">El PDF incluye identificación del servicio, resumen de pruebas, resultados técnicos y registro fotográfico.</div>
+            <div class="et-test-actions">
+              <button type="button" class="btn ghost" onclick="generarPdfEntregaTecnica()">Generar PDF profesional</button>
+              <button type="button" class="btn" onclick="guardarEntregaTecnica(true)">Finalizar entrega</button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="et-footer">
+        <div style="flex:1;min-width:230px">
+          <div id="etProgressText" class="muted-note">0% completado</div>
+          <div class="et-progress"><span id="etProgressBar"></span></div>
+          <div id="etMsg" class="et-msg" style="margin-top:5px"></div>
+        </div>
+        <div class="et-footer-actions">
+          <button type="button" class="small-btn" onclick="pasoAnteriorEntrega()">Anterior</button>
+          <button type="button" class="small-btn" onclick="guardarEntregaTecnica(false)">Guardar borrador</button>
+          <button type="button" class="btn" onclick="pasoSiguienteEntrega()">Siguiente</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="etPdfStage" style="position:absolute;left:-100000px;top:0;width:794px;background:#fff;color:#111;z-index:2147483646;pointer-events:none"></div>
 
 <script>
 function safeRenderError(message){
@@ -2130,6 +2357,7 @@ function renderTable(){
           <button class="small-btn" onclick="editRow('${r.id}')">Editar</button>
           <button class="sol-btn" onclick="solicitarContratistaInstalacion('${r.id}')">Sol Contratista</button>
           <button class="supervision-btn" onclick="crearSupervisionInstalacion('${r.id}')">Supervisión</button>
+          <button class="delivery-tech-btn" onclick="abrirEntregaTecnica('${r.id}')">Entrega técnica</button>
           <button class="audit-btn" onclick="verAuditoria('instalaciones', '${r.id}', '${esc(r.cliente || r.id_cambio || r.id)}')">Historial</button>
         </div>
       </td>
@@ -2551,6 +2779,9 @@ function descargarOficioRadicacionEmsa(){
       <div><span class="bold">Teléfono:</span> 3108594836</div>
     </div>
   </div>
+
+
+
 </body>
 </html>`;
 
@@ -3835,8 +4066,1111 @@ document.addEventListener('change',function(e){
   </div>
 </div>
 
+
+<script>
+const ET_N8N_UPLOAD_WEBHOOK_DEFAULT = 'https://ftth-n8n2.pzveh5.easypanel.host/webhook/releva-entrega-tecnica-fotos';
+function etUploadWebhookUrl(){
+  return localStorage.getItem('releva_entrega_tecnica_webhook') || ET_N8N_UPLOAD_WEBHOOK_DEFAULT;
+}
+const ET_TEST_DEFS = {
+  ping_servicio:{nombre:'Ping del servicio',desc:'Prueba básica para Capa 2 / MPLS / BGP al destino acordado.',auto:'ping_custom'},
+  ipconfig:{nombre:'Configuración IP (ipconfig)',desc:'Captura automática de direccionamiento, máscara y puerta de enlace.',auto:'ipconfig'},
+  ping_gateway:{nombre:'Ping a puerta de enlace',desc:'Valida conectividad contra el gateway del cliente.',auto:'ping_gateway'},
+  ping_internet:{nombre:'Ping a Internet · 8.8.8.8 × 100',desc:'Mínimo 100 paquetes para medir pérdida y latencia.',auto:'ping_internet'},
+  tracert:{nombre:'Traceroute a 8.8.8.8',desc:'Traza de saltos hacia Internet.',auto:'tracert'},
+  nav_eltiempo:{nombre:'Navegación nacional · El Tiempo',desc:'Validación de acceso a https://www.eltiempo.com/',url:'https://www.eltiempo.com/'},
+  nav_sena:{nombre:'Navegación nacional · SENA',desc:'Validación de acceso a https://www.sena.edu.co/',url:'https://www.sena.edu.co/'},
+  nav_nytimes:{nombre:'Navegación internacional · NY Times',desc:'Validación de acceso a https://www.nytimes.com/es/',url:'https://www.nytimes.com/es/'},
+  nav_universal:{nombre:'Navegación internacional · Universal Orlando',desc:'Validación de acceso a https://www.universalorlando.com/',url:'https://www.universalorlando.com/'},
+  speedtest:{nombre:'Prueba de velocidad · Speedtest',desc:'Medición de ping, descarga y subida.',url:'https://www.speedtest.net/es',auto:'speedtest'},
+  saturacion:{nombre:'Prueba de saturación',desc:'Prueba de capacidad con iPerf3 cuando exista servidor de pruebas.',auto:'saturacion'},
+  rfc:{nombre:'Prueba RFC',desc:'Registro RFC cuando la capacidad y el procedimiento lo requieran.'}
+};
+const ET_PHOTO_DEFS = {
+  potencia:{nombre:'Potencia recibida / Power Meter',desc:'Fotografía legible de la medición óptica.'},
+  seriales:{nombre:'Seriales de equipos',desc:'Fotografías de etiquetas y seriales de los equipos instalados.'},
+  rack:{nombre:'Equipo instalado en rack',desc:'Vista del equipo correctamente instalado en el rack del cliente.'},
+  sfp_nodo:{nombre:'Módulo SFP en nodo',desc:'Fotografía del SFP instalado en el nodo.'},
+  sfp_cliente:{nombre:'Módulo SFP en cliente',desc:'Fotografía del SFP instalado del lado cliente.'}
+};
+const ET_INTERNET_TESTS=['ipconfig','ping_gateway','ping_internet','tracert','nav_eltiempo','nav_sena','nav_nytimes','nav_universal','speedtest','saturacion'];
+const ET_CMD_TESTS_GROUP=['ping_servicio','ipconfig','ping_gateway','ping_internet','tracert','saturacion','rfc'];
+const ET_WEB_TESTS_GROUP=['nav_eltiempo','nav_sena','nav_nytimes','nav_universal','speedtest'];
+const ET_TESTS_WITHOUT_RESULT_FIELD=new Set(['nav_eltiempo','nav_sena','nav_nytimes','nav_universal','speedtest']);
+
+let etState={row:null,entrega:null,paso:1,selected:new Set(),tests:{},photos:{},loaded:false};
+
+function etDefaultTest(code){
+  return {codigo:code,estado:'PENDIENTE',resultado:'',resultado_json:{},observaciones:'',evidencias:[]};
+}
+function etResetState(row){
+  etState={row,entrega:null,paso:1,selected:new Set(),tests:{},photos:{},loaded:false};
+  Object.keys(ET_TEST_DEFS).forEach(c=>etState.tests[c]=etDefaultTest(c));
+  Object.keys(ET_PHOTO_DEFS).forEach(c=>etState.photos[c]=[]);
+}
+function etParseCapacidad(v){
+  const m=String(v??'').replace(',','.').match(/-?\d+(?:\.\d+)?/);
+  return m?Math.max(0,Number(m[0])):0;
+}
+function etFriendlyErrorText(value){
+  let txt=String(value??'').replace(/\s+/g,' ').trim();
+  const low=txt.toLowerCase();
+  if(low.includes('n8n respondió formato no json') || low.includes('doctype html') || low.includes('<html')){
+    return 'n8n no devolvió JSON. La red corporativa o un proxy está bloqueando el webhook; las evidencias no pudieron subirse.';
+  }
+  if(low.includes('403') || low.includes('forbidden')){
+    return 'El webhook de n8n respondió 403 (acceso bloqueado). Los datos pueden guardarse como borrador, pero las evidencias quedan pendientes.';
+  }
+  if(low.includes('failed to fetch')){
+    return 'No fue posible contactar n8n. Revisa la conexión, el agente local o el acceso corporativo al webhook.';
+  }
+  if(txt.length>260) txt=txt.slice(0,257)+'...';
+  return txt;
+}
+function etSetMsg(txt,tipo=''){
+  const el=document.getElementById('etMsg'); if(!el)return;
+  const full=String(txt??'');
+  const shown=tipo==='err'?etFriendlyErrorText(full):full;
+  el.className='et-msg '+(tipo||'');
+  el.textContent=shown;
+  el.title=full.length>shown.length?full:'';
+}
+function etSafeName(v){return String(v||'archivo').replace(/[^a-zA-Z0-9._-]+/g,'_').slice(0,90);}
+function etStatusClass(s){return ['APROBADA','FALLIDA','EJECUTADA'].includes(s)?s:'PENDIENTE';}
+function etResultShort(t){
+  const j=t?.resultado_json||{};
+  if(j.loss_pct!==undefined) return `Pérdida ${j.loss_pct}% · ${j.avg_ms??'—'} ms promedio`;
+  if(j.download_mbps!==undefined) return `↓ ${Number(j.download_mbps).toFixed(2)} Mbps · ↑ ${Number(j.upload_mbps||0).toFixed(2)} Mbps`;
+  if(j.throughput_mbps!==undefined) return `${Number(j.throughput_mbps).toFixed(2)} Mbps`;
+  return String(t?.resultado||'').split('\n')[0].slice(0,120);
+}
+function etSelectedArray(){return Array.from(etState.selected);}
+function etPhotoCount(){return Object.values(etState.photos).reduce((s,a)=>s+(a?.length||0),0);}
+function etRequiredPhysicalComplete(){return Object.keys(ET_PHOTO_DEFS).every(k=>(etState.photos[k]||[]).length>0);}
+function etTestComplete(t){return t && t.estado && t.estado!=='PENDIENTE';}
+
+window.abrirEntregaTecnica=async function(id){
+  const row=(instalacionesRows||[]).find(x=>String(x.id)===String(id));
+  if(!row){alert('No se encontró la instalación seleccionada.');return;}
+  etResetState(row);
+  document.getElementById('entregaTecnicaModal')?.classList.add('show');
+  document.getElementById('etTipoServicio').value = /internet/i.test(String(row.Linea_base||'')) ? 'INTERNET' : 'CAPA2';
+  document.getElementById('etCapacidad').value = etParseCapacidad(row.capacidad);
+  document.getElementById('etTecnico').value = localStorage.getItem('user_email') || row.responsable || '';
+  document.getElementById('etAgentUrl').value = localStorage.getItem('releva_agent_url') || 'http://127.0.0.1:8765';
+  document.getElementById('etPotenciaRx').value='';
+  document.getElementById('etObservacionesEntrega').value='';
+  renderClienteEntrega();
+  renderSelectorPruebasEntrega();
+  aplicarPerfilEntregaTecnica(false);
+  renderFotosEntrega();
+  irPasoEntrega(1);
+  await cargarEntregaTecnicaExistente();
+  actualizarProgresoEntrega();
+};
+window.cerrarEntregaTecnica=function(){document.getElementById('entregaTecnicaModal')?.classList.remove('show');};
+
+function renderClienteEntrega(){
+  const r=etState.row||{};
+  document.getElementById('etClientStrip').innerHTML=[
+    ['ID Cliente',r.id_cliente||'—'],['Cliente',r.cliente||'—'],['ID Cambio',r.id_cambio||'—'],['ID Tarea',r.id_tarea||'—'],['Capacidad',r.capacidad||'—']
+  ].map(x=>`<div class="et-mini"><div class="l">${esc(x[0])}</div><div class="v">${esc(x[1])}</div></div>`).join('');
+}
+function renderSelectorPruebasEntrega(){
+  const box=document.getElementById('etTestsSelector'); if(!box)return;
+  box.innerHTML=Object.entries(ET_TEST_DEFS).map(([code,d])=>`
+    <label class="et-check"><input type="checkbox" data-et-test="${esc(code)}" onchange="togglePruebaEntrega('${esc(code)}',this.checked)">
+      <span><b>${esc(d.nombre)}</b><small>${esc(d.desc)}</small></span></label>`).join('');
+}
+function togglePruebaEntrega(code,on){
+  if(on)etState.selected.add(code);else etState.selected.delete(code);
+  if(code==='rfc')document.getElementById('etRequiereRFC').checked=!!on;
+  renderPruebasEntrega(); actualizarProgresoEntrega();
+}
+window.aplicarPerfilEntregaTecnica=function(reset=true){
+  const tipo=document.getElementById('etTipoServicio')?.value||'CAPA2';
+  if(reset)etState.selected.clear();
+  if(tipo==='CAPA2'||tipo==='MPLS'||tipo==='BGP')etState.selected.add('ping_servicio');
+  if(tipo==='INTERNET')ET_INTERNET_TESTS.forEach(c=>etState.selected.add(c));
+  if(document.getElementById('etRequiereRFC')?.checked)etState.selected.add('rfc');
+  document.querySelectorAll('[data-et-test]').forEach(ch=>ch.checked=etState.selected.has(ch.dataset.etTest));
+  actualizarRecomendacionRFC();renderPruebasEntrega();actualizarProgresoEntrega();
+};
+window.actualizarRecomendacionRFC=function(){
+  const cap=Number(document.getElementById('etCapacidad')?.value||0);
+  const h=document.getElementById('etRfcHint');
+  if(h)h.textContent=cap>100?'Servicio >100 Mbps: verificar si el procedimiento exige RFC.':'Activar cuando el servicio lo requiera.';
+};
+window.sincronizarSeleccionRFC=function(){
+  const on=!!document.getElementById('etRequiereRFC')?.checked;
+  if(on)etState.selected.add('rfc');else etState.selected.delete('rfc');
+  const ch=document.querySelector('[data-et-test="rfc"]');if(ch)ch.checked=on;
+  renderPruebasEntrega();actualizarProgresoEntrega();
+};
+
+function renderPruebasEntrega(){
+  const c=document.getElementById('etTestsContainer'); if(!c)return;
+  const selected=etSelectedArray();
+  if(!selected.length){c.innerHTML='<div class="audit-empty">Selecciona al menos una prueba en Configuración.</div>';return;}
+
+  const cmdCodes=ET_CMD_TESTS_GROUP.filter(code=>selected.includes(code));
+  const webCodes=ET_WEB_TESTS_GROUP.filter(code=>selected.includes(code));
+  const otherCodes=selected.filter(code=>!cmdCodes.includes(code)&&!webCodes.includes(code));
+
+  const renderCard=(code)=>{
+    const d=ET_TEST_DEFS[code],t=etState.tests[code]||etDefaultTest(code);
+    const target = code==='ping_servicio'
+      ? `<div class="et-field"><label>Destino/IP</label><input id="etTarget_${code}" value="${esc(document.getElementById('etPingServicioDestino')?.value||'')}" placeholder="Destino de prueba"></div>`
+      : code==='ping_gateway'
+        ? `<div class="et-field"><label>Gateway</label><input id="etTarget_${code}" value="${esc(t.resultado_json?.target||'')}" placeholder="Se completa desde ipconfig o manualmente"></div>`
+        : code==='saturacion'
+          ? `<div class="et-grid"><div class="et-field"><label>Servidor iPerf3</label><input id="etIperfServer" value="${esc(t.resultado_json?.server||'')}" placeholder="IP/host del servidor"></div><div class="et-field"><label>Duración (s)</label><input id="etIperfDuration" type="number" min="5" max="30" value="15"></div></div>`
+          : code==='rfc'
+            ? `<div class="et-grid"><div class="et-field"><label>Throughput RFC (Mbps)</label><input id="etRfcThroughput" type="number" step="0.01" value="${esc(t.resultado_json?.throughput_mbps??'')}"></div><div class="et-field"><label>Frame Loss (%)</label><input id="etRfcLoss" type="number" step="0.01" value="${esc(t.resultado_json?.frame_loss_pct??'')}"></div><div class="et-field"><label>Latencia (ms)</label><input id="etRfcLatency" type="number" step="0.01" value="${esc(t.resultado_json?.latency_ms??'')}"></div></div>`
+            : '';
+    const open=d.url?`<button type="button" class="small-btn" onclick="abrirPaginaEntrega('${esc(d.url)}')">Abrir página</button><button type="button" class="small-btn" onclick="capturarWebEntrega('${code}','${esc(d.url)}')">Capturar con agente</button>`:'';
+    const auto=d.auto?`<button type="button" class="btn ghost" onclick="ejecutarPruebaEntrega('${code}')">▶ Ejecutar automática</button>`:'';
+    const resultField = ET_TESTS_WITHOUT_RESULT_FIELD.has(code)
+      ? ''
+      : `<div class="et-field"><label>Resultado / salida capturada</label><textarea id="etResult_${code}" onchange="actualizarTextoPrueba('${code}',this.value)">${esc(t.resultado||'')}</textarea></div>`;
+    return `<div class="et-test-card">
+      <div class="et-test-head"><div><div class="et-test-title">${esc(d.nombre)}</div><div class="et-test-desc">${esc(d.desc)}</div></div><span class="et-status ${etStatusClass(t.estado)}">${esc(t.estado||'PENDIENTE')}</span></div>
+      <div class="et-test-body">${target}
+        <div class="et-test-actions">${auto}${open}<button type="button" class="small-btn" onclick="marcarEstadoPrueba('${code}','APROBADA')">Aprobar</button><button type="button" class="small-btn" onclick="marcarEstadoPrueba('${code}','FALLIDA')">Fallar</button></div>
+        ${resultField}
+        <div class="et-field" style="margin-top:8px"><label>Observaciones</label><input id="etObs_${code}" value="${esc(t.observaciones||'')}" onchange="actualizarObsPrueba('${code}',this.value)"></div>
+        <div class="et-field" style="margin-top:8px"><label>Evidencia (captura / foto)</label><input type="file" accept="image/*" multiple onchange="cargarEvidenciaPrueba('${code}',this.files)">
+          <div class="et-paste-zone" tabindex="0" data-paste-test="${esc(code)}" onpaste="pegarImagenPrueba('${code}',event)" title="Haz clic aquí y luego Ctrl+V">
+            <span class="et-paste-icon">📋</span><span><span class="et-paste-main">Pegar captura aquí</span><span class="et-paste-sub">· clic y Ctrl+V</span></span>
+          </div>
+        </div>
+        <div id="etPrev_${code}" class="et-evidence-previews">${renderEvidenceItems('test',code,t.evidencias||[])}</div>
+      </div>
+    </div>`;
+  };
+
+  const section=(title,subtitle,codes)=> codes.length ? `
+    <div class="et-section" style="margin-bottom:14px">
+      <h4>${title}</h4>
+      <div class="muted-note" style="margin-bottom:10px">${subtitle}</div>
+      ${codes.map(renderCard).join('')}
+    </div>` : '';
+
+  c.innerHTML =
+    section('Pruebas automáticas / técnicas','Ejecuta primero las validaciones automáticas del servicio y de red.',cmdCodes) +
+    section('Navegación y validaciones web','Continúa con las pruebas de navegación, capturas web y validaciones visuales.',webCodes) +
+    section('Pruebas adicionales','Pruebas complementarias configuradas manualmente.',otherCodes);
+}
+function renderEvidenceItems(kind,code,items){return (items||[]).map((x,i)=>`<div class="et-preview-item"><img src="${esc(x.dataUrl||x.url||'')}" alt="evidencia"><button type="button" class="et-remove-thumb" title="Eliminar imagen" onclick="eliminarEvidenciaAdjunta('${esc(kind)}','${esc(code)}',${i})">×</button></div>`).join('');}
+
+window.eliminarEvidenciaAdjunta=function(kind,code,index){
+  index=Number(index);
+  if(Number.isNaN(index)||index<0) return;
+  if(kind==='test'){
+    const arr=etState.tests?.[code]?.evidencias||[];
+    if(index>=arr.length) return;
+    arr.splice(index,1);
+    const p=document.getElementById('etPrev_'+code);
+    if(p)p.innerHTML=renderEvidenceItems('test',code,arr);
+  }else if(kind==='photo'){
+    const arr=etState.photos?.[code]||[];
+    if(index>=arr.length) return;
+    arr.splice(index,1);
+    const p=document.getElementById('etPhotoPrev_'+code);
+    if(p)p.innerHTML=renderEvidenceItems('photo',code,arr);
+  }else{return;}
+  actualizarProgresoEntrega();
+  etSetMsg('Imagen eliminada correctamente.','ok');
+};
+window.actualizarTextoPrueba=function(code,v){etState.tests[code].resultado=v;actualizarProgresoEntrega();};
+window.actualizarObsPrueba=function(code,v){etState.tests[code].observaciones=v;};
+window.marcarEstadoPrueba=function(code,s){etState.tests[code].estado=s;renderPruebasEntrega();actualizarProgresoEntrega();};
+window.abrirPaginaEntrega=function(url){window.open(url,'_blank','noopener');};
+
+async function filesToEvidence(files){
+  const out=[];
+  for(const f of Array.from(files||[])){
+    const dataUrl=await new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(f);});
+    out.push({file:f,dataUrl,name:f.name});
+  }
+  return out;
+}
+
+function imagenesDesdePortapapeles(event){
+  const dt=event?.clipboardData;
+  if(!dt) return [];
+  const files=[];
+  for(const item of Array.from(dt.items||[])){
+    if(item.kind==='file' && String(item.type||'').startsWith('image/')){
+      const f=item.getAsFile();
+      if(f) files.push(f);
+    }
+  }
+  if(!files.length){
+    for(const f of Array.from(dt.files||[])){
+      if(String(f.type||'').startsWith('image/')) files.push(f);
+    }
+  }
+  return files;
+}
+
+function nombreCapturaPegada(file,prefijo='captura'){
+  const ext=(String(file?.type||'').split('/')[1]||'png').replace('jpeg','jpg');
+  const d=new Date();
+  const stamp=[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0'),String(d.getHours()).padStart(2,'0'),String(d.getMinutes()).padStart(2,'0'),String(d.getSeconds()).padStart(2,'0')].join('');
+  return `${prefijo}_${stamp}.${ext}`;
+}
+
+async function convertirClipboardAEvidencias(files,prefijo){
+  const out=[];
+  for(const f of files){
+    const dataUrl=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(f);});
+    out.push({file:f,dataUrl,name:nombreCapturaPegada(f,prefijo)});
+  }
+  return out;
+}
+
+window.pegarImagenPrueba=async function(code,event){
+  const files=imagenesDesdePortapapeles(event);
+  if(!files.length){
+    etSetMsg('El portapapeles no contiene una imagen. Haz una captura y vuelve a usar Ctrl+V.','err');
+    return;
+  }
+  event.preventDefault();
+  const add=await convertirClipboardAEvidencias(files,'captura_'+code);
+  const t=etState.tests[code]||etDefaultTest(code);
+  etState.tests[code]=t;
+  t.evidencias=[...(t.evidencias||[]),...add];
+  const p=document.getElementById('etPrev_'+code);
+  if(p)p.innerHTML=renderEvidenceItems('test',code,t.evidencias);
+  actualizarProgresoEntrega();
+  etSetMsg(`${add.length} imagen(es) pegada(s) en ${ET_TEST_DEFS[code]?.nombre||code}.`,'ok');
+};
+
+window.pegarFotoEntrega=async function(code,event){
+  const files=imagenesDesdePortapapeles(event);
+  if(!files.length){
+    etSetMsg('El portapapeles no contiene una imagen. Haz una captura y vuelve a usar Ctrl+V.','err');
+    return;
+  }
+  event.preventDefault();
+  const add=await convertirClipboardAEvidencias(files,'foto_'+code);
+  etState.photos[code]=[...(etState.photos[code]||[]),...add];
+  const p=document.getElementById('etPhotoPrev_'+code);
+  if(p)p.innerHTML=renderEvidenceItems('photo',code,etState.photos[code]);
+  actualizarProgresoEntrega();
+  etSetMsg(`${add.length} imagen(es) pegada(s) en ${ET_PHOTO_DEFS[code]?.nombre||code}.`,'ok');
+};
+
+window.cargarEvidenciaPrueba=async function(code,files){
+  const add=await filesToEvidence(files);etState.tests[code].evidencias=[...(etState.tests[code].evidencias||[]),...add];
+  const p=document.getElementById('etPrev_'+code);if(p)p.innerHTML=renderEvidenceItems('test',code,etState.tests[code].evidencias);actualizarProgresoEntrega();
+};
+
+function renderFotosEntrega(){
+  const c=document.getElementById('etPhotosContainer'); if(!c)return;
+  c.innerHTML=Object.entries(ET_PHOTO_DEFS).map(([code,d])=>`<div class="et-photo-card"><h5>${esc(d.nombre)}</h5><p>${esc(d.desc)}</p>
+    <input type="file" accept="image/*" capture="environment" multiple onchange="cargarFotoEntrega('${code}',this.files)">
+    <div class="et-paste-zone" tabindex="0" data-paste-photo="${esc(code)}" onpaste="pegarFotoEntrega('${code}',event)" title="Haz clic aquí y luego Ctrl+V">
+      <span class="et-paste-icon">📋</span><span><span class="et-paste-main">Pegar imagen aquí</span><span class="et-paste-sub">· clic y Ctrl+V</span></span>
+    </div>
+    <div id="etPhotoPrev_${code}" class="et-evidence-previews">${renderEvidenceItems('photo',code,etState.photos[code]||[])}</div></div>`).join('');
+}
+window.cargarFotoEntrega=async function(code,files){
+  const add=await filesToEvidence(files);etState.photos[code]=[...(etState.photos[code]||[]),...add];
+  document.getElementById('etPhotoPrev_'+code).innerHTML=renderEvidenceItems('photo',code,etState.photos[code]);actualizarProgresoEntrega();
+};
+
+window.irPasoEntrega=function(n){
+  etState.paso=Math.max(1,Math.min(4,Number(n)||1));
+  document.querySelectorAll('.et-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('etPanel'+etState.paso)?.classList.add('active');
+  document.querySelectorAll('.et-step').forEach(s=>{const sn=Number(s.dataset.etStep);s.classList.toggle('active',sn===etState.paso);s.classList.toggle('done',sn<etState.paso);});
+  if(etState.paso===2)renderFotosEntrega();
+  if(etState.paso===3)renderPruebasEntrega();
+  if(etState.paso===4)renderRevisionEntrega();
+};
+window.pasoSiguienteEntrega=function(){irPasoEntrega(Math.min(4,etState.paso+1));};
+window.pasoAnteriorEntrega=function(){irPasoEntrega(Math.max(1,etState.paso-1));};
+
+function actualizarProgresoEntrega(){
+  const req=etSelectedArray(),done=req.filter(c=>etTestComplete(etState.tests[c])).length;
+  const photosDone=Object.keys(ET_PHOTO_DEFS).filter(c=>(etState.photos[c]||[]).length).length;
+  const total=req.length+Object.keys(ET_PHOTO_DEFS).length,comp=done+photosDone,pct=total?Math.round(comp*100/total):0;
+  const b=document.getElementById('etProgressBar');if(b)b.style.width=pct+'%';
+  const t=document.getElementById('etProgressText');if(t)t.textContent=`${pct}% completado · ${done}/${req.length} pruebas · ${photosDone}/5 evidencias físicas`;
+  if(etState.paso===4)renderRevisionEntrega();
+}
+function renderRevisionEntrega(){
+  const req=etSelectedArray(),done=req.filter(c=>etTestComplete(etState.tests[c])).length,photos=Object.keys(ET_PHOTO_DEFS).filter(c=>(etState.photos[c]||[]).length).length;
+  const total=req.length+5,pct=total?Math.round((done+photos)*100/total):0;
+  [['etRevReq',req.length],['etRevOk',done],['etRevPhotos',photos],['etRevPct',pct+'%']].forEach(([id,v])=>{const e=document.getElementById(id);if(e)e.textContent=v;});
+  const tb=document.getElementById('etReviewBody');if(tb)tb.innerHTML=req.map(c=>{const t=etState.tests[c],d=ET_TEST_DEFS[c];return `<tr><td><b>${esc(d.nombre)}</b></td><td><span class="et-status ${etStatusClass(t.estado)}">${esc(t.estado)}</span></td><td>${esc(etResultShort(t)||'—')}</td><td>${(t.evidencias||[]).length} archivo(s)</td></tr>`;}).join('');
+}
+
+window.guardarUrlAgente=function(){localStorage.setItem('releva_agent_url',document.getElementById('etAgentUrl')?.value||'');};
+function etAgentUrl(){return (document.getElementById('etAgentUrl')?.value||localStorage.getItem('releva_agent_url')||'http://127.0.0.1:8765').replace(/\/+$/,'');}
+async function etFetchAgent(path,payload,timeout=130000){
+  const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),timeout);
+  try{
+    const r=await fetch(etAgentUrl()+path,{method:payload?'POST':'GET',headers:payload?{'Content-Type':'application/json'}:{},body:payload?JSON.stringify(payload):undefined,signal:ctrl.signal});
+    const j=await r.json();if(!r.ok||j.ok===false)throw new Error(j.error||('HTTP '+r.status));return j;
+  }finally{clearTimeout(timer);}
+}
+window.verificarAgenteEntrega=async function(){
+  const dot=document.getElementById('etAgentDot'),txt=document.getElementById('etAgentStatus');txt.textContent='Verificando...';
+  try{const j=await etFetchAgent('/health',null,5000);dot.className='et-agent-dot ok';txt.textContent='Agente conectado · '+(j.platform||'Windows');}
+  catch(e){dot.className='et-agent-dot bad';txt.textContent='Agente no disponible. Las pruebas automáticas quedan deshabilitadas; puedes registrar resultados manualmente.';}
+};
+
+window.ejecutarPruebaEntrega=async function(code){
+  const t=etState.tests[code];if(!t)return;
+  etSetMsg('Ejecutando '+ET_TEST_DEFS[code].nombre+'...');
+  try{
+    let payload={test:ET_TEST_DEFS[code].auto};
+    if(code==='ping_servicio'){
+      payload.target=(document.getElementById('etTarget_'+code)?.value||document.getElementById('etPingServicioDestino')?.value||'').trim();payload.count=20;
+      if(!payload.target)throw new Error('Debes indicar el destino/IP del ping.');
+    }else if(code==='ping_gateway'){
+      payload.target=(document.getElementById('etTarget_'+code)?.value||t.resultado_json?.target||'').trim();payload.count=20;
+      if(!payload.target)throw new Error('Ejecuta primero ipconfig o escribe la puerta de enlace.');
+    }else if(code==='ping_internet'){payload.target='8.8.8.8';payload.count=100;}
+    else if(code==='tracert'){payload.target='8.8.8.8';}
+    else if(code==='saturacion'){
+      payload.server=(document.getElementById('etIperfServer')?.value||'').trim();payload.duration=Number(document.getElementById('etIperfDuration')?.value||15);
+      if(!payload.server)throw new Error('Indica el servidor iPerf3 de pruebas.');
+    }
+    const j=await etFetchAgent('/run',payload);
+    t.resultado_json=j.result||{};
+    t.resultado=j.raw||JSON.stringify(j.result||{},null,2);
+    if(j.image_base64){
+      const mime=j.image_mime||'image/png';
+      const dataUrl='data:'+mime+';base64,'+j.image_base64;
+      const nombre=j.image_name||('CMD_'+code+'.png');
+      const idx=(t.evidencias||[]).findIndex(ev=>ev.name===nombre);
+      if(idx>=0) t.evidencias[idx]={dataUrl,name:nombre};
+      else t.evidencias=[...(t.evidencias||[]),{dataUrl,name:nombre}];
+    }
+    if(code==='ipconfig'&&j.result?.gateway){
+      const pg=etState.tests.ping_gateway;pg.resultado_json={...(pg.resultado_json||{}),target:j.result.gateway};
+    }
+    if(['ping_servicio','ping_gateway','ping_internet'].includes(code))t.estado=Number(j.result?.loss_pct||0)===0?'APROBADA':'FALLIDA';
+    else t.estado='EJECUTADA';
+    etSetMsg('Prueba ejecutada correctamente.','ok');renderPruebasEntrega();actualizarProgresoEntrega();
+  }catch(e){t.estado='PENDIENTE';etSetMsg('No fue posible ejecutar: '+e.message,'err');}
+};
+
+window.capturarWebEntrega=async function(code,url){
+  etSetMsg('Abriendo y capturando '+url+'...');
+  try{
+    const j=await etFetchAgent('/run',{test:'webshot',url},60000);
+    if(!j.image_base64)throw new Error('El agente no devolvió captura.');
+    etState.tests[code].evidencias.push({dataUrl:'data:'+(j.image_mime||'image/png')+';base64,'+j.image_base64,name:j.image_name||(code+'.png')});
+    etState.tests[code].resultado='Página cargada y evidencia capturada automáticamente.';
+    etState.tests[code].resultado_json={url,loaded:true};
+    etState.tests[code].estado='APROBADA';
+    renderPruebasEntrega();actualizarProgresoEntrega();etSetMsg('Captura web agregada.','ok');
+  }catch(e){etSetMsg('Captura automática no disponible: '+e.message+'. Puedes abrir la página y adjuntar captura manual.','err');}
+};
+
+function dataUrlToBlob(dataUrl){
+  const p=dataUrl.split(','),mime=(p[0].match(/:(.*?);/)||[])[1]||'image/png',bin=atob(p[1]),arr=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+  return new Blob([arr],{type:mime});
+}
+
+function extensionDesdeMime(mime){
+  const m=String(mime||'').toLowerCase();
+  if(m.includes('png')) return '.png';
+  if(m.includes('webp')) return '.webp';
+  if(m.includes('pdf')) return '.pdf';
+  return '.jpg';
+}
+
+function nombreEvidenciaEntrega(entregaId,group,item,index,blob){
+  const r=etState.row||{};
+  const base=[
+    'ENTREGA_TECNICA',
+    r.id_cliente||'SIN_ID',
+    r.id_cambio||'SIN_CAMBIO',
+    String(group||'evidencia').replace(/[\/\\]+/g,'_'),
+    String(index+1).padStart(2,'0')
+  ].map(etSafeName).join('__');
+  const original=String(item?.name||item?.file?.name||'').trim();
+  const ext=(original.match(/\.[a-z0-9]{2,5}$/i)||[])[0] || extensionDesdeMime(blob?.type);
+  return `${base}${ext}`;
+}
+
+
+async function subirEvidenciaViaAgente(entregaId,group,blob,fileName){
+  const form=new FormData();
+  form.append('data',blob,fileName);
+  form.append('fileName',fileName);
+  form.append('entrega_id',String(entregaId||''));
+  form.append('instalacion_id',String(etState.row?.id||''));
+  form.append('id_cliente',String(etState.row?.id_cliente||''));
+  form.append('id_cambio',String(etState.row?.id_cambio||''));
+  form.append('cliente',String(etState.row?.cliente||''));
+  form.append('grupo',String(group||''));
+  form.append('origen','instalaciones_entrega_tecnica');
+
+  const ctrl=new AbortController();
+  const timer=setTimeout(()=>ctrl.abort(),120000);
+  try{
+    const resp=await fetch(etAgentUrl()+'/upload-evidence',{
+      method:'POST',
+      body:form,
+      signal:ctrl.signal
+    });
+    const raw=await resp.text();
+    let json={};
+    try{json=JSON.parse(raw);}
+    catch(_){throw new Error('El agente respondió un formato no válido: '+String(raw||'').slice(0,180));}
+
+    if(!resp.ok || json.ok===false || json.success===false){
+      throw new Error(json.error || json.message || ('HTTP '+resp.status+' desde agente/n8n'));
+    }
+    const url=json.downloadLink || json.directUrl || json.url || json.webViewLink;
+    if(!url) throw new Error('n8n subió el archivo pero no devolvió una URL.');
+    return {
+      url,
+      webViewLink:json.webViewLink || json.url || url,
+      downloadLink:json.downloadLink || json.directUrl || url,
+      fileId:json.fileId || json.drive_id || null,
+      name:json.name || fileName
+    };
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
+async function subirEvidenciaN8n(entregaId,group,item,index){
+  if(item?.url && !item?.file && !item?.dataUrl){
+    return {
+      url:item.url,
+      webViewLink:item.webViewLink||item.url,
+      downloadLink:item.downloadLink||item.url,
+      fileId:item.fileId||null,
+      name:item.name||''
+    };
+  }
+
+  const blob=item?.file || (item?.dataUrl ? dataUrlToBlob(item.dataUrl) : null);
+  if(!blob) throw new Error('La evidencia no contiene un archivo válido.');
+
+  const fileName=nombreEvidenciaEntrega(entregaId,group,item,index,blob);
+  const form=new FormData();
+  form.append('data',blob,fileName);
+  form.append('fileName',fileName);
+  form.append('entrega_id',String(entregaId||''));
+  form.append('instalacion_id',String(etState.row?.id||''));
+  form.append('id_cliente',String(etState.row?.id_cliente||''));
+  form.append('id_cambio',String(etState.row?.id_cambio||''));
+  form.append('cliente',String(etState.row?.cliente||''));
+  form.append('grupo',String(group||''));
+  form.append('origen','instalaciones_entrega_tecnica');
+
+  // Cuando el HTML se abre localmente (file://), el navegador envía Origin:null
+  // y el proxy/webhook corporativo puede responder 403. En ese caso usamos
+  // El agente local funciona como proxy y reenvía el multipart a n8n sin CORS.
+  if(location.protocol==='file:'){
+    return await subirEvidenciaViaAgente(entregaId,group,blob,fileName);
+  }
+
+  let resp;
+  try{
+    resp=await fetch(etUploadWebhookUrl(),{
+      method:'POST',
+      body:form
+    });
+  }catch(err){
+    // En escritorio publicado también intentamos el agente como respaldo.
+    try{
+      return await subirEvidenciaViaAgente(entregaId,group,blob,fileName);
+    }catch(_){
+      throw new Error('No fue posible contactar el webhook de n8n ni el agente local. '+(err.message||err));
+    }
+  }
+
+  // Si el navegador recibe 401/403 desde n8n, intentamos por el agente.
+  if(resp.status===401 || resp.status===403){
+    try{
+      return await subirEvidenciaViaAgente(entregaId,group,blob,fileName);
+    }catch(agentErr){
+      throw new Error('n8n respondió '+resp.status+' y el agente no pudo reenviar la evidencia: '+agentErr.message);
+    }
+  }
+
+  const raw=await resp.text();
+  let json={};
+  try{ json=JSON.parse(raw); }
+  catch(_){
+    try{ json=JSON.parse(String(raw||'').replace(/^=+/,'').trim()); }
+    catch(__){ throw new Error(`n8n respondió un formato no válido: ${String(raw||'').slice(0,180)}`); }
+  }
+
+  if(!resp.ok || json.ok===false || json.success===false){
+    throw new Error(json.error || json.message || `Error HTTP ${resp.status} subiendo evidencia.`);
+  }
+
+  const url=json.downloadLink || json.directUrl || json.url || json.webViewLink;
+  if(!url) throw new Error('n8n subió el archivo pero no devolvió una URL.');
+
+  return {
+    url,
+    webViewLink:json.webViewLink || json.url || url,
+    downloadLink:json.downloadLink || json.directUrl || url,
+    fileId:json.fileId || json.drive_id || null,
+    name:json.name || fileName
+  };
+}
+
+async function subirListaEvidencias(entregaId,group,items){
+  const out=[];
+  let i=0;
+  for(const it of (items||[])){
+    etSetMsg(`Subiendo a Google Drive vía n8n: ${group} (${i+1}/${items.length})...`);
+    out.push(await subirEvidenciaN8n(entregaId,group,it,i));
+    i++;
+  }
+  return out;
+}
+
+async function subirListaEvidenciasTolerante(entregaId,group,items){
+  const ok=[];
+  const failed=[];
+  let i=0;
+  for(const it of (items||[])){
+    // Las evidencias que ya tienen URL no necesitan volver a cargarse.
+    if(it?.url && !it?.file && !it?.dataUrl){
+      ok.push({...it,url:it.url}); i++; continue;
+    }
+    try{
+      etSetMsg(`Subiendo evidencia ${i+1}/${items.length}: ${group}...`);
+      const uploaded=await subirEvidenciaN8n(entregaId,group,it,i);
+      ok.push({...uploaded,dataUrl:it?.dataUrl||null});
+    }catch(err){
+      console.warn('Evidencia pendiente de subir',group,i,err);
+      failed.push({item:it,index:i,error:etFriendlyErrorText(err?.message||err)});
+    }
+    i++;
+  }
+  return {ok,failed};
+}
+
+async function cargarEntregaTecnicaExistente(){
+  try{
+    const client=await resolveClient();
+    const {data:e,error}=await client.from('instalaciones_entregas').select('*').eq('instalacion_id',String(etState.row.id)).maybeSingle();
+    if(error)throw error;
+    if(!e){etState.loaded=true;return;}
+    etState.entrega=e;
+    document.getElementById('etTipoServicio').value=e.tipo_servicio||'CAPA2';
+    document.getElementById('etCapacidad').value=e.capacidad_mbps??etParseCapacidad(etState.row.capacidad);
+    document.getElementById('etRequiereRFC').checked=!!e.requiere_rfc;
+    document.getElementById('etTecnico').value=e.tecnico||localStorage.getItem('user_email')||'';
+    document.getElementById('etPotenciaRx').value=e.datos_adicionales?.potencia_rx_dbm??'';
+    document.getElementById('etLongitudOnda').value=String(e.datos_adicionales?.longitud_onda_nm||1490);
+    document.getElementById('etObservacionesEntrega').value=e.observaciones||'';
+    const {data:ps,error:pe}=await client.from('instalaciones_pruebas').select('*').eq('entrega_id',e.id);if(pe)throw pe;
+    etState.selected.clear();
+    (ps||[]).forEach(p=>{if(p.requerida)etState.selected.add(p.codigo);etState.tests[p.codigo]={codigo:p.codigo,estado:p.estado||'PENDIENTE',resultado:p.resultado_texto||'',resultado_json:p.resultado_json||{},observaciones:p.observaciones||'',evidencias:(p.evidencias||[]).map(url=>({url}))};});
+    const {data:ev,error:ee}=await client.from('instalaciones_evidencias').select('*').eq('entrega_id',e.id);if(ee)throw ee;
+    (ev||[]).forEach(x=>{if(etState.photos[x.tipo])etState.photos[x.tipo]=(x.archivos||[]).map(url=>({url}));});
+    document.querySelectorAll('[data-et-test]').forEach(ch=>ch.checked=etState.selected.has(ch.dataset.etTest));
+    renderPruebasEntrega();renderFotosEntrega();etState.loaded=true;actualizarProgresoEntrega();
+    etSetMsg('Se cargó una entrega técnica existente.','ok');
+  }catch(err){
+    console.warn(err);etState.loaded=true;
+    if(/does not exist|relation/i.test(String(err.message||err)))etSetMsg('Falta crear las tablas del módulo de entrega técnica. Ejecuta el SQL suministrado.','err');
+  }
+}
+
+function validarEntregaFinal(){
+  const req=etSelectedArray();
+  if(!req.length)return 'Selecciona al menos una prueba requerida.';
+  const pend=req.filter(c=>!etTestComplete(etState.tests[c]));
+  if(pend.length)return `Faltan ${pend.length} prueba(s) por ejecutar/aprobar/fallar.`;
+  const webPend=req.filter(c=>c.startsWith('nav_')&&!(etState.tests[c].evidencias||[]).length);
+  if(webPend.length)return 'Las pruebas de navegación requieren evidencia de captura.';
+  if(!etRequiredPhysicalComplete())return 'Debes adjuntar las cinco evidencias físicas obligatorias.';
+  return '';
+}
+
+window.guardarEntregaTecnica=async function(finalizar=false){
+  const saveBtnState=[];
+  try{
+    if(finalizar){
+      const v=validarEntregaFinal();
+      if(v){etSetMsg(v,'err');return;}
+    }
+
+    document.querySelectorAll('.et-footer-actions button,.et-test-actions button').forEach(btn=>{
+      saveBtnState.push([btn,btn.disabled]); btn.disabled=true;
+    });
+
+    etSetMsg('Guardando información de la entrega...');
+    const client=await resolveClient(),r=etState.row;
+
+    // Primero SIEMPRE se guarda como BORRADOR. Solo se cambia a FINALIZADA
+    // después de confirmar que todas las evidencias se cargaron correctamente.
+    const basePayload={
+      instalacion_id:String(r.id),
+      id_cliente:r.id_cliente||null,
+      id_cambio:r.id_cambio||null,
+      id_tarea:r.id_tarea||null,
+      cliente:r.cliente||null,
+      tipo_servicio:document.getElementById('etTipoServicio').value,
+      capacidad_mbps:Number(document.getElementById('etCapacidad').value||0)||null,
+      requiere_internet:document.getElementById('etTipoServicio').value==='INTERNET',
+      requiere_rfc:document.getElementById('etRequiereRFC').checked,
+      tecnico:(document.getElementById('etTecnico').value||'').trim()||null,
+      estado:'BORRADOR',
+      observaciones:(document.getElementById('etObservacionesEntrega').value||'').trim()||null,
+      datos_adicionales:{
+        potencia_rx_dbm:Number(document.getElementById('etPotenciaRx').value)||null,
+        longitud_onda_nm:Number(document.getElementById('etLongitudOnda').value)||1490
+      },
+      fecha_finalizacion:null,
+      updated_at:new Date().toISOString()
+    };
+
+    const {data:e,error}=await client.from('instalaciones_entregas')
+      .upsert(basePayload,{onConflict:'instalacion_id'}).select().single();
+    if(error)throw error;
+    etState.entrega=e;
+
+    let totalFallidas=0;
+    const detallesFallos=[];
+
+    // Guardar pruebas aunque alguna evidencia falle.
+    for(const code of etSelectedArray()){
+      const t=etState.tests[code];
+      const anteriores=t.evidencias||[];
+      const carga=await subirListaEvidenciasTolerante(e.id,'pruebas/'+code,anteriores);
+      totalFallidas+=carga.failed.length;
+      carga.failed.forEach(f=>detallesFallos.push(`${ET_TEST_DEFS[code].nombre}: ${f.error}`));
+
+      const urls=carga.ok.map(x=>x.url).filter(Boolean);
+      // Conserva en memoria las evidencias pendientes para que el usuario pueda reintentar
+      // sin tener que volver a seleccionarlas mientras no cierre/recargue la página.
+      const pendientes=carga.failed.map(f=>f.item);
+      t.evidencias=[...carga.ok,...pendientes];
+
+      const {error:pe}=await client.from('instalaciones_pruebas').upsert({
+        entrega_id:e.id,codigo:code,nombre:ET_TEST_DEFS[code].nombre,requerida:true,
+        estado:t.estado,resultado_texto:t.resultado||null,resultado_json:t.resultado_json||{},
+        observaciones:t.observaciones||null,evidencias:urls,updated_at:new Date().toISOString()
+      },{onConflict:'entrega_id,codigo'});
+      if(pe)throw pe;
+    }
+
+    // Guardar fotografías físicas aunque alguna subida falle.
+    for(const tipo of Object.keys(ET_PHOTO_DEFS)){
+      const anteriores=etState.photos[tipo]||[];
+      const carga=await subirListaEvidenciasTolerante(e.id,'fisicas/'+tipo,anteriores);
+      totalFallidas+=carga.failed.length;
+      carga.failed.forEach(f=>detallesFallos.push(`${ET_PHOTO_DEFS[tipo].nombre}: ${f.error}`));
+
+      const urls=carga.ok.map(x=>x.url).filter(Boolean);
+      const pendientes=carga.failed.map(f=>f.item);
+      etState.photos[tipo]=[...carga.ok,...pendientes];
+
+      const {error:ee}=await client.from('instalaciones_evidencias').upsert({
+        entrega_id:e.id,tipo,nombre:ET_PHOTO_DEFS[tipo].nombre,
+        archivos:urls,updated_at:new Date().toISOString()
+      },{onConflict:'entrega_id,tipo'});
+      if(ee)throw ee;
+    }
+
+    renderPruebasEntrega();renderFotosEntrega();actualizarProgresoEntrega();
+
+    if(totalFallidas>0){
+      console.warn('Evidencias pendientes:',detallesFallos);
+      etSetMsg(
+        `Borrador guardado en Supabase. ${totalFallidas} evidencia(s) no pudieron subirse a Drive; quedan pendientes para reintentar sin cerrar esta ventana.`,
+        'err'
+      );
+      return;
+    }
+
+    if(finalizar){
+      const {error:finalError}=await client.from('instalaciones_entregas').update({
+        estado:'FINALIZADA',fecha_finalizacion:new Date().toISOString(),updated_at:new Date().toISOString()
+      }).eq('id',e.id);
+      if(finalError)throw finalError;
+      if(etState.entrega) etState.entrega.estado='FINALIZADA';
+      etSetMsg('Entrega finalizada y evidencias guardadas correctamente.','ok');
+    }else{
+      etSetMsg('Borrador guardado correctamente.','ok');
+    }
+  }catch(err){
+    console.error(err);
+    etSetMsg('Error guardando entrega técnica: '+(err?.message||err),'err');
+  }finally{
+    saveBtnState.forEach(([btn,old])=>{if(btn)btn.disabled=old;});
+  }
+};
+
+
+function etPdfEstadoColor(estado){
+  const e=String(estado||'').toUpperCase();
+  if(e==='APROBADA') return [22,163,74];
+  if(e==='FALLIDA') return [220,38,38];
+  if(e==='EJECUTADA') return [2,132,199];
+  return [202,138,4];
+}
+
+async function etPdfDataUrl(item){
+  if(!item) return null;
+  if(item.dataUrl && /^data:image\//i.test(item.dataUrl)) return item.dataUrl;
+  const url=item.url||item.downloadLink||item.webViewLink||'';
+  if(!url) return null;
+  try{
+    const resp=await fetch(url,{cache:'no-store'});
+    if(!resp.ok) return null;
+    const blob=await resp.blob();
+    if(!String(blob.type||'').startsWith('image/')) return null;
+    return await new Promise((resolve,reject)=>{
+      const r=new FileReader();
+      r.onload=()=>resolve(r.result);
+      r.onerror=reject;
+      r.readAsDataURL(blob);
+    });
+  }catch(_){
+    return null;
+  }
+}
+
+function etPdfImageFormat(dataUrl){
+  const m=String(dataUrl||'').match(/^data:image\/(png|jpeg|jpg|webp)/i);
+  const f=(m?.[1]||'jpeg').toLowerCase();
+  if(f==='png') return 'PNG';
+  if(f==='webp') return 'WEBP';
+  return 'JPEG';
+}
+
+function etPdfAddHeader(doc,pageNo,totalPages){
+  const W=doc.internal.pageSize.getWidth();
+  doc.setFillColor(7,31,56);
+  doc.rect(0,0,W,40,'F');
+  doc.setFillColor(249,115,22);
+  doc.rect(0,40,W,3,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(12);
+  doc.text('LIBERTY NETWORKS',28,18);
+  doc.setFontSize(7.5);
+  doc.setFont('helvetica','normal');
+  doc.text('ACTA DE ENTREGA Y PRUEBAS DEL SERVICIO',28,30);
+  doc.setTextColor(100,116,139);
+  doc.setFontSize(7);
+  doc.text('Instalaciones FO · Entrega técnica',W-28,18,{align:'right'});
+  if(totalPages){
+    doc.text('Página '+pageNo+' de '+totalPages,W-28,30,{align:'right'});
+  }
+}
+
+function etPdfAddFooter(doc){
+  const W=doc.internal.pageSize.getWidth();
+  const H=doc.internal.pageSize.getHeight();
+  doc.setDrawColor(226,232,240);
+  doc.line(28,H-28,W-28,H-28);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(6.5);
+  doc.setTextColor(100,116,139);
+  doc.text('Documento generado por el módulo Entrega Técnica · Instalaciones FO',28,H-16);
+  doc.text(new Date().toLocaleString('es-CO'),W-28,H-16,{align:'right'});
+}
+
+function etPdfSectionTitle(doc,title,y){
+  const W=doc.internal.pageSize.getWidth();
+  doc.setFillColor(241,245,249);
+  doc.roundedRect(28,y,W-56,22,4,4,'F');
+  doc.setFillColor(14,116,144);
+  doc.roundedRect(28,y,5,22,3,3,'F');
+  doc.setTextColor(15,23,42);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(10);
+  doc.text(String(title||''),41,y+14);
+  return y+31;
+}
+
+function etPdfEnsureSpace(doc,y,needed=80){
+  const H=doc.internal.pageSize.getHeight();
+  if(y+needed > H-45){
+    doc.addPage();
+    etPdfAddHeader(doc,doc.getNumberOfPages());
+    etPdfAddFooter(doc);
+    return 58;
+  }
+  return y;
+}
+
+async function etPdfAddEvidenceImage(doc,item,x,y,maxW,maxH,caption){
+  const data=await etPdfDataUrl(item);
+  if(!data){
+    doc.setDrawColor(203,213,225);
+    doc.setFillColor(248,250,252);
+    doc.roundedRect(x,y,maxW,maxH,5,5,'FD');
+    doc.setTextColor(100,116,139);
+    doc.setFontSize(7);
+    doc.text('Evidencia almacenada en Drive',x+maxW/2,y+maxH/2-3,{align:'center'});
+    if(item?.url){
+      doc.setTextColor(2,132,199);
+      const short=doc.splitTextToSize(String(item.url),maxW-12);
+      doc.text(short.slice(0,2),x+maxW/2,y+maxH/2+9,{align:'center'});
+    }
+    return;
+  }
+  try{
+    const props=doc.getImageProperties(data);
+    const ratio=Math.min(maxW/props.width,maxH/props.height);
+    const w=props.width*ratio,h=props.height*ratio;
+    doc.setFillColor(248,250,252);
+    doc.setDrawColor(203,213,225);
+    doc.roundedRect(x,y,maxW,maxH,5,5,'FD');
+    doc.addImage(data,etPdfImageFormat(data),x+(maxW-w)/2,y+(maxH-h)/2,w,h,undefined,'FAST');
+    if(caption){
+      doc.setFontSize(6.5);
+      doc.setTextColor(71,85,105);
+      doc.text(String(caption),x,y+maxH+9);
+    }
+  }catch(err){
+    console.warn('No se pudo insertar evidencia en PDF',err);
+  }
+}
+
+window.generarPdfEntregaTecnica=async function(){
+  if(!window.jspdf?.jsPDF){
+    alert('No se pudo cargar jsPDF. Verifica la conexión a Internet y vuelve a intentar.');
+    return;
+  }
+
+  renderRevisionEntrega();
+
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;z-index:2147483647;background:rgba(3,10,22,.94);display:flex;align-items:center;justify-content:center;color:#fff;font-family:Arial,sans-serif';
+  overlay.innerHTML='<div style="text-align:center;padding:24px 34px;border:1px solid rgba(125,211,252,.35);border-radius:16px;background:#0b1931"><div style="font-size:18px;font-weight:900;margin-bottom:8px">Generando acta profesional...</div><div style="font-size:11px;color:#bfdbfe">Organizando resultados, fotografías y evidencias.</div></div>';
+  document.body.appendChild(overlay);
+
+  try{
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:'portrait',unit:'pt',format:'a4',compress:true});
+    const W=doc.internal.pageSize.getWidth();
+    const H=doc.internal.pageSize.getHeight();
+    const margin=28;
+    const r=etState.row||{};
+    const tests=etSelectedArray();
+    const photoKeys=Object.keys(ET_PHOTO_DEFS);
+    const completed=tests.filter(c=>etTestComplete(etState.tests[c])).length;
+    const physicalDone=photoKeys.filter(c=>(etState.photos[c]||[]).length>0).length;
+    const totalItems=tests.length+photoKeys.length;
+    const pct=totalItems?Math.round(((completed+physicalDone)/totalItems)*100):0;
+    const cap=document.getElementById('etCapacidad')?.value||r.capacidad||'';
+    const power=document.getElementById('etPotenciaRx')?.value||'';
+    const tecnico=document.getElementById('etTecnico')?.value||'';
+    const tipo=document.getElementById('etTipoServicio')?.value||'';
+    const observaciones=document.getElementById('etObservacionesEntrega')?.value||'Sin observaciones';
+
+    etPdfAddHeader(doc,1);
+    etPdfAddFooter(doc);
+
+    let y=60;
+
+    // Portada / título
+    doc.setTextColor(7,31,56);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(20);
+    doc.text('Acta de entrega técnica',margin,y);
+    y+=18;
+    doc.setFontSize(10);
+    doc.setFont('helvetica','normal');
+    doc.setTextColor(71,85,105);
+    doc.text('Validación integral del servicio, pruebas de conectividad y evidencias de instalación',margin,y);
+    y+=20;
+
+    // Datos principales
+    doc.autoTable({
+      startY:y,
+      margin:{left:margin,right:margin},
+      theme:'grid',
+      styles:{font:'helvetica',fontSize:8,cellPadding:6,textColor:[15,23,42],lineColor:[226,232,240],lineWidth:.6},
+      columnStyles:{0:{fontStyle:'bold',fillColor:[248,250,252],cellWidth:72},2:{fontStyle:'bold',fillColor:[248,250,252],cellWidth:72}},
+      body:[
+        ['Cliente',r.cliente||'—','ID Cliente',r.id_cliente||'—'],
+        ['ID Cambio',r.id_cambio||'—','ID Tarea',r.id_tarea||'—'],
+        ['Tipo de servicio',tipo||'—','Capacidad',cap?cap+' Mbps':'—'],
+        ['Dirección',r.direccion||'—','Técnico',tecnico||'—'],
+        ['Potencia RX',power?power+' dBm':'—','Fecha',new Date().toLocaleString('es-CO')]
+      ]
+    });
+    y=doc.lastAutoTable.finalY+18;
+
+    // KPIs
+    const cards=[
+      ['Pruebas requeridas',String(tests.length),[14,116,144]],
+      ['Pruebas completadas',String(completed),[22,163,74]],
+      ['Evidencias físicas',physicalDone+'/5',[37,99,235]],
+      ['Avance total',pct+'%',[249,115,22]]
+    ];
+    const gap=8;
+    const cw=(W-margin*2-gap*3)/4;
+    cards.forEach((c,i)=>{
+      const x=margin+i*(cw+gap);
+      doc.setFillColor(248,250,252);doc.setDrawColor(226,232,240);doc.roundedRect(x,y,cw,48,6,6,'FD');
+      doc.setFillColor(...c[2]);doc.roundedRect(x,y,5,48,4,4,'F');
+      doc.setTextColor(15,23,42);doc.setFont('helvetica','bold');doc.setFontSize(16);doc.text(c[1],x+13,y+23);
+      doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(100,116,139);doc.text(c[0],x+13,y+37);
+    });
+    y+=64;
+
+    y=etPdfSectionTitle(doc,'Resumen de pruebas',y);
+    doc.autoTable({
+      startY:y,
+      margin:{left:margin,right:margin},
+      head:[['Prueba','Estado','Resultado','Evidencias']],
+      body:tests.map(c=>{
+        const t=etState.tests[c]||{};
+        return [ET_TEST_DEFS[c]?.nombre||c,t.estado||'PENDIENTE',etResultShort(t)||'—',String((t.evidencias||[]).length)];
+      }),
+      theme:'grid',
+      headStyles:{fillColor:[7,31,56],textColor:[255,255,255],fontSize:7.5,fontStyle:'bold'},
+      styles:{fontSize:7.2,cellPadding:5,lineColor:[226,232,240],lineWidth:.5,textColor:[15,23,42]},
+      columnStyles:{0:{cellWidth:190},1:{cellWidth:70},3:{cellWidth:55,halign:'center'}},
+      didParseCell:function(data){
+        if(data.section==='body' && data.column.index===1){
+          const col=etPdfEstadoColor(data.cell.raw);
+          data.cell.styles.textColor=col;
+          data.cell.styles.fontStyle='bold';
+        }
+      }
+    });
+    y=doc.lastAutoTable.finalY+20;
+
+    // Detalle de cada prueba
+    for(const code of tests){
+      const d=ET_TEST_DEFS[code]||{nombre:code};
+      const t=etState.tests[code]||{};
+      y=etPdfEnsureSpace(doc,y,125);
+      y=etPdfSectionTitle(doc,d.nombre,y);
+
+      const color=etPdfEstadoColor(t.estado);
+      doc.setFillColor(...color);
+      doc.roundedRect(margin,y,65,18,9,9,'F');
+      doc.setTextColor(255,255,255);
+      doc.setFont('helvetica','bold');doc.setFontSize(7);
+      doc.text(String(t.estado||'PENDIENTE'),margin+32.5,y+12,{align:'center'});
+
+      doc.setTextColor(71,85,105);
+      doc.setFont('helvetica','normal');doc.setFontSize(7);
+      const desc=doc.splitTextToSize(d.desc||'',W-margin*2-80);
+      doc.text(desc,margin+77,y+7);
+      y+=28;
+
+      const resultText=String(t.resultado||etResultShort(t)||'Sin salida textual registrada');
+      const lines=doc.splitTextToSize(resultText,W-margin*2-18);
+      const maxLines=Math.min(lines.length,22);
+      const boxH=Math.max(42,maxLines*8+16);
+      y=etPdfEnsureSpace(doc,y,boxH+20);
+      doc.setFillColor(248,250,252);doc.setDrawColor(226,232,240);doc.roundedRect(margin,y,W-margin*2,boxH,5,5,'FD');
+      doc.setFont('courier','normal');doc.setFontSize(6.8);doc.setTextColor(30,41,59);
+      doc.text(lines.slice(0,maxLines),margin+9,y+13);
+      y+=boxH+10;
+
+      if(t.observaciones){
+        const obs=doc.splitTextToSize('Observaciones: '+t.observaciones,W-margin*2);
+        doc.setFont('helvetica','italic');doc.setFontSize(7);doc.setTextColor(71,85,105);doc.text(obs,margin,y+6);
+        y+=obs.length*8+8;
+      }
+
+      const ev=t.evidencias||[];
+      if(ev.length){
+        for(let i=0;i<ev.length;i+=2){
+          y=etPdfEnsureSpace(doc,y,155);
+          const iw=(W-margin*2-10)/2;
+          await etPdfAddEvidenceImage(doc,ev[i],margin,y,iw,132,'Evidencia '+(i+1));
+          if(ev[i+1]) await etPdfAddEvidenceImage(doc,ev[i+1],margin+iw+10,y,iw,132,'Evidencia '+(i+2));
+          y+=151;
+        }
+      }
+      y+=8;
+    }
+
+    // Registro fotográfico
+    y=etPdfEnsureSpace(doc,y,80);
+    y=etPdfSectionTitle(doc,'Registro fotográfico de instalación',y);
+
+    for(const key of photoKeys){
+      const arr=etState.photos[key]||[];
+      y=etPdfEnsureSpace(doc,y,175);
+      doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(15,23,42);
+      doc.text(ET_PHOTO_DEFS[key].nombre,margin,y);
+      doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(100,116,139);
+      doc.text(ET_PHOTO_DEFS[key].desc||'',margin,y+10);
+      y+=18;
+
+      if(!arr.length){
+        doc.setFillColor(248,250,252);doc.setDrawColor(226,232,240);doc.roundedRect(margin,y,W-margin*2,48,5,5,'FD');
+        doc.setTextColor(148,163,184);doc.setFontSize(7);doc.text('Sin evidencia fotográfica',W/2,y+27,{align:'center'});
+        y+=60;
+        continue;
+      }
+
+      for(let i=0;i<arr.length;i+=2){
+        y=etPdfEnsureSpace(doc,y,160);
+        const iw=(W-margin*2-10)/2;
+        await etPdfAddEvidenceImage(doc,arr[i],margin,y,iw,140,'Foto '+(i+1));
+        if(arr[i+1]) await etPdfAddEvidenceImage(doc,arr[i+1],margin+iw+10,y,iw,140,'Foto '+(i+2));
+        y+=159;
+      }
+    }
+
+    // Observaciones y firmas
+    y=etPdfEnsureSpace(doc,y,150);
+    y=etPdfSectionTitle(doc,'Cierre de la entrega',y);
+    doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(30,41,59);
+    const obsLines=doc.splitTextToSize(observaciones,W-margin*2);
+    doc.text(obsLines,margin,y);
+    y+=Math.max(25,obsLines.length*10)+34;
+
+    const sigW=(W-margin*2-55)/2;
+    doc.setDrawColor(51,65,85);
+    doc.line(margin,y,margin+sigW,y);
+    doc.line(margin+sigW+55,y,W-margin,y);
+    doc.setFontSize(7);doc.setTextColor(71,85,105);
+    doc.text('Técnico responsable',margin+sigW/2,y+13,{align:'center'});
+    doc.text('Recibido por cliente',margin+sigW+55+sigW/2,y+13,{align:'center'});
+
+    // Encabezado/pie final con paginación correcta.
+    const pages=doc.getNumberOfPages();
+    for(let p=1;p<=pages;p++){
+      doc.setPage(p);
+      etPdfAddHeader(doc,p,pages);
+      etPdfAddFooter(doc);
+    }
+
+    const filename='ACTA_ENTREGA_'+etSafeName(r.id_cliente||r.cliente||'SERVICIO')+'.pdf';
+    doc.save(filename);
+    etSetMsg('PDF profesional generado correctamente.','ok');
+  }catch(err){
+    console.error('Error generando PDF profesional:',err);
+    etSetMsg('No fue posible generar el PDF: '+(err.message||err),'err');
+  }finally{
+    overlay.remove();
+  }
+};
+</script>
 </body>
 </html>
+
+
+
+
+
+
+
+
 
 
 
