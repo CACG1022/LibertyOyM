@@ -501,6 +501,10 @@
 .et-status{padding:5px 8px;border-radius:999px;font-size:9px;font-weight:900;height:max-content;border:1px solid var(--border)}
 .et-status.PENDIENTE{color:#fde68a;background:rgba(245,158,11,.14)}.et-status.APROBADA{color:#bbf7d0;background:rgba(34,197,94,.14)}.et-status.FALLIDA{color:#fecaca;background:rgba(239,68,68,.14)}.et-status.EJECUTADA{color:#bae6fd;background:rgba(14,165,233,.14)}
 .et-test-body{padding:12px 14px}.et-test-actions{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}
+.et-copy-cmd{border-color:rgba(125,211,252,.28)!important;background:rgba(14,165,233,.08)!important;color:#dff6ff!important}
+.et-copy-cmd:hover{background:rgba(14,165,233,.17)!important}
+.et-cmd-hint{margin-top:7px;padding:8px 10px;border:1px dashed rgba(125,211,252,.22);border-radius:9px;background:rgba(2,132,199,.045);font-size:10px;color:#9fc8e8;font-family:Consolas,monospace;word-break:break-word}
+.et-cmd-row{display:flex;gap:7px;flex-wrap:wrap;margin-top:7px}
 .et-output{white-space:pre-wrap;max-height:230px;overflow:auto;background:#050b16;border:1px solid rgba(255,255,255,.09);padding:10px;border-radius:10px;font-family:Consolas,monospace;font-size:10px;color:#c7e6ff}
 .et-evidence-previews{display:grid;grid-template-columns:repeat(4,minmax(100px,1fr));gap:8px;margin-top:8px}
 .et-evidence-previews img{width:100%;height:130px;object-fit:cover;border-radius:10px;border:1px solid var(--border)}
@@ -567,6 +571,24 @@
 .et-paste-zone .et-paste-icon{font-size:15px;line-height:1}
 .et-paste-zone .et-paste-main{font-weight:800;color:#e0f2fe}
 .et-paste-zone .et-paste-sub{color:#89a7cc;margin-left:3px}
+</style>
+
+
+<style>
+/* ===== Visor ampliado de evidencias ===== */
+.et-evidence-previews img{cursor:zoom-in;transition:transform .14s ease,filter .14s ease}
+.et-evidence-previews img:hover{filter:brightness(1.07);transform:scale(1.015)}
+.et-image-viewer{position:fixed;inset:0;z-index:2147483647;background:rgba(1,7,18,.96);display:none;align-items:center;justify-content:center;overflow:hidden}
+.et-image-viewer.show{display:flex}
+.et-image-viewer-stage{position:absolute;inset:64px 22px 78px;display:flex;align-items:center;justify-content:center;overflow:auto;padding:14px}
+.et-image-viewer-stage img{max-width:96%;max-height:96%;object-fit:contain;transform-origin:center center;transition:transform .12s ease;box-shadow:0 18px 70px rgba(0,0,0,.55);border-radius:8px;background:#050b16}
+.et-image-viewer-bar{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid rgba(148,163,184,.25);border-radius:14px;background:rgba(15,23,42,.94);box-shadow:0 12px 36px rgba(0,0,0,.45)}
+.et-image-viewer-btn{min-width:42px;height:36px;border:1px solid rgba(148,163,184,.28);border-radius:9px;background:#15233d;color:#fff;font-size:15px;font-weight:800;cursor:pointer;padding:0 12px}
+.et-image-viewer-btn:hover{background:#1e3a5f}
+.et-image-viewer-close{position:absolute;top:16px;right:18px;width:42px;height:42px;border-radius:12px;border:1px solid rgba(148,163,184,.25);background:rgba(15,23,42,.92);color:#fff;font-size:22px;cursor:pointer;z-index:2}
+.et-image-viewer-title{position:absolute;left:20px;top:18px;right:78px;color:#dbeafe;font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.et-image-viewer-zoom{min-width:54px;text-align:center;color:#bfdbfe;font-size:11px;font-weight:800}
+@media(max-width:700px){.et-image-viewer-stage{inset:58px 8px 74px;padding:4px}.et-image-viewer-bar{bottom:10px;gap:5px;padding:6px}.et-image-viewer-btn{min-width:38px;height:34px;padding:0 9px}.et-image-viewer-title{left:12px;top:16px}}
 </style>
 
 </head>
@@ -4281,6 +4303,63 @@ window.ejecutarTodasPruebasAutomaticas=async function(){
   }
 };
 
+
+function comandoManualPrueba(code,tipo='principal'){
+  const t=etState.tests?.[code]||{};
+  if(code==='ipconfig') return 'ipconfig /all';
+  if(code==='ping_servicio'){
+    const target=(document.getElementById('etTarget_'+code)?.value||document.getElementById('etPingServicioDestino')?.value||'').trim();
+    if(!target) throw new Error('Primero indica la IP/destino del ping del servicio.');
+    return `ping ${target} -n 20`;
+  }
+  if(code==='ping_gateway'){
+    const target=(document.getElementById('etTarget_'+code)?.value||t.resultado_json?.target||'').trim();
+    if(!target) throw new Error('Primero ejecuta ipconfig o escribe manualmente la puerta de enlace.');
+    return `ping ${target} -n 20`;
+  }
+  if(code==='ping_internet') return 'ping 8.8.8.8 -n 100';
+  if(code==='tracert') return 'tracert -d 8.8.8.8';
+  if(code==='speedtest') return 'speedtest --accept-license --accept-gdpr';
+  if(code==='saturacion'){
+    const server=(document.getElementById('etIperfServer')?.value||t.resultado_json?.server||'').trim();
+    const duration=Math.max(5,Number(document.getElementById('etIperfDuration')?.value||30));
+    if(!server) throw new Error('Primero indica la IP/host del servidor iPerf3.');
+    if(tipo==='bajada') return `iperf3 -c ${server} -R -P 4 -t ${duration}`;
+    return `iperf3 -c ${server} -P 4 -t ${duration}`;
+  }
+  const d=ET_TEST_DEFS[code];
+  if(d?.url) return `start "" "${d.url}"`;
+  if(code==='rfc') throw new Error('La prueba RFC no tiene un comando CMD universal; depende del generador RFC2544 utilizado.');
+  throw new Error('Esta prueba no tiene un comando manual definido.');
+}
+
+async function copiarTextoSeguro(texto){
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(texto);
+      return true;
+    }
+  }catch(_){ }
+  const ta=document.createElement('textarea');
+  ta.value=texto;
+  ta.setAttribute('readonly','');
+  ta.style.position='fixed';ta.style.opacity='0';ta.style.pointerEvents='none';
+  document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,ta.value.length);
+  let ok=false;try{ok=document.execCommand('copy');}catch(_){ok=false;}
+  ta.remove();return ok;
+}
+
+window.copiarComandoPrueba=async function(code,tipo='principal'){
+  try{
+    const cmd=comandoManualPrueba(code,tipo);
+    const ok=await copiarTextoSeguro(cmd);
+    if(!ok) throw new Error('El navegador no permitió copiar automáticamente.');
+    etSetMsg(`Comando copiado: ${cmd}`,'ok');
+  }catch(e){
+    etSetMsg(e.message||String(e),'err');
+  }
+};
+
 function renderPruebasEntrega(){
   const c=document.getElementById('etTestsContainer'); if(!c)return;
   const selected=etSelectedArray();
@@ -4297,19 +4376,24 @@ function renderPruebasEntrega(){
       : code==='ping_gateway'
         ? `<div class="et-field"><label>Gateway</label><input id="etTarget_${code}" value="${esc(t.resultado_json?.target||'')}" placeholder="Se completa desde ipconfig o manualmente"></div>`
         : code==='saturacion'
-          ? `<div class="et-grid"><div class="et-field"><label>Servidor iPerf3</label><input id="etIperfServer" value="${esc(t.resultado_json?.server||'')}" placeholder="IP/host del servidor"></div><div class="et-field"><label>Duración (s)</label><input id="etIperfDuration" type="number" min="5" max="30" value="15"></div></div>`
+          ? `<div class="et-grid"><div class="et-field"><label>Servidor iPerf3</label><input id="etIperfServer" value="${esc(t.resultado_json?.server||'')}" placeholder="IP/host del servidor remoto"></div><div class="et-field"><label>Duración (s)</label><input id="etIperfDuration" type="number" min="5" max="120" value="30"></div></div><div class="et-cmd-hint">Subida: cliente → servidor. Bajada: servidor → cliente usando <b>-R</b>. Requiere un servidor iPerf3 autorizado en el extremo remoto.</div>`
           : code==='rfc'
             ? `<div class="et-grid"><div class="et-field"><label>Throughput RFC (Mbps)</label><input id="etRfcThroughput" type="number" step="0.01" value="${esc(t.resultado_json?.throughput_mbps??'')}"></div><div class="et-field"><label>Frame Loss (%)</label><input id="etRfcLoss" type="number" step="0.01" value="${esc(t.resultado_json?.frame_loss_pct??'')}"></div><div class="et-field"><label>Latencia (ms)</label><input id="etRfcLatency" type="number" step="0.01" value="${esc(t.resultado_json?.latency_ms??'')}"></div></div>`
             : '';
     const open=d.url?`<button type="button" class="small-btn" onclick="abrirPaginaEntrega('${esc(d.url)}')">Abrir página</button><button type="button" class="small-btn" onclick="capturarWebEntrega('${code}','${esc(d.url)}')">Capturar con agente</button>`:'';
     const auto=d.auto?`<button type="button" class="btn ghost" onclick="ejecutarPruebaEntrega('${code}')">▶ Ejecutar automática</button>`:'';
+    const copyCmd = code==='saturacion'
+      ? `<button type="button" class="small-btn et-copy-cmd" onclick="copiarComandoPrueba('${code}','subida')">📋 Copiar subida</button><button type="button" class="small-btn et-copy-cmd" onclick="copiarComandoPrueba('${code}','bajada')">📋 Copiar bajada</button>`
+      : code==='rfc'
+        ? ''
+        : `<button type="button" class="small-btn et-copy-cmd" onclick="copiarComandoPrueba('${code}')">📋 Copiar comando</button>`;
     const resultField = ET_TESTS_WITHOUT_RESULT_FIELD.has(code)
       ? ''
       : `<div class="et-field"><label>Resultado / salida capturada</label><textarea id="etResult_${code}" onchange="actualizarTextoPrueba('${code}',this.value)">${esc(t.resultado||'')}</textarea></div>`;
     return `<div class="et-test-card">
       <div class="et-test-head"><div><div class="et-test-title">${esc(d.nombre)}</div><div class="et-test-desc">${esc(d.desc)}</div></div><span class="et-status ${etStatusClass(t.estado)}">${esc(t.estado||'PENDIENTE')}</span></div>
       <div class="et-test-body">${target}
-        <div class="et-test-actions">${auto}${open}<button type="button" class="small-btn" onclick="marcarEstadoPrueba('${code}','APROBADA')">Aprobar</button><button type="button" class="small-btn" onclick="marcarEstadoPrueba('${code}','FALLIDA')">Fallar</button></div>
+        <div class="et-test-actions">${auto}${copyCmd}${open}<button type="button" class="small-btn" onclick="marcarEstadoPrueba('${code}','APROBADA')">Aprobar</button><button type="button" class="small-btn" onclick="marcarEstadoPrueba('${code}','FALLIDA')">Fallar</button></div>
         ${resultField}
         <div class="et-field" style="margin-top:8px"><label>Observaciones</label><input id="etObs_${code}" value="${esc(t.observaciones||'')}" onchange="actualizarObsPrueba('${code}',this.value)"></div>
         <div class="et-field" style="margin-top:8px"><label>Evidencia (captura / foto)</label><input type="file" accept="image/*" multiple onchange="cargarEvidenciaPrueba('${code}',this.files)">
@@ -4335,7 +4419,89 @@ function renderPruebasEntrega(){
     section('Navegación y validaciones web','Continúa con las pruebas de navegación, capturas web y validaciones visuales.',webCodes) +
     section('Pruebas adicionales','Pruebas complementarias configuradas manualmente.',otherCodes);
 }
-function renderEvidenceItems(kind,code,items){return (items||[]).map((x,i)=>`<div class="et-preview-item"><img src="${esc(x.dataUrl||x.url||'')}" alt="evidencia"><button type="button" class="et-remove-thumb" title="Eliminar imagen" onclick="eliminarEvidenciaAdjunta('${esc(kind)}','${esc(code)}',${i})">×</button></div>`).join('');}
+function etNormalizeStoredEvidence(value){
+  if(!value)return null;
+  if(typeof value==='string'){
+    const item={url:value};
+    const id=etDriveFileId(item);
+    if(id){
+      item.fileId=id;
+      item.webViewLink=`https://drive.google.com/file/d/${id}/view`;
+      item.downloadLink=`https://drive.google.com/uc?export=view&id=${encodeURIComponent(id)}`;
+    }
+    return item;
+  }
+  if(typeof value==='object'){
+    const item={...value};
+    const id=etDriveFileId(item);
+    if(id&&!item.fileId)item.fileId=id;
+    if(id&&!item.webViewLink)item.webViewLink=`https://drive.google.com/file/d/${id}/view`;
+    if(id&&!item.downloadLink)item.downloadLink=`https://drive.google.com/uc?export=view&id=${encodeURIComponent(id)}`;
+    if(!item.url)item.url=item.downloadLink||item.webViewLink||'';
+    return item;
+  }
+  return null;
+}
+function etDriveFileId(item){
+  if(!item)return '';
+  if(typeof item==='object'&&item.fileId)return String(item.fileId);
+  const candidates=typeof item==='string'?[item]:[item.url,item.downloadLink,item.webViewLink,item.directUrl].filter(Boolean);
+  for(const raw of candidates){
+    const v=String(raw||'');
+    let m=v.match(/\/file\/d\/([A-Za-z0-9_-]+)/i);
+    if(m)return m[1];
+    m=v.match(/[?&]id=([A-Za-z0-9_-]+)/i);
+    if(m)return decodeURIComponent(m[1]);
+    m=v.match(/\/thumbnail\?id=([A-Za-z0-9_-]+)/i);
+    if(m)return decodeURIComponent(m[1]);
+  }
+  return '';
+}
+function etEvidencePreviewUrl(item){
+  if(!item)return '';
+  if(item.dataUrl)return item.dataUrl;
+  const id=etDriveFileId(item);
+  if(id)return `https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w1200`;
+  return item.previewUrl||item.downloadLink||item.url||item.webViewLink||'';
+}
+function etEvidenceOpenUrl(item){
+  if(!item)return '';
+  const id=etDriveFileId(item);
+  if(id)return item.webViewLink||`https://drive.google.com/file/d/${id}/view`;
+  return item.webViewLink||item.url||item.downloadLink||'';
+}
+window.etEvidencePreviewFallback=function(img,kind,code,index){
+  const item=etViewerEvidence(kind,code,index);
+  if(!item)return;
+  if(img.dataset.fallbackDone==='1'){
+    img.style.display='none';
+    const p=img.parentElement;
+    if(p&&!p.querySelector('.et-drive-open')){
+      const a=document.createElement('a');
+      a.className='et-drive-open';
+      a.textContent='Abrir evidencia en Drive';
+      a.target='_blank';a.rel='noopener';a.href=etEvidenceOpenUrl(item)||'#';
+      a.style.cssText='display:flex;align-items:center;justify-content:center;min-height:100px;padding:12px;text-align:center;color:#7dd3fc;border:1px dashed #36506d;border-radius:10px;text-decoration:none;background:#09182c';
+      p.insertBefore(a,p.firstChild);
+    }
+    return;
+  }
+  img.dataset.fallbackDone='1';
+  const fallback=item.downloadLink||item.url||'';
+  if(fallback&&fallback!==img.src)img.src=fallback;
+  else img.onerror();
+};
+function renderEvidenceItems(kind,code,items){return (items||[]).map((raw,i)=>{
+  const x=etNormalizeStoredEvidence(raw)||{};
+  const src=esc(etEvidencePreviewUrl(x));
+  const title=esc(x.name||('Evidencia '+(i+1)));
+  const driveUrl=esc(etEvidenceOpenUrl(x));
+  return `<div class="et-preview-item">
+    <img src="${src}" alt="${title}" title="Clic para ampliar" onclick="abrirVisorEvidencia('${esc(kind)}','${esc(code)}',${i})" onerror="etEvidencePreviewFallback(this,'${esc(kind)}','${esc(code)}',${i})">
+    ${driveUrl?`<a href="${driveUrl}" target="_blank" rel="noopener" title="Abrir original en Drive" onclick="event.stopPropagation()" style="position:absolute;left:6px;bottom:6px;background:rgba(3,20,38,.82);color:#dbeafe;border:1px solid rgba(125,211,252,.35);border-radius:7px;padding:3px 6px;font-size:10px;text-decoration:none">Drive</a>`:''}
+    <button type="button" class="et-remove-thumb" title="Eliminar imagen" onclick="event.stopPropagation();eliminarEvidenciaAdjunta('${esc(kind)}','${esc(code)}',${i})">×</button>
+  </div>`;
+}).join('');}
 
 window.eliminarEvidenciaAdjunta=function(kind,code,index){
   index=Number(index);
@@ -4356,6 +4522,56 @@ window.eliminarEvidenciaAdjunta=function(kind,code,index){
   actualizarProgresoEntrega();
   etSetMsg('Imagen eliminada correctamente.','ok');
 };
+
+let etViewerZoom=1;
+function etViewerEvidence(kind,code,index){
+  const arr=kind==='photo' ? (etState.photos?.[code]||[]) : (etState.tests?.[code]?.evidencias||[]);
+  return arr[Number(index)]||null;
+}
+window.abrirVisorEvidencia=function(kind,code,index){
+  const item=etViewerEvidence(kind,code,index);
+  if(!item)return;
+  const viewer=document.getElementById('etImageViewer');
+  const img=document.getElementById('etImageViewerImg');
+  const title=document.getElementById('etImageViewerTitle');
+  if(!viewer||!img)return;
+  const src=etEvidencePreviewUrl(etNormalizeStoredEvidence(item)||item);
+  if(!src)return;
+  etViewerZoom=1;
+  img.src=src;
+  img.style.transform='scale(1)';
+  if(title)title.textContent=item.name||'Evidencia';
+  viewer.classList.add('show');
+  viewer.setAttribute('aria-hidden','false');
+  actualizarZoomVisor();
+};
+window.cerrarVisorEvidencia=function(){
+  const viewer=document.getElementById('etImageViewer');
+  const img=document.getElementById('etImageViewerImg');
+  if(viewer)viewer.classList.remove('show');
+  if(viewer)viewer.setAttribute('aria-hidden','true');
+  if(img){img.removeAttribute('src');img.style.transform='scale(1)';}
+  etViewerZoom=1;
+};
+window.cambiarZoomVisor=function(delta){
+  etViewerZoom=Math.min(4,Math.max(.4,etViewerZoom+Number(delta||0)));
+  actualizarZoomVisor();
+};
+window.restablecerZoomVisor=function(){etViewerZoom=1;actualizarZoomVisor();};
+function actualizarZoomVisor(){
+  const img=document.getElementById('etImageViewerImg');
+  const label=document.getElementById('etImageViewerZoom');
+  if(img)img.style.transform=`scale(${etViewerZoom})`;
+  if(label)label.textContent=Math.round(etViewerZoom*100)+'%';
+}
+document.addEventListener('keydown',ev=>{
+  const viewer=document.getElementById('etImageViewer');
+  if(!viewer?.classList.contains('show'))return;
+  if(ev.key==='Escape')cerrarVisorEvidencia();
+  if(ev.key==='+'||ev.key==='=')cambiarZoomVisor(.2);
+  if(ev.key==='-')cambiarZoomVisor(-.2);
+  if(ev.key==='0')restablecerZoomVisor();
+});
 window.actualizarTextoPrueba=function(code,v){etState.tests[code].resultado=v;actualizarProgresoEntrega();};
 window.actualizarObsPrueba=function(code,v){etState.tests[code].observaciones=v;};
 window.marcarEstadoPrueba=function(code,s){etState.tests[code].estado=s;renderPruebasEntrega();actualizarProgresoEntrega();};
@@ -4757,9 +4973,9 @@ async function cargarEntregaTecnicaExistente(){
     document.getElementById('etObservacionesEntrega').value=e.observaciones||'';
     const {data:ps,error:pe}=await client.from('instalaciones_pruebas').select('*').eq('entrega_id',e.id);if(pe)throw pe;
     etState.selected.clear();
-    (ps||[]).forEach(p=>{if(p.requerida)etState.selected.add(p.codigo);etState.tests[p.codigo]={codigo:p.codigo,estado:p.estado||'PENDIENTE',resultado:p.resultado_texto||'',resultado_json:p.resultado_json||{},observaciones:p.observaciones||'',evidencias:(p.evidencias||[]).map(url=>({url}))};});
+    (ps||[]).forEach(p=>{if(p.requerida)etState.selected.add(p.codigo);etState.tests[p.codigo]={codigo:p.codigo,estado:p.estado||'PENDIENTE',resultado:p.resultado_texto||'',resultado_json:p.resultado_json||{},observaciones:p.observaciones||'',evidencias:(p.evidencias||[]).map(etNormalizeStoredEvidence).filter(Boolean)};});
     const {data:ev,error:ee}=await client.from('instalaciones_evidencias').select('*').eq('entrega_id',e.id);if(ee)throw ee;
-    (ev||[]).forEach(x=>{if(etState.photos[x.tipo])etState.photos[x.tipo]=(x.archivos||[]).map(url=>({url}));});
+    (ev||[]).forEach(x=>{if(etState.photos[x.tipo])etState.photos[x.tipo]=(x.archivos||[]).map(etNormalizeStoredEvidence).filter(Boolean);});
     document.querySelectorAll('[data-et-test]').forEach(ch=>ch.checked=etState.selected.has(ch.dataset.etTest));
     renderPruebasEntrega();renderFotosEntrega();etState.loaded=true;actualizarProgresoEntrega();
     etSetMsg('Se cargó una entrega técnica existente.','ok');
@@ -4834,7 +5050,7 @@ window.guardarEntregaTecnica=async function(finalizar=false){
       totalFallidas+=carga.failed.length;
       carga.failed.forEach(f=>detallesFallos.push(`${ET_TEST_DEFS[code].nombre}: ${f.error}`));
 
-      const urls=carga.ok.map(x=>x.url).filter(Boolean);
+      const evidenciasGuardadas=carga.ok.map(x=>({url:x.url||x.downloadLink||x.webViewLink||'',webViewLink:x.webViewLink||'',downloadLink:x.downloadLink||x.url||'',fileId:x.fileId||etDriveFileId(x)||'',name:x.name||''})).filter(x=>x.url||x.fileId);
       // Conserva en memoria las evidencias pendientes para que el usuario pueda reintentar
       // sin tener que volver a seleccionarlas mientras no cierre/recargue la página.
       const pendientes=carga.failed.map(f=>f.item);
@@ -4843,7 +5059,7 @@ window.guardarEntregaTecnica=async function(finalizar=false){
       const {error:pe}=await client.from('instalaciones_pruebas').upsert({
         entrega_id:e.id,codigo:code,nombre:ET_TEST_DEFS[code].nombre,requerida:true,
         estado:t.estado,resultado_texto:t.resultado||null,resultado_json:t.resultado_json||{},
-        observaciones:t.observaciones||null,evidencias:urls,updated_at:new Date().toISOString()
+        observaciones:t.observaciones||null,evidencias:evidenciasGuardadas,updated_at:new Date().toISOString()
       },{onConflict:'entrega_id,codigo'});
       if(pe)throw pe;
     }
@@ -4855,13 +5071,13 @@ window.guardarEntregaTecnica=async function(finalizar=false){
       totalFallidas+=carga.failed.length;
       carga.failed.forEach(f=>detallesFallos.push(`${ET_PHOTO_DEFS[tipo].nombre}: ${f.error}`));
 
-      const urls=carga.ok.map(x=>x.url).filter(Boolean);
+      const evidenciasGuardadas=carga.ok.map(x=>({url:x.url||x.downloadLink||x.webViewLink||'',webViewLink:x.webViewLink||'',downloadLink:x.downloadLink||x.url||'',fileId:x.fileId||etDriveFileId(x)||'',name:x.name||''})).filter(x=>x.url||x.fileId);
       const pendientes=carga.failed.map(f=>f.item);
       etState.photos[tipo]=[...carga.ok,...pendientes];
 
       const {error:ee}=await client.from('instalaciones_evidencias').upsert({
         entrega_id:e.id,tipo,nombre:ET_PHOTO_DEFS[tipo].nombre,
-        archivos:urls,updated_at:new Date().toISOString()
+        archivos:evidenciasGuardadas,updated_at:new Date().toISOString()
       },{onConflict:'entrega_id,tipo'});
       if(ee)throw ee;
     }
@@ -4907,7 +5123,7 @@ function etPdfEstadoColor(estado){
 async function etPdfDataUrl(item){
   if(!item) return null;
   if(item.dataUrl && /^data:image\//i.test(item.dataUrl)) return item.dataUrl;
-  const url=item.url||item.downloadLink||item.webViewLink||'';
+  const url=etEvidencePreviewUrl(etNormalizeStoredEvidence(item)||item);
   if(!url) return null;
   try{
     const resp=await fetch(url,{cache:'no-store'});
@@ -5244,9 +5460,24 @@ window.generarPdfEntregaTecnica=async function(){
   }
 };
 </script>
+
+<div id="etImageViewer" class="et-image-viewer" aria-hidden="true" onclick="if(event.target===this)cerrarVisorEvidencia()">
+  <div id="etImageViewerTitle" class="et-image-viewer-title">Evidencia</div>
+  <button type="button" class="et-image-viewer-close" title="Cerrar" onclick="cerrarVisorEvidencia()">×</button>
+  <div class="et-image-viewer-stage" onclick="event.stopPropagation()">
+    <img id="etImageViewerImg" alt="Evidencia ampliada" ondblclick="restablecerZoomVisor()">
+  </div>
+  <div class="et-image-viewer-bar" onclick="event.stopPropagation()">
+    <button type="button" class="et-image-viewer-btn" title="Alejar" onclick="cambiarZoomVisor(-.2)">−</button>
+    <span id="etImageViewerZoom" class="et-image-viewer-zoom">100%</span>
+    <button type="button" class="et-image-viewer-btn" title="Acercar" onclick="cambiarZoomVisor(.2)">+</button>
+    <button type="button" class="et-image-viewer-btn" title="Restablecer" onclick="restablecerZoomVisor()">100%</button>
+    <button type="button" class="et-image-viewer-btn" title="Cerrar" onclick="cerrarVisorEvidencia()">Cerrar</button>
+  </div>
+</div>
+
 </body>
 </html>
-
 
 
 
