@@ -596,6 +596,138 @@
 @media(max-width:700px){.et-image-viewer-stage{inset:58px 8px 74px;padding:4px}.et-image-viewer-bar{bottom:10px;gap:5px;padding:6px}.et-image-viewer-btn{min-width:38px;height:34px;padding:0 9px}.et-image-viewer-title{left:12px;top:16px}}
 </style>
 
+
+<style id="et-publish-style-lock">
+/* ===== Bloqueo visual Entrega Técnica: evita que styles.css global altere el modal al publicar ===== */
+@media (min-width:701px){
+  #entregaTecnicaModal.modal-backdrop{
+    padding:20px !important;
+    align-items:center !important;
+    justify-content:center !important;
+  }
+  #entregaTecnicaModal .et-modal{
+    width:min(1450px,calc(100vw - 40px)) !important;
+    max-width:1450px !important;
+    min-width:0 !important;
+    margin:0 auto !important;
+    padding:0 !important;
+  }
+  #entregaTecnicaModal .et-shell{
+    display:grid !important;
+    grid-template-rows:auto auto minmax(0,1fr) auto !important;
+    min-height:680px !important;
+    max-height:94vh !important;
+    width:100% !important;
+  }
+  #entregaTecnicaModal .et-body{
+    width:100% !important;
+    min-width:0 !important;
+    padding:18px 20px !important;
+    overflow:auto !important;
+  }
+  #entregaTecnicaModal .et-stepper{
+    display:grid !important;
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    gap:8px !important;
+  }
+  #entregaTecnicaModal .et-client-strip{
+    display:grid !important;
+    grid-template-columns:repeat(5,minmax(120px,1fr)) !important;
+    gap:8px !important;
+  }
+  #entregaTecnicaModal .et-auto-suite-head{
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:10px !important;
+    flex-wrap:wrap !important;
+  }
+  #entregaTecnicaModal .et-auto-suite-head > div:first-child{
+    flex:1 1 420px !important;
+    min-width:0 !important;
+  }
+  #entregaTecnicaModal .et-auto-suite-head > .btn{
+    flex:0 0 auto !important;
+    width:auto !important;
+    min-width:220px !important;
+    max-width:320px !important;
+  }
+  #entregaTecnicaModal .et-test-actions{
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    flex-wrap:wrap !important;
+    gap:7px !important;
+  }
+  #entregaTecnicaModal .et-test-actions > button,
+  #entregaTecnicaModal .et-test-actions > .btn,
+  #entregaTecnicaModal .et-test-actions > .small-btn,
+  #entregaTecnicaModal .et-cmd-row > button,
+  #entregaTecnicaModal .et-cmd-row > .btn,
+  #entregaTecnicaModal .et-cmd-row > .small-btn{
+    width:auto !important;
+    min-width:0 !important;
+    max-width:none !important;
+    flex:0 0 auto !important;
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+  }
+  #entregaTecnicaModal .et-footer{
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:10px !important;
+    width:100% !important;
+    min-height:68px !important;
+  }
+  #entregaTecnicaModal .et-footer > div:first-child{
+    flex:1 1 auto !important;
+    min-width:0 !important;
+  }
+  #entregaTecnicaModal .et-footer-actions{
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    flex-wrap:nowrap !important;
+    width:auto !important;
+    min-width:max-content !important;
+    gap:8px !important;
+  }
+  #entregaTecnicaModal .et-footer-actions > button{
+    width:auto !important;
+    min-width:94px !important;
+    max-width:none !important;
+    flex:0 0 auto !important;
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+  }
+  #entregaTecnicaModal button.btn,
+  #entregaTecnicaModal button.small-btn{
+    box-sizing:border-box !important;
+  }
+  #entregaTecnicaModal .et-grid{
+    display:grid !important;
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+    gap:10px !important;
+  }
+  #entregaTecnicaModal .et-tests-select{
+    display:grid !important;
+    grid-template-columns:repeat(3,minmax(220px,1fr)) !important;
+    gap:8px !important;
+  }
+  #entregaTecnicaModal .et-photo-grid{
+    display:grid !important;
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    gap:12px !important;
+  }
+}
+</style>
 </head>
 <body>
 <div id="root"></div>
@@ -5669,6 +5801,13 @@ window.generarPdfEntregaTecnica=async function(){
 
 </body>
 </html>
+
+
+
+
+
+
+
 
 
 
