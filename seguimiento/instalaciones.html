@@ -485,6 +485,16 @@
 .et-check input{margin-top:2px}.et-check b{display:block;font-size:11px}.et-check small{display:block;color:#8fa8ca;margin-top:2px}
 .et-agent{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px;border:1px dashed rgba(56,189,248,.32);border-radius:12px;background:rgba(14,165,233,.05);margin-top:10px}
 .et-agent-dot{width:9px;height:9px;border-radius:50%;background:#64748b}.et-agent-dot.ok{background:#22c55e}.et-agent-dot.bad{background:#ef4444}.et-agent-status{font-size:11px;color:#bfdbfe}
+.et-auto-suite{border:1px solid rgba(56,189,248,.35);background:linear-gradient(180deg,rgba(14,165,233,.08),rgba(15,23,42,.18));border-radius:14px;padding:12px;margin-bottom:12px}
+.et-auto-suite-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.et-auto-suite-title{font-size:12px;font-weight:900;color:#dbeafe}
+.et-auto-suite-sub{font-size:10px;color:#8fb1da;margin-top:3px}
+.et-auto-suite-status{margin-top:9px;font-size:10px;color:#bfdbfe}
+.et-auto-suite-list{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+.et-auto-chip{padding:4px 7px;border-radius:999px;border:1px solid rgba(148,163,184,.22);background:rgba(255,255,255,.025);font-size:9px;color:#cbd5e1}
+.et-auto-chip.running{border-color:#38bdf8;color:#bae6fd;background:rgba(14,165,233,.12)}
+.et-auto-chip.done{border-color:#22c55e;color:#bbf7d0;background:rgba(34,197,94,.10)}
+.et-auto-chip.fail{border-color:#ef4444;color:#fecaca;background:rgba(239,68,68,.10)}
 .et-test-card{border:1px solid var(--border);border-radius:15px;margin-bottom:10px;background:linear-gradient(180deg,rgba(37,99,235,.05),rgba(255,255,255,.015));overflow:hidden}
 .et-test-head{display:flex;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
 .et-test-title{font-size:13px;font-weight:900}.et-test-desc{font-size:10px;color:#93a9c7;margin-top:3px}
@@ -4097,6 +4107,9 @@ const ET_INTERNET_TESTS=['ipconfig','ping_gateway','ping_internet','tracert','na
 const ET_CMD_TESTS_GROUP=['ping_servicio','ipconfig','ping_gateway','ping_internet','tracert','saturacion','rfc'];
 const ET_WEB_TESTS_GROUP=['nav_eltiempo','nav_sena','nav_nytimes','nav_universal','speedtest'];
 const ET_TESTS_WITHOUT_RESULT_FIELD=new Set(['nav_eltiempo','nav_sena','nav_nytimes','nav_universal','speedtest']);
+const ET_AUTO_SEQUENCE_ORDER=['ipconfig','ping_gateway','ping_internet','tracert','ping_servicio'];
+let etAutoSequenceRunning=false;
+let etAutoSequenceState={current:null,total:0,index:0,results:{}};
 
 let etState={row:null,entrega:null,paso:1,selected:new Set(),tests:{},photos:{},loaded:false};
 
@@ -4208,6 +4221,66 @@ window.sincronizarSeleccionRFC=function(){
   renderPruebasEntrega();actualizarProgresoEntrega();
 };
 
+function pruebasAutomaticasSeleccionadas(){
+  return ET_AUTO_SEQUENCE_ORDER.filter(code=>etState.selected.has(code) && !!ET_TEST_DEFS[code]?.auto);
+}
+function renderPanelSecuenciaAutomatica(codes){
+  if(!codes.length) return '';
+  const status=etAutoSequenceRunning
+    ? `Ejecutando ${Math.min(etAutoSequenceState.index+1,etAutoSequenceState.total)} de ${etAutoSequenceState.total}: ${ET_TEST_DEFS[etAutoSequenceState.current]?.nombre||''}`
+    : 'Ejecuta en orden todas las pruebas automáticas seleccionadas.';
+  const chips=codes.map(code=>{
+    const rr=etAutoSequenceState.results?.[code];
+    let cls='';
+    if(etAutoSequenceRunning && etAutoSequenceState.current===code) cls=' running';
+    else if(rr?.ok) cls=' done';
+    else if(rr && !rr.ok) cls=' fail';
+    return `<span class="et-auto-chip${cls}">${esc(ET_TEST_DEFS[code]?.nombre||code)}</span>`;
+  }).join('');
+  return `<div class="et-auto-suite">
+    <div class="et-auto-suite-head">
+      <div><div class="et-auto-suite-title">Ejecución automática en secuencia</div><div class="et-auto-suite-sub">Una prueba comienza únicamente cuando termina la anterior.</div></div>
+      <button id="etRunAllAutoBtn" type="button" class="btn" ${etAutoSequenceRunning?'disabled':''} onclick="ejecutarTodasPruebasAutomaticas()">${etAutoSequenceRunning?'Ejecutando...':'▶ Ejecutar pruebas automáticas'}</button>
+    </div>
+    <div class="et-auto-suite-status">${esc(status)}</div>
+    <div class="et-auto-suite-list">${chips}</div>
+  </div>`;
+}
+
+window.ejecutarTodasPruebasAutomaticas=async function(){
+  if(etAutoSequenceRunning) return;
+  const codes=pruebasAutomaticasSeleccionadas();
+  if(!codes.length){etSetMsg('No hay pruebas automáticas seleccionadas.','err');return;}
+
+  etAutoSequenceRunning=true;
+  etAutoSequenceState={current:null,total:codes.length,index:0,results:{}};
+  renderPruebasEntrega();
+
+  let okCount=0, failCount=0;
+  for(let i=0;i<codes.length;i++){
+    const code=codes[i];
+    etAutoSequenceState.current=code;
+    etAutoSequenceState.index=i;
+    renderPruebasEntrega();
+    etSetMsg(`Secuencia automática ${i+1}/${codes.length}: ${ET_TEST_DEFS[code].nombre}...`);
+
+    const rr=await ejecutarPruebaEntrega(code,{secuencia:true});
+    etAutoSequenceState.results[code]=rr||{ok:false,error:'Sin respuesta'};
+    if(rr?.ok) okCount++; else failCount++;
+  }
+
+  etAutoSequenceRunning=false;
+  etAutoSequenceState.current=null;
+  renderPruebasEntrega();
+  actualizarProgresoEntrega();
+  if(failCount){
+    const errores=codes.filter(c=>etAutoSequenceState.results[c]&&!etAutoSequenceState.results[c].ok).map(c=>ET_TEST_DEFS[c].nombre).join(', ');
+    etSetMsg(`Secuencia terminada: ${okCount} ejecutada(s), ${failCount} con inconvenientes. Revisar: ${errores}.`,'err');
+  }else{
+    etSetMsg(`Secuencia automática terminada correctamente: ${okCount} prueba(s) ejecutada(s).`,'ok');
+  }
+};
+
 function renderPruebasEntrega(){
   const c=document.getElementById('etTestsContainer'); if(!c)return;
   const selected=etSelectedArray();
@@ -4257,6 +4330,7 @@ function renderPruebasEntrega(){
     </div>` : '';
 
   c.innerHTML =
+    renderPanelSecuenciaAutomatica(pruebasAutomaticasSeleccionadas()) +
     section('Pruebas automáticas / técnicas','Ejecuta primero las validaciones automáticas del servicio y de red.',cmdCodes) +
     section('Navegación y validaciones web','Continúa con las pruebas de navegación, capturas web y validaciones visuales.',webCodes) +
     section('Pruebas adicionales','Pruebas complementarias configuradas manualmente.',otherCodes);
@@ -4423,9 +4497,10 @@ window.verificarAgenteEntrega=async function(){
   catch(e){dot.className='et-agent-dot bad';txt.textContent='Agente no disponible. Las pruebas automáticas quedan deshabilitadas; puedes registrar resultados manualmente.';}
 };
 
-window.ejecutarPruebaEntrega=async function(code){
-  const t=etState.tests[code];if(!t)return;
-  etSetMsg('Ejecutando '+ET_TEST_DEFS[code].nombre+'...');
+window.ejecutarPruebaEntrega=async function(code,opts={}){
+  const t=etState.tests[code];
+  if(!t)return {ok:false,error:'Prueba no encontrada'};
+  if(!opts.secuencia)etSetMsg('Ejecutando '+ET_TEST_DEFS[code].nombre+'...');
   try{
     let payload={test:ET_TEST_DEFS[code].auto};
     if(code==='ping_servicio'){
@@ -4433,7 +4508,7 @@ window.ejecutarPruebaEntrega=async function(code){
       if(!payload.target)throw new Error('Debes indicar el destino/IP del ping.');
     }else if(code==='ping_gateway'){
       payload.target=(document.getElementById('etTarget_'+code)?.value||t.resultado_json?.target||'').trim();payload.count=20;
-      if(!payload.target)throw new Error('Ejecuta primero ipconfig o escribe la puerta de enlace.');
+      if(!payload.target)throw new Error('No se obtuvo la puerta de enlace desde ipconfig y no hay un gateway escrito manualmente.');
     }else if(code==='ping_internet'){payload.target='8.8.8.8';payload.count=100;}
     else if(code==='tracert'){payload.target='8.8.8.8';}
     else if(code==='saturacion'){
@@ -4452,12 +4527,20 @@ window.ejecutarPruebaEntrega=async function(code){
       else t.evidencias=[...(t.evidencias||[]),{dataUrl,name:nombre}];
     }
     if(code==='ipconfig'&&j.result?.gateway){
-      const pg=etState.tests.ping_gateway;pg.resultado_json={...(pg.resultado_json||{}),target:j.result.gateway};
+      const pg=etState.tests.ping_gateway;
+      pg.resultado_json={...(pg.resultado_json||{}),target:j.result.gateway};
     }
     if(['ping_servicio','ping_gateway','ping_internet'].includes(code))t.estado=Number(j.result?.loss_pct||0)===0?'APROBADA':'FALLIDA';
     else t.estado='EJECUTADA';
-    etSetMsg('Prueba ejecutada correctamente.','ok');renderPruebasEntrega();actualizarProgresoEntrega();
-  }catch(e){t.estado='PENDIENTE';etSetMsg('No fue posible ejecutar: '+e.message,'err');}
+    if(!opts.secuencia)etSetMsg('Prueba ejecutada correctamente.','ok');
+    renderPruebasEntrega();actualizarProgresoEntrega();
+    return {ok:true,estado:t.estado};
+  }catch(e){
+    t.estado='PENDIENTE';
+    if(!opts.secuencia)etSetMsg('No fue posible ejecutar: '+e.message,'err');
+    renderPruebasEntrega();actualizarProgresoEntrega();
+    return {ok:false,error:e.message||String(e)};
+  }
 };
 
 window.capturarWebEntrega=async function(code,url){
@@ -5163,6 +5246,8 @@ window.generarPdfEntregaTecnica=async function(){
 </script>
 </body>
 </html>
+
+
 
 
 
