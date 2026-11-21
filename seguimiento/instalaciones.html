@@ -343,7 +343,7 @@
   }
 }
 
-</style>
+.et-review-row.no-evidence{background:rgba(127,29,29,.28)!important;box-shadow:inset 4px 0 0 #ef4444}.et-review-row.no-evidence td{color:#fecaca}.et-no-evidence-badge{display:inline-flex;padding:3px 8px;border-radius:999px;background:rgba(220,38,38,.22);border:1px solid rgba(248,113,113,.55);color:#fecaca;font-weight:800;font-size:10px}.et-evidence-ok-badge{display:inline-flex;padding:3px 8px;border-radius:999px;background:rgba(22,163,74,.18);border:1px solid rgba(74,222,128,.45);color:#bbf7d0;font-weight:800;font-size:10px}.et-physical-summary-title td{background:rgba(14,116,144,.14)!important;color:#bae6fd!important;font-weight:900;font-size:10px;text-transform:uppercase;letter-spacing:.08em;border-top:1px solid rgba(56,189,248,.25)}.et-max-note{font-size:9px;color:#89a7cc;margin-top:4px}</style>
 
 <style>
 /* Reportes y acciones en una sola fila */
@@ -496,6 +496,11 @@
 .et-auto-chip.done{border-color:#22c55e;color:#bbf7d0;background:rgba(34,197,94,.10)}
 .et-auto-chip.fail{border-color:#ef4444;color:#fecaca;background:rgba(239,68,68,.10)}
 .et-test-card{border:1px solid var(--border);border-radius:15px;margin-bottom:10px;background:linear-gradient(180deg,rgba(37,99,235,.05),rgba(255,255,255,.015));overflow:hidden}
+.et-review-row{cursor:pointer;transition:background .18s ease,transform .18s ease}
+.et-review-row:hover{background:rgba(56,189,248,.08)}
+.et-review-row td:first-child b::after{content:"  · doble clic para revisar";font-size:8px;font-weight:500;color:#7dd3fc;opacity:.72}
+.et-test-card.et-focus-test{border-color:#38bdf8;box-shadow:0 0 0 2px rgba(56,189,248,.28),0 0 28px rgba(56,189,248,.18);animation:etFocusPulse 1.1s ease-in-out 2}
+@keyframes etFocusPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.008)}}
 .et-test-head{display:flex;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.06)}
 .et-test-title{font-size:13px;font-weight:900}.et-test-desc{font-size:10px;color:#93a9c7;margin-top:3px}
 .et-status{padding:5px 8px;border-radius:999px;font-size:9px;font-weight:900;height:max-content;border:1px solid var(--border)}
@@ -4129,6 +4134,8 @@ const ET_INTERNET_TESTS=['ipconfig','ping_gateway','ping_internet','tracert','na
 const ET_CMD_TESTS_GROUP=['ping_servicio','ipconfig','ping_gateway','ping_internet','tracert','saturacion','rfc'];
 const ET_WEB_TESTS_GROUP=['nav_eltiempo','nav_sena','nav_nytimes','nav_universal','speedtest'];
 const ET_TESTS_WITHOUT_RESULT_FIELD=new Set(['nav_eltiempo','nav_sena','nav_nytimes','nav_universal','speedtest']);
+const ET_MANUAL_ONLY_TESTS=new Set(['nav_eltiempo','nav_sena','nav_nytimes','speedtest']);
+const ET_MAX_EVIDENCIAS_POR_CAMPO=2;
 const ET_AUTO_SEQUENCE_ORDER=['ipconfig','ping_gateway','ping_internet','tracert','ping_servicio'];
 let etAutoSequenceRunning=false;
 let etAutoSequenceState={current:null,total:0,index:0,results:{}};
@@ -4244,7 +4251,7 @@ window.sincronizarSeleccionRFC=function(){
 };
 
 function pruebasAutomaticasSeleccionadas(){
-  return ET_AUTO_SEQUENCE_ORDER.filter(code=>etState.selected.has(code) && !!ET_TEST_DEFS[code]?.auto);
+  return ET_AUTO_SEQUENCE_ORDER.filter(code=>etState.selected.has(code) && !!ET_TEST_DEFS[code]?.auto && !ET_MANUAL_ONLY_TESTS.has(code));
 }
 function renderPanelSecuenciaAutomatica(codes){
   if(!codes.length) return '';
@@ -4360,6 +4367,14 @@ window.copiarComandoPrueba=async function(code,tipo='principal'){
   }
 };
 
+function etNormalizarSalidaConsola(valor){
+  return String(valor??'')
+    .replace(/\u00a0|\u202f|\u2007/g,' ')
+    .replace(/\ufffd/g,' ')
+    .replace(/a\.[\s\u00a0\u202f\u2007]*m\./gi,'a. m.')
+    .replace(/p\.[\s\u00a0\u202f\u2007]*m\./gi,'p. m.')
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,'');
+}
 function renderPruebasEntrega(){
   const c=document.getElementById('etTestsContainer'); if(!c)return;
   const selected=etSelectedArray();
@@ -4380,23 +4395,25 @@ function renderPruebasEntrega(){
           : code==='rfc'
             ? `<div class="et-grid"><div class="et-field"><label>Throughput RFC (Mbps)</label><input id="etRfcThroughput" type="number" step="0.01" value="${esc(t.resultado_json?.throughput_mbps??'')}"></div><div class="et-field"><label>Frame Loss (%)</label><input id="etRfcLoss" type="number" step="0.01" value="${esc(t.resultado_json?.frame_loss_pct??'')}"></div><div class="et-field"><label>Latencia (ms)</label><input id="etRfcLatency" type="number" step="0.01" value="${esc(t.resultado_json?.latency_ms??'')}"></div></div>`
             : '';
-    const open=d.url?`<button type="button" class="small-btn" onclick="abrirPaginaEntrega('${esc(d.url)}')">Abrir página</button><button type="button" class="small-btn" onclick="capturarWebEntrega('${code}','${esc(d.url)}')">Capturar con agente</button>`:'';
-    const auto=d.auto?`<button type="button" class="btn ghost" onclick="ejecutarPruebaEntrega('${code}')">▶ Ejecutar automática</button>`:'';
-    const copyCmd = code==='saturacion'
-      ? `<button type="button" class="small-btn et-copy-cmd" onclick="copiarComandoPrueba('${code}','subida')">📋 Copiar subida</button><button type="button" class="small-btn et-copy-cmd" onclick="copiarComandoPrueba('${code}','bajada')">📋 Copiar bajada</button>`
-      : code==='rfc'
-        ? ''
-        : `<button type="button" class="small-btn et-copy-cmd" onclick="copiarComandoPrueba('${code}')">📋 Copiar comando</button>`;
+    const open=d.url ? (ET_MANUAL_ONLY_TESTS.has(code) ? `<button type="button" class="small-btn" onclick="abrirPaginaEntrega('${esc(d.url)}')">Abrir página</button>` : `<button type="button" class="small-btn" onclick="abrirPaginaEntrega('${esc(d.url)}')">Abrir página</button><button type="button" class="small-btn" onclick="capturarWebEntrega('${code}','${esc(d.url)}')">Capturar con agente</button>`) : '';
+    const auto=(d.auto && !ET_MANUAL_ONLY_TESTS.has(code))?`<button type="button" class="btn ghost" onclick="ejecutarPruebaEntrega('${code}')">▶ Ejecutar automática</button>`:'';
+    const copyCmd = ET_MANUAL_ONLY_TESTS.has(code)
+      ? ''
+      : code==='saturacion'
+        ? `<button type="button" class="small-btn et-copy-cmd" onclick="copiarComandoPrueba('${code}','subida')">📋 Copiar subida</button><button type="button" class="small-btn et-copy-cmd" onclick="copiarComandoPrueba('${code}','bajada')">📋 Copiar bajada</button>`
+        : code==='rfc'
+          ? ''
+          : `<button type="button" class="small-btn et-copy-cmd" onclick="copiarComandoPrueba('${code}')">📋 Copiar comando</button>`;
     const resultField = ET_TESTS_WITHOUT_RESULT_FIELD.has(code)
       ? ''
-      : `<div class="et-field"><label>Resultado / salida capturada</label><textarea id="etResult_${code}" onchange="actualizarTextoPrueba('${code}',this.value)">${esc(t.resultado||'')}</textarea></div>`;
-    return `<div class="et-test-card">
+      : `<div class="et-field"><label>Resultado / salida capturada</label><textarea id="etResult_${code}" onchange="actualizarTextoPrueba('${code}',this.value)">${esc(etNormalizarSalidaConsola(t.resultado||''))}</textarea></div>`;
+    return `<div class="et-test-card" id="etTestCard_${esc(code)}" data-test-code="${esc(code)}">
       <div class="et-test-head"><div><div class="et-test-title">${esc(d.nombre)}</div><div class="et-test-desc">${esc(d.desc)}</div></div><span class="et-status ${etStatusClass(t.estado)}">${esc(t.estado||'PENDIENTE')}</span></div>
       <div class="et-test-body">${target}
         <div class="et-test-actions">${auto}${copyCmd}${open}<button type="button" class="small-btn" onclick="marcarEstadoPrueba('${code}','APROBADA')">Aprobar</button><button type="button" class="small-btn" onclick="marcarEstadoPrueba('${code}','FALLIDA')">Fallar</button></div>
         ${resultField}
         <div class="et-field" style="margin-top:8px"><label>Observaciones</label><input id="etObs_${code}" value="${esc(t.observaciones||'')}" onchange="actualizarObsPrueba('${code}',this.value)"></div>
-        <div class="et-field" style="margin-top:8px"><label>Evidencia (captura / foto)</label><input type="file" accept="image/*" multiple onchange="cargarEvidenciaPrueba('${code}',this.files)">
+        <div class="et-field" style="margin-top:8px"><label>Evidencia (captura / foto)</label><input type="file" accept="image/*" multiple onchange="cargarEvidenciaPrueba('${code}',this.files)"><div class="et-max-note">Máximo 2 fotografías</div>
           <div class="et-paste-zone" tabindex="0" data-paste-test="${esc(code)}" onpaste="pegarImagenPrueba('${code}',event)" title="Haz clic aquí y luego Ctrl+V">
             <span class="et-paste-icon">📋</span><span><span class="et-paste-main">Pegar captura aquí</span><span class="et-paste-sub">· clic y Ctrl+V</span></span>
           </div>
@@ -4620,6 +4637,20 @@ async function convertirClipboardAEvidencias(files,prefijo){
   return out;
 }
 
+function etAgregarEvidenciasConLimite(actuales,nuevas,nombreCampo='este campo'){
+  const arr=Array.isArray(actuales)?actuales:[];
+  const incoming=Array.isArray(nuevas)?nuevas:[];
+  const disponibles=Math.max(0,ET_MAX_EVIDENCIAS_POR_CAMPO-arr.length);
+  if(disponibles<=0){
+    etSetMsg(`Máximo ${ET_MAX_EVIDENCIAS_POR_CAMPO} fotografías en ${nombreCampo}. Elimina una imagen antes de agregar otra.`,'err');
+    return {items:arr,agregadas:0,omitidas:incoming.length};
+  }
+  const aceptadas=incoming.slice(0,disponibles);
+  const omitidas=Math.max(0,incoming.length-aceptadas.length);
+  if(omitidas>0) etSetMsg(`Solo se agregaron ${aceptadas.length} imagen(es). Máximo ${ET_MAX_EVIDENCIAS_POR_CAMPO} fotografías por campo.`,'err');
+  return {items:[...arr,...aceptadas],agregadas:aceptadas.length,omitidas};
+}
+
 window.pegarImagenPrueba=async function(code,event){
   const files=imagenesDesdePortapapeles(event);
   if(!files.length){
@@ -4630,11 +4661,12 @@ window.pegarImagenPrueba=async function(code,event){
   const add=await convertirClipboardAEvidencias(files,'captura_'+code);
   const t=etState.tests[code]||etDefaultTest(code);
   etState.tests[code]=t;
-  t.evidencias=[...(t.evidencias||[]),...add];
+  const lim=etAgregarEvidenciasConLimite(t.evidencias||[],add,ET_TEST_DEFS[code]?.nombre||code);
+  t.evidencias=lim.items;
   const p=document.getElementById('etPrev_'+code);
   if(p)p.innerHTML=renderEvidenceItems('test',code,t.evidencias);
   actualizarProgresoEntrega();
-  etSetMsg(`${add.length} imagen(es) pegada(s) en ${ET_TEST_DEFS[code]?.nombre||code}.`,'ok');
+  if(lim.agregadas>0 && !lim.omitidas) etSetMsg(`${lim.agregadas} imagen(es) pegada(s) en ${ET_TEST_DEFS[code]?.nombre||code}.`,'ok');
 };
 
 window.pegarFotoEntrega=async function(code,event){
@@ -4645,29 +4677,34 @@ window.pegarFotoEntrega=async function(code,event){
   }
   event.preventDefault();
   const add=await convertirClipboardAEvidencias(files,'foto_'+code);
-  etState.photos[code]=[...(etState.photos[code]||[]),...add];
+  const lim=etAgregarEvidenciasConLimite(etState.photos[code]||[],add,ET_PHOTO_DEFS[code]?.nombre||code);
+  etState.photos[code]=lim.items;
   const p=document.getElementById('etPhotoPrev_'+code);
   if(p)p.innerHTML=renderEvidenceItems('photo',code,etState.photos[code]);
   actualizarProgresoEntrega();
-  etSetMsg(`${add.length} imagen(es) pegada(s) en ${ET_PHOTO_DEFS[code]?.nombre||code}.`,'ok');
+  if(lim.agregadas>0 && !lim.omitidas) etSetMsg(`${lim.agregadas} imagen(es) pegada(s) en ${ET_PHOTO_DEFS[code]?.nombre||code}.`,'ok');
 };
 
 window.cargarEvidenciaPrueba=async function(code,files){
-  const add=await filesToEvidence(files);etState.tests[code].evidencias=[...(etState.tests[code].evidencias||[]),...add];
+  const add=await filesToEvidence(files);
+  const lim=etAgregarEvidenciasConLimite(etState.tests[code].evidencias||[],add,ET_TEST_DEFS[code]?.nombre||code);
+  etState.tests[code].evidencias=lim.items;
   const p=document.getElementById('etPrev_'+code);if(p)p.innerHTML=renderEvidenceItems('test',code,etState.tests[code].evidencias);actualizarProgresoEntrega();
 };
 
 function renderFotosEntrega(){
   const c=document.getElementById('etPhotosContainer'); if(!c)return;
   c.innerHTML=Object.entries(ET_PHOTO_DEFS).map(([code,d])=>`<div class="et-photo-card"><h5>${esc(d.nombre)}</h5><p>${esc(d.desc)}</p>
-    <input type="file" accept="image/*" capture="environment" multiple onchange="cargarFotoEntrega('${code}',this.files)">
+    <input type="file" accept="image/*" capture="environment" multiple onchange="cargarFotoEntrega('${code}',this.files)"><div class="et-max-note">Máximo 2 fotografías</div>
     <div class="et-paste-zone" tabindex="0" data-paste-photo="${esc(code)}" onpaste="pegarFotoEntrega('${code}',event)" title="Haz clic aquí y luego Ctrl+V">
       <span class="et-paste-icon">📋</span><span><span class="et-paste-main">Pegar imagen aquí</span><span class="et-paste-sub">· clic y Ctrl+V</span></span>
     </div>
     <div id="etPhotoPrev_${code}" class="et-evidence-previews">${renderEvidenceItems('photo',code,etState.photos[code]||[])}</div></div>`).join('');
 }
 window.cargarFotoEntrega=async function(code,files){
-  const add=await filesToEvidence(files);etState.photos[code]=[...(etState.photos[code]||[]),...add];
+  const add=await filesToEvidence(files);
+  const lim=etAgregarEvidenciasConLimite(etState.photos[code]||[],add,ET_PHOTO_DEFS[code]?.nombre||code);
+  etState.photos[code]=lim.items;
   document.getElementById('etPhotoPrev_'+code).innerHTML=renderEvidenceItems('photo',code,etState.photos[code]);actualizarProgresoEntrega();
 };
 
@@ -4695,8 +4732,35 @@ function renderRevisionEntrega(){
   const req=etSelectedArray(),done=req.filter(c=>etTestComplete(etState.tests[c])).length,photos=Object.keys(ET_PHOTO_DEFS).filter(c=>(etState.photos[c]||[]).length).length;
   const total=req.length+5,pct=total?Math.round((done+photos)*100/total):0;
   [['etRevReq',req.length],['etRevOk',done],['etRevPhotos',photos],['etRevPct',pct+'%']].forEach(([id,v])=>{const e=document.getElementById(id);if(e)e.textContent=v;});
-  const tb=document.getElementById('etReviewBody');if(tb)tb.innerHTML=req.map(c=>{const t=etState.tests[c],d=ET_TEST_DEFS[c];return `<tr><td><b>${esc(d.nombre)}</b></td><td><span class="et-status ${etStatusClass(t.estado)}">${esc(t.estado)}</span></td><td>${esc(etResultShort(t)||'—')}</td><td>${(t.evidencias||[]).length} archivo(s)</td></tr>`;}).join('');
+  const tb=document.getElementById('etReviewBody');
+  if(tb){
+    const testRows=req.map(c=>{const t=etState.tests[c],d=ET_TEST_DEFS[c],evCount=(t.evidencias||[]).length,noEv=evCount===0;return `<tr class="et-review-row ${noEv?'no-evidence':''}" title="${noEv?'Sin evidencia adjunta · doble clic para revisar':'Doble clic para ir a esta prueba'}" ondblclick="irAPruebaDesdeResumen('${esc(c)}')"><td><b>${esc(d.nombre)}</b></td><td><span class="et-status ${etStatusClass(t.estado)}">${esc(t.estado)}</span></td><td>${esc(etResultShort(t)||'—')}</td><td>${noEv?'<span class="et-no-evidence-badge">⚠ SIN EVIDENCIA</span>':evCount+' archivo(s)'}</td></tr>`;}).join('');
+    const physicalTitle=`<tr class="et-physical-summary-title"><td colspan="4">Evidencias físicas obligatorias</td></tr>`;
+    const physicalRows=Object.entries(ET_PHOTO_DEFS).map(([code,d])=>{const evCount=(etState.photos[code]||[]).length,noEv=evCount===0;return `<tr class="et-review-row ${noEv?'no-evidence':''}" title="${noEv?'Falta evidencia física · doble clic para revisar':'Doble clic para revisar fotografía'}" ondblclick="irAFotoDesdeResumen('${esc(code)}')"><td><b>${esc(d.nombre)}</b></td><td>${noEv?'<span class="et-status FALLIDA">PENDIENTE</span>':'<span class="et-status APROBADA">COMPLETA</span>'}</td><td>${esc(d.desc||'—')}</td><td>${noEv?'<span class="et-no-evidence-badge">⚠ FALTA EVIDENCIA</span>':'<span class="et-evidence-ok-badge">✓ '+evCount+' archivo(s)</span>'}</td></tr>`;}).join('');
+    tb.innerHTML=testRows+physicalTitle+physicalRows;
+  }
 }
+
+window.irAPruebaDesdeResumen=function(code){
+  if(!ET_TEST_DEFS[code]) return;
+  etState.paso=3;
+  irPasoEntrega(3);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const card=document.getElementById('etTestCard_'+code);
+    if(!card){
+      etSetMsg('No fue posible localizar la prueba seleccionada.','err');
+      return;
+    }
+    card.scrollIntoView({behavior:'smooth',block:'center'});
+    card.classList.remove('et-focus-test');
+    void card.offsetWidth;
+    card.classList.add('et-focus-test');
+    setTimeout(()=>card.classList.remove('et-focus-test'),2800);
+    const first=card.querySelector('input,textarea,button');
+    if(first) setTimeout(()=>{try{first.focus({preventScroll:true});}catch(_){first.focus();}},500);
+    etSetMsg('Revisando: '+ET_TEST_DEFS[code].nombre,'ok');
+  }));
+};
 
 window.guardarUrlAgente=function(){localStorage.setItem('releva_agent_url',document.getElementById('etAgentUrl')?.value||'');};
 function etAgentUrl(){return (document.getElementById('etAgentUrl')?.value||localStorage.getItem('releva_agent_url')||'http://127.0.0.1:8765').replace(/\/+$/,'');}
@@ -4733,14 +4797,15 @@ window.ejecutarPruebaEntrega=async function(code,opts={}){
     }
     const j=await etFetchAgent('/run',payload);
     t.resultado_json=j.result||{};
-    t.resultado=j.raw||JSON.stringify(j.result||{},null,2);
+    t.resultado=etNormalizarSalidaConsola(j.raw||JSON.stringify(j.result||{},null,2));
     if(j.image_base64){
       const mime=j.image_mime||'image/png';
       const dataUrl='data:'+mime+';base64,'+j.image_base64;
       const nombre=j.image_name||('CMD_'+code+'.png');
       const idx=(t.evidencias||[]).findIndex(ev=>ev.name===nombre);
       if(idx>=0) t.evidencias[idx]={dataUrl,name:nombre};
-      else t.evidencias=[...(t.evidencias||[]),{dataUrl,name:nombre}];
+      else if((t.evidencias||[]).length<ET_MAX_EVIDENCIAS_POR_CAMPO) t.evidencias=[...(t.evidencias||[]),{dataUrl,name:nombre}];
+      else etSetMsg(`La evidencia automática se generó, pero ${ET_TEST_DEFS[code]?.nombre||code} ya tiene el máximo de ${ET_MAX_EVIDENCIAS_POR_CAMPO} imágenes.`,'err');
     }
     if(code==='ipconfig'&&j.result?.gateway){
       const pg=etState.tests.ping_gateway;
@@ -4764,12 +4829,33 @@ window.capturarWebEntrega=async function(code,url){
   try{
     const j=await etFetchAgent('/run',{test:'webshot',url},60000);
     if(!j.image_base64)throw new Error('El agente no devolvió captura.');
-    etState.tests[code].evidencias.push({dataUrl:'data:'+(j.image_mime||'image/png')+';base64,'+j.image_base64,name:j.image_name||(code+'.png')});
+    const nueva={dataUrl:'data:'+(j.image_mime||'image/png')+';base64,'+j.image_base64,name:j.image_name||(code+'.png')};
+    const lim=etAgregarEvidenciasConLimite(etState.tests[code].evidencias||[],[nueva],ET_TEST_DEFS[code]?.nombre||code);
+    etState.tests[code].evidencias=lim.items;
+    if(!lim.agregadas) throw new Error(`La prueba ya tiene el máximo de ${ET_MAX_EVIDENCIAS_POR_CAMPO} imágenes.`);
     etState.tests[code].resultado='Página cargada y evidencia capturada automáticamente.';
     etState.tests[code].resultado_json={url,loaded:true};
     etState.tests[code].estado='APROBADA';
     renderPruebasEntrega();actualizarProgresoEntrega();etSetMsg('Captura web agregada.','ok');
   }catch(e){etSetMsg('Captura automática no disponible: '+e.message+'. Puedes abrir la página y adjuntar captura manual.','err');}
+};
+
+
+window.irAFotoDesdeResumen=function(code){
+  if(!ET_PHOTO_DEFS[code]) return;
+  etState.paso=2;
+  irPasoEntrega(2);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const prev=document.getElementById('etPhotoPrev_'+code);
+    const card=prev?.closest('.et-photo-card');
+    if(!card){etSetMsg('No fue posible localizar la evidencia física seleccionada.','err');return;}
+    card.scrollIntoView({behavior:'smooth',block:'center'});
+    card.classList.remove('et-focus-test');void card.offsetWidth;card.classList.add('et-focus-test');
+    setTimeout(()=>card.classList.remove('et-focus-test'),2800);
+    const first=card.querySelector('input,button,[tabindex]');
+    if(first)setTimeout(()=>{try{first.focus({preventScroll:true});}catch(_){first.focus();}},500);
+    etSetMsg('Revisando evidencia: '+ET_PHOTO_DEFS[code].nombre,'ok');
+  }));
 };
 
 function dataUrlToBlob(dataUrl){
@@ -4973,7 +5059,7 @@ async function cargarEntregaTecnicaExistente(){
     document.getElementById('etObservacionesEntrega').value=e.observaciones||'';
     const {data:ps,error:pe}=await client.from('instalaciones_pruebas').select('*').eq('entrega_id',e.id);if(pe)throw pe;
     etState.selected.clear();
-    (ps||[]).forEach(p=>{if(p.requerida)etState.selected.add(p.codigo);etState.tests[p.codigo]={codigo:p.codigo,estado:p.estado||'PENDIENTE',resultado:p.resultado_texto||'',resultado_json:p.resultado_json||{},observaciones:p.observaciones||'',evidencias:(p.evidencias||[]).map(etNormalizeStoredEvidence).filter(Boolean)};});
+    (ps||[]).forEach(p=>{if(p.requerida)etState.selected.add(p.codigo);etState.tests[p.codigo]={codigo:p.codigo,estado:p.estado||'PENDIENTE',resultado:etNormalizarSalidaConsola(p.resultado_texto||''),resultado_json:p.resultado_json||{},observaciones:p.observaciones||'',evidencias:(p.evidencias||[]).map(etNormalizeStoredEvidence).filter(Boolean)};});
     const {data:ev,error:ee}=await client.from('instalaciones_evidencias').select('*').eq('entrega_id',e.id);if(ee)throw ee;
     (ev||[]).forEach(x=>{if(etState.photos[x.tipo])etState.photos[x.tipo]=(x.archivos||[]).map(etNormalizeStoredEvidence).filter(Boolean);});
     document.querySelectorAll('[data-et-test]').forEach(ch=>ch.checked=etState.selected.has(ch.dataset.etTest));
@@ -5120,25 +5206,60 @@ function etPdfEstadoColor(estado){
   return [202,138,4];
 }
 
-async function etPdfDataUrl(item){
-  if(!item) return null;
-  if(item.dataUrl && /^data:image\//i.test(item.dataUrl)) return item.dataUrl;
-  const url=etEvidencePreviewUrl(etNormalizeStoredEvidence(item)||item);
-  if(!url) return null;
+async function etPdfFetchAsDataUrl(url){
+  if(!url)return null;
   try{
-    const resp=await fetch(url,{cache:'no-store'});
-    if(!resp.ok) return null;
+    const resp=await fetch(url,{cache:'no-store',redirect:'follow'});
+    if(!resp.ok)return null;
     const blob=await resp.blob();
-    if(!String(blob.type||'').startsWith('image/')) return null;
+    if(!String(blob.type||'').startsWith('image/'))return null;
     return await new Promise((resolve,reject)=>{
-      const r=new FileReader();
-      r.onload=()=>resolve(r.result);
-      r.onerror=reject;
-      r.readAsDataURL(blob);
+      const fr=new FileReader();fr.onload=()=>resolve(fr.result);fr.onerror=reject;fr.readAsDataURL(blob);
     });
-  }catch(_){
-    return null;
+  }catch(_){return null;}
+}
+async function etPdfFetchViaAgent(url){
+  if(!url)return null;
+  try{
+    const resp=await fetch(etAgentUrl()+'/fetch-image',{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})
+    });
+    if(!resp.ok)return null;
+    const j=await resp.json();
+    if(!j?.ok||!j?.image_base64)return null;
+    return `data:${j.image_mime||'image/jpeg'};base64,${j.image_base64}`;
+  }catch(_){return null;}
+}
+function etPdfEvidenceCandidates(item){
+  const ev=etNormalizeStoredEvidence(item)||item||{};
+  const out=[];
+  const add=v=>{v=String(v||'').trim();if(v&&!out.includes(v))out.push(v);};
+  if(ev.dataUrl&&/^data:image\//i.test(ev.dataUrl))add(ev.dataUrl);
+  const id=etDriveFileId(ev);
+  if(id){
+    add(`https://drive.google.com/uc?export=view&id=${encodeURIComponent(id)}`);
+    add(`https://drive.google.com/thumbnail?id=${encodeURIComponent(id)}&sz=w2000`);
+    add(`https://lh3.googleusercontent.com/d/${encodeURIComponent(id)}=w2000`);
   }
+  add(ev.downloadLink);add(ev.url);add(ev.previewUrl);
+  return out;
+}
+async function etPdfDataUrl(item){
+  if(!item)return null;
+  const candidates=etPdfEvidenceCandidates(item);
+  for(const url of candidates){
+    if(/^data:image\//i.test(url))return url;
+    const direct=await etPdfFetchAsDataUrl(url);
+    if(direct)return direct;
+  }
+  // Respaldo: el agente descarga la evidencia y evita restricciones CORS del navegador.
+  for(const url of candidates){
+    if(/^https?:\/\//i.test(url)){
+      const viaAgent=await etPdfFetchViaAgent(url);
+      if(viaAgent)return viaAgent;
+    }
+  }
+  return null;
 }
 
 function etPdfImageFormat(dataUrl){
@@ -5238,6 +5359,83 @@ async function etPdfAddEvidenceImage(doc,item,x,y,maxW,maxH,caption){
   }catch(err){
     console.warn('No se pudo insertar evidencia en PDF',err);
   }
+}
+
+
+function etPdfNormalizarConsola(valor){
+  return String(valor??'')
+    .replace(/\r\n/g,'\n')
+    .replace(/\r/g,'\n')
+    .replace(/\u00a0/g,' ')
+    .replace(/\ufffd/g,' ')
+    .replace(/\t/g,'    ')
+    .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,'');
+}
+function etPdfPartirLineaConsola(linea,maxChars=92){
+  const out=[];
+  let s=String(linea??'');
+  if(!s.length)return [''];
+  while(s.length>maxChars){
+    let corte=maxChars;
+    const ventana=s.slice(0,maxChars+1);
+    const espacio=ventana.lastIndexOf(' ');
+    if(espacio>Math.floor(maxChars*.65)) corte=espacio;
+    out.push(s.slice(0,corte));
+    s=s.slice(corte);
+    if(s.startsWith(' '))s=s.slice(1);
+  }
+  out.push(s);
+  return out;
+}
+function etPdfLineasConsola(valor,maxChars=92){
+  const limpio=etPdfNormalizarConsola(valor);
+  const out=[];
+  limpio.split('\n').forEach(line=>out.push(...etPdfPartirLineaConsola(line,maxChars)));
+  return out.length?out:['Sin salida textual registrada'];
+}
+function etPdfRenderConsolaPaginada(doc,y,valor,margin,W){
+  const H=doc.internal.pageSize.getHeight();
+  const lineH=7.4;
+  const padX=9,padY=10;
+  const bottom=48;
+  const lines=etPdfLineasConsola(valor,94);
+  let pos=0;
+  doc.setFont('courier','normal');
+  doc.setFontSize(6.25);
+  while(pos<lines.length){
+    let disponible=Math.floor((H-bottom-y-padY*2)/lineH);
+    if(disponible<5){
+      doc.addPage();
+      etPdfAddHeader(doc,doc.getNumberOfPages());
+      etPdfAddFooter(doc);
+      y=58;
+      disponible=Math.floor((H-bottom-y-padY*2)/lineH);
+    }
+    const tomar=Math.max(1,Math.min(disponible,lines.length-pos));
+    const chunk=lines.slice(pos,pos+tomar);
+    const boxH=chunk.length*lineH+padY*2;
+    doc.setFillColor(248,250,252);
+    doc.setDrawColor(226,232,240);
+    doc.roundedRect(margin,y,W-margin*2,boxH,5,5,'FD');
+    doc.setTextColor(30,41,59);
+    chunk.forEach((line,i)=>doc.text(line,margin+padX,y+padY+5+i*lineH,{baseline:'alphabetic'}));
+    y+=boxH+9;
+    pos+=tomar;
+    if(pos<lines.length){
+      doc.addPage();
+      etPdfAddHeader(doc,doc.getNumberOfPages());
+      etPdfAddFooter(doc);
+      y=58;
+      doc.setFont('helvetica','italic');
+      doc.setFontSize(6.5);
+      doc.setTextColor(100,116,139);
+      doc.text('Continuación de resultado técnico',margin,y);
+      y+=10;
+      doc.setFont('courier','normal');
+      doc.setFontSize(6.25);
+    }
+  }
+  return y;
 }
 
 window.generarPdfEntregaTecnica=async function(){
@@ -5363,22 +5561,15 @@ window.generarPdfEntregaTecnica=async function(){
 
       doc.setTextColor(71,85,105);
       doc.setFont('helvetica','normal');doc.setFontSize(7);
-      const desc=doc.splitTextToSize(d.desc||'',W-margin*2-80);
+      const desc=doc.splitTextToSize(etPdfNormalizarConsola(d.desc||''),W-margin*2-80);
       doc.text(desc,margin+77,y+7);
       y+=28;
 
       const resultText=String(t.resultado||etResultShort(t)||'Sin salida textual registrada');
-      const lines=doc.splitTextToSize(resultText,W-margin*2-18);
-      const maxLines=Math.min(lines.length,22);
-      const boxH=Math.max(42,maxLines*8+16);
-      y=etPdfEnsureSpace(doc,y,boxH+20);
-      doc.setFillColor(248,250,252);doc.setDrawColor(226,232,240);doc.roundedRect(margin,y,W-margin*2,boxH,5,5,'FD');
-      doc.setFont('courier','normal');doc.setFontSize(6.8);doc.setTextColor(30,41,59);
-      doc.text(lines.slice(0,maxLines),margin+9,y+13);
-      y+=boxH+10;
+      y=etPdfRenderConsolaPaginada(doc,y,resultText,margin,W);
 
       if(t.observaciones){
-        const obs=doc.splitTextToSize('Observaciones: '+t.observaciones,W-margin*2);
+        const obs=doc.splitTextToSize(etPdfNormalizarConsola('Observaciones: '+t.observaciones),W-margin*2);
         doc.setFont('helvetica','italic');doc.setFontSize(7);doc.setTextColor(71,85,105);doc.text(obs,margin,y+6);
         y+=obs.length*8+8;
       }
